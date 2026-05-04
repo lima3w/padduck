@@ -8,11 +8,23 @@ services:
       POSTGRES_USER: ipam
       POSTGRES_PASSWORD: ipam
       POSTGRES_DB: ipam
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ipam"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
 
   backend:
     build: ./backend
     ports:
       - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://ipam:ipam@db:5432/ipam
+      SERVER_PORT: 8080
+      ENVIRONMENT: production
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
