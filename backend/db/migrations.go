@@ -10,7 +10,7 @@ import (
 
 // RunMigrations runs pending database migrations
 func (db *DB) RunMigrations(migrationsPath string) error {
-	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config().ConnConfig))
+	sqlDB := sql.OpenDB(stdlib.GetConnector(*db.pool.Config().ConnConfig))
 	defer sqlDB.Close()
 
 	source := &migrate.FileMigrationSource{
@@ -31,7 +31,7 @@ func (db *DB) RunMigrations(migrationsPath string) error {
 
 // GetMigrationStatus returns the status of all migrations
 func (db *DB) GetMigrationStatus(migrationsPath string) ([]*migrate.MigrationRecord, error) {
-	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config().ConnConfig))
+	sqlDB := sql.OpenDB(stdlib.GetConnector(*db.pool.Config().ConnConfig))
 	defer sqlDB.Close()
 
 	source := &migrate.FileMigrationSource{
