@@ -34,10 +34,6 @@ func (db *DB) GetMigrationStatus(migrationsPath string) ([]*migrate.MigrationRec
 	sqlDB := sql.OpenDB(stdlib.GetConnector(*db.pool.Config().ConnConfig))
 	defer sqlDB.Close()
 
-	source := &migrate.FileMigrationSource{
-		Dir: migrationsPath,
-	}
-
 	records, err := migrate.GetMigrationRecords(sqlDB, "postgres")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get migration status: %w", err)
