@@ -150,3 +150,19 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(ip)
 }
+
+// GetSubnetUtilization handles GET /api/v1/subnets/:subnetID/utilization
+func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
+	subnetID, err := c.ParamsInt("subnetID")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+
+	utilization, err := h.service.GetSubnetUtilization(c.Context(), int64(subnetID))
+	if err != nil {
+		log.Printf("Error getting subnet utilization %d: %v", subnetID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(utilization)
+}

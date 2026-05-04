@@ -38,3 +38,25 @@ func TestAllocateIPAddressRequest_Validation(t *testing.T) {
 	assert.NotEmpty(t, req.AssignedTo)
 	assert.Equal(t, "server1", req.AssignedTo)
 }
+
+func TestSubnetUtilization_Validation(t *testing.T) {
+	util := &struct {
+		Total       int64   `json:"total"`
+		Available   int64   `json:"available"`
+		Assigned    int64   `json:"assigned"`
+		Reserved    int64   `json:"reserved"`
+		Utilization float64 `json:"utilization_percent"`
+	}{
+		Total:       100,
+		Available:   75,
+		Assigned:    20,
+		Reserved:    5,
+		Utilization: 25.0,
+	}
+
+	assert.Equal(t, int64(100), util.Total)
+	assert.Equal(t, int64(75), util.Available)
+	assert.Equal(t, int64(20), util.Assigned)
+	assert.Equal(t, int64(5), util.Reserved)
+	assert.Equal(t, 25.0, util.Utilization)
+}

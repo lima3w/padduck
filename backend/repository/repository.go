@@ -300,3 +300,29 @@ func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, assi
 
 	return ip, nil
 }
+
+// CountIPsByStatus counts IPs in a subnet by their status
+func (r *Repository) CountIPsByStatus(ctx context.Context, subnetID int64, status string) (int64, error) {
+	query := `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1 AND status = $2`
+	row := r.db.QueryRow(ctx, query, subnetID, status)
+
+	var count int64
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// CountTotalIPsBySubnet counts all IPs in a subnet
+func (r *Repository) CountTotalIPsBySubnet(ctx context.Context, subnetID int64) (int64, error) {
+	query := `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1`
+	row := r.db.QueryRow(ctx, query, subnetID)
+
+	var count int64
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

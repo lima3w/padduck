@@ -40,6 +40,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	subnet.Get("/:id", h.GetSubnet)
 	subnet.Put("/:id", h.UpdateSubnet)
 	subnet.Delete("/:id", h.DeleteSubnet)
+	subnet.Get("/:subnetID/utilization", h.GetSubnetUtilization)
 
 	// IP Addresses collection routes (nested under subnets)
 	ipAddresses := subnets.Group("/:subnetID/ip-addresses")

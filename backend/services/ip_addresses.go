@@ -105,3 +105,59 @@ func (s *Service) AllocateIPAddress(ctx context.Context, subnetID int64, assigne
 
 	return s.repository.AllocateIPAddress(ctx, subnetID, assignedTo)
 }
+
+// SubnetUtilization represents utilization statistics for a subnet
+type SubnetUtilization struct {
+	Total      int64   `json:"total"`
+	Available  int64   `json:"available"`
+	Assigned   int64   `json:"assigned"`
+	Reserved   int64   `json:"reserved"`
+	Utilization float64 `json:"utilization_percent"`
+}
+
+// GetSubnetUtilization calculates utilization statistics for a subnet
+func (s *Service) GetSubnetUtilization(ctx context.Context, subnetID int64) (*SubnetUtilization, error) {
+	if subnetID <= 0 {
+		return nil, fmt.Errorf("invalid subnet ID")
+	}
+
+	total, err := s.repository.CountTotalIPsBySubnet(ctx, subnetID)
+	if err != nil {
+		return nil, err
+	}
+
+	if total == 0 {
+		return &SubnetUtilization{
+			Total:       0,
+			Available:   0,
+			Assigned:    0,
+			Reserved:    0,
+			Utilization: 0,
+		}, nil
+	}
+
+	available, err := s.repository.CountIPsByStatus(ctx, subnetID, "available")
+	if err != nil {
+		return nil, err
+	}
+
+	assigned, err := s.repository.CountIPsByStatus(ctx, subnetID, "assigned")
+	if err != nil {
+		return nil, err
+	}
+
+	reserved, err := s.repository.CountIPsByStatus(ctx, subnetID, "reserved")
+	if err != nil {
+		return nil, err
+	}
+
+	utilization := (float64(assigned+reserved) / float64(total)) * 100
+
+	return &SubnetUtilization{
+		Total:       total,
+		Available:   available,
+		Assigned:    assigned,
+		Reserved:    reserved,
+		Utilization: utilization,
+	}, nil
+}
