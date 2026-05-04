@@ -1,9 +1,6 @@
-
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-
-function App() {
-  return <h1>IPAM Next</h1>
-}
+import './src/index.css'
+import App from './src/App'
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
