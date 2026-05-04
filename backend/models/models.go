@@ -40,6 +40,8 @@ type IPAddress struct {
 	Hostname  string
 	Status    string // available, assigned, reserved
 	AssignedTo *string
+	AssignedAt *time.Time
+	ExpiresAt  *time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

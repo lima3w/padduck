@@ -166,3 +166,61 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 
 	return c.JSON(utilization)
 }
+
+type AssignWithLeaseRequest struct {
+	AssignedTo       string `json:"assigned_to"`
+	LeaseDurationDays int    `json:"lease_duration_days"`
+}
+
+// AssignIPAddressWithLease handles POST /api/v1/ip-addresses/:id/assign-with-lease
+func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+
+	req := new(AssignWithLeaseRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	ip, err := h.service.AssignIPAddressWithLease(c.Context(), int64(id), req.AssignedTo, req.LeaseDurationDays)
+	if err != nil {
+		log.Printf("Error assigning IP address with lease %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(ip)
+}
+
+// IsIPLeaseExpired handles GET /api/v1/ip-addresses/:id/lease-status
+func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+
+	expired, err := h.service.IsIPLeaseExpired(c.Context(), int64(id))
+	if err != nil {
+		log.Printf("Error checking IP lease status %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(fiber.Map{"expired": expired})
+}
+
+// ReleaseExpiredLease handles POST /api/v1/ip-addresses/:id/release-expired
+func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+
+	ip, err := h.service.ReleaseExpiredLease(c.Context(), int64(id))
+	if err != nil {
+		log.Printf("Error releasing expired lease %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(ip)
+}

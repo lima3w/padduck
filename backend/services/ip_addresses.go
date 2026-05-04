@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"ipam-next/models"
 )
@@ -160,4 +161,67 @@ func (s *Service) GetSubnetUtilization(ctx context.Context, subnetID int64) (*Su
 		Reserved:    reserved,
 		Utilization: utilization,
 	}, nil
+}
+
+// AssignIPAddressWithLease marks an IP as assigned with optional lease expiration
+func (s *Service) AssignIPAddressWithLease(ctx context.Context, id int64, assignedTo string, leaseDurationDays int) (*models.IPAddress, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid IP address ID")
+	}
+
+	if assignedTo == "" {
+		return nil, fmt.Errorf("assigned_to cannot be empty")
+	}
+
+	ip, err := s.GetIPAddress(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	assignedAtTime := now
+	var expiresAtTime *time.Time
+
+	if leaseDurationDays > 0 {
+		expiresAt := now.AddDate(0, 0, leaseDurationDays)
+		expiresAtTime = &expiresAt
+	}
+
+	return s.repository.UpdateIPAddressWithLease(ctx, id, "assigned", &assignedTo, &assignedAtTime, expiresAtTime)
+}
+
+// IsIPLeaseExpired checks if an IP's lease has expired
+func (s *Service) IsIPLeaseExpired(ctx context.Context, id int64) (bool, error) {
+	if id <= 0 {
+		return false, fmt.Errorf("invalid IP address ID")
+	}
+
+	ip, err := s.GetIPAddress(ctx, id)
+	if err != nil {
+		return false, err
+	}
+
+	if ip.ExpiresAt == nil {
+		return false, nil
+	}
+
+	return time.Now().After(*ip.ExpiresAt), nil
+}
+
+// ReleaseExpiredLease releases an IP if its lease has expired
+func (s *Service) ReleaseExpiredLease(ctx context.Context, id int64) (*models.IPAddress, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid IP address ID")
+	}
+
+	expired, err := s.IsIPLeaseExpired(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if !expired {
+		return nil, fmt.Errorf("IP lease has not expired")
+	}
+
+	return s.ReleaseIPAddress(ctx, id)
 }

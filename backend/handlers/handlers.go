@@ -53,6 +53,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Get("/:id", h.GetIPAddress)
 	ipAddress.Post("/:id/assign", h.AssignIPAddress)
 	ipAddress.Post("/:id/release", h.ReleaseIPAddress)
+	ipAddress.Post("/:id/assign-with-lease", h.AssignIPAddressWithLease)
+	ipAddress.Get("/:id/lease-status", h.IsIPLeaseExpired)
+	ipAddress.Post("/:id/release-expired", h.ReleaseExpiredLease)
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
 
 	log.Println("Routes registered successfully")

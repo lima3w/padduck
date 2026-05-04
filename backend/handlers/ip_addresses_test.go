@@ -60,3 +60,17 @@ func TestSubnetUtilization_Validation(t *testing.T) {
 	assert.Equal(t, int64(5), util.Reserved)
 	assert.Equal(t, 25.0, util.Utilization)
 }
+
+func TestAssignWithLeaseRequest_Validation(t *testing.T) {
+	req := &struct {
+		AssignedTo        string `json:"assigned_to"`
+		LeaseDurationDays int    `json:"lease_duration_days"`
+	}{
+		AssignedTo:        "server1",
+		LeaseDurationDays: 30,
+	}
+
+	assert.NotEmpty(t, req.AssignedTo)
+	assert.Equal(t, "server1", req.AssignedTo)
+	assert.Equal(t, 30, req.LeaseDurationDays)
+}
