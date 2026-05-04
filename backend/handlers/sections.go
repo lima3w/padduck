@@ -28,7 +28,7 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, req.CreatedBy)
 	if err != nil {
 		log.Printf("Error creating section: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(section)
@@ -44,7 +44,7 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 	section, err := h.service.GetSection(c.Context(), int64(id))
 	if err != nil {
 		log.Printf("Error getting section %d: %v", id, err)
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "section not found"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.JSON(section)
@@ -55,7 +55,7 @@ func (h *Handler) ListSections(c *fiber.Ctx) error {
 	sections, err := h.service.ListSections(c.Context())
 	if err != nil {
 		log.Printf("Error listing sections: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	// Return empty array instead of nil
@@ -81,7 +81,7 @@ func (h *Handler) UpdateSection(c *fiber.Ctx) error {
 	section, err := h.service.UpdateSection(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
 		log.Printf("Error updating section %d: %v", id, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.JSON(section)
@@ -96,7 +96,7 @@ func (h *Handler) DeleteSection(c *fiber.Ctx) error {
 
 	if err := h.service.DeleteSection(c.Context(), int64(id)); err != nil {
 		log.Printf("Error deleting section %d: %v", id, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
