@@ -44,8 +44,15 @@ func main() {
 	// Setup HTTP server
 	app := fiber.New()
 
-	// Health check endpoint
+	// Health check endpoint with database verification
 	app.Get("/health", func(c *fiber.Ctx) error {
+		if err := repo.Ping(ctx); err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status":   "degraded",
+				"database": "disconnected",
+				"error":    err.Error(),
+			})
+		}
 		return c.JSON(fiber.Map{"status": "ok", "database": "connected"})
 	})
 
