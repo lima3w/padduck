@@ -52,6 +52,15 @@ func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.S
 	return s.repository.ListSubnetsBySection(ctx, sectionID)
 }
 
+// UpdateSubnet updates a subnet's description
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string) (*models.Subnet, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid subnet ID")
+	}
+
+	return s.repository.UpdateSubnet(ctx, id, description)
+}
+
 // DeleteSubnet deletes a subnet and its IP addresses (cascade)
 func (s *Service) DeleteSubnet(ctx context.Context, id int64) error {
 	if id <= 0 {

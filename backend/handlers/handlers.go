@@ -30,6 +30,17 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	sections.Put("/:id", h.UpdateSection)
 	sections.Delete("/:id", h.DeleteSection)
 
+	// Subnets collection routes (nested under sections)
+	subnets := sections.Group("/:sectionID/subnets")
+	subnets.Get("", h.ListSubnets)
+	subnets.Post("", h.CreateSubnet)
+
+	// Subnets resource routes (top-level)
+	subnet := api.Group("/subnets")
+	subnet.Get("/:id", h.GetSubnet)
+	subnet.Put("/:id", h.UpdateSubnet)
+	subnet.Delete("/:id", h.DeleteSubnet)
+
 	log.Println("Routes registered successfully")
 }
 

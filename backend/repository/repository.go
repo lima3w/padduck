@@ -156,6 +156,18 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) 
 	return subnets, rows.Err()
 }
 
+func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string) (*models.Subnet, error) {
+	query := `UPDATE subnets SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, section_id, network_address, prefix_length, description, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, description, id)
+
+	subnet := &models.Subnet{}
+	err := row.Scan(&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength, &subnet.Description, &subnet.CreatedAt, &subnet.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return subnet, nil
+}
+
 func (r *Repository) DeleteSubnet(ctx context.Context, id int64) error {
 	query := `DELETE FROM subnets WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, id)
