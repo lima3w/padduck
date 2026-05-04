@@ -1,3 +1,5 @@
+-- +migrate Down
+
 -- Rollback initial schema
 
 DROP TABLE IF EXISTS ip_addresses;

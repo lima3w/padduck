@@ -1,3 +1,5 @@
+-- +migrate Up
+
 -- Create initial schema for IPAM Next
 
 CREATE TABLE IF NOT EXISTS users (
