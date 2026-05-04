@@ -2,8 +2,6 @@ package db
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetMigrationStatus(t *testing.T) {
