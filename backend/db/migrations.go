@@ -10,14 +10,14 @@ import (
 
 // RunMigrations runs pending database migrations
 func (db *DB) RunMigrations(migrationsPath string) error {
-	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config()))
+	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config().ConnConfig))
 	defer sqlDB.Close()
 
-	migrations := &migrate.FileMigrationSource{
+	source := &migrate.FileMigrationSource{
 		Dir: migrationsPath,
 	}
 
-	n, err := migrate.Exec(sqlDB, "postgres", migrations, migrate.Up)
+	n, err := migrate.Exec(sqlDB, "postgres", source, migrate.Up)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
@@ -31,10 +31,10 @@ func (db *DB) RunMigrations(migrationsPath string) error {
 
 // GetMigrationStatus returns the status of all migrations
 func (db *DB) GetMigrationStatus(migrationsPath string) ([]*migrate.MigrationRecord, error) {
-	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config()))
+	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config().ConnConfig))
 	defer sqlDB.Close()
 
-	migrations := &migrate.FileMigrationSource{
+	source := &migrate.FileMigrationSource{
 		Dir: migrationsPath,
 	}
 
