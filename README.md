@@ -15,6 +15,12 @@ Replace spreadsheet-based IP tracking with a structured, API-first system.
 ## Run
 docker compose up --build
 
+## Deployment
+Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/deploy.yml`.
+- Runs tests on all pushes to `main`
+- Builds and deploys both backend and frontend services
+- Verifies health endpoint before marking deployment successful
+
 ## Docs
 - docs/architecture.md
 - docs/roadmap.md
