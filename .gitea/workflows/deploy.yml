@@ -35,6 +35,12 @@ jobs:
           npm install
           npm test 2>/dev/null || echo "Frontend tests not configured, skipping"
 
+      - name: Configure firewall
+        run: |
+          sudo firewall-cmd --permanent --add-port=8080/tcp || true
+          sudo firewall-cmd --permanent --add-port=3000/tcp || true
+          sudo firewall-cmd --reload || true
+
       - name: Stop existing containers
         run: docker compose down || true
 
@@ -45,7 +51,7 @@ jobs:
 
       - name: Verify health endpoint
         run: |
-          sleep 5
+          sleep 10
           curl -f http://localhost:8080/health || exit 1
 
       - name: Deployment summary
