@@ -45,6 +45,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddresses := subnets.Group("/:subnetID/ip-addresses")
 	ipAddresses.Get("", h.ListIPAddresses)
 	ipAddresses.Post("", h.CreateIPAddress)
+	ipAddresses.Post("/allocate", h.AllocateIPAddress)
 
 	// IP Addresses resource routes (top-level)
 	ipAddress := api.Group("/ip-addresses")

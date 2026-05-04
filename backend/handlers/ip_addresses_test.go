@@ -27,3 +27,14 @@ func TestAssignIPAddressRequest_Validation(t *testing.T) {
 	assert.NotEmpty(t, req.AssignedTo)
 	assert.Equal(t, "server1", req.AssignedTo)
 }
+
+func TestAllocateIPAddressRequest_Validation(t *testing.T) {
+	req := &struct {
+		AssignedTo string `json:"assigned_to"`
+	}{
+		AssignedTo: "server1",
+	}
+
+	assert.NotEmpty(t, req.AssignedTo)
+	assert.Equal(t, "server1", req.AssignedTo)
+}

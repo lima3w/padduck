@@ -125,3 +125,28 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+// AllocateIPAddress handles POST /api/v1/subnets/:subnetID/ip-addresses/allocate
+func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
+	subnetID, err := c.ParamsInt("subnetID")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+
+	type AllocateRequest struct {
+		AssignedTo string `json:"assigned_to"`
+	}
+
+	req := new(AllocateRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	ip, err := h.service.AllocateIPAddress(c.Context(), int64(subnetID), req.AssignedTo)
+	if err != nil {
+		log.Printf("Error allocating IP address: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(ip)
+}

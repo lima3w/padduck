@@ -74,3 +74,34 @@ func (s *Service) DeleteIPAddress(ctx context.Context, id int64) error {
 
 	return s.repository.DeleteIPAddress(ctx, id)
 }
+
+// FindNextAvailableIP returns the next available IP in a subnet
+func (s *Service) FindNextAvailableIP(ctx context.Context, subnetID int64) (*models.IPAddress, error) {
+	if subnetID <= 0 {
+		return nil, fmt.Errorf("invalid subnet ID")
+	}
+
+	availableIPs, err := s.repository.ListAvailableIPsBySubnet(ctx, subnetID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(availableIPs) == 0 {
+		return nil, fmt.Errorf("no available IP addresses in subnet")
+	}
+
+	return availableIPs[0], nil
+}
+
+// AllocateIPAddress atomically finds and assigns the next available IP
+func (s *Service) AllocateIPAddress(ctx context.Context, subnetID int64, assignedTo string) (*models.IPAddress, error) {
+	if subnetID <= 0 {
+		return nil, fmt.Errorf("invalid subnet ID")
+	}
+
+	if assignedTo == "" {
+		return nil, fmt.Errorf("assigned_to cannot be empty")
+	}
+
+	return s.repository.AllocateIPAddress(ctx, subnetID, assignedTo)
+}

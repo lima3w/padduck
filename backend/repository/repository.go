@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"ipam-next/models"
 )
@@ -236,4 +237,66 @@ func (r *Repository) DeleteIPAddress(ctx context.Context, id int64) error {
 	query := `DELETE FROM ip_addresses WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, id)
 	return err
+}
+
+func (r *Repository) ListAvailableIPsBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error) {
+	query := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE subnet_id = $1 AND status = 'available' ORDER BY address`
+	rows, err := r.db.Query(ctx, query, subnetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ips := make([]*models.IPAddress, 0)
+	for rows.Next() {
+		ip := &models.IPAddress{}
+		err := rows.Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo, &ip.CreatedAt, &ip.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, rows.Err()
+}
+
+func (r *Repository) GetPool() *pgxpool.Pool {
+	return r.db
+}
+
+// AllocateIPAddress atomically finds and assigns the next available IP
+// Uses a transaction with SERIALIZABLE isolation to prevent duplicate allocation
+func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, assignedTo string) (*models.IPAddress, error) {
+	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Find the first available IP in the subnet (ordered by address)
+	query := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at
+	          FROM ip_addresses
+	          WHERE subnet_id = $1 AND status = 'available'
+	          ORDER BY address LIMIT 1`
+	row := tx.QueryRow(ctx, query, subnetID)
+
+	ip := &models.IPAddress{}
+	err = row.Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo, &ip.CreatedAt, &ip.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	// Atomically update the IP status to 'assigned'
+	updateQuery := `UPDATE ip_addresses SET status = 'assigned', assigned_to = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at`
+	updateRow := tx.QueryRow(ctx, updateQuery, assignedTo, ip.ID)
+
+	err = updateRow.Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo, &ip.CreatedAt, &ip.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+
+	return ip, nil
 }
