@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-and-deploy:
-    runs-on: gitea-runner.lab
+    runs-on: linux
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
