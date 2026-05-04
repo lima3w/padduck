@@ -1,9 +1,18 @@
 package services
 
+import (
+	"ipam-next/repository"
+)
+
 type Service struct {
-	// repositories will be injected here
+	repository *repository.Repository
 }
 
-func NewService() *Service {
-	return &Service{}
+func NewService(repo *repository.Repository) *Service {
+	return &Service{repository: repo}
+}
+
+// GetRepository returns the underlying repository
+func (s *Service) GetRepository() *repository.Repository {
+	return s.repository
 }

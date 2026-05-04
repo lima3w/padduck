@@ -1,15 +1,19 @@
 package handlers
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+	"ipam-next/services"
+)
 
 type Handler struct {
-	// services will be injected here
+	service *services.Service
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler(service *services.Service) *Handler {
+	return &Handler{service: service}
 }
 
 func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// All HTTP endpoints will be registered here
+	// Example: app.Get("/api/v1/sections", h.ListSections)
 }
