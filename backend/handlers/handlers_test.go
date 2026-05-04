@@ -8,8 +8,7 @@ import (
 )
 
 func TestNewHandler(t *testing.T) {
-	repo := nil // Would be a mock in real tests
-	svc := services.NewService(repo)
+	var svc *services.Service
 	handler := NewHandler(svc)
 
 	assert.NotNil(t, handler)

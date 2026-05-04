@@ -25,3 +25,21 @@ go.work.sum
 # env file
 .env
 
+# ---> Node.js
+node_modules/
+dist/
+build/
+
+# ---> Project-specific files
+# Catalog and reference files (auto-generated documentation)
+.claude/
+
+# Working documents and drafts
+docs/full_sprint_plan.md
+
+# Automation scripts (may contain sensitive tokens)
+scripts/
+
+# Gitea data exports and backups
+gitea/
+

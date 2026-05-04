@@ -28,11 +28,3 @@ func TestUpdateSectionRequest_Validation(t *testing.T) {
 	assert.NotEmpty(t, req.Name)
 	assert.Equal(t, "Updated Section", req.Name)
 }
-
-func TestNewHandler(t *testing.T) {
-	svc := services.NewService(nil)
-	h := NewHandler(svc)
-
-	assert.NotNil(t, h)
-	assert.Equal(t, svc, h.service)
-}

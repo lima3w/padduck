@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/stdlib"
@@ -9,8 +10,8 @@ import (
 
 // RunMigrations runs pending database migrations
 func (db *DB) RunMigrations(migrationsPath string) error {
-	connector := stdlib.GetConnector(db.pool)
-	sqlDB := migrate.NewGoMigrationDriver(connector, "")
+	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config()))
+	defer sqlDB.Close()
 
 	migrations := &migrate.FileMigrationSource{
 		Dir: migrationsPath,
@@ -30,8 +31,8 @@ func (db *DB) RunMigrations(migrationsPath string) error {
 
 // GetMigrationStatus returns the status of all migrations
 func (db *DB) GetMigrationStatus(migrationsPath string) ([]*migrate.MigrationRecord, error) {
-	connector := stdlib.GetConnector(db.pool)
-	sqlDB := migrate.NewGoMigrationDriver(connector, "")
+	sqlDB := sql.OpenDB(stdlib.GetConnector(db.pool.Config()))
+	defer sqlDB.Close()
 
 	migrations := &migrate.FileMigrationSource{
 		Dir: migrationsPath,
