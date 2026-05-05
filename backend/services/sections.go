@@ -8,7 +8,7 @@ import (
 )
 
 // CreateSection creates a new section
-func (s *Service) CreateSection(ctx context.Context, name, description string, createdBy int64) (*models.Section, error) {
+func (s *Service) CreateSection(ctx context.Context, name, description string, createdBy *int64) (*models.Section, error) {
 	if name == "" {
 		return nil, fmt.Errorf("section name is required")
 	}

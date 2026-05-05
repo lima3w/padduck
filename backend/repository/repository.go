@@ -50,7 +50,7 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 
 // Section operations
 
-func (r *Repository) CreateSection(ctx context.Context, name, description string, createdBy int64) (*models.Section, error) {
+func (r *Repository) CreateSection(ctx context.Context, name, description string, createdBy *int64) (*models.Section, error) {
 	query := `INSERT INTO sections (name, description, created_by) VALUES ($1, $2, $3) RETURNING id, name, description, created_by, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, name, description, createdBy)
 

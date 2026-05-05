@@ -10,7 +10,7 @@ import (
 type CreateSectionRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	CreatedBy   int64  `json:"created_by"`
+	CreatedBy   *int64 `json:"created_by"`
 }
 
 type UpdateSectionRequest struct {
