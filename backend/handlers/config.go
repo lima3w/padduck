@@ -47,6 +47,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	}
 
 	allowed := map[string]bool{
+		"app_url":                     true,
 		"registration_enabled":        true,
 		"require_email_verification":  true,
 		"require_admin_approval":      true,

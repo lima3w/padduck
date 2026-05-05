@@ -136,7 +136,11 @@ func buildMessage(from, to, subject, body string) string {
 	return sb.String()
 }
 
-func (e *EmailService) SendVerificationEmail(to, username, token, baseURL string) error {
+func (e *EmailService) SendVerificationEmail(to, username, token string) error {
+	appURL, _ := e.configSvc.Get("app_url")
+	if appURL == "" {
+		appURL = "http://localhost:3000"
+	}
 	subject := "Verify your email address"
 	body := fmt.Sprintf(`Hello %s,
 
@@ -147,7 +151,7 @@ Thank you for registering. Please verify your email address by clicking the link
 This link will expire in 24 hours.
 
 If you did not create an account, please ignore this email.
-`, username, baseURL, token)
+`, username, appURL, token)
 	return e.Send(to, subject, body)
 }
 

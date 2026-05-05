@@ -134,6 +134,25 @@ export default function AdminSettingsPage() {
       {activeTab === 'registration' && config && (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Application URL</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Public URL
+              </label>
+              <input
+                type="url"
+                value={config.app_url || ''}
+                onChange={(e) => handleConfigChange('app_url', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="http://localhost:3000"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Used in verification and notification emails. Include scheme and port if non-standard (e.g. <code>http://ipam.example.com:8080</code>).
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold mb-4">Registration Settings</h2>
 
             <label className="flex items-center gap-3 mb-4 cursor-pointer">

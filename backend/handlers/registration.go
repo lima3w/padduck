@@ -23,13 +23,10 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username, email, and password are required"})
 	}
 
-	baseURL := c.BaseURL()
-
 	result, err := h.service.Registration.Register(c.Context(), services.RegisterRequest{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: req.Password,
-		BaseURL:  baseURL,
 	})
 	if err != nil {
 		switch {
@@ -96,8 +93,7 @@ func (h *Handler) ResendVerification(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "email is required"})
 	}
 
-	baseURL := c.BaseURL()
-	_ = h.service.Registration.ResendVerification(c.Context(), req.Email, baseURL)
+	_ = h.service.Registration.ResendVerification(c.Context(), req.Email)
 
 	// Always return success to avoid email enumeration
 	return c.JSON(fiber.Map{"message": "If your email is pending verification, a new link has been sent."})

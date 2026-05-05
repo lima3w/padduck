@@ -55,7 +55,6 @@ type RegisterRequest struct {
 	Username string
 	Email    string
 	Password string
-	BaseURL  string
 }
 
 type RegisterResult struct {
@@ -107,7 +106,7 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 	}
 
 	if requireVerification {
-		if err := s.sendVerificationEmail(ctx, user, req.BaseURL); err != nil {
+		if err := s.sendVerificationEmail(ctx, user); err != nil {
 			log.Printf("failed to send verification email to %s: %v", user.Email, err)
 		}
 	} else if requireApproval {
@@ -120,7 +119,7 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 	return &RegisterResult{User: user, State: state}, nil
 }
 
-func (s *RegistrationService) sendVerificationEmail(ctx context.Context, user *models.User, baseURL string) error {
+func (s *RegistrationService) sendVerificationEmail(ctx context.Context, user *models.User) error {
 	token, tokenHash := generateToken()
 	expiresAt := time.Now().Add(24 * time.Hour)
 
@@ -128,7 +127,7 @@ func (s *RegistrationService) sendVerificationEmail(ctx context.Context, user *m
 		return err
 	}
 
-	return s.emailSvc.SendVerificationEmail(user.Email, user.Username, token, baseURL)
+	return s.emailSvc.SendVerificationEmail(user.Email, user.Username, token)
 }
 
 func (s *RegistrationService) VerifyEmail(ctx context.Context, rawToken string) error {
@@ -174,7 +173,7 @@ func (s *RegistrationService) VerifyEmail(ctx context.Context, rawToken string) 
 	return nil
 }
 
-func (s *RegistrationService) ResendVerification(ctx context.Context, email, baseURL string) error {
+func (s *RegistrationService) ResendVerification(ctx context.Context, email string) error {
 	user, err := s.repository.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil // don't reveal whether email exists
@@ -186,7 +185,7 @@ func (s *RegistrationService) ResendVerification(ctx context.Context, email, bas
 	if err := s.repository.DeleteEmailVerificationsByUser(ctx, user.ID); err != nil {
 		return err
 	}
-	return s.sendVerificationEmail(ctx, user, baseURL)
+	return s.sendVerificationEmail(ctx, user)
 }
 
 func (s *RegistrationService) ApproveUser(ctx context.Context, approvalID, reviewerID int64) error {
