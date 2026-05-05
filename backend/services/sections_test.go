@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateSection(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	// Test validation - missing name
@@ -18,7 +18,7 @@ func TestCreateSection(t *testing.T) {
 }
 
 func TestGetSection(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	// Test validation - invalid ID
@@ -28,7 +28,7 @@ func TestGetSection(t *testing.T) {
 }
 
 func TestUpdateSection(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	// Test validation - empty name
@@ -38,7 +38,7 @@ func TestUpdateSection(t *testing.T) {
 }
 
 func TestDeleteSection(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	// Test validation - invalid ID

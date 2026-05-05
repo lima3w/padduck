@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateIPAddress(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	testCases := []struct {
@@ -59,7 +59,7 @@ func TestCreateIPAddress(t *testing.T) {
 }
 
 func TestReleaseIPAddress(t *testing.T) {
-	svc := NewService(nil)
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	// Test validation - invalid ID

@@ -9,7 +9,7 @@ import (
 
 func TestNewService(t *testing.T) {
 	repo := repository.NewRepository(nil) // nil pool for testing structure
-	svc := NewService(repo)
+	svc := NewService(repo, "0000000000000000000000000000000000000000000000000000000000000000")
 
 	assert.NotNil(t, svc)
 	assert.Equal(t, repo, svc.GetRepository())
