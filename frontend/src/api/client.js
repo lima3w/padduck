@@ -75,6 +75,25 @@ export const generateTokenAnonymous = (userId, tokenName) =>
 export const login = (username, password) =>
   noAuthApi.post('/auth/login', { username, password })
 
+export const register = (username, email, password) =>
+  noAuthApi.post('/auth/register', { username, email, password })
+
+export const verifyEmail = (token) =>
+  noAuthApi.get(`/auth/verify-email?token=${encodeURIComponent(token)}`)
+
+export const resendVerification = (email) =>
+  noAuthApi.post('/auth/resend-verification', { email })
+
+// Admin config
+export const getAdminConfig = () => api.get('/admin/config')
+export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
+export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
+
+// Admin approvals
+export const listPendingApprovals = () => api.get('/admin/approvals')
+export const approveUser = (id) => api.post(`/admin/approvals/${id}/approve`)
+export const rejectUser = (id, reason) => api.post(`/admin/approvals/${id}/reject`, { reason })
+
 // Search
 export const searchSections = (query, limit = 50, offset = 0) =>
   api.post('/sections/search', { query, limit, offset })

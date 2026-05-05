@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import * as client from '../api/client'
 
@@ -205,6 +205,15 @@ export default function LoginPage() {
               {loading ? 'Generating...' : 'Generate Token'}
             </button>
           </form>
+        )}
+
+        {loginMode === 'password' && (
+          <div className="mt-4 text-center">
+            <span className="text-gray-600 text-sm">Don't have an account? </span>
+            <Link to="/register" className="text-blue-600 text-sm hover:underline font-medium">
+              Register
+            </Link>
+          </div>
         )}
 
         <div className="mt-6 pt-6 border-t border-gray-200">

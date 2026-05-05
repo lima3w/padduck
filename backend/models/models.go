@@ -9,9 +9,41 @@ type User struct {
 	Email        string
 	PasswordHash string
 	Role         string // admin, user, viewer
+	State        string // active, pending_email_verification, pending_admin_approval, rejected, disabled
 	LastLoginAt  *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+}
+
+// Config represents an application configuration key-value pair
+type Config struct {
+	Key       string
+	Value     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// EmailVerification represents an email verification token
+type EmailVerification struct {
+	ID        int64
+	UserID    int64
+	TokenHash string
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// UserApproval represents an admin approval record for a pending user
+type UserApproval struct {
+	ID              int64
+	UserID          int64
+	Status          string // pending, approved, rejected
+	ReviewedBy      *int64
+	ReviewedAt      *time.Time
+	RejectionReason *string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // APIToken represents an API authentication token

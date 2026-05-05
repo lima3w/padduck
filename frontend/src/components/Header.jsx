@@ -1,5 +1,5 @@
 import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Header() {
   const { user, logout } = useAuth()
@@ -20,6 +20,14 @@ export default function Header() {
         {user && (
           <>
             <span className="text-sm text-blue-100">{user.username}</span>
+            {user.role === 'admin' && (
+              <Link
+                to="/admin/settings"
+                className="text-sm bg-blue-600 hover:bg-blue-800 px-3 py-1 rounded transition"
+              >
+                Admin
+              </Link>
+            )}
             <button
               onClick={handleLogout}
               className="text-sm bg-blue-600 hover:bg-blue-800 px-3 py-1 rounded transition"

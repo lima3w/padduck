@@ -5,11 +5,23 @@ import (
 )
 
 type Service struct {
-	repository *repository.Repository
+	repository   *repository.Repository
+	Config       *ConfigService
+	Email        *EmailService
+	Registration *RegistrationService
 }
 
 func NewService(repo *repository.Repository) *Service {
-	return &Service{repository: repo}
+	configSvc := NewConfigService(repo)
+	emailSvc := NewEmailService(configSvc)
+	registrationSvc := NewRegistrationService(repo, configSvc, emailSvc)
+
+	return &Service{
+		repository:   repo,
+		Config:       configSvc,
+		Email:        emailSvc,
+		Registration: registrationSvc,
+	}
 }
 
 // GetRepository returns the underlying repository

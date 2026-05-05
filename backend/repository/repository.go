@@ -25,11 +25,11 @@ func (r *Repository) Ping(ctx context.Context) error {
 // User operations
 
 func (r *Repository) CreateUser(ctx context.Context, username, email string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, password_hash, role, last_login_at, created_at, updated_at`
+	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -37,11 +37,11 @@ func (r *Repository) CreateUser(ctx context.Context, username, email string) (*m
 }
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +49,11 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 }
 
 func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users WHERE username = $1`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users WHERE username = $1`
 	row := r.db.QueryRow(ctx, query, username)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*m
 }
 
 func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users ORDER BY created_at DESC`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
 	users := make([]*models.User, 0)
 	for rows.Next() {
 		user := &models.User{}
-		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -81,23 +81,41 @@ func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
 }
 
 func (r *Repository) CreateUserWithPassword(ctx context.Context, username, email, passwordHash, role string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, role, last_login_at, created_at, updated_at`
+	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
+func (r *Repository) CreateUserWithState(ctx context.Context, username, email, passwordHash, role, state string) (*models.User, error) {
+	query := `INSERT INTO users (username, email, password_hash, role, state) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role, state)
+
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *Repository) UpdateUserState(ctx context.Context, userID int64, state string) error {
+	query := `UPDATE users SET state = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID, state)
+	return err
+}
+
 func (r *Repository) UpdateUserRole(ctx context.Context, userID int64, role string) (*models.User, error) {
-	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, password_hash, role, last_login_at, created_at, updated_at`
+	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, role)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +135,11 @@ func (r *Repository) UpdateLastLogin(ctx context.Context, userID int64) error {
 }
 
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users WHERE email = $1`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users WHERE email = $1`
 	row := r.db.QueryRow(ctx, query, email)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -732,4 +750,129 @@ func (r *Repository) UpdateVLAN(ctx context.Context, id int64, name, description
 func (r *Repository) DeleteVLAN(ctx context.Context, id int64) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM vlans WHERE id = $1`, id)
 	return err
+}
+
+// Config operations
+
+func (r *Repository) GetConfig(ctx context.Context, key string) (*models.Config, error) {
+	query := `SELECT key, value, created_at, updated_at FROM configs WHERE key = $1`
+	cfg := &models.Config{}
+	err := r.db.QueryRow(ctx, query, key).Scan(&cfg.Key, &cfg.Value, &cfg.CreatedAt, &cfg.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+func (r *Repository) ListConfigs(ctx context.Context) ([]*models.Config, error) {
+	query := `SELECT key, value, created_at, updated_at FROM configs ORDER BY key ASC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	configs := make([]*models.Config, 0)
+	for rows.Next() {
+		cfg := &models.Config{}
+		if err := rows.Scan(&cfg.Key, &cfg.Value, &cfg.CreatedAt, &cfg.UpdatedAt); err != nil {
+			return nil, err
+		}
+		configs = append(configs, cfg)
+	}
+	return configs, rows.Err()
+}
+
+func (r *Repository) SetConfig(ctx context.Context, key, value string) error {
+	query := `INSERT INTO configs (key, value) VALUES ($1, $2)
+	          ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP`
+	_, err := r.db.Exec(ctx, query, key, value)
+	return err
+}
+
+// Email verification operations
+
+func (r *Repository) CreateEmailVerification(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) (*models.EmailVerification, error) {
+	query := `INSERT INTO email_verifications (user_id, token_hash, expires_at) VALUES ($1, $2, $3)
+	          ON CONFLICT (token_hash) DO NOTHING
+	          RETURNING id, user_id, token_hash, expires_at, used_at, created_at, updated_at`
+	ev := &models.EmailVerification{}
+	err := r.db.QueryRow(ctx, query, userID, tokenHash, expiresAt).Scan(
+		&ev.ID, &ev.UserID, &ev.TokenHash, &ev.ExpiresAt, &ev.UsedAt, &ev.CreatedAt, &ev.UpdatedAt,
+	)
+	return ev, err
+}
+
+func (r *Repository) GetEmailVerificationByToken(ctx context.Context, tokenHash string) (*models.EmailVerification, error) {
+	query := `SELECT id, user_id, token_hash, expires_at, used_at, created_at, updated_at FROM email_verifications WHERE token_hash = $1`
+	ev := &models.EmailVerification{}
+	err := r.db.QueryRow(ctx, query, tokenHash).Scan(
+		&ev.ID, &ev.UserID, &ev.TokenHash, &ev.ExpiresAt, &ev.UsedAt, &ev.CreatedAt, &ev.UpdatedAt,
+	)
+	return ev, err
+}
+
+func (r *Repository) MarkEmailVerificationUsed(ctx context.Context, verificationID int64) error {
+	query := `UPDATE email_verifications SET used_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, verificationID)
+	return err
+}
+
+func (r *Repository) DeleteEmailVerificationsByUser(ctx context.Context, userID int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM email_verifications WHERE user_id = $1`, userID)
+	return err
+}
+
+// User approval operations
+
+func (r *Repository) CreateUserApproval(ctx context.Context, userID int64) (*models.UserApproval, error) {
+	query := `INSERT INTO user_approvals (user_id) VALUES ($1) RETURNING id, user_id, status, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at`
+	ua := &models.UserApproval{}
+	err := r.db.QueryRow(ctx, query, userID).Scan(
+		&ua.ID, &ua.UserID, &ua.Status, &ua.ReviewedBy, &ua.ReviewedAt, &ua.RejectionReason, &ua.CreatedAt, &ua.UpdatedAt,
+	)
+	return ua, err
+}
+
+func (r *Repository) GetUserApprovalByUserID(ctx context.Context, userID int64) (*models.UserApproval, error) {
+	query := `SELECT id, user_id, status, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at FROM user_approvals WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`
+	ua := &models.UserApproval{}
+	err := r.db.QueryRow(ctx, query, userID).Scan(
+		&ua.ID, &ua.UserID, &ua.Status, &ua.ReviewedBy, &ua.ReviewedAt, &ua.RejectionReason, &ua.CreatedAt, &ua.UpdatedAt,
+	)
+	return ua, err
+}
+
+func (r *Repository) ListPendingApprovals(ctx context.Context) ([]*models.UserApproval, error) {
+	query := `SELECT id, user_id, status, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at FROM user_approvals WHERE status = 'pending' ORDER BY created_at ASC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	approvals := make([]*models.UserApproval, 0)
+	for rows.Next() {
+		ua := &models.UserApproval{}
+		if err := rows.Scan(&ua.ID, &ua.UserID, &ua.Status, &ua.ReviewedBy, &ua.ReviewedAt, &ua.RejectionReason, &ua.CreatedAt, &ua.UpdatedAt); err != nil {
+			return nil, err
+		}
+		approvals = append(approvals, ua)
+	}
+	return approvals, rows.Err()
+}
+
+func (r *Repository) UpdateUserApproval(ctx context.Context, approvalID int64, status string, reviewedBy int64, rejectionReason *string) error {
+	query := `UPDATE user_approvals SET status = $2, reviewed_by = $3, reviewed_at = CURRENT_TIMESTAMP, rejection_reason = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, approvalID, status, reviewedBy, rejectionReason)
+	return err
+}
+
+func (r *Repository) GetUserApprovalByID(ctx context.Context, approvalID int64) (*models.UserApproval, error) {
+	query := `SELECT id, user_id, status, reviewed_by, reviewed_at, rejection_reason, created_at, updated_at FROM user_approvals WHERE id = $1`
+	ua := &models.UserApproval{}
+	err := r.db.QueryRow(ctx, query, approvalID).Scan(
+		&ua.ID, &ua.UserID, &ua.Status, &ua.ReviewedBy, &ua.ReviewedAt, &ua.RejectionReason, &ua.CreatedAt, &ua.UpdatedAt,
+	)
+	return ua, err
 }

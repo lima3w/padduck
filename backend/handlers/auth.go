@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type GenerateTokenRequest struct {
@@ -27,6 +28,8 @@ type UserResponse struct {
 	ID        int64  `json:"id"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
+	Role      string `json:"role"`
+	State     string `json:"state"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -123,6 +126,8 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
+		Role:      user.Role,
+		State:     user.State,
 		CreatedAt: user.CreatedAt.String(),
 		UpdatedAt: user.UpdatedAt.String(),
 	})
@@ -198,6 +203,17 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	user, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password)
 	if err != nil {
 		log.Printf("Authentication error for user %s: %v", req.Username, err)
+		// Return specific messages for account state errors
+		switch err {
+		case services.ErrEmailNotVerified:
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		case services.ErrPendingApproval:
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		case services.ErrAccountRejected:
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		case services.ErrAccountDisabled:
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		}
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid username or password"})
 	}
 
@@ -218,6 +234,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 			ID:        user.ID,
 			Username:  user.Username,
 			Email:     user.Email,
+			Role:      user.Role,
+			State:     user.State,
 			CreatedAt: user.CreatedAt.String(),
 			UpdatedAt: user.UpdatedAt.String(),
 		},

@@ -24,6 +24,7 @@ type UserDetailResponse struct {
 	Username  string `json:"username"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
+	State     string `json:"state"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
@@ -49,6 +50,7 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 				Username:  u.Username,
 				Email:     u.Email,
 				Role:      u.Role,
+				State:     u.State,
 				CreatedAt: u.CreatedAt.String(),
 				UpdatedAt: u.UpdatedAt.String(),
 			})
@@ -84,6 +86,7 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 		Username:  user.Username,
 		Email:     user.Email,
 		Role:      user.Role,
+		State:     user.State,
 		CreatedAt: user.CreatedAt.String(),
 		UpdatedAt: user.UpdatedAt.String(),
 	})
@@ -130,6 +133,7 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		Username:  user.Username,
 		Email:     user.Email,
 		Role:      user.Role,
+		State:     user.State,
 		CreatedAt: user.CreatedAt.String(),
 		UpdatedAt: user.UpdatedAt.String(),
 	})
@@ -167,6 +171,7 @@ func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 		Username:  user.Username,
 		Email:     user.Email,
 		Role:      user.Role,
+		State:     user.State,
 		CreatedAt: user.CreatedAt.String(),
 		UpdatedAt: user.UpdatedAt.String(),
 	})

@@ -116,6 +116,17 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 		return nil, fmt.Errorf("invalid password")
 	}
 
+	switch user.State {
+	case "pending_email_verification":
+		return nil, ErrEmailNotVerified
+	case "pending_admin_approval":
+		return nil, ErrPendingApproval
+	case "rejected":
+		return nil, ErrAccountRejected
+	case "disabled":
+		return nil, ErrAccountDisabled
+	}
+
 	return user, nil
 }
 

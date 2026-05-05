@@ -29,6 +29,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Auth routes (public - no authentication required)
 	auth := api.Group("/auth")
 	auth.Post("/login", h.Login)
+	auth.Post("/register", h.Register)
+	auth.Get("/verify-email", h.VerifyEmail)
+	auth.Post("/resend-verification", h.ResendVerification)
 	auth.Post("/tokens/:userID", h.GenerateToken)
 	auth.Get("/tokens/:userID", h.ListTokens)
 	auth.Delete("/tokens/:tokenID", h.RevokeToken)
@@ -113,6 +116,15 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vlans.Get("/:id", h.GetVLAN)
 	vlans.Put("/:id", h.UpdateVLAN)
 	vlans.Delete("/:id", h.DeleteVLAN)
+
+	// Admin routes (protected + admin role required)
+	admin := protected.Group("/admin")
+	admin.Get("/config", h.GetConfig)
+	admin.Put("/config", h.UpdateConfig)
+	admin.Post("/config/test-email", h.TestSMTP)
+	admin.Get("/approvals", h.ListPendingApprovals)
+	admin.Post("/approvals/:id/approve", h.ApproveUser)
+	admin.Post("/approvals/:id/reject", h.RejectUser)
 
 	log.Println("Routes registered successfully")
 }
