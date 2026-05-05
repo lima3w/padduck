@@ -173,11 +173,6 @@ func (s *Service) AssignIPAddressWithLease(ctx context.Context, id int64, assign
 		return nil, fmt.Errorf("assigned_to cannot be empty")
 	}
 
-	ip, err := s.GetIPAddress(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
 	now := time.Now()
 	assignedAtTime := now
 	var expiresAtTime *time.Time
