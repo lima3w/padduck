@@ -35,18 +35,17 @@ type UserResponse struct {
 func (h *Handler) GenerateToken(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return h.StatusBadRequest(c, "Invalid user ID")
 	}
 
 	req := new(GenerateTokenRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return h.StatusBadRequest(c, "Invalid request body")
 	}
 
 	token, err := h.service.GenerateAPIToken(c.Context(), int64(userID), req.TokenName)
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return h.StatusInternalServerError(c, "Failed to generate token", err.Error())
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(GenerateTokenResponse{

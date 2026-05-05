@@ -12,13 +12,13 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	// Extract token from Authorization header
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "missing authorization header"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Missing authorization header")
 	}
 
 	// Token format: "Bearer <token>"
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid authorization header format"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Invalid authorization header format")
 	}
 
 	token := parts[1]
@@ -27,7 +27,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	user, err := h.service.ValidateAPIToken(c.Context(), token)
 	if err != nil {
 		log.Printf("Token validation error: %v", err)
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid or expired token"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Invalid or expired token", err.Error())
 	}
 
 	// Store user in context for handlers to access
