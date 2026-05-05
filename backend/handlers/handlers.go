@@ -32,6 +32,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected := api.Group("")
 	protected.Use(h.AuthMiddleware)
 
+	// User profile endpoints (protected)
+	me := protected.Group("/auth/me")
+	me.Get("", h.GetCurrentUser)
+	me.Post("/tokens", h.GenerateTokenForMe)
+	me.Get("/tokens", h.ListMyTokens)
+
 	// Sections routes
 	sections := protected.Group("/sections")
 	sections.Get("", h.ListSections)

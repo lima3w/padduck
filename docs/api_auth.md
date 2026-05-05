@@ -80,7 +80,64 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ---
 
-## Protected Endpoints
+## User Profile Endpoints (Protected)
+
+### Get Current User
+**GET** `/api/v1/auth/me`
+
+Get the authenticated user's profile.
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "username": "admin",
+  "email": "admin@localhost",
+  "created_at": "2026-05-04T12:00:00Z",
+  "updated_at": "2026-05-04T12:00:00Z"
+}
+```
+
+### Generate Token for Current User
+**POST** `/api/v1/auth/me/tokens`
+
+Generate a new token for the authenticated user (easier than specifying userID).
+
+**Request Body:**
+```json
+{
+  "token_name": "My Application Token"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+  "name": "My Application Token"
+}
+```
+
+### List Current User's Tokens
+**GET** `/api/v1/auth/me/tokens`
+
+List all tokens for the authenticated user.
+
+**Response (200 OK):**
+```json
+[
+  {
+    "id": 1,
+    "name": "My Application Token",
+    "created_at": "2026-05-05T12:00:00Z",
+    "last_used_at": "2026-05-05T13:30:00Z"
+  }
+]
+```
+
+---
+
+## Other Protected Endpoints
 
 All endpoints except `/api/v1/auth/*` require authentication:
 
