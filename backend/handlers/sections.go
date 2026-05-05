@@ -10,7 +10,7 @@ import (
 type CreateSectionRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	CreatedBy   *int64 `json:"created_by"`
+	CreatedBy   int64  `json:"created_by"`
 }
 
 type UpdateSectionRequest struct {
@@ -25,13 +25,11 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	createdBy := req.CreatedBy
-	if createdBy == nil {
-		defaultUserID := int64(1)
-		createdBy = &defaultUserID
+	if req.CreatedBy == 0 {
+		req.CreatedBy = 1
 	}
 
-	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, createdBy)
+	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, req.CreatedBy)
 	if err != nil {
 		log.Printf("Error creating section: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
