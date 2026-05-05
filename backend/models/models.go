@@ -11,6 +11,18 @@ type User struct {
 	UpdatedAt time.Time
 }
 
+// APIToken represents an API authentication token
+type APIToken struct {
+	ID        int64
+	UserID    int64
+	TokenHash string
+	Name      string
+	LastUsedAt *time.Time
+	ExpiresAt *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 // Section represents an IP address section/grouping
 type Section struct {
 	ID        int64

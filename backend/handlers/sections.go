@@ -25,11 +25,17 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	if req.CreatedBy == 0 {
-		req.CreatedBy = 1
+	// Use authenticated user ID if available, otherwise default to admin (1)
+	createdBy := req.CreatedBy
+	if createdBy == 0 {
+		if userID, ok := c.Locals("userID").(int64); ok {
+			createdBy = userID
+		} else {
+			createdBy = 1
+		}
 	}
 
-	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, req.CreatedBy)
+	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, createdBy)
 	if err != nil {
 		log.Printf("Error creating section: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

@@ -22,8 +22,18 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// API v1 routes
 	api := app.Group("/api/v1")
 
+	// Auth routes (public - no authentication required)
+	auth := api.Group("/auth")
+	auth.Post("/tokens/:userID", h.GenerateToken)
+	auth.Get("/tokens/:userID", h.ListTokens)
+	auth.Delete("/tokens/:tokenID", h.RevokeToken)
+
+	// Protected routes (require authentication)
+	protected := api.Group("")
+	protected.Use(h.AuthMiddleware)
+
 	// Sections routes
-	sections := api.Group("/sections")
+	sections := protected.Group("/sections")
 	sections.Get("", h.ListSections)
 	sections.Post("", h.CreateSection)
 	sections.Get("/:id", h.GetSection)
@@ -36,7 +46,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	subnets.Post("", h.CreateSubnet)
 
 	// Subnets resource routes (top-level)
-	subnet := api.Group("/subnets")
+	subnet := protected.Group("/subnets")
 	subnet.Get("/:id", h.GetSubnet)
 	subnet.Put("/:id", h.UpdateSubnet)
 	subnet.Delete("/:id", h.DeleteSubnet)
@@ -49,7 +59,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddresses.Post("/allocate", h.AllocateIPAddress)
 
 	// IP Addresses resource routes (top-level)
-	ipAddress := api.Group("/ip-addresses")
+	ipAddress := protected.Group("/ip-addresses")
 	ipAddress.Get("/:id", h.GetIPAddress)
 	ipAddress.Post("/:id/assign", h.AssignIPAddress)
 	ipAddress.Post("/:id/release", h.ReleaseIPAddress)

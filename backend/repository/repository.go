@@ -340,3 +340,61 @@ func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, sta
 	}
 	return ip, nil
 }
+
+// API Token operations
+
+func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash, name string) (*models.APIToken, error) {
+	query := `INSERT INTO api_tokens (user_id, token_hash, name) VALUES ($1, $2, $3) RETURNING id, user_id, token_hash, name, last_used_at, expires_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, userID, tokenHash, name)
+
+	token := &models.APIToken{}
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*models.APIToken, error) {
+	query := `SELECT id, user_id, token_hash, name, last_used_at, expires_at, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
+	row := r.db.QueryRow(ctx, query, tokenHash)
+
+	token := &models.APIToken{}
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*models.APIToken, error) {
+	query := `SELECT id, user_id, token_hash, name, last_used_at, expires_at, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tokens := make([]*models.APIToken, 0)
+	for rows.Next() {
+		token := &models.APIToken{}
+		err := rows.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, token)
+	}
+	return tokens, rows.Err()
+}
+
+func (r *Repository) UpdateAPITokenLastUsed(ctx context.Context, tokenID int64) error {
+	query := `UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, tokenID)
+	return err
+}
+
+func (r *Repository) DeleteAPIToken(ctx context.Context, tokenID int64) error {
+	query := `DELETE FROM api_tokens WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, tokenID)
+	return err
+}
