@@ -7,6 +7,7 @@ type User struct {
 	ID        int64
 	Username  string
 	Email     string
+	Role      string // admin, user, viewer
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

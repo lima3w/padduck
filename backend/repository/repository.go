@@ -25,11 +25,11 @@ func (r *Repository) Ping(ctx context.Context) error {
 // User operations
 
 func (r *Repository) CreateUser(ctx context.Context, username, email string) (*models.User, error) {
-	query := `INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id, username, email, created_at, updated_at`
+	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, role, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -37,11 +37,11 @@ func (r *Repository) CreateUser(ctx context.Context, username, email string) (*m
 }
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	query := `SELECT id, username, email, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, username, email, role, created_at, updated_at FROM users WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
