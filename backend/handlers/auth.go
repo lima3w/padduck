@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
-	"ipam-next/utils"
 )
 
 type GenerateTokenRequest struct {

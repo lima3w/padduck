@@ -3,7 +3,6 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
