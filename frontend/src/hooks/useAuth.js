@@ -12,13 +12,13 @@ export function useAuth() {
     const storedToken = localStorage.getItem('auth_token')
     const storedUser = localStorage.getItem('current_user')
 
-    if (storedToken) {
+    if (storedToken && storedUser) {
       setToken(storedToken)
-      if (storedUser) {
-        setUser(JSON.parse(storedUser))
-      }
-      // Try to fetch fresh user data
-      fetchCurrentUser(storedToken)
+      setUser(JSON.parse(storedUser))
+      // Try to fetch fresh user data in background, but don't block on it
+      fetchCurrentUser(storedToken).catch(() => {
+        // If fetch fails, user will be redirected by axios interceptor
+      })
     }
     setLoading(false)
   }, [])
