@@ -115,7 +115,7 @@ func (r *Repository) DeleteSection(ctx context.Context, id int64) error {
 // Subnet operations
 
 func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description) VALUES ($1, $2, $3, $4) RETURNING id, section_id, network_address, prefix_length, description, created_at, updated_at`
+	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description) VALUES ($1, $2, $3, $4) RETURNING id, section_id, network_address::text, prefix_length, description, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description)
 
 	subnet := &models.Subnet{}
@@ -127,7 +127,7 @@ func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkA
 }
 
 func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error) {
-	query := `SELECT id, section_id, network_address, prefix_length, description, created_at, updated_at FROM subnets WHERE id = $1`
+	query := `SELECT id, section_id, network_address::text, prefix_length, description, created_at, updated_at FROM subnets WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	subnet := &models.Subnet{}
@@ -139,7 +139,7 @@ func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subne
 }
 
 func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error) {
-	query := `SELECT id, section_id, network_address, prefix_length, description, created_at, updated_at FROM subnets WHERE section_id = $1 ORDER BY network_address`
+	query := `SELECT id, section_id, network_address::text, prefix_length, description, created_at, updated_at FROM subnets WHERE section_id = $1 ORDER BY network_address`
 	rows, err := r.db.Query(ctx, query, sectionID)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) 
 }
 
 func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string) (*models.Subnet, error) {
-	query := `UPDATE subnets SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, section_id, network_address, prefix_length, description, created_at, updated_at`
+	query := `UPDATE subnets SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, section_id, network_address::text, prefix_length, description, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, description, id)
 
 	subnet := &models.Subnet{}
@@ -179,7 +179,7 @@ func (r *Repository) DeleteSubnet(ctx context.Context, id int64) error {
 // IP Address operations
 
 func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string) (*models.IPAddress, error) {
-	query := `INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to) VALUES ($1, $2, $3, $4, $5) RETURNING id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at`
+	query := `INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to) VALUES ($1, $2, $3, $4, $5) RETURNING id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, subnetID, address, hostname, status, assignedTo)
 
 	ip := &models.IPAddress{}
@@ -191,7 +191,7 @@ func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, addres
 }
 
 func (r *Repository) GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error) {
-	query := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE id = $1`
+	query := `SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	ip := &models.IPAddress{}
@@ -203,7 +203,7 @@ func (r *Repository) GetIPAddressByID(ctx context.Context, id int64) (*models.IP
 }
 
 func (r *Repository) ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error) {
-	query := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE subnet_id = $1 ORDER BY address`
+	query := `SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE subnet_id = $1 ORDER BY address`
 	rows, err := r.db.Query(ctx, query, subnetID)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func (r *Repository) ListIPAddressesBySubnet(ctx context.Context, subnetID int64
 }
 
 func (r *Repository) UpdateIPAddressStatus(ctx context.Context, id int64, status string, assignedTo *string) (*models.IPAddress, error) {
-	query := `UPDATE ip_addresses SET status = $2, assigned_to = $3 WHERE id = $1 RETURNING id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at`
+	query := `UPDATE ip_addresses SET status = $2, assigned_to = $3 WHERE id = $1 RETURNING id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, id, status, assignedTo)
 
 	ip := &models.IPAddress{}
@@ -241,7 +241,7 @@ func (r *Repository) DeleteIPAddress(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) ListAvailableIPsBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error) {
-	query := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE subnet_id = $1 AND status = 'available' ORDER BY address`
+	query := `SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE subnet_id = $1 AND status = 'available' ORDER BY address`
 	rows, err := r.db.Query(ctx, query, subnetID)
 	if err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, assi
 	defer tx.Rollback(ctx)
 
 	// Find the first available IP in the subnet (ordered by address)
-	query := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at
+	query := `SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at
 	          FROM ip_addresses
 	          WHERE subnet_id = $1 AND status = 'available'
 	          ORDER BY address LIMIT 1`
@@ -287,7 +287,7 @@ func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, assi
 	}
 
 	// Atomically update the IP status to 'assigned'
-	updateQuery := `UPDATE ip_addresses SET status = 'assigned', assigned_to = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at`
+	updateQuery := `UPDATE ip_addresses SET status = 'assigned', assigned_to = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at`
 	updateRow := tx.QueryRow(ctx, updateQuery, assignedTo, ip.ID)
 
 	err = updateRow.Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo, &ip.CreatedAt, &ip.UpdatedAt)
@@ -330,7 +330,7 @@ func (r *Repository) CountTotalIPsBySubnet(ctx context.Context, subnetID int64) 
 
 // UpdateIPAddressWithLease updates IP with lease information
 func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, status string, assignedTo *string, assignedAt *time.Time, expiresAt *time.Time) (*models.IPAddress, error) {
-	query := `UPDATE ip_addresses SET status = $2, assigned_to = $3, assigned_at = $4, expires_at = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at`
+	query := `UPDATE ip_addresses SET status = $2, assigned_to = $3, assigned_at = $4, expires_at = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, id, status, assignedTo, assignedAt, expiresAt)
 
 	ip := &models.IPAddress{}
@@ -426,8 +426,8 @@ func (r *Repository) SearchSections(ctx context.Context, query string, limit, of
 }
 
 func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
-	sql := `SELECT id, section_id, network_address, prefix_length, description, created_at, updated_at FROM subnets
-	        WHERE section_id = $1 AND (network_address ILIKE $2 OR description ILIKE $2)
+	sql := `SELECT id, section_id, network_address::text, prefix_length, description, created_at, updated_at FROM subnets
+	        WHERE section_id = $1 AND (network_address::text ILIKE $2 OR description ILIKE $2)
 	        ORDER BY network_address ASC
 	        LIMIT $3 OFFSET $4`
 	searchQuery := "%" + query + "%"
@@ -450,8 +450,8 @@ func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query s
 }
 
 func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64) ([]*models.IPAddress, error) {
-	sql := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses
-	        WHERE subnet_id = $1 AND (address ILIKE $2 OR hostname ILIKE $2 OR assigned_to ILIKE $2)`
+	sql := `SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses
+	        WHERE subnet_id = $1 AND (address::text ILIKE $2 OR hostname ILIKE $2 OR assigned_to ILIKE $2)`
 	args := []interface{}{subnetID, "%" + query + "%"}
 
 	if status != "" {
