@@ -5,13 +5,16 @@ go 1.21
 require (
 	github.com/gofiber/fiber/v2 v2.49.0
 	github.com/jackc/pgx/v5 v5.5.5
+	github.com/pquerna/otp v1.5.0
 	github.com/rubenv/sql-migrate v1.7.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.17.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect

@@ -46,12 +46,20 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected.Use(h.AuthMiddleware)
 	protected.Use(h.CSRFMiddleware)
 
+	// MFA verification (public — called before session is issued)
+	auth.Post("/verify-mfa", h.VerifyMFA)
+
 	// User profile endpoints (protected)
 	me := protected.Group("/auth/me")
 	me.Get("", h.GetCurrentUser)
 	me.Post("/logout", h.Logout)
 	me.Post("/tokens", h.GenerateTokenForMe)
 	me.Get("/tokens", h.ListMyTokens)
+	me.Get("/mfa", h.GetMFAStatus)
+	me.Post("/mfa/setup", h.SetupTOTP)
+	me.Post("/mfa/confirm", h.ConfirmTOTP)
+	me.Delete("/mfa", h.DisableTOTP)
+	me.Post("/mfa/backup-codes", h.RegenerateBackupCodes)
 
 	// User management endpoints (protected)
 	users := protected.Group("/users")

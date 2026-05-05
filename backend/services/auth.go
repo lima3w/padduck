@@ -97,8 +97,16 @@ func (s *Service) ListUserTokens(ctx context.Context, userID int64) ([]*models.A
 	return s.repository.ListAPITokensByUser(ctx, userID)
 }
 
-// AuthenticateUser verifies username and password and returns the user if valid
-func (s *Service) AuthenticateUser(ctx context.Context, username, password string) (*models.User, error) {
+// AuthResult is returned by AuthenticateUser; either the full user is set or MFAChallenge is set.
+type AuthResult struct {
+	User         *models.User
+	MFARequired  bool
+	MFAChallenge string // raw challenge token, only set when MFARequired is true
+}
+
+// AuthenticateUser verifies username and password.
+// When MFA is enabled, it returns an MFAChallenge instead of the full user.
+func (s *Service) AuthenticateUser(ctx context.Context, username, password string) (*AuthResult, error) {
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("username and password required")
 	}
@@ -127,7 +135,16 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 		return nil, ErrAccountDisabled
 	}
 
-	return user, nil
+	// If MFA is enabled, issue a challenge instead of returning the full user
+	if s.MFA.IsMFAEnabled(ctx, user.ID) {
+		challenge, err := s.MFA.CreateChallenge(ctx, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create MFA challenge: %w", err)
+		}
+		return &AuthResult{MFARequired: true, MFAChallenge: challenge}, nil
+	}
+
+	return &AuthResult{User: user}, nil
 }
 
 // RevokeSessionToken revokes a session token by its hash

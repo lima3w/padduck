@@ -6,15 +6,17 @@ import * as client from '../api/client'
 export default function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
-  const [loginMode, setLoginMode] = useState('password')
-  const [username, setUsername] = useState('admin')
+
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [userId, setUserId] = useState('1')
-  const [tokenName, setTokenName] = useState('CLI Token')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [showToken, setShowToken] = useState(false)
-  const [generatedToken, setGeneratedToken] = useState('')
+
+  // MFA step state
+  const [mfaChallenge, setMfaChallenge] = useState(null)
+  const [mfaCode, setMfaCode] = useState('')
+
+  // Email verification resend state
   const [showResend, setShowResend] = useState(false)
   const [resendEmail, setResendEmail] = useState('')
   const [resendStatus, setResendStatus] = useState('')
@@ -28,8 +30,15 @@ export default function LoginPage() {
 
     try {
       const response = await client.login(username, password)
-      const { token, user } = response.data
-      login(token, user)
+      const data = response.data
+
+      if (data.mfa_required) {
+        setMfaChallenge(data.mfa_challenge)
+        setLoading(false)
+        return
+      }
+
+      login(data.token, data.user)
       navigate('/')
     } catch (err) {
       const msg = err.response?.data?.error || 'Login failed'
@@ -42,66 +51,86 @@ export default function LoginPage() {
     }
   }
 
-  const handleResendVerification = async () => {
-    if (!resendEmail) return
-    setResendStatus('sending')
-    await client.resendVerification(resendEmail)
-    setResendStatus('sent')
-  }
-
-  const handleGenerateToken = async (e) => {
+  const handleMFASubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
-      const response = await client.generateTokenAnonymous(userId, tokenName)
-      const { token } = response.data
-
-      const userData = {
-        id: parseInt(userId),
-        username: `User ${userId}`,
-        email: `user${userId}@localhost`,
-      }
-
-      login(token, userData)
-      setGeneratedToken(token)
-      setShowToken(true)
+      const response = await client.verifyMFA(mfaChallenge, mfaCode)
+      const { token, user } = response.data
+      login(token, user)
+      navigate('/')
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to generate token')
+      const msg = err.response?.data?.error || 'MFA verification failed'
+      setError(msg)
+      if (err.response?.status === 401 && msg.includes('expired')) {
+        setMfaChallenge(null)
+        setMfaCode('')
+        setError('MFA session expired. Please sign in again.')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleContinue = () => {
-    navigate('/')
+  const handleResendVerification = async () => {
+    if (!resendEmail) return
+    setResendStatus('sending')
+    try {
+      await client.resendVerification(resendEmail)
+      setResendStatus('sent')
+    } catch {
+      setResendStatus('error')
+    }
   }
 
-  if (showToken) {
+  if (mfaChallenge) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Token Generated</h1>
-          <p className="text-gray-600 mb-4">
-            Your API token has been generated. Store it securely—you won't see it again.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Two-Factor Authentication</h1>
+          <p className="text-gray-600 mb-6">Enter the 6-digit code from your authenticator app, or a backup code.</p>
 
-          <div className="bg-gray-50 border border-gray-200 rounded p-3 mb-4 break-all">
-            <code className="text-sm text-gray-700 font-mono">{generatedToken}</code>
-          </div>
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+              {error}
+            </div>
+          )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-6">
-            <p className="text-sm text-blue-800">
-              Use this token in the Authorization header: <code>Bearer {generatedToken}</code>
-            </p>
-          </div>
+          <form onSubmit={handleMFASubmit}>
+            <div className="mb-6">
+              <label htmlFor="mfaCode" className="block text-sm font-medium text-gray-700 mb-2">
+                Authentication Code
+              </label>
+              <input
+                type="text"
+                id="mfaCode"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\s/g, ''))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-xl tracking-widest font-mono"
+                placeholder="000000"
+                maxLength={12}
+                autoFocus
+                autoComplete="one-time-code"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !mfaCode}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+            >
+              {loading ? 'Verifying…' : 'Verify'}
+            </button>
+          </form>
 
           <button
-            onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+            type="button"
+            onClick={() => { setMfaChallenge(null); setMfaCode(''); setError(''); }}
+            className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition"
           >
-            Continue to Dashboard
+            Back to sign in
           </button>
         </div>
       </div>
@@ -114,29 +143,6 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">IPAM Next</h1>
         <p className="text-gray-600 mb-6">Sign in to continue</p>
 
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => { setLoginMode('password'); setError(''); }}
-            className={`flex-1 py-2 px-4 rounded font-medium transition ${
-              loginMode === 'password'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Password Login
-          </button>
-          <button
-            onClick={() => { setLoginMode('token'); setError(''); }}
-            className={`flex-1 py-2 px-4 rounded font-medium transition ${
-              loginMode === 'token'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            API Token
-          </button>
-        </div>
-
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
             {error}
@@ -148,6 +154,8 @@ export default function LoginPage() {
             <p className="text-yellow-800 font-medium mb-2">Need a new verification link?</p>
             {resendStatus === 'sent' ? (
               <p className="text-green-700">Verification email sent — check your inbox.</p>
+            ) : resendStatus === 'error' ? (
+              <p className="text-red-700">Failed to send email. Try again later.</p>
             ) : (
               <div className="flex gap-2">
                 <input
@@ -170,100 +178,57 @@ export default function LoginPage() {
           </div>
         )}
 
-        {loginMode === 'password' ? (
-          <form onSubmit={handlePasswordLogin}>
-            <div className="mb-4">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="admin"
-                autoFocus
-              />
-            </div>
-
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleGenerateToken}>
-            <div className="mb-4">
-              <label htmlFor="userId" className="block text-sm font-medium text-gray-700 mb-2">
-                User ID
-              </label>
-              <input
-                type="number"
-                id="userId"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="1"
-              />
-              <p className="text-xs text-gray-500 mt-1">Default admin user is ID 1</p>
-            </div>
-
-            <div className="mb-6">
-              <label htmlFor="tokenName" className="block text-sm font-medium text-gray-700 mb-2">
-                Token Name
-              </label>
-              <input
-                type="text"
-                id="tokenName"
-                value={tokenName}
-                onChange={(e) => setTokenName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="My API Token"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
-            >
-              {loading ? 'Generating...' : 'Generate Token'}
-            </button>
-          </form>
-        )}
-
-        {loginMode === 'password' && (
-          <div className="mt-4 text-center">
-            <span className="text-gray-600 text-sm">Don't have an account? </span>
-            <Link to="/register" className="text-blue-600 text-sm hover:underline font-medium">
-              Register
-            </Link>
+        <form onSubmit={handlePasswordLogin}>
+          <div className="mb-4">
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="username"
+              autoFocus
+              autoComplete="username"
+            />
           </div>
-        )}
+
+          <div className="mb-6">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+          >
+            {loading ? 'Signing in…' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="mt-4 text-center">
+          <span className="text-gray-600 text-sm">Don't have an account? </span>
+          <Link to="/register" className="text-blue-600 text-sm hover:underline font-medium">
+            Register
+          </Link>
+        </div>
 
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500">
-            {loginMode === 'password'
-              ? 'Your password is securely hashed and never transmitted in plain text.'
-              : 'Tokens are stored securely using SHA-256 hashing. Keep your token safe.'}
+            Your password is securely hashed and never transmitted in plain text.
           </p>
         </div>
       </div>

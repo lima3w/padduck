@@ -200,22 +200,26 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username and password required"})
 	}
 
-	user, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password)
+	result, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password)
 	if err != nil {
 		log.Printf("Authentication error for user %s: %v", req.Username, err)
-		// Return specific messages for account state errors
 		switch err {
-		case services.ErrEmailNotVerified:
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
-		case services.ErrPendingApproval:
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
-		case services.ErrAccountRejected:
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
-		case services.ErrAccountDisabled:
+		case services.ErrEmailNotVerified, services.ErrPendingApproval,
+			services.ErrAccountRejected, services.ErrAccountDisabled:
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid username or password"})
 	}
+
+	// MFA required — return challenge token instead of session
+	if result.MFARequired {
+		return c.JSON(fiber.Map{
+			"mfa_required":  true,
+			"mfa_challenge": result.MFAChallenge,
+		})
+	}
+
+	user := result.User
 
 	// Update last login time
 	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {

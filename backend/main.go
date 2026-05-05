@@ -38,7 +38,7 @@ func main() {
 
 	// Setup application layers
 	repo := repository.NewRepository(database.Pool())
-	svc := services.NewService(repo)
+	svc := services.NewService(repo, cfg.MFAEncryptionKey)
 	handler := handlers.NewHandler(svc)
 
 	// Setup HTTP server

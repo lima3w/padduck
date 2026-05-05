@@ -20,6 +20,12 @@ export default function Header() {
         {user && (
           <>
             <span className="text-sm text-blue-100">{user.username}</span>
+            <Link
+              to="/settings"
+              className="text-sm bg-blue-600 hover:bg-blue-800 px-3 py-1 rounded transition"
+            >
+              Settings
+            </Link>
             {user.role === 'admin' && (
               <Link
                 to="/admin/settings"

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log"
+
 	"ipam-next/repository"
 )
 
@@ -9,18 +11,25 @@ type Service struct {
 	Config       *ConfigService
 	Email        *EmailService
 	Registration *RegistrationService
+	MFA          *MFAService
 }
 
-func NewService(repo *repository.Repository) *Service {
+func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	configSvc := NewConfigService(repo)
 	emailSvc := NewEmailService(configSvc)
 	registrationSvc := NewRegistrationService(repo, configSvc, emailSvc)
+
+	mfaSvc, err := NewMFAService(repo, mfaEncryptionKey)
+	if err != nil {
+		log.Fatalf("Failed to initialize MFA service: %v", err)
+	}
 
 	return &Service{
 		repository:   repo,
 		Config:       configSvc,
 		Email:        emailSvc,
 		Registration: registrationSvc,
+		MFA:          mfaSvc,
 	}
 }
 

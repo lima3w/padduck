@@ -124,3 +124,43 @@ type VLAN struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+// UserMFASettings tracks MFA status for a user
+type UserMFASettings struct {
+	ID                    int64
+	UserID                int64
+	TOTPEnabled           bool
+	BackupCodesGeneratedAt *time.Time
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+}
+
+// UserTOTPSecret stores the encrypted TOTP secret
+type UserTOTPSecret struct {
+	ID              int64
+	UserID          int64
+	EncryptedSecret []byte
+	Verified        bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// UserBackupCode is a single hashed recovery code
+type UserBackupCode struct {
+	ID        int64
+	UserID    int64
+	CodeHash  string
+	Used      bool
+	UsedAt    *time.Time
+	CreatedAt time.Time
+}
+
+// MFAChallenge is a short-lived token issued after password auth when MFA is required
+type MFAChallenge struct {
+	ID            int64
+	UserID        int64
+	ChallengeHash string
+	ExpiresAt     time.Time
+	CompletedAt   *time.Time
+	CreatedAt     time.Time
+}

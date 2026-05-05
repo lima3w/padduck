@@ -93,6 +93,16 @@ export const verifyEmail = (token) =>
 export const resendVerification = (email) =>
   noAuthApi.post('/auth/resend-verification', { email })
 
+export const verifyMFA = (mfaChallenge, code) =>
+  noAuthApi.post('/auth/verify-mfa', { mfa_challenge: mfaChallenge, code })
+
+// MFA (authenticated)
+export const getMFAStatus = () => api.get('/auth/me/mfa')
+export const setupTOTP = () => api.post('/auth/me/mfa/setup')
+export const confirmTOTP = (code) => api.post('/auth/me/mfa/confirm', { code })
+export const disableTOTP = (code) => api.delete('/auth/me/mfa', { data: { code } })
+export const regenerateBackupCodes = (code) => api.post('/auth/me/mfa/backup-codes', { code })
+
 // Admin config
 export const getAdminConfig = () => api.get('/admin/config')
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
