@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/models"
 )
 
 type SearchRequest struct {
@@ -26,8 +27,9 @@ func (h *Handler) SearchSections(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Return empty array if nil
 	if sections == nil {
-		sections = make([]*struct{}, 0)
+		sections = make([]*models.Section, 0)
 	}
 
 	return c.JSON(sections)
@@ -51,8 +53,9 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Return empty array if nil
 	if subnets == nil {
-		subnets = make([]*struct{}, 0)
+		subnets = make([]*models.Subnet, 0)
 	}
 
 	return c.JSON(subnets)
@@ -76,8 +79,9 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	// Return empty array if nil
 	if ips == nil {
-		ips = make([]*struct{}, 0)
+		ips = make([]*models.IPAddress, 0)
 	}
 
 	return c.JSON(ips)
