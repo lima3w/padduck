@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getSubnet, getIPAddresses, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress } from '../api/client'
+import { getSubnet, getIPAddresses, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses } from '../api/client'
 import Modal from '../components/Modal'
 
 const STATUS_COLORS = {
@@ -15,6 +15,9 @@ export default function IPAddressesPage() {
   const [ips, setIPs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchStatus, setSearchStatus] = useState('')
+  const [searching, setSearching] = useState(false)
   const [modal, setModal] = useState(null) // null | 'create' | { assign: ip }
   const [form, setForm] = useState({ address: '', hostname: '', status: 'available', assigned_to: '' })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -25,6 +28,8 @@ export default function IPAddressesPage() {
   async function load() {
     try {
       setLoading(true)
+      setSearchQuery('')
+      setSearchStatus('')
       const [subRes, ipRes] = await Promise.all([getSubnet(subnetID), getIPAddresses(subnetID)])
       setSubnet(subRes.data)
       setIPs(ipRes.data)
@@ -33,6 +38,29 @@ export default function IPAddressesPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleSearch(e) {
+    e.preventDefault()
+    if (!searchQuery.trim() && !searchStatus) {
+      load()
+      return
+    }
+    try {
+      setSearching(true)
+      const res = await searchIPAddresses(subnetID, searchQuery, searchStatus)
+      setIPs(res.data)
+    } catch {
+      setError('Failed to search IP addresses')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function handleClearSearch() {
+    setSearchQuery('')
+    setSearchStatus('')
+    load()
   }
 
   function openCreate() {
@@ -114,6 +142,44 @@ export default function IPAddressesPage() {
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+
+      <div className="mb-4">
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Search IP addresses..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <select
+            value={searchStatus}
+            onChange={e => setSearchStatus(e.target.value)}
+            className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Statuses</option>
+            <option value="available">Available</option>
+            <option value="assigned">Assigned</option>
+            <option value="reserved">Reserved</option>
+          </select>
+          <button
+            type="submit"
+            disabled={searching}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50"
+          >
+            {searching ? 'Searching...' : 'Search'}
+          </button>
+          {(searchQuery || searchStatus) && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm font-medium"
+            >
+              Clear
+            </button>
+          )}
+        </form>
+      </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">

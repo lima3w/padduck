@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getSection, getSubnets, createSubnet, updateSubnet, deleteSubnet } from '../api/client'
+import { getSection, getSubnets, createSubnet, updateSubnet, deleteSubnet, searchSubnets } from '../api/client'
 import Modal from '../components/Modal'
 
 export default function SubnetsPage() {
@@ -10,6 +10,8 @@ export default function SubnetsPage() {
   const [subnets, setSubnets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searching, setSearching] = useState(false)
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState({ network_address: '', prefix_length: '', description: '' })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -20,6 +22,7 @@ export default function SubnetsPage() {
   async function load() {
     try {
       setLoading(true)
+      setSearchQuery('')
       const [secRes, subRes] = await Promise.all([getSection(sectionID), getSubnets(sectionID)])
       setSection(secRes.data)
       setSubnets(subRes.data)
@@ -28,6 +31,28 @@ export default function SubnetsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleSearch(e) {
+    e.preventDefault()
+    if (!searchQuery.trim()) {
+      load()
+      return
+    }
+    try {
+      setSearching(true)
+      const res = await searchSubnets(sectionID, searchQuery)
+      setSubnets(res.data)
+    } catch {
+      setError('Failed to search subnets')
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  function handleClearSearch() {
+    setSearchQuery('')
+    load()
   }
 
   function openCreate() {
@@ -90,6 +115,34 @@ export default function SubnetsPage() {
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+
+      <div className="mb-4">
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Search subnets..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            disabled={searching}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50"
+          >
+            {searching ? 'Searching...' : 'Search'}
+          </button>
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm font-medium"
+            >
+              Clear
+            </button>
+          )}
+        </form>
+      </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
