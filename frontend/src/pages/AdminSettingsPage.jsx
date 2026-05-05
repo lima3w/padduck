@@ -168,6 +168,12 @@ export default function AdminSettingsPage() {
               </span>
             </label>
 
+            {config.require_email_verification === 'true' && !config.smtp_host && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+                Email verification is enabled but SMTP is not configured — verification emails will not be sent and new users will be stuck. Configure SMTP on the Email tab first.
+              </div>
+            )}
+
             <label className="flex items-center gap-3 mb-4 cursor-pointer">
               <input
                 type="checkbox"

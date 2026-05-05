@@ -15,11 +15,16 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [showToken, setShowToken] = useState(false)
   const [generatedToken, setGeneratedToken] = useState('')
+  const [showResend, setShowResend] = useState(false)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendStatus, setResendStatus] = useState('')
 
   const handlePasswordLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setShowResend(false)
+    setResendStatus('')
 
     try {
       const response = await client.login(username, password)
@@ -27,10 +32,21 @@ export default function LoginPage() {
       login(token, user)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed')
+      const msg = err.response?.data?.error || 'Login failed'
+      setError(msg)
+      if (msg === 'email address not verified') {
+        setShowResend(true)
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleResendVerification = async () => {
+    if (!resendEmail) return
+    setResendStatus('sending')
+    await client.resendVerification(resendEmail)
+    setResendStatus('sent')
   }
 
   const handleGenerateToken = async (e) => {
@@ -124,6 +140,33 @@ export default function LoginPage() {
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
             {error}
+          </div>
+        )}
+
+        {showResend && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
+            <p className="text-yellow-800 font-medium mb-2">Need a new verification link?</p>
+            {resendStatus === 'sent' ? (
+              <p className="text-green-700">Verification email sent — check your inbox.</p>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                  placeholder="Your email address"
+                  className="flex-1 px-3 py-1.5 border border-yellow-300 rounded text-gray-800 text-sm focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendStatus === 'sending' || !resendEmail}
+                  className="px-3 py-1.5 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 disabled:opacity-50 transition whitespace-nowrap"
+                >
+                  {resendStatus === 'sending' ? 'Sending…' : 'Resend'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 

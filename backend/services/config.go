@@ -39,7 +39,15 @@ func (s *ConfigService) IsRegistrationEnabled() bool {
 	return val != "false"
 }
 
+func (s *ConfigService) IsSMTPConfigured() bool {
+	host, err := s.Get("smtp_host")
+	return err == nil && host != ""
+}
+
 func (s *ConfigService) IsEmailVerificationRequired() bool {
+	if !s.IsSMTPConfigured() {
+		return false
+	}
 	val, err := s.Get("require_email_verification")
 	if err != nil {
 		return false
