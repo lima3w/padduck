@@ -1,15 +1,24 @@
 import axios from 'axios'
 
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Add token to requests if it exists
+// Add auth token and CSRF token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  const csrfToken = getCookie('csrf-token')
+  if (csrfToken) {
+    config.headers['X-CSRF-Token'] = csrfToken
   }
   return config
 })
