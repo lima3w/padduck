@@ -22,15 +22,12 @@ export default function LoginPage() {
       const response = await client.generateTokenAnonymous(userId, tokenName)
       const { token } = response.data
 
-      // Fetch user data
-      const userResponse = await client.generateTokenForMe(tokenName)
       const userData = {
         id: parseInt(userId),
         username: `User ${userId}`,
         email: `user${userId}@localhost`,
       }
 
-      // Login
       login(token, userData)
       setGeneratedToken(token)
       setShowToken(true)
