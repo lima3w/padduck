@@ -17,9 +17,6 @@ func NewHandler(service *services.Service) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(app *fiber.App) {
-	// Add recovery middleware to handle panics
-	app.Use(recoveryMiddleware)
-
 	// Add rate limiting middleware (100 requests per minute per IP)
 	app.Use(h.RateLimitMiddleware(100, 1*time.Minute))
 
@@ -85,19 +82,6 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
 
 	log.Println("Routes registered successfully")
-}
-
-func recoveryMiddleware(c *fiber.Ctx) error {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("PANIC: %v", err)
-			c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
-				Error: "Internal server error",
-				Code:  string(ErrInternalServer),
-			})
-		}
-	}()
-	return c.Next()
 }
 
 func loggingMiddleware(c *fiber.Ctx) error {
