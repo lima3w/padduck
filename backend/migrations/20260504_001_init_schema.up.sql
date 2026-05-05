@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS ip_addresses (
     hostname VARCHAR(255),
     status VARCHAR(50) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'assigned', 'reserved')),
     assigned_to VARCHAR(255),
+    assigned_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(subnet_id, address)
