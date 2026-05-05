@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -108,7 +109,7 @@ func (h *Handler) RateLimitMiddleware(limit int, window time.Duration) fiber.Han
 		if !rl.Allow(ip) {
 			return RespondError(c, fiber.StatusTooManyRequests, "RATE_LIMIT_EXCEEDED",
 				"Too many requests. Please try again later.",
-				"Rate limit: "+string(rune(limit))+" requests per "+window.String())
+				fmt.Sprintf("Rate limit: %d requests per %s", limit, window.String()))
 		}
 
 		return c.Next()
