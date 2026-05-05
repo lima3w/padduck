@@ -81,6 +81,23 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
 	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
 
+	// VRFs routes
+	vrfs := protected.Group("/vrfs")
+	vrfs.Get("", h.ListVRFs)
+	vrfs.Post("", h.CreateVRF)
+	vrfs.Get("/:id", h.GetVRF)
+	vrfs.Put("/:id", h.UpdateVRF)
+	vrfs.Delete("/:id", h.DeleteVRF)
+	vrfs.Get("/:vrfID/vlans", h.ListVLANsByVRF)
+
+	// VLANs routes (top-level)
+	vlans := protected.Group("/vlans")
+	vlans.Get("", h.ListVLANs)
+	vlans.Post("", h.CreateVLAN)
+	vlans.Get("/:id", h.GetVLAN)
+	vlans.Put("/:id", h.UpdateVLAN)
+	vlans.Delete("/:id", h.DeleteVLAN)
+
 	log.Println("Routes registered successfully")
 }
 

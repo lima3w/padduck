@@ -481,3 +481,139 @@ func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, quer
 	}
 	return ips, rows.Err()
 }
+
+// VRF operations
+
+func (r *Repository) CreateVRF(ctx context.Context, name, rd, description string) (*models.VRF, error) {
+	query := `INSERT INTO vrfs (name, route_distinguisher, description)
+	          VALUES ($1, $2, $3)
+	          RETURNING id, name, route_distinguisher, description, created_at, updated_at`
+	vrf := &models.VRF{}
+	err := r.db.QueryRow(ctx, query, name, rd, description).Scan(
+		&vrf.ID, &vrf.Name, &vrf.RouteDistinguisher, &vrf.Description, &vrf.CreatedAt, &vrf.UpdatedAt,
+	)
+	return vrf, err
+}
+
+func (r *Repository) GetVRFByID(ctx context.Context, id int64) (*models.VRF, error) {
+	query := `SELECT id, name, route_distinguisher, description, created_at, updated_at FROM vrfs WHERE id = $1`
+	vrf := &models.VRF{}
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&vrf.ID, &vrf.Name, &vrf.RouteDistinguisher, &vrf.Description, &vrf.CreatedAt, &vrf.UpdatedAt,
+	)
+	return vrf, err
+}
+
+func (r *Repository) ListAllVRFs(ctx context.Context) ([]*models.VRF, error) {
+	query := `SELECT id, name, route_distinguisher, description, created_at, updated_at FROM vrfs ORDER BY name ASC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vrfs := make([]*models.VRF, 0)
+	for rows.Next() {
+		vrf := &models.VRF{}
+		err := rows.Scan(&vrf.ID, &vrf.Name, &vrf.RouteDistinguisher, &vrf.Description, &vrf.CreatedAt, &vrf.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		vrfs = append(vrfs, vrf)
+	}
+	return vrfs, rows.Err()
+}
+
+func (r *Repository) UpdateVRF(ctx context.Context, id int64, name, rd, description string) (*models.VRF, error) {
+	query := `UPDATE vrfs SET name = $1, route_distinguisher = $2, description = $3, updated_at = CURRENT_TIMESTAMP
+	          WHERE id = $4
+	          RETURNING id, name, route_distinguisher, description, created_at, updated_at`
+	vrf := &models.VRF{}
+	err := r.db.QueryRow(ctx, query, name, rd, description, id).Scan(
+		&vrf.ID, &vrf.Name, &vrf.RouteDistinguisher, &vrf.Description, &vrf.CreatedAt, &vrf.UpdatedAt,
+	)
+	return vrf, err
+}
+
+func (r *Repository) DeleteVRF(ctx context.Context, id int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM vrfs WHERE id = $1`, id)
+	return err
+}
+
+// VLAN operations
+
+func (r *Repository) CreateVLAN(ctx context.Context, vrfID *int64, vlanID int, name, description string) (*models.VLAN, error) {
+	query := `INSERT INTO vlans (vrf_id, vlan_id, name, description)
+	          VALUES ($1, $2, $3, $4)
+	          RETURNING id, vrf_id, vlan_id, name, description, created_at, updated_at`
+	vlan := &models.VLAN{}
+	err := r.db.QueryRow(ctx, query, vrfID, vlanID, name, description).Scan(
+		&vlan.ID, &vlan.VRFID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
+	)
+	return vlan, err
+}
+
+func (r *Repository) GetVLANByID(ctx context.Context, id int64) (*models.VLAN, error) {
+	query := `SELECT id, vrf_id, vlan_id, name, description, created_at, updated_at FROM vlans WHERE id = $1`
+	vlan := &models.VLAN{}
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&vlan.ID, &vlan.VRFID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
+	)
+	return vlan, err
+}
+
+func (r *Repository) ListAllVLANs(ctx context.Context) ([]*models.VLAN, error) {
+	query := `SELECT id, vrf_id, vlan_id, name, description, created_at, updated_at FROM vlans ORDER BY vlan_id ASC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vlans := make([]*models.VLAN, 0)
+	for rows.Next() {
+		vlan := &models.VLAN{}
+		err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		vlans = append(vlans, vlan)
+	}
+	return vlans, rows.Err()
+}
+
+func (r *Repository) ListVLANsByVRF(ctx context.Context, vrfID int64) ([]*models.VLAN, error) {
+	query := `SELECT id, vrf_id, vlan_id, name, description, created_at, updated_at FROM vlans WHERE vrf_id = $1 ORDER BY vlan_id ASC`
+	rows, err := r.db.Query(ctx, query, vrfID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vlans := make([]*models.VLAN, 0)
+	for rows.Next() {
+		vlan := &models.VLAN{}
+		err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		vlans = append(vlans, vlan)
+	}
+	return vlans, rows.Err()
+}
+
+func (r *Repository) UpdateVLAN(ctx context.Context, id int64, name, description string) (*models.VLAN, error) {
+	query := `UPDATE vlans SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP
+	          WHERE id = $3
+	          RETURNING id, vrf_id, vlan_id, name, description, created_at, updated_at`
+	vlan := &models.VLAN{}
+	err := r.db.QueryRow(ctx, query, name, description, id).Scan(
+		&vlan.ID, &vlan.VRFID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
+	)
+	return vlan, err
+}
+
+func (r *Repository) DeleteVLAN(ctx context.Context, id int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM vlans WHERE id = $1`, id)
+	return err
+}

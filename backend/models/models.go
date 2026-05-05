@@ -58,3 +58,24 @@ type IPAddress struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
+
+// VRF represents a Virtual Routing and Forwarding instance
+type VRF struct {
+	ID                 int64
+	Name               string
+	RouteDistinguisher string
+	Description        string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+// VLAN represents a Virtual LAN segment
+type VLAN struct {
+	ID          int64
+	VRFID       *int64
+	VlanID      int
+	Name        string
+	Description string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
