@@ -25,6 +25,9 @@ API Stabilization
 ## v0.8.0
 VLAN/VRF
 
+## v0.8.5
+User Authentication System
+
 ## v0.9.0
 Discovery
 

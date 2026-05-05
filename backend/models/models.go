@@ -4,12 +4,14 @@ import "time"
 
 // User represents a system user
 type User struct {
-	ID        int64
-	Username  string
-	Email     string
-	Role      string // admin, user, viewer
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID           int64
+	Username     string
+	Email        string
+	PasswordHash string
+	Role         string // admin, user, viewer
+	LastLoginAt  *time.Time
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // APIToken represents an API authentication token
@@ -20,6 +22,17 @@ type APIToken struct {
 	Name      string
 	LastUsedAt *time.Time
 	ExpiresAt *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// PasswordReset represents a password reset request
+type PasswordReset struct {
+	ID        int64
+	UserID    int64
+	TokenHash string
+	ExpiresAt time.Time
+	UsedAt    *time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

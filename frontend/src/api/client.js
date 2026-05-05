@@ -72,6 +72,9 @@ const noAuthApi = axios.create({
 export const generateTokenAnonymous = (userId, tokenName) =>
   noAuthApi.post(`/auth/tokens/${userId}`, { token_name: tokenName })
 
+export const login = (username, password) =>
+  noAuthApi.post('/auth/login', { username, password })
+
 // Search
 export const searchSections = (query, limit = 50, offset = 0) =>
   api.post('/sections/search', { query, limit, offset })

@@ -25,11 +25,11 @@ func (r *Repository) Ping(ctx context.Context) error {
 // User operations
 
 func (r *Repository) CreateUser(ctx context.Context, username, email string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, role, created_at, updated_at`
+	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, password_hash, role, last_login_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -37,15 +37,131 @@ func (r *Repository) CreateUser(ctx context.Context, username, email string) (*m
 }
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	query := `SELECT id, username, email, role, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Role, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users WHERE username = $1`
+	row := r.db.QueryRow(ctx, query, username)
+
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
+	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users ORDER BY created_at DESC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]*models.User, 0)
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, rows.Err()
+}
+
+func (r *Repository) CreateUserWithPassword(ctx context.Context, username, email, passwordHash, role string) (*models.User, error) {
+	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, role, last_login_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role)
+
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *Repository) UpdateUserRole(ctx context.Context, userID int64, role string) (*models.User, error) {
+	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, password_hash, role, last_login_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, userID, role)
+
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *Repository) DeleteUser(ctx context.Context, userID int64) error {
+	query := `DELETE FROM users WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+func (r *Repository) UpdateLastLogin(ctx context.Context, userID int64) error {
+	query := `UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	query := `SELECT id, username, email, password_hash, role, last_login_at, created_at, updated_at FROM users WHERE email = $1`
+	row := r.db.QueryRow(ctx, query, email)
+
+	user := &models.User{}
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *Repository) CreatePasswordReset(ctx context.Context, userID int64, tokenHash string) (*models.PasswordReset, error) {
+	query := `INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '1 hour') RETURNING id, user_id, token_hash, expires_at, used_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, userID, tokenHash)
+
+	reset := &models.PasswordReset{}
+	err := row.Scan(&reset.ID, &reset.UserID, &reset.TokenHash, &reset.ExpiresAt, &reset.UsedAt, &reset.CreatedAt, &reset.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return reset, nil
+}
+
+func (r *Repository) GetPasswordResetByToken(ctx context.Context, tokenHash string) (*models.PasswordReset, error) {
+	query := `SELECT id, user_id, token_hash, expires_at, used_at, created_at, updated_at FROM password_resets WHERE token_hash = $1`
+	row := r.db.QueryRow(ctx, query, tokenHash)
+
+	reset := &models.PasswordReset{}
+	err := row.Scan(&reset.ID, &reset.UserID, &reset.TokenHash, &reset.ExpiresAt, &reset.UsedAt, &reset.CreatedAt, &reset.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return reset, nil
+}
+
+func (r *Repository) MarkPasswordResetAsUsed(ctx context.Context, resetID int64) error {
+	query := `UPDATE password_resets SET used_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, resetID)
+	return err
+}
+
+func (r *Repository) UpdateUserPassword(ctx context.Context, userID int64, passwordHash string) error {
+	query := `UPDATE users SET password_hash = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID, passwordHash)
+	return err
 }
 
 // Section operations

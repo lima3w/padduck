@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/utils"
 )
 
 type GenerateTokenRequest struct {
@@ -29,6 +30,16 @@ type UserResponse struct {
 	Email     string `json:"email"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+}
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string       `json:"token"`
+	User  UserResponse `json:"user"`
 }
 
 // GenerateToken handles POST /api/v1/auth/tokens
@@ -172,4 +183,69 @@ func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(response)
+}
+
+// Login handles POST /api/v1/auth/login
+func (h *Handler) Login(c *fiber.Ctx) error {
+	req := new(LoginRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if req.Username == "" || req.Password == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username and password required"})
+	}
+
+	user, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password)
+	if err != nil {
+		log.Printf("Authentication error for user %s: %v", req.Username, err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid username or password"})
+	}
+
+	// Update last login time
+	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
+		log.Printf("Error updating last login: %v", err)
+	}
+
+	token, err := h.service.GenerateAPIToken(c.Context(), user.ID, "web-session")
+	if err != nil {
+		log.Printf("Error generating token for user %d: %v", user.ID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
+	}
+
+	return c.JSON(LoginResponse{
+		Token: token,
+		User: UserResponse{
+			ID:        user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt.String(),
+			UpdatedAt: user.UpdatedAt.String(),
+		},
+	})
+}
+
+// Logout handles POST /api/v1/auth/logout
+func (h *Handler) Logout(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+	}
+
+	authHeader := c.Get("Authorization")
+	if authHeader == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing authorization header"})
+	}
+
+	var token string
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		token = authHeader[7:]
+	}
+
+	if err := h.service.RevokeSessionToken(c.Context(), userID, token); err != nil {
+		log.Printf("Error revoking session token for user %d: %v", userID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to logout"})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }

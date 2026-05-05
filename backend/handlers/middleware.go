@@ -30,6 +30,13 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Invalid or expired token", err.Error())
 	}
 
+	// Check session expiration
+	if user.LastLoginAt != nil {
+		if h.service.IsSessionExpired(user.LastLoginAt) {
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Session expired, please login again")
+		}
+	}
+
 	// Store user in context for handlers to access
 	c.Locals("user", user)
 	c.Locals("userID", user.ID)

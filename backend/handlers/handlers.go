@@ -28,19 +28,35 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	// Auth routes (public - no authentication required)
 	auth := api.Group("/auth")
+	auth.Post("/login", h.Login)
 	auth.Post("/tokens/:userID", h.GenerateToken)
 	auth.Get("/tokens/:userID", h.ListTokens)
 	auth.Delete("/tokens/:tokenID", h.RevokeToken)
+	auth.Post("/request-password-reset", h.RequestPasswordReset)
+	auth.Post("/reset-password", h.ResetPassword)
+
+	// CSRF token endpoint
+	api.Get("/csrf-token", h.GetCSRFToken)
 
 	// Protected routes (require authentication)
 	protected := api.Group("")
 	protected.Use(h.AuthMiddleware)
+	protected.Use(h.CSRFMiddleware)
 
 	// User profile endpoints (protected)
 	me := protected.Group("/auth/me")
 	me.Get("", h.GetCurrentUser)
+	me.Post("/logout", h.Logout)
 	me.Post("/tokens", h.GenerateTokenForMe)
 	me.Get("/tokens", h.ListMyTokens)
+
+	// User management endpoints (protected)
+	users := protected.Group("/users")
+	users.Get("", h.ListUsers)
+	users.Get("/:id", h.GetUser)
+	users.Post("", h.CreateUser)
+	users.Put("/:id/role", h.UpdateUserRole)
+	users.Delete("/:id", h.DeleteUser)
 
 	// Sections routes
 	sections := protected.Group("/sections")
