@@ -398,3 +398,86 @@ func (r *Repository) DeleteAPIToken(ctx context.Context, tokenID int64) error {
 	_, err := r.db.Exec(ctx, query, tokenID)
 	return err
 }
+
+// Search operations
+
+func (r *Repository) SearchSections(ctx context.Context, query string, limit, offset int64) ([]*models.Section, error) {
+	sql := `SELECT id, name, description, created_by, created_at, updated_at FROM sections
+	        WHERE name ILIKE $1 OR description ILIKE $1
+	        ORDER BY created_at DESC
+	        LIMIT $2 OFFSET $3`
+	searchQuery := "%" + query + "%"
+	rows, err := r.db.Query(ctx, sql, searchQuery, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sections := make([]*models.Section, 0)
+	for rows.Next() {
+		section := &models.Section{}
+		err := rows.Scan(&section.ID, &section.Name, &section.Description, &section.CreatedBy, &section.CreatedAt, &section.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		sections = append(sections, section)
+	}
+	return sections, rows.Err()
+}
+
+func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
+	sql := `SELECT id, section_id, network_address, prefix_length, description, created_at, updated_at FROM subnets
+	        WHERE section_id = $1 AND (network_address ILIKE $2 OR description ILIKE $2)
+	        ORDER BY network_address ASC
+	        LIMIT $3 OFFSET $4`
+	searchQuery := "%" + query + "%"
+	rows, err := r.db.Query(ctx, sql, sectionID, searchQuery, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	subnets := make([]*models.Subnet, 0)
+	for rows.Next() {
+		subnet := &models.Subnet{}
+		err := rows.Scan(&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength, &subnet.Description, &subnet.CreatedAt, &subnet.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, subnet)
+	}
+	return subnets, rows.Err()
+}
+
+func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64) ([]*models.IPAddress, error) {
+	sql := `SELECT id, subnet_id, address, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses
+	        WHERE subnet_id = $1 AND (address ILIKE $2 OR hostname ILIKE $2 OR assigned_to ILIKE $2)`
+	args := []interface{}{subnetID, "%" + query + "%"}
+
+	if status != "" {
+		sql += " AND status = $3"
+		args = append(args, status)
+		sql += " ORDER BY address ASC LIMIT $4 OFFSET $5"
+		args = append(args, limit, offset)
+	} else {
+		sql += " ORDER BY address ASC LIMIT $3 OFFSET $4"
+		args = append(args, limit, offset)
+	}
+
+	rows, err := r.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ips := make([]*models.IPAddress, 0)
+	for rows.Next() {
+		ip := &models.IPAddress{}
+		err := rows.Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo, &ip.CreatedAt, &ip.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, rows.Err()
+}

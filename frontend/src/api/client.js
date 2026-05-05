@@ -71,3 +71,13 @@ const noAuthApi = axios.create({
 
 export const generateTokenAnonymous = (userId, tokenName) =>
   noAuthApi.post(`/auth/tokens/${userId}`, { token_name: tokenName })
+
+// Search
+export const searchSections = (query, limit = 50, offset = 0) =>
+  api.post('/sections/search', { query, limit, offset })
+
+export const searchSubnets = (sectionID, query, limit = 50, offset = 0) =>
+  api.post(`/subnets/search/${sectionID}`, { query, limit, offset })
+
+export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offset = 0) =>
+  api.post(`/ip-addresses/search/${subnetID}`, { query, status, limit, offset })

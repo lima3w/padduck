@@ -42,6 +42,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	sections := protected.Group("/sections")
 	sections.Get("", h.ListSections)
 	sections.Post("", h.CreateSection)
+	sections.Post("/search", h.SearchSections)
 	sections.Get("/:id", h.GetSection)
 	sections.Put("/:id", h.UpdateSection)
 	sections.Delete("/:id", h.DeleteSection)
@@ -57,6 +58,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	subnet.Put("/:id", h.UpdateSubnet)
 	subnet.Delete("/:id", h.DeleteSubnet)
 	subnet.Get("/:subnetID/utilization", h.GetSubnetUtilization)
+	subnet.Post("/search/:sectionID", h.SearchSubnets)
 
 	// IP Addresses collection routes (nested under subnets)
 	ipAddresses := subnets.Group("/:subnetID/ip-addresses")
@@ -73,6 +75,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Get("/:id/lease-status", h.IsIPLeaseExpired)
 	ipAddress.Post("/:id/release-expired", h.ReleaseExpiredLease)
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
+	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
 
 	log.Println("Routes registered successfully")
 }
