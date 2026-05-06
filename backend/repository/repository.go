@@ -534,6 +534,84 @@ func (r *Repository) DeleteAPIToken(ctx context.Context, tokenID int64) error {
 	return err
 }
 
+// Session operations
+
+func (r *Repository) CreateSession(ctx context.Context, userID int64, tokenHash, deviceName, ipAddress, userAgent string, absoluteExpiresAt time.Time) (*models.Session, error) {
+	query := `INSERT INTO sessions (user_id, token_hash, device_name, ip_address, user_agent, absolute_expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, userID, tokenHash, deviceName, ipAddress, userAgent, absoluteExpiresAt)
+
+	s := &models.Session{}
+	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.CreatedAt, &s.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (r *Repository) GetSessionByHash(ctx context.Context, tokenHash string) (*models.Session, error) {
+	query := `SELECT id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, created_at, updated_at FROM sessions WHERE token_hash = $1`
+	row := r.db.QueryRow(ctx, query, tokenHash)
+
+	s := &models.Session{}
+	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.CreatedAt, &s.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (r *Repository) ListSessionsByUser(ctx context.Context, userID int64) ([]*models.Session, error) {
+	query := `SELECT id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, created_at, updated_at FROM sessions WHERE user_id = $1 ORDER BY last_used_at DESC`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sessions := make([]*models.Session, 0)
+	for rows.Next() {
+		s := &models.Session{}
+		err := rows.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.CreatedAt, &s.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, s)
+	}
+	return sessions, rows.Err()
+}
+
+func (r *Repository) UpdateSessionLastUsed(ctx context.Context, sessionID int64) error {
+	query := `UPDATE sessions SET last_used_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, sessionID)
+	return err
+}
+
+func (r *Repository) DeleteSession(ctx context.Context, sessionID int64) error {
+	query := `DELETE FROM sessions WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, sessionID)
+	return err
+}
+
+func (r *Repository) DeleteSessionByHash(ctx context.Context, tokenHash string) error {
+	query := `DELETE FROM sessions WHERE token_hash = $1`
+	_, err := r.db.Exec(ctx, query, tokenHash)
+	return err
+}
+
+func (r *Repository) DeleteAllUserSessions(ctx context.Context, userID int64) error {
+	query := `DELETE FROM sessions WHERE user_id = $1`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+func (r *Repository) DeleteExpiredSessions(ctx context.Context) error {
+	query := `DELETE FROM sessions WHERE absolute_expires_at < CURRENT_TIMESTAMP`
+	_, err := r.db.Exec(ctx, query)
+	return err
+}
+
 // Search operations
 
 func (r *Repository) SearchSections(ctx context.Context, query string, limit, offset int64) ([]*models.Section, error) {

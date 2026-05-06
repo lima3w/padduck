@@ -43,7 +43,7 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 		log.Printf("Error updating last login for user %d: %v", user.ID, err)
 	}
 
-	token, err := h.service.GenerateAPIToken(c.Context(), user.ID, "web-session")
+	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
 	}

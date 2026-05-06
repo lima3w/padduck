@@ -9,6 +9,15 @@ import (
 	"ipam-next/services"
 )
 
+type SessionResponse struct {
+	ID                int64  `json:"id"`
+	DeviceName        string `json:"device_name"`
+	IPAddress         string `json:"ip_address"`
+	LastUsedAt        string `json:"last_used_at"`
+	AbsoluteExpiresAt string `json:"absolute_expires_at"`
+	CreatedAt         string `json:"created_at"`
+}
+
 func isAccountLocked(err error) bool {
 	return errors.Is(err, services.ErrAccountLocked)
 }
@@ -255,9 +264,9 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		log.Printf("Error updating last login: %v", err)
 	}
 
-	token, err := h.service.GenerateAPIToken(c.Context(), user.ID, "web-session")
+	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
-		log.Printf("Error generating token for user %d: %v", user.ID, err)
+		log.Printf("Error creating session for user %d: %v", user.ID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
 	}
 
@@ -298,14 +307,89 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		token = authHeader[7:]
 	}
 
-	if err := h.service.RevokeSessionToken(c.Context(), userID, token); err != nil {
-		log.Printf("Error revoking session token for user %d: %v", userID, err)
+	if err := h.service.RevokeSession(c.Context(), userID, token); err != nil {
+		log.Printf("Error revoking session for user %d: %v", userID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to logout"})
 	}
 
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "logout", ResourceType: "session",
+	})
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// ListMySessions handles GET /api/v1/auth/me/sessions
+func (h *Handler) ListMySessions(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+	}
+
+	sessions, err := h.service.ListUserSessions(c.Context(), userID)
+	if err != nil {
+		log.Printf("Error listing sessions for user %d: %v", userID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	response := make([]SessionResponse, 0, len(sessions))
+	for _, s := range sessions {
+		response = append(response, SessionResponse{
+			ID:                s.ID,
+			DeviceName:        s.DeviceName,
+			IPAddress:         s.IPAddress,
+			LastUsedAt:        s.LastUsedAt.String(),
+			AbsoluteExpiresAt: s.AbsoluteExpiresAt.String(),
+			CreatedAt:         s.CreatedAt.String(),
+		})
+	}
+
+	return c.JSON(response)
+}
+
+// RevokeMySession handles DELETE /api/v1/auth/me/sessions/:sessionID
+func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+	}
+
+	sessionID, err := c.ParamsInt("sessionID")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid session ID"})
+	}
+
+	if err := h.service.RevokeSessionByID(c.Context(), userID, int64(sessionID)); err != nil {
+		log.Printf("Error revoking session %d for user %d: %v", sessionID, userID, err)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "session not found"})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	sid := int64(sessionID)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "session_revoked",
+		ResourceType: "session", ResourceID: &sid,
+	})
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// LogoutAllDevices handles DELETE /api/v1/auth/me/sessions
+func (h *Handler) LogoutAllDevices(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(int64)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+	}
+
+	if err := h.service.RevokeAllSessions(c.Context(), userID); err != nil {
+		log.Printf("Error revoking all sessions for user %d: %v", userID, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "logout_all_devices", ResourceType: "session",
 	})
 
 	return c.SendStatus(fiber.StatusNoContent)

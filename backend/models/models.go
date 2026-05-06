@@ -46,6 +46,20 @@ type UserApproval struct {
 	UpdatedAt       time.Time
 }
 
+// Session represents an authenticated web session
+type Session struct {
+	ID                int64
+	UserID            int64
+	TokenHash         string
+	DeviceName        string
+	IPAddress         string
+	UserAgent         string
+	LastUsedAt        time.Time
+	AbsoluteExpiresAt time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
 // APIToken represents an API authentication token
 type APIToken struct {
 	ID        int64
