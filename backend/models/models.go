@@ -164,3 +164,39 @@ type MFAChallenge struct {
 	CompletedAt   *time.Time
 	CreatedAt     time.Time
 }
+
+// LoginAttempt records each login attempt for brute force detection and audit
+type LoginAttempt struct {
+	ID            int64
+	Username      string
+	IPAddress     string
+	UserAgent     string
+	Success       bool
+	FailureReason string
+	CreatedAt     time.Time
+}
+
+// AccountLockout records an account lockout event with unlock metadata
+type AccountLockout struct {
+	ID                   int64
+	UserID               int64
+	LockedAt             time.Time
+	UnlockAt             time.Time
+	UnlockTokenHash      *string
+	UnlockTokenExpiresAt *time.Time
+	UnlockTokenUsedAt    *time.Time
+	Reason               string
+	LockoutCount         int
+	UnlockedAt           *time.Time
+	UnlockedBy           *int64
+	CreatedAt            time.Time
+}
+
+// SecurityNotification tracks sent security alerts for rate limiting
+type SecurityNotification struct {
+	ID               int64
+	UserID           int64
+	NotificationType string
+	IPAddress        string
+	SentAt           time.Time
+}

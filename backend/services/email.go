@@ -187,3 +187,35 @@ Unfortunately, your registration was not approved.
 	}
 	return e.Send(to, subject, body)
 }
+
+func (e *EmailService) SendAccountLockedEmail(to, username, unlockURL string, duration interface{}) error {
+	subject := "Your account has been temporarily locked"
+	body := fmt.Sprintf(`Hello %s,
+
+Your account has been temporarily locked due to multiple failed login attempts.
+
+To unlock your account immediately, click the link below:
+
+%s
+
+This link will expire in 24 hours. Your account will also unlock automatically after the lockout period ends.
+
+If you did not attempt to log in, your password may be compromised. Please change it after unlocking your account.
+`, username, unlockURL)
+	return e.Send(to, subject, body)
+}
+
+func (e *EmailService) SendFailedLoginAlertEmail(to, username, ipAddress string, count int) error {
+	subject := "Multiple failed login attempts detected"
+	body := fmt.Sprintf(`Hello %s,
+
+We detected %d failed login attempts on your account from IP address %s.
+
+If this was not you, your account may be under a brute force attack. We recommend:
+- Changing your password
+- Enabling two-factor authentication if not already enabled
+
+If this was you, please verify your password and try again.
+`, username, count, ipAddress)
+	return e.Send(to, subject, body)
+}

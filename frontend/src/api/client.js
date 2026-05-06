@@ -108,6 +108,11 @@ export const getAdminConfig = () => api.get('/admin/config')
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
 
+// Security / login history
+export const getLoginHistory = () => api.get('/user/login-history')
+export const requestAccountUnlock = (username) => noAuthApi.post('/auth/unlock', { username })
+export const verifyAccountUnlock = (token) => noAuthApi.get(`/auth/unlock?token=${encodeURIComponent(token)}`)
+
 // Admin approvals
 export const listPendingApprovals = () => api.get('/admin/approvals')
 export const approveUser = (id) => api.post(`/admin/approvals/${id}/approve`)

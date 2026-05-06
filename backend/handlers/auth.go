@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
 )
+
+func isAccountLocked(err error) bool {
+	return errors.Is(err, services.ErrAccountLocked)
+}
 
 type GenerateTokenRequest struct {
 	TokenName string `json:"token_name"`
@@ -200,13 +205,18 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username and password required"})
 	}
 
-	result, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password)
+	ipAddress := c.IP()
+	userAgent := c.Get("User-Agent")
+
+	result, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password, ipAddress, userAgent)
 	if err != nil {
 		log.Printf("Authentication error for user %s: %v", req.Username, err)
-		switch err {
-		case services.ErrEmailNotVerified, services.ErrPendingApproval,
-			services.ErrAccountRejected, services.ErrAccountDisabled:
+		switch {
+		case err == services.ErrEmailNotVerified, err == services.ErrPendingApproval,
+			err == services.ErrAccountRejected, err == services.ErrAccountDisabled:
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		case isAccountLocked(err):
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "account temporarily locked due to too many failed login attempts"})
 		}
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid username or password"})
 	}

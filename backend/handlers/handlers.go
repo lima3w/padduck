@@ -37,6 +37,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	auth.Delete("/tokens/:tokenID", h.RevokeToken)
 	auth.Post("/request-password-reset", h.RequestPasswordReset)
 	auth.Post("/reset-password", h.ResetPassword)
+	auth.Post("/unlock", h.RequestUnlock)
+	auth.Get("/unlock", h.VerifyUnlock)
 
 	// CSRF token endpoint
 	api.Get("/csrf-token", h.GetCSRFToken)
@@ -60,6 +62,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	me.Post("/mfa/confirm", h.ConfirmTOTP)
 	me.Delete("/mfa", h.DisableTOTP)
 	me.Post("/mfa/backup-codes", h.RegenerateBackupCodes)
+
+	// Security / audit endpoints
+	user := protected.Group("/user")
+	user.Get("/login-history", h.GetLoginHistory)
 
 	// User management endpoints (protected)
 	users := protected.Group("/users")
@@ -133,6 +139,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/approvals", h.ListPendingApprovals)
 	admin.Post("/approvals/:id/approve", h.ApproveUser)
 	admin.Post("/approvals/:id/reject", h.RejectUser)
+	admin.Post("/users/:id/unlock", h.AdminUnlockUser)
 
 	log.Println("Routes registered successfully")
 }

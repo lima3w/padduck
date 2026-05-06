@@ -105,22 +105,33 @@ type AuthResult struct {
 }
 
 // AuthenticateUser verifies username and password.
+// ipAddress and userAgent are recorded for audit and brute-force detection.
 // When MFA is enabled, it returns an MFAChallenge instead of the full user.
-func (s *Service) AuthenticateUser(ctx context.Context, username, password string) (*AuthResult, error) {
+func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAddress, userAgent string) (*AuthResult, error) {
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("username and password required")
 	}
 
 	user, err := s.repository.GetUserByUsername(ctx, username)
 	if err != nil {
+		// Record attempt even for unknown usernames (best-effort)
+		s.ProcessFailedLogin(ctx, 0, username, ipAddress, userAgent, "user not found")
 		return nil, fmt.Errorf("user not found")
 	}
 
+	// Check lockout before verifying password (fail-fast, prevents enumeration)
+	if locked, lockout, _ := s.IsAccountLocked(ctx, user.ID); locked {
+		_ = s.repository.CreateLoginAttempt(ctx, username, ipAddress, userAgent, false, "account locked")
+		return nil, fmt.Errorf("%w; locked until %s", ErrAccountLocked, lockout.UnlockAt.Format(time.RFC3339))
+	}
+
 	if user.PasswordHash == "" {
+		s.ProcessFailedLogin(ctx, user.ID, username, ipAddress, userAgent, "no password set")
 		return nil, fmt.Errorf("user has no password set")
 	}
 
 	if !utils.VerifyPassword(user.PasswordHash, password) {
+		s.ProcessFailedLogin(ctx, user.ID, username, ipAddress, userAgent, "invalid password")
 		return nil, fmt.Errorf("invalid password")
 	}
 
@@ -144,6 +155,7 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password strin
 		return &AuthResult{MFARequired: true, MFAChallenge: challenge}, nil
 	}
 
+	s.RecordSuccessfulLogin(ctx, username, ipAddress, userAgent)
 	return &AuthResult{User: user}, nil
 }
 
