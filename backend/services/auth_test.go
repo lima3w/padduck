@@ -5,79 +5,185 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
 )
 
-// MockRepository implements a mock for testing
-type MockTokenRepository struct {
-	tokens map[string]*models.APIToken
-	users  map[int64]*models.User
-}
+func TestGenerateAPIToken_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
 
-func NewMockTokenRepository() *MockTokenRepository {
-	return &MockTokenRepository{
-		tokens: make(map[string]*models.APIToken),
-		users: map[int64]*models.User{
-			1: {ID: 1, Username: "admin", Email: "admin@localhost"},
+	tests := []struct {
+		name          string
+		userID        int64
+		tokenName     string
+		errorContains string
+	}{
+		{
+			name:          "userID zero",
+			userID:        0,
+			tokenName:     "my-token",
+			errorContains: "invalid user ID",
+		},
+		{
+			name:          "userID negative",
+			userID:        -1,
+			tokenName:     "my-token",
+			errorContains: "invalid user ID",
+		},
+		{
+			name:          "empty token name",
+			userID:        1,
+			tokenName:     "",
+			errorContains: "token name is required",
 		},
 	}
-}
 
-func (m *MockTokenRepository) CreateAPIToken(ctx context.Context, userID int64, tokenHash, name string) (*models.APIToken, error) {
-	token := &models.APIToken{
-		ID:        int64(len(m.tokens) + 1),
-		UserID:    userID,
-		TokenHash: tokenHash,
-		Name:      name,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.GenerateAPIToken(ctx, tt.userID, tt.tokenName)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errorContains)
+		})
 	}
-	m.tokens[tokenHash] = token
-	return token, nil
 }
 
-func (m *MockTokenRepository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*models.APIToken, error) {
-	token, ok := m.tokens[tokenHash]
-	if !ok {
-		return nil, assert.AnError
+func TestValidateAPIToken_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	t.Run("empty token", func(t *testing.T) {
+		_, err := svc.ValidateAPIToken(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "token is required")
+	})
+}
+
+func TestRevokeAPIToken_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		tokenID int64
+	}{
+		{"tokenID zero", 0},
+		{"tokenID negative", -1},
 	}
-	return token, nil
-}
 
-func (m *MockTokenRepository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*models.APIToken, error) {
-	tokens := make([]*models.APIToken, 0)
-	for _, token := range m.tokens {
-		if token.UserID == userID {
-			tokens = append(tokens, token)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := svc.RevokeAPIToken(ctx, tt.tokenID)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid token ID")
+		})
 	}
-	return tokens, nil
 }
 
-func (m *MockTokenRepository) UpdateAPITokenLastUsed(ctx context.Context, tokenID int64) error {
-	return nil
-}
+func TestListUserTokens_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
 
-func (m *MockTokenRepository) DeleteAPIToken(ctx context.Context, tokenID int64) error {
-	return nil
-}
-
-func (m *MockTokenRepository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	user, ok := m.users[id]
-	if !ok {
-		return nil, assert.AnError
+	tests := []struct {
+		name   string
+		userID int64
+	}{
+		{"userID zero", 0},
+		{"userID negative", -1},
 	}
-	return user, nil
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.ListUserTokens(ctx, tt.userID)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid user ID")
+		})
+	}
 }
 
-func TestGenerateAPIToken(t *testing.T) {
-	// This test verifies token generation creates a valid token
-	// In a real test, we'd use a full mock repository
-	// This is a placeholder for CI/CD
-	assert.True(t, true)
+func TestCreatePasswordResetToken_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	t.Run("empty email", func(t *testing.T) {
+		_, err := svc.CreatePasswordResetToken(ctx, "")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "email is required")
+	})
 }
 
-func TestValidateAPIToken(t *testing.T) {
-	// This test verifies token validation works correctly
-	// In a real test, we'd use a full mock repository
-	// This is a placeholder for CI/CD
-	assert.True(t, true)
+func TestResetPasswordWithToken_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name            string
+		token           string
+		newPasswordHash string
+		errorContains   string
+	}{
+		{
+			name:            "empty token",
+			token:           "",
+			newPasswordHash: "somehash",
+			errorContains:   "token and password hash required",
+		},
+		{
+			name:            "empty password hash",
+			token:           "sometoken",
+			newPasswordHash: "",
+			errorContains:   "token and password hash required",
+		},
+		{
+			name:            "both empty",
+			token:           "",
+			newPasswordHash: "",
+			errorContains:   "token and password hash required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := svc.ResetPasswordWithToken(ctx, tt.token, tt.newPasswordHash)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errorContains)
+		})
+	}
+}
+
+func TestAuthenticateUser_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name          string
+		username      string
+		password      string
+		errorContains string
+	}{
+		{
+			name:          "empty username",
+			username:      "",
+			password:      "secret",
+			errorContains: "username and password required",
+		},
+		{
+			name:          "empty password",
+			username:      "alice",
+			password:      "",
+			errorContains: "username and password required",
+		},
+		{
+			name:          "both empty",
+			username:      "",
+			password:      "",
+			errorContains: "username and password required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.AuthenticateUser(ctx, tt.username, tt.password, "127.0.0.1", "test-agent")
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errorContains)
+		})
+	}
 }

@@ -7,27 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateSection_EmptyName(t *testing.T) {
+func TestCreateVRF_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	_, err := svc.CreateSection(ctx, "", "some description", 1)
+	_, err := svc.CreateVRF(ctx, "", "rd:1", "some description")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "section name is required")
+	assert.Contains(t, err.Error(), "VRF name is required")
 }
 
-func TestCreateSection_ValidName_PassesValidation(t *testing.T) {
-	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
-	ctx := context.Background()
-
-	// A non-empty name passes validation and panics at the nil repo call,
-	// which means the validation guard was passed successfully.
-	assert.Panics(t, func() {
-		_, _ = svc.CreateSection(ctx, "My Section", "description", 1)
-	})
-}
-
-func TestGetSection_InvalidID(t *testing.T) {
+func TestGetVRF_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
@@ -36,20 +25,20 @@ func TestGetSection_InvalidID(t *testing.T) {
 		id   int64
 	}{
 		{"zero", 0},
-		{"negative five", -5},
-		{"negative one", -1},
+		{"negative", -1},
+		{"large negative", -999},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetSection(ctx, tt.id)
+			_, err := svc.GetVRF(ctx, tt.id)
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid section ID")
+			assert.Contains(t, err.Error(), "invalid VRF ID")
 		})
 	}
 }
 
-func TestUpdateSection_InvalidID(t *testing.T) {
+func TestUpdateVRF_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
@@ -63,24 +52,24 @@ func TestUpdateSection_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateSection(ctx, tt.id, "Some Name", "desc")
+			_, err := svc.UpdateVRF(ctx, tt.id, "SomeName", "rd:1", "desc")
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid section ID")
+			assert.Contains(t, err.Error(), "invalid VRF ID")
 		})
 	}
 }
 
-func TestUpdateSection_EmptyName(t *testing.T) {
+func TestUpdateVRF_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
 	// Valid id but empty name should return name-required error before hitting repo
-	_, err := svc.UpdateSection(ctx, 1, "", "desc")
+	_, err := svc.UpdateVRF(ctx, 1, "", "rd:1", "desc")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "section name is required")
+	assert.Contains(t, err.Error(), "VRF name is required")
 }
 
-func TestDeleteSection_InvalidID(t *testing.T) {
+func TestDeleteVRF_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
@@ -89,15 +78,15 @@ func TestDeleteSection_InvalidID(t *testing.T) {
 		id   int64
 	}{
 		{"zero", 0},
-		{"negative one", -1},
+		{"negative", -1},
 		{"large negative", -100},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteSection(ctx, tt.id)
+			err := svc.DeleteVRF(ctx, tt.id)
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid section ID")
+			assert.Contains(t, err.Error(), "invalid VRF ID")
 		})
 	}
 }
