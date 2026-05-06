@@ -1,3 +1,5 @@
+-- +migrate Up
+
 CREATE TABLE login_attempts (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL,
@@ -10,4 +12,4 @@ CREATE TABLE login_attempts (
 
 CREATE INDEX idx_login_attempts_username_created ON login_attempts(username, created_at DESC);
 CREATE INDEX idx_login_attempts_ip_created ON login_attempts(ip_address, created_at DESC);
-CREATE INDEX idx_login_attempts_user_id_created ON login_attempts(username, created_at DESC) WHERE success = false;
+CREATE INDEX idx_login_attempts_failures ON login_attempts(username, created_at DESC) WHERE success = false;

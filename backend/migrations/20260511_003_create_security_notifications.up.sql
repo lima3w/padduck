@@ -1,3 +1,5 @@
+-- +migrate Up
+
 CREATE TABLE security_notifications (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
