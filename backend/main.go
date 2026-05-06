@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"ipam-next/config"
 	"ipam-next/db"
 	"ipam-next/handlers"
@@ -43,6 +44,10 @@ func main() {
 
 	// Setup HTTP server
 	app := fiber.New()
+
+	app.Use(logger.New(logger.Config{
+		Format: "[${time}] ${status} ${method} ${path} ${latency} ${ip}\n",
+	}))
 
 	// Health check endpoint with database verification
 	app.Get("/health", func(c *fiber.Ctx) error {

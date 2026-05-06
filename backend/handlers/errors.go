@@ -33,10 +33,7 @@ func RespondError(c *fiber.Ctx, statusCode int, code ErrorCode, message string, 
 		logMessage = logMessage + ": " + details[0]
 	}
 
-	// Log errors for debugging (except 4xx client errors in some cases)
-	if statusCode >= 500 || statusCode == 401 || statusCode == 403 {
-		log.Printf("[%d %s] %s", statusCode, code, logMessage)
-	}
+	log.Printf("[%d %s] %s", statusCode, code, logMessage)
 
 	detailStr := ""
 	if len(details) > 0 {
