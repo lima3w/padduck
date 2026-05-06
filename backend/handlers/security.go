@@ -7,6 +7,7 @@ import (
 	"ipam-next/services"
 )
 
+
 type RequestUnlockRequest struct {
 	Username string `json:"username"`
 }
@@ -101,6 +102,13 @@ func (h *Handler) AdminUnlockUser(c *fiber.Ctx) error {
 		log.Printf("Error admin-unlocking user %d: %v", targetID, err)
 		return h.StatusInternalServerError(c, "Failed to unlock account", err.Error())
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	tid := int64(targetID)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "account_unlocked",
+		ResourceType: "user", ResourceID: &tid,
+	})
 
 	return c.JSON(fiber.Map{"message": "Account unlocked successfully"})
 }

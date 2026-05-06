@@ -9,6 +9,7 @@ import (
 	"ipam-next/services"
 )
 
+
 // VerifyMFA handles POST /api/v1/auth/verify-mfa
 // Completes an MFA challenge and returns a full session token.
 func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
@@ -46,6 +47,12 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
 	}
+
+	uid := user.ID
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Username: user.Username, Action: "login_mfa",
+		ResourceType: "session", Status: "success",
+	})
 
 	return c.JSON(LoginResponse{
 		Token: token,
@@ -112,6 +119,11 @@ func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to confirm MFA"})
 	}
 
+	uid := user.ID
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Username: user.Username, Action: "mfa_enabled", ResourceType: "user", ResourceID: &uid,
+	})
+
 	return c.JSON(fiber.Map{
 		"message":      "MFA enabled. Save these backup codes — they will not be shown again.",
 		"backup_codes": backupCodes,
@@ -139,6 +151,11 @@ func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to disable MFA"})
 	}
 
+	uid := user.ID
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Username: user.Username, Action: "mfa_disabled", ResourceType: "user", ResourceID: &uid,
+	})
+
 	return c.JSON(fiber.Map{"message": "MFA disabled"})
 }
 
@@ -160,6 +177,11 @@ func (h *Handler) RegenerateBackupCodes(c *fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to regenerate codes"})
 	}
+
+	uid := user.ID
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Username: user.Username, Action: "backup_codes_regenerated", ResourceType: "user", ResourceID: &uid,
+	})
 
 	return c.JSON(fiber.Map{
 		"message":      "Backup codes regenerated. Save these — they will not be shown again.",

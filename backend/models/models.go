@@ -200,3 +200,35 @@ type SecurityNotification struct {
 	IPAddress        string
 	SentAt           time.Time
 }
+
+// AuditLog records all significant user actions for compliance and security review
+type AuditLog struct {
+	ID           int64
+	UserID       *int64
+	Username     string
+	Action       string
+	ResourceType string
+	ResourceID   *int64
+	ResourceName string
+	OldValues    *string // JSON
+	NewValues    *string // JSON
+	IPAddress    string
+	UserAgent    string
+	Status       string // success, failure
+	ErrorMessage string
+	CreatedAt    time.Time
+}
+
+// AuditLogFilter defines search criteria for querying audit logs
+type AuditLogFilter struct {
+	UserID       *int64
+	Username     string
+	Action       string
+	ResourceType string
+	IPAddress    string
+	Status       string
+	Since        *time.Time
+	Until        *time.Time
+	Limit        int
+	Offset       int
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 // ListPendingApprovals handles GET /api/v1/admin/approvals
@@ -67,6 +68,12 @@ func (h *Handler) ApproveUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to approve user: " + err.Error()})
 	}
 
+	adminID, adminName := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: adminID, Username: adminName, Action: "user_approved",
+		ResourceType: "user_approval", ResourceID: &approvalID,
+	})
+
 	return c.JSON(fiber.Map{"message": "User approved"})
 }
 
@@ -92,6 +99,13 @@ func (h *Handler) RejectUser(c *fiber.Ctx) error {
 	if err := h.service.Registration.RejectUser(c.Context(), approvalID, reviewerID, req.Reason); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to reject user: " + err.Error()})
 	}
+
+	adminID, adminName := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: adminID, Username: adminName, Action: "user_rejected",
+		ResourceType: "user_approval", ResourceID: &approvalID,
+		NewValues: map[string]string{"reason": req.Reason},
+	})
 
 	return c.JSON(fiber.Map{"message": "User rejected"})
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type CreateSectionRequest struct {
@@ -40,6 +41,13 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 		log.Printf("Error creating section: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "section_created",
+		ResourceType: "section", ResourceID: &section.ID, ResourceName: section.Name,
+		NewValues: map[string]string{"name": section.Name, "description": section.Description},
+	})
 
 	return c.Status(fiber.StatusCreated).JSON(section)
 }
@@ -94,6 +102,13 @@ func (h *Handler) UpdateSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "section_updated",
+		ResourceType: "section", ResourceID: &section.ID, ResourceName: section.Name,
+		NewValues: map[string]string{"name": req.Name, "description": req.Description},
+	})
+
 	return c.JSON(section)
 }
 
@@ -108,6 +123,13 @@ func (h *Handler) DeleteSection(c *fiber.Ctx) error {
 		log.Printf("Error deleting section %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	sid := int64(id)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "section_deleted",
+		ResourceType: "section", ResourceID: &sid,
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

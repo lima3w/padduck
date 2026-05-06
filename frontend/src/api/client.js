@@ -118,6 +118,15 @@ export const listPendingApprovals = () => api.get('/admin/approvals')
 export const approveUser = (id) => api.post(`/admin/approvals/${id}/approve`)
 export const rejectUser = (id, reason) => api.post(`/admin/approvals/${id}/reject`, { reason })
 
+// Audit logs
+export const getAuditLogs = (params = {}) => api.get('/admin/audit-logs', { params })
+export const exportAuditLogs = (params = {}) =>
+  api.get('/admin/audit-logs/export', { params, responseType: 'blob' })
+export const purgeAuditLogs = () => api.post('/admin/audit-logs/purge')
+
+// Admin user management
+export const adminUnlockUser = (id) => api.post(`/admin/users/${id}/unlock`)
+
 // Search
 export const searchSections = (query, limit = 50, offset = 0) =>
   api.post('/sections/search', { query, limit, offset })

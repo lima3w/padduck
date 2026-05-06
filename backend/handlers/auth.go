@@ -66,6 +66,12 @@ func (h *Handler) GenerateToken(c *fiber.Ctx) error {
 		return h.StatusInternalServerError(c, "Failed to generate token", err.Error())
 	}
 
+	uid := int64(userID)
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Action: "token_created",
+		ResourceType: "api_token", ResourceName: req.TokenName,
+	})
+
 	return c.Status(fiber.StatusCreated).JSON(GenerateTokenResponse{
 		Token: token,
 		Name:  req.TokenName,
@@ -117,6 +123,13 @@ func (h *Handler) RevokeToken(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	tid := int64(tokenID)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "token_revoked",
+		ResourceType: "api_token", ResourceID: &tid,
+	})
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -155,6 +168,12 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 		log.Printf("Error generating token: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "token_created",
+		ResourceType: "api_token", ResourceName: req.TokenName,
+	})
 
 	return c.Status(fiber.StatusCreated).JSON(GenerateTokenResponse{
 		Token: token,
@@ -242,6 +261,12 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
 	}
 
+	uid := user.ID
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Username: user.Username, Action: "login",
+		ResourceType: "session", Status: "success",
+	})
+
 	return c.JSON(LoginResponse{
 		Token: token,
 		User: UserResponse{
@@ -277,6 +302,11 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		log.Printf("Error revoking session token for user %d: %v", userID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to logout"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "logout", ResourceType: "session",
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

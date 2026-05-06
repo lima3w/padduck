@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type CreateSubnetRequest struct {
@@ -34,6 +36,14 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		log.Printf("Error creating subnet: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "subnet_created",
+		ResourceType: "subnet", ResourceID: &subnet.ID, ResourceName: cidr,
+		NewValues: map[string]interface{}{"cidr": cidr, "description": subnet.Description, "section_id": subnet.SectionID},
+	})
 
 	return c.Status(fiber.StatusCreated).JSON(subnet)
 }
@@ -92,6 +102,14 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "subnet_updated",
+		ResourceType: "subnet", ResourceID: &subnet.ID, ResourceName: cidr,
+		NewValues: map[string]string{"description": req.Description},
+	})
+
 	return c.JSON(subnet)
 }
 
@@ -106,6 +124,13 @@ func (h *Handler) DeleteSubnet(c *fiber.Ctx) error {
 		log.Printf("Error deleting subnet %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	sid := int64(id)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "subnet_deleted",
+		ResourceType: "subnet", ResourceID: &sid,
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

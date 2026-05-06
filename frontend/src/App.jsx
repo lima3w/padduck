@@ -7,6 +7,7 @@ import SectionsPage from './pages/SectionsPage'
 import SubnetsPage from './pages/SubnetsPage'
 import IPAddressesPage from './pages/IPAddressesPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
+import AuditLogPage from './pages/AuditLogPage'
 import UserSettingsPage from './pages/UserSettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="sections/:sectionID/subnets" element={<SubnetsPage />} />
           <Route path="subnets/:subnetID/ip-addresses" element={<IPAddressesPage />} />
           <Route path="admin/settings" element={<AdminSettingsPage />} />
+          <Route path="admin/audit-log" element={<AuditLogPage />} />
           <Route path="settings" element={<UserSettingsPage />} />
         </Route>
       </Routes>

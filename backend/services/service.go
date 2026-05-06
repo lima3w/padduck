@@ -12,6 +12,7 @@ type Service struct {
 	Email        *EmailService
 	Registration *RegistrationService
 	MFA          *MFAService
+	Audit        *AuditService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -24,13 +25,15 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		log.Fatalf("Failed to initialize MFA service: %v", err)
 	}
 
-	return &Service{
+	svc := &Service{
 		repository:   repo,
 		Config:       configSvc,
 		Email:        emailSvc,
 		Registration: registrationSvc,
 		MFA:          mfaSvc,
 	}
+	svc.Audit = NewAuditService(svc)
+	return svc
 }
 
 // GetRepository returns the underlying repository

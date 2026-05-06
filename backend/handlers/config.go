@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 // GetConfig handles GET /api/v1/admin/config
@@ -57,6 +58,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"smtp_password":               true,
 		"smtp_from":                   true,
 		"smtp_tls":                    true,
+		"audit_log_retention_days":    true,
 	}
 
 	for key, value := range updates {
@@ -71,6 +73,21 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update config"})
 		}
 	}
+
+	// Redact sensitive values before logging
+	loggableUpdates := make(map[string]string, len(updates))
+	for k, v := range updates {
+		if k == "smtp_password" {
+			loggableUpdates[k] = "***"
+		} else {
+			loggableUpdates[k] = v
+		}
+	}
+	adminID, adminName := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: adminID, Username: adminName, Action: "config_updated",
+		ResourceType: "config", NewValues: loggableUpdates,
+	})
 
 	return c.JSON(fiber.Map{"message": "config updated"})
 }

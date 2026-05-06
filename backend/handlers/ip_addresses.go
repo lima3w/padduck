@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type CreateIPAddressRequest struct {
@@ -34,6 +35,13 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		log.Printf("Error creating IP address: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "ip_address_created",
+		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
+		NewValues: map[string]string{"address": ip.Address, "hostname": ip.Hostname, "status": ip.Status},
+	})
 
 	return c.Status(fiber.StatusCreated).JSON(ip)
 }
@@ -92,6 +100,13 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "ip_assigned",
+		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
+		NewValues: map[string]string{"assigned_to": req.AssignedTo},
+	})
+
 	return c.JSON(ip)
 }
 
@@ -108,6 +123,12 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "ip_released",
+		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
+	})
+
 	return c.JSON(ip)
 }
 
@@ -122,6 +143,13 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 		log.Printf("Error deleting IP address %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	ipid := int64(id)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "ip_address_deleted",
+		ResourceType: "ip_address", ResourceID: &ipid,
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -147,6 +175,13 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 		log.Printf("Error allocating IP address: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "ip_allocated",
+		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
+		NewValues: map[string]string{"assigned_to": req.AssignedTo},
+	})
 
 	return c.Status(fiber.StatusCreated).JSON(ip)
 }

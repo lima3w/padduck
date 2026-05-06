@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 	"ipam-next/utils"
 )
 
@@ -128,6 +129,13 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create user"})
 	}
 
+	adminID, adminName := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: adminID, Username: adminName, Action: "user_created",
+		ResourceType: "user", ResourceID: &user.ID, ResourceName: user.Username,
+		NewValues: map[string]string{"username": user.Username, "email": user.Email, "role": user.Role},
+	})
+
 	return c.Status(fiber.StatusCreated).JSON(UserDetailResponse{
 		ID:        user.ID,
 		Username:  user.Username,
@@ -166,6 +174,14 @@ func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update user"})
 	}
 
+	adminID, adminName := auditUserFromCtx(c)
+	uid := int64(userID)
+	h.auditLog(c, services.AuditEntry{
+		UserID: adminID, Username: adminName, Action: "user_role_updated",
+		ResourceType: "user", ResourceID: &uid, ResourceName: user.Username,
+		NewValues: map[string]string{"role": req.Role},
+	})
+
 	return c.JSON(UserDetailResponse{
 		ID:        user.ID,
 		Username:  user.Username,
@@ -197,6 +213,13 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 		log.Printf("Error deleting user: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete user"})
 	}
+
+	adminID, adminName := auditUserFromCtx(c)
+	uid := int64(userID)
+	h.auditLog(c, services.AuditEntry{
+		UserID: adminID, Username: adminName, Action: "user_deleted",
+		ResourceType: "user", ResourceID: &uid,
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

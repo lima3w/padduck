@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type CreateVLANRequest struct {
@@ -60,6 +62,13 @@ func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_created",
+		ResourceType: "vlan", ResourceID: &vlan.ID, ResourceName: fmt.Sprintf("%s (ID %d)", vlan.Name, vlan.VlanID),
+		NewValues: map[string]interface{}{"vlan_id": vlan.VlanID, "name": vlan.Name},
+	})
+
 	return c.Status(fiber.StatusCreated).JSON(vlan)
 }
 
@@ -80,6 +89,13 @@ func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_updated",
+		ResourceType: "vlan", ResourceID: &vlan.ID, ResourceName: vlan.Name,
+		NewValues: map[string]string{"name": req.Name, "description": req.Description},
+	})
+
 	return c.JSON(vlan)
 }
 
@@ -93,6 +109,13 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 		log.Printf("Error deleting VLAN %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	vid := int64(id)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_deleted",
+		ResourceType: "vlan", ResourceID: &vid,
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }

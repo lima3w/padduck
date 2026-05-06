@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type CreateVRFRequest struct {
@@ -60,6 +61,13 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vrf_created",
+		ResourceType: "vrf", ResourceID: &vrf.ID, ResourceName: vrf.Name,
+		NewValues: map[string]string{"name": vrf.Name, "rd": vrf.RouteDistinguisher},
+	})
+
 	return c.Status(fiber.StatusCreated).JSON(vrf)
 }
 
@@ -80,6 +88,13 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vrf_updated",
+		ResourceType: "vrf", ResourceID: &vrf.ID, ResourceName: vrf.Name,
+		NewValues: map[string]string{"name": req.Name, "rd": req.RouteDistinguisher, "description": req.Description},
+	})
+
 	return c.JSON(vrf)
 }
 
@@ -93,6 +108,13 @@ func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 		log.Printf("Error deleting VRF %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	vid := int64(id)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vrf_deleted",
+		ResourceType: "vrf", ResourceID: &vid,
+	})
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
