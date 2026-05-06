@@ -99,8 +99,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	subnet.Delete("/:id", h.DeleteSubnet)
 	subnet.Get("/:subnetID/utilization", h.GetSubnetUtilization)
 	subnet.Post("/search/:sectionID", h.SearchSubnets)
+	subnet.Get("/:subnetID/ip-addresses", h.ListIPAddresses)
+	subnet.Post("/:subnetID/ip-addresses", h.CreateIPAddress)
+	subnet.Post("/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
 
-	// IP Addresses collection routes (nested under subnets)
+	// IP Addresses collection routes (nested under subnets, kept for compatibility)
 	ipAddresses := subnets.Group("/:subnetID/ip-addresses")
 	ipAddresses.Get("", h.ListIPAddresses)
 	ipAddresses.Post("", h.CreateIPAddress)

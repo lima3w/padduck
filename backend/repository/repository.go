@@ -250,7 +250,7 @@ func (r *Repository) DeleteSection(ctx context.Context, id int64) error {
 // Subnet operations
 
 func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description) VALUES ($1, $2, $3, $4) RETURNING id, section_id, network_address::text, prefix_length, description, created_at, updated_at`
+	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description) VALUES ($1, $2, $3, $4) RETURNING id, section_id, host(network_address), prefix_length, description, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description)
 
 	subnet := &models.Subnet{}
@@ -262,7 +262,7 @@ func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkA
 }
 
 func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error) {
-	query := `SELECT id, section_id, network_address::text, prefix_length, description, created_at, updated_at FROM subnets WHERE id = $1`
+	query := `SELECT id, section_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	subnet := &models.Subnet{}
@@ -274,7 +274,7 @@ func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subne
 }
 
 func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error) {
-	query := `SELECT id, section_id, network_address::text, prefix_length, description, created_at, updated_at FROM subnets WHERE section_id = $1 ORDER BY network_address`
+	query := `SELECT id, section_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets WHERE section_id = $1 ORDER BY network_address`
 	rows, err := r.db.Query(ctx, query, sectionID)
 	if err != nil {
 		return nil, err
@@ -294,7 +294,7 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) 
 }
 
 func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string) (*models.Subnet, error) {
-	query := `UPDATE subnets SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, section_id, network_address::text, prefix_length, description, created_at, updated_at`
+	query := `UPDATE subnets SET description = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, section_id, host(network_address), prefix_length, description, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, description, id)
 
 	subnet := &models.Subnet{}
@@ -639,8 +639,8 @@ func (r *Repository) SearchSections(ctx context.Context, query string, limit, of
 }
 
 func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
-	sql := `SELECT id, section_id, network_address::text, prefix_length, description, created_at, updated_at FROM subnets
-	        WHERE section_id = $1 AND (network_address::text ILIKE $2 OR description ILIKE $2)
+	sql := `SELECT id, section_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets
+	        WHERE section_id = $1 AND (host(network_address) ILIKE $2 OR description ILIKE $2)
 	        ORDER BY network_address ASC
 	        LIMIT $3 OFFSET $4`
 	searchQuery := "%" + query + "%"
