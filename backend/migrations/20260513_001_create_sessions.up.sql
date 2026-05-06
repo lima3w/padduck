@@ -18,7 +18,7 @@ CREATE INDEX idx_sessions_token_hash ON sessions(token_hash);
 CREATE INDEX idx_sessions_absolute_expires_at ON sessions(absolute_expires_at);
 
 -- Default session timeout config values
-INSERT INTO config (key, value) VALUES
+INSERT INTO configs (key, value) VALUES
     ('session_idle_timeout_minutes', '60'),
     ('session_absolute_timeout_hours', '168')
 ON CONFLICT (key) DO NOTHING;
