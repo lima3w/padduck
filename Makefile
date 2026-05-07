@@ -1,16 +1,28 @@
-.PHONY: ci-local test vet build frontend-build frontend-install help
+.PHONY: ci-local test vet build frontend-build frontend-install check-migrations help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
+MIGRATIONS_DIR := backend/migrations
 
 ## ci-local: run all checks that must pass before pushing (mirrors Gitea CI)
-ci-local: vet test frontend-build
+ci-local: check-migrations vet test frontend-build
 	@echo "✓ ci-local passed"
 
 ## test: run backend unit tests with race detector
 test:
 	@echo "→ backend tests"
 	cd $(BACKEND_DIR) && go test -race -count=1 ./...
+
+## check-migrations: verify every migration file has the required sql-migrate annotation
+check-migrations:
+	@echo "→ migration annotations"
+	@bad_up=$$(grep -rL '^\-\- +migrate Up' $(MIGRATIONS_DIR)/*.up.sql 2>/dev/null); \
+	bad_down=$$(grep -rL '^\-\- +migrate Down' $(MIGRATIONS_DIR)/*.down.sql 2>/dev/null); \
+	if [ -n "$$bad_up" ] || [ -n "$$bad_down" ]; then \
+		echo "ERROR: missing sql-migrate annotation in:"; \
+		echo "$$bad_up $$bad_down" | tr ' ' '\n' | grep -v '^$$'; \
+		exit 1; \
+	fi
 
 ## vet: run go vet on the backend
 vet:
