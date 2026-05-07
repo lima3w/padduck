@@ -13,9 +13,13 @@ type Config struct {
 }
 
 func Load() *Config {
+	env := getEnv("ENVIRONMENT", "development")
 	mfaKey := getEnv("MFA_ENCRYPTION_KEY", "")
 	if len(mfaKey) != 64 {
-		// 32-byte dev-only default — never use in production
+		if env != "development" && env != "test" {
+			log.Fatalf("FATAL: MFA_ENCRYPTION_KEY must be set to a 64-character hex string in %s environment; refusing to start.", env)
+		}
+		// Development/test fallback — never use in production
 		mfaKey = "0000000000000000000000000000000000000000000000000000000000000000"
 		log.Println("WARNING: MFA_ENCRYPTION_KEY not set or invalid; using insecure default. Set a 64-char hex key in production.")
 	}
