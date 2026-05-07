@@ -21,6 +21,7 @@ services:
       ENVIRONMENT: production
       MFA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
       ADMIN_PASSWORD: "demo123"
+      RESET_ADMIN_PASSWORD: "true"
     depends_on:
       db:
         condition: service_healthy
