@@ -189,6 +189,42 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/users/:id/roles", h.AssignRoleToUser)
 	admin.Delete("/users/:id/roles/:role_id", h.RemoveRoleFromUser)
 
+	// User suspension (v0.8.14 #168)
+	admin.Post("/users/:id/suspend", h.SuspendUser)
+	admin.Post("/users/:id/unsuspend", h.UnsuspendUser)
+
+	// User impersonation (v0.8.14 #167)
+	admin.Post("/users/:id/impersonate", h.ImpersonateUser)
+
+	// Bulk user operations (v0.8.14 #169)
+	admin.Post("/users/bulk-suspend", h.BulkSuspendUsers)
+	admin.Post("/users/bulk-activate", h.BulkActivateUsers)
+	admin.Post("/users/bulk-delete", h.BulkDeleteUsers)
+	admin.Post("/users/bulk-import", h.BulkImportUsers)
+
+	// GDPR admin (v0.8.14 #170)
+	admin.Post("/users/:id/gdpr-delete", h.GDPRDeleteUser)
+
+	// Discovery / scan jobs (v0.9.0)
+	admin.Get("/scan-jobs", h.ListScanJobs)
+	admin.Post("/scan-jobs", h.CreateScanJob)
+	admin.Get("/scan-jobs/:id", h.GetScanJob)
+	admin.Put("/scan-jobs/:id", h.UpdateScanJob)
+	admin.Delete("/scan-jobs/:id", h.DeleteScanJob)
+	admin.Post("/scan-jobs/:id/run", h.RunScanJobNow)
+	admin.Get("/scan-jobs/:id/results", h.GetScanJobResults)
+
+	// Subnet scan results (v0.9.0)
+	subnet.Get("/:id/scan-results", h.GetSubnetScanResults)
+
+	// GDPR user self-service (v0.8.14 #170)
+	me.Get("/export", h.ExportMyData)
+	me.Post("/deletion-request", h.RequestDeletion)
+
+	// Privacy policy (v0.8.14 #171)
+	me.Post("/accept-privacy", h.AcceptPrivacyPolicy)
+	api.Get("/privacy-policy/version", h.GetPrivacyPolicyVersion)
+
 	log.Println("Routes registered successfully")
 }
 

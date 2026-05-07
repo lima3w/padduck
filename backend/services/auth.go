@@ -249,6 +249,8 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 		return nil, ErrAccountRejected
 	case "disabled":
 		return nil, ErrAccountDisabled
+	case "suspended":
+		return nil, fmt.Errorf("account is suspended")
 	}
 
 	// If MFA is enabled, issue a challenge instead of returning the full user

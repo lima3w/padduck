@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateUser_Validation(t *testing.T) {
@@ -195,4 +196,90 @@ func TestDeleteUser_InvalidID(t *testing.T) {
 			assert.Contains(t, err.Error(), "invalid user ID")
 		})
 	}
+}
+
+func TestSuspendUser_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	err := svc.SuspendUser(ctx, 0, 1, "test")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid user ID")
+
+	err = svc.SuspendUser(ctx, -1, 1, "test")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid user ID")
+}
+
+func TestUnsuspendUser_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	err := svc.UnsuspendUser(ctx, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid user ID")
+}
+
+
+func TestBulkImportUsersValidation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name    string
+		records []BulkUserImportRecord
+		wantErr string
+	}{
+		{
+			name:    "empty username gets error in result",
+			records: []BulkUserImportRecord{{Username: "", Email: "a@b.com"}},
+			wantErr: "username and email required",
+		},
+		{
+			name:    "empty email gets error in result",
+			records: []BulkUserImportRecord{{Username: "user1", Email: ""}},
+			wantErr: "username and email required",
+		},
+		{
+			name:    "invalid role gets error in result",
+			records: []BulkUserImportRecord{{Username: "user1", Email: "a@b.com", Role: "superadmin"}},
+			wantErr: "invalid role",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			results, err := svc.BulkImportUsers(ctx, tt.records, "pass")
+			assert.NoError(t, err) // function-level error is nil; errors are per-record
+			require.Len(t, results, 1)
+			assert.Contains(t, results[0].Error, tt.wantErr)
+		})
+	}
+}
+
+func TestValidateCron(t *testing.T) {
+	assert.NoError(t, validateCron("* * * * *"))
+	assert.NoError(t, validateCron("0 12 * * 1"))
+	assert.Error(t, validateCron(""))
+	assert.Error(t, validateCron("* * *"))
+	assert.Error(t, validateCron("* * * * * *"))
+}
+
+func TestEnumerateCIDR(t *testing.T) {
+	ips, err := enumerateCIDR("192.168.1.0", 24)
+	assert.NoError(t, err)
+	assert.Equal(t, 254, len(ips))
+	assert.Equal(t, "192.168.1.1", ips[0])
+	assert.Equal(t, "192.168.1.254", ips[len(ips)-1])
+}
+
+func TestEnumerateCIDR_Slash30(t *testing.T) {
+	ips, err := enumerateCIDR("10.0.0.0", 30)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(ips))
+}
+
+func TestEnumerateCIDR_Invalid(t *testing.T) {
+	_, err := enumerateCIDR("not-an-ip", 24)
+	assert.Error(t, err)
 }

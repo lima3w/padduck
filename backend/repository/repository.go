@@ -26,11 +26,11 @@ func (r *Repository) Ping(ctx context.Context) error {
 // User operations
 
 func (r *Repository) CreateUser(ctx context.Context, username, email string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
+	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +38,11 @@ func (r *Repository) CreateUser(ctx context.Context, username, email string) (*m
 }
 
 func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users WHERE id = $1`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at FROM users WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +50,11 @@ func (r *Repository) GetUserByID(ctx context.Context, id int64) (*models.User, e
 }
 
 func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users WHERE username = $1`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at FROM users WHERE username = $1`
 	row := r.db.QueryRow(ctx, query, username)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*m
 }
 
 func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users ORDER BY created_at DESC`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at FROM users ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
 	users := make([]*models.User, 0)
 	for rows.Next() {
 		user := &models.User{}
-		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -82,11 +82,11 @@ func (r *Repository) ListAllUsers(ctx context.Context) ([]*models.User, error) {
 }
 
 func (r *Repository) CreateUserWithPassword(ctx context.Context, username, email, passwordHash, role string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
+	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +94,11 @@ func (r *Repository) CreateUserWithPassword(ctx context.Context, username, email
 }
 
 func (r *Repository) CreateUserWithState(ctx context.Context, username, email, passwordHash, role, state string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, password_hash, role, state) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
+	query := `INSERT INTO users (username, email, password_hash, role, state) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role, state)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +112,11 @@ func (r *Repository) UpdateUserState(ctx context.Context, userID int64, state st
 }
 
 func (r *Repository) UpdateUserRole(ctx context.Context, userID int64, role string) (*models.User, error) {
-	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, password_hash, role, state, last_login_at, created_at, updated_at`
+	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, role)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -136,11 +136,11 @@ func (r *Repository) UpdateLastLogin(ctx context.Context, userID int64) error {
 }
 
 func (r *Repository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	query := `SELECT id, username, email, password_hash, role, state, last_login_at, created_at, updated_at FROM users WHERE email = $1`
+	query := `SELECT id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at FROM users WHERE email = $1`
 	row := r.db.QueryRow(ctx, query, email)
 
 	user := &models.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.Role, &user.State, &user.LastLoginAt, &user.SuspendedAt, &user.SuspendedBy, &user.SuspensionReason, &user.PrivacyAcceptedAt, &user.PrivacyAcceptedVersion, &user.DeletionRequestedAt, &user.AnonymizedAt, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -620,11 +620,11 @@ func (r *Repository) DeleteExpiredAPITokens(ctx context.Context) error {
 func (r *Repository) CreateSession(ctx context.Context, userID int64, tokenHash, deviceName, ipAddress, userAgent string, absoluteExpiresAt time.Time) (*models.Session, error) {
 	query := `INSERT INTO sessions (user_id, token_hash, device_name, ip_address, user_agent, absolute_expires_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, created_at, updated_at`
+		RETURNING id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, is_impersonation, impersonated_by, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, deviceName, ipAddress, userAgent, absoluteExpiresAt)
 
 	s := &models.Session{}
-	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.CreatedAt, &s.UpdatedAt)
+	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.IsImpersonation, &s.ImpersonatedBy, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -632,11 +632,11 @@ func (r *Repository) CreateSession(ctx context.Context, userID int64, tokenHash,
 }
 
 func (r *Repository) GetSessionByHash(ctx context.Context, tokenHash string) (*models.Session, error) {
-	query := `SELECT id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, created_at, updated_at FROM sessions WHERE token_hash = $1`
+	query := `SELECT id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, is_impersonation, impersonated_by, created_at, updated_at FROM sessions WHERE token_hash = $1`
 	row := r.db.QueryRow(ctx, query, tokenHash)
 
 	s := &models.Session{}
-	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.CreatedAt, &s.UpdatedAt)
+	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.IsImpersonation, &s.ImpersonatedBy, &s.CreatedAt, &s.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -644,7 +644,7 @@ func (r *Repository) GetSessionByHash(ctx context.Context, tokenHash string) (*m
 }
 
 func (r *Repository) ListSessionsByUser(ctx context.Context, userID int64) ([]*models.Session, error) {
-	query := `SELECT id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, created_at, updated_at FROM sessions WHERE user_id = $1 ORDER BY last_used_at DESC`
+	query := `SELECT id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, is_impersonation, impersonated_by, created_at, updated_at FROM sessions WHERE user_id = $1 ORDER BY last_used_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -654,7 +654,7 @@ func (r *Repository) ListSessionsByUser(ctx context.Context, userID int64) ([]*m
 	sessions := make([]*models.Session, 0)
 	for rows.Next() {
 		s := &models.Session{}
-		err := rows.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.CreatedAt, &s.UpdatedAt)
+		err := rows.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.IsImpersonation, &s.ImpersonatedBy, &s.CreatedAt, &s.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -1772,4 +1772,263 @@ func (r *Repository) CleanupOldNotifications(ctx context.Context) error {
 	             OR (status = 'failed' AND updated_at < NOW() - INTERVAL '7 days')`
 	_, err := r.db.Exec(ctx, query)
 	return err
+}
+
+// SuspendUser sets a user's state to suspended with reason and admin tracking
+func (r *Repository) SuspendUser(ctx context.Context, userID, adminID int64, reason string) error {
+	query := `UPDATE users SET state = 'suspended', suspended_at = CURRENT_TIMESTAMP, suspended_by = $2, suspension_reason = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID, adminID, reason)
+	return err
+}
+
+// UnsuspendUser restores a user to active state
+func (r *Repository) UnsuspendUser(ctx context.Context, userID int64) error {
+	query := `UPDATE users SET state = 'active', suspended_at = NULL, suspended_by = NULL, suspension_reason = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+// BulkUpdateUserState updates the state of multiple users
+func (r *Repository) BulkUpdateUserState(ctx context.Context, userIDs []int64, state string) (int64, error) {
+	query := `UPDATE users SET state = $1, updated_at = CURRENT_TIMESTAMP WHERE id = ANY($2)`
+	result, err := r.db.Exec(ctx, query, state, userIDs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+// BulkDeleteUsers deletes multiple users
+func (r *Repository) BulkDeleteUsers(ctx context.Context, userIDs []int64) (int64, error) {
+	query := `DELETE FROM users WHERE id = ANY($1)`
+	result, err := r.db.Exec(ctx, query, userIDs)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+// UpdatePrivacyConsent records user acceptance of the privacy policy
+func (r *Repository) UpdatePrivacyConsent(ctx context.Context, userID int64, version string) error {
+	query := `UPDATE users SET privacy_accepted_at = CURRENT_TIMESTAMP, privacy_accepted_version = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID, version)
+	return err
+}
+
+// RequestDeletion marks a user as having requested account deletion
+func (r *Repository) RequestDeletion(ctx context.Context, userID int64) error {
+	query := `UPDATE users SET deletion_requested_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+// AnonymizeUser replaces PII with anonymized values (GDPR right to erasure)
+func (r *Repository) AnonymizeUser(ctx context.Context, userID int64) error {
+	query := `UPDATE users SET
+		username = 'deleted_' || id::text,
+		email = 'deleted_' || id::text || '@deleted.invalid',
+		password_hash = '',
+		state = 'disabled',
+		anonymized_at = CURRENT_TIMESTAMP,
+		updated_at = CURRENT_TIMESTAMP
+	WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+// CreateImpersonationSession creates a session flagged as impersonation
+func (r *Repository) CreateImpersonationSession(ctx context.Context, targetUserID, adminID int64, tokenHash, deviceName, ipAddress, userAgent string, absoluteExpiresAt time.Time) (*models.Session, error) {
+	query := `INSERT INTO sessions (user_id, token_hash, device_name, ip_address, user_agent, absolute_expires_at, is_impersonation, impersonated_by)
+		VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7)
+		RETURNING id, user_id, token_hash, device_name, ip_address, user_agent, last_used_at, absolute_expires_at, is_impersonation, impersonated_by, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, targetUserID, tokenHash, deviceName, ipAddress, userAgent, absoluteExpiresAt, adminID)
+
+	s := &models.Session{}
+	err := row.Scan(&s.ID, &s.UserID, &s.TokenHash, &s.DeviceName, &s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt, &s.IsImpersonation, &s.ImpersonatedBy, &s.CreatedAt, &s.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// GetUserAllData returns all data associated with a user for GDPR export
+func (r *Repository) GetUserAllData(ctx context.Context, userID int64) (map[string]interface{}, error) {
+	data := make(map[string]interface{})
+
+	// Get user record
+	user, err := r.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	data["user"] = user
+
+	// Get sessions
+	sessions, err := r.ListSessionsByUser(ctx, userID)
+	if err == nil {
+		data["sessions"] = sessions
+	}
+
+	// Get API tokens
+	tokens, err := r.ListAPITokensByUser(ctx, userID)
+	if err == nil {
+		data["api_tokens"] = tokens
+	}
+
+	// Get audit logs
+	logs, err := r.ListAuditLogs(ctx, &models.AuditLogFilter{UserID: &userID, Limit: 1000})
+	if err == nil {
+		data["audit_logs"] = logs
+	}
+
+	return data, nil
+}
+
+// CreateScanJob creates a new discovery scan job
+func (r *Repository) CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64) (*models.ScanJob, error) {
+	query := `INSERT INTO scan_jobs (name, subnet_ids, schedule_cron, created_by)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, name, subnetIDs, scheduleCron, createdBy)
+
+	j := &models.ScanJob{}
+	err := row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return j, nil
+}
+
+// GetScanJobByID retrieves a scan job by ID
+func (r *Repository) GetScanJobByID(ctx context.Context, id int64) (*models.ScanJob, error) {
+	query := `SELECT id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at FROM scan_jobs WHERE id = $1`
+	row := r.db.QueryRow(ctx, query, id)
+
+	j := &models.ScanJob{}
+	err := row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return j, nil
+}
+
+// ListScanJobs returns all scan jobs
+func (r *Repository) ListScanJobs(ctx context.Context) ([]*models.ScanJob, error) {
+	query := `SELECT id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at FROM scan_jobs ORDER BY created_at DESC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	jobs := make([]*models.ScanJob, 0)
+	for rows.Next() {
+		j := &models.ScanJob{}
+		if err := rows.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt); err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, j)
+	}
+	return jobs, rows.Err()
+}
+
+// ListActiveScanJobs returns all active scan jobs with a schedule
+func (r *Repository) ListActiveScanJobs(ctx context.Context) ([]*models.ScanJob, error) {
+	query := `SELECT id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at FROM scan_jobs WHERE is_active = TRUE AND schedule_cron IS NOT NULL`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	jobs := make([]*models.ScanJob, 0)
+	for rows.Next() {
+		j := &models.ScanJob{}
+		if err := rows.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt); err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, j)
+	}
+	return jobs, rows.Err()
+}
+
+// UpdateScanJob updates a scan job's configuration
+func (r *Repository) UpdateScanJob(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool) (*models.ScanJob, error) {
+	query := `UPDATE scan_jobs SET name = $2, subnet_ids = $3, schedule_cron = $4, is_active = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+		RETURNING id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive)
+
+	j := &models.ScanJob{}
+	err := row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return j, nil
+}
+
+// UpdateScanJobRunTime updates last_run_at and next_run_at after a scan
+func (r *Repository) UpdateScanJobRunTime(ctx context.Context, id int64, nextRunAt *time.Time) error {
+	query := `UPDATE scan_jobs SET last_run_at = CURRENT_TIMESTAMP, next_run_at = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, id, nextRunAt)
+	return err
+}
+
+// DeleteScanJob deletes a scan job
+func (r *Repository) DeleteScanJob(ctx context.Context, id int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM scan_jobs WHERE id = $1`, id)
+	return err
+}
+
+// CreateScanResult records the result of scanning a single IP
+func (r *Repository) CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64) (*models.ScanResult, error) {
+	query := `INSERT INTO scan_results (job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, scanned_at`
+	row := r.db.QueryRow(ctx, query, jobID, subnetID, ipAddressID, ipAddress, isAlive, responseTimeMs)
+
+	sr := &models.ScanResult{}
+	err := row.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.ScannedAt)
+	if err != nil {
+		return nil, err
+	}
+	return sr, nil
+}
+
+// ListScanResultsByJob returns recent scan results for a job
+func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error) {
+	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, scanned_at FROM scan_results WHERE job_id = $1 ORDER BY scanned_at DESC LIMIT $2`
+	rows, err := r.db.Query(ctx, query, jobID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make([]*models.ScanResult, 0)
+	for rows.Next() {
+		sr := &models.ScanResult{}
+		if err := rows.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.ScannedAt); err != nil {
+			return nil, err
+		}
+		results = append(results, sr)
+	}
+	return results, rows.Err()
+}
+
+// ListScanResultsBySubnet returns recent scan results for a subnet
+func (r *Repository) ListScanResultsBySubnet(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error) {
+	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, scanned_at FROM scan_results WHERE subnet_id = $1 ORDER BY scanned_at DESC LIMIT $2`
+	rows, err := r.db.Query(ctx, query, subnetID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make([]*models.ScanResult, 0)
+	for rows.Next() {
+		sr := &models.ScanResult{}
+		if err := rows.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.ScannedAt); err != nil {
+			return nil, err
+		}
+		results = append(results, sr)
+	}
+	return results, rows.Err()
 }

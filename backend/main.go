@@ -95,6 +95,9 @@ func main() {
 	// Start notification queue worker
 	svc.Notification.StartWorker(ctx)
 
+	// Start discovery scheduler
+	svc.Discovery.StartScheduler(ctx)
+
 	// Setup HTTP server
 	app := fiber.New()
 

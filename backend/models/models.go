@@ -4,15 +4,22 @@ import "time"
 
 // User represents a system user
 type User struct {
-	ID           int64
-	Username     string
-	Email        string
-	PasswordHash string
-	Role         string // admin, user, viewer
-	State        string // active, pending_email_verification, pending_admin_approval, rejected, disabled
-	LastLoginAt  *time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                     int64
+	Username               string
+	Email                  string
+	PasswordHash           string
+	Role                   string // admin, user, viewer
+	State                  string // active, pending_email_verification, pending_admin_approval, rejected, disabled, suspended
+	LastLoginAt            *time.Time
+	SuspendedAt            *time.Time
+	SuspendedBy            *int64
+	SuspensionReason       *string
+	PrivacyAcceptedAt      *time.Time
+	PrivacyAcceptedVersion *string
+	DeletionRequestedAt    *time.Time
+	AnonymizedAt           *time.Time
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 // Config represents an application configuration key-value pair
@@ -56,6 +63,8 @@ type Session struct {
 	UserAgent         string
 	LastUsedAt        time.Time
 	AbsoluteExpiresAt time.Time
+	IsImpersonation   bool
+	ImpersonatedBy    *int64
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
@@ -294,6 +303,32 @@ type NotificationPreferences struct {
 	SessionRevoked  bool      `json:"session_revoked"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// ScanJob represents a scheduled or one-time network discovery scan
+type ScanJob struct {
+	ID           int64      `json:"id"`
+	Name         string     `json:"name"`
+	SubnetIDs    []int64    `json:"subnet_ids"`
+	ScheduleCron *string    `json:"schedule_cron,omitempty"`
+	IsActive     bool       `json:"is_active"`
+	LastRunAt    *time.Time `json:"last_run_at,omitempty"`
+	NextRunAt    *time.Time `json:"next_run_at,omitempty"`
+	CreatedBy    int64      `json:"created_by"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+// ScanResult records the outcome of scanning a single IP address
+type ScanResult struct {
+	ID             int64     `json:"id"`
+	JobID          int64     `json:"job_id"`
+	SubnetID       int64     `json:"subnet_id"`
+	IPAddressID    *int64    `json:"ip_address_id,omitempty"`
+	IPAddress      string    `json:"ip_address"`
+	IsAlive        bool      `json:"is_alive"`
+	ResponseTimeMs *int64    `json:"response_time_ms,omitempty"`
+	ScannedAt      time.Time `json:"scanned_at"`
 }
 
 // NotificationQueue is a durable outbox for outbound email notifications
