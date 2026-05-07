@@ -22,4 +22,4 @@ ALTER TABLE sessions
     ADD COLUMN IF NOT EXISTS impersonated_by BIGINT REFERENCES users(id) ON DELETE SET NULL;
 
 -- Seed privacy policy version config
-INSERT INTO config (key, value) VALUES ('privacy_policy_version', '1.0') ON CONFLICT (key) DO NOTHING;
+INSERT INTO configs (key, value) VALUES ('privacy_policy_version', '1.0') ON CONFLICT (key) DO NOTHING;

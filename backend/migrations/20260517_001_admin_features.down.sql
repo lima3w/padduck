@@ -1,6 +1,6 @@
 -- +migrate Down
 
-DELETE FROM config WHERE key = 'privacy_policy_version';
+DELETE FROM configs WHERE key = 'privacy_policy_version';
 
 ALTER TABLE sessions
     DROP COLUMN IF EXISTS is_impersonation,
