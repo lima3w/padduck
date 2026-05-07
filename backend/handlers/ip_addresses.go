@@ -24,6 +24,9 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
+	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return err
+	}
 
 	req := new(CreateIPAddressRequest)
 	if err := c.BodyParser(req); err != nil {
@@ -52,6 +55,9 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
+	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
+		return err
+	}
 
 	ip, err := h.service.GetIPAddress(c.Context(), int64(id))
 	if err != nil {
@@ -67,6 +73,9 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return err
 	}
 
 	ips, err := h.service.ListIPAddresses(c.Context(), int64(subnetID))
@@ -87,6 +96,9 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+		return err
 	}
 
 	req := new(AssignIPAddressRequest)
@@ -116,6 +128,9 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
+	if err := h.permCheck(c, services.PermV2IPRelease); err != nil {
+		return err
+	}
 
 	ip, err := h.service.ReleaseIPAddress(c.Context(), int64(id))
 	if err != nil {
@@ -138,6 +153,9 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
+	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+		return err
+	}
 
 	if err := h.service.DeleteIPAddress(c.Context(), int64(id)); err != nil {
 		log.Printf("Error deleting IP address %d: %v", id, err)
@@ -159,6 +177,9 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return err
 	}
 
 	type AllocateRequest struct {
@@ -191,6 +212,9 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetRead, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return err
 	}
 
 	utilization, err := h.service.GetSubnetUtilization(c.Context(), int64(subnetID))

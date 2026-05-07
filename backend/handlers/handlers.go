@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/models"
 	"ipam-next/services"
 )
 
@@ -14,6 +15,19 @@ type Handler struct {
 
 func NewHandler(service *services.Service) *Handler {
 	return &Handler{service: service}
+}
+
+// permCheck verifies the authenticated user has the given permission (with optional resource scopes).
+// Returns a Fiber error response if denied, nil if allowed.
+func (h *Handler) permCheck(c *fiber.Ctx, permission string, scopes ...services.ResourceScope) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok {
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
+	}
+	if err := h.service.CheckPermission(c.Context(), user.ID, permission, scopes...); err != nil {
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "permission denied")
+	}
+	return nil
 }
 
 func (h *Handler) RegisterRoutes(app *fiber.App) {
@@ -149,6 +163,21 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/audit-logs", h.GetAuditLogs)
 	admin.Get("/audit-logs/export", h.ExportAuditLogs)
 	admin.Post("/audit-logs/purge", h.PurgeAuditLogs)
+
+	// Role management
+	admin.Get("/roles", h.ListRoles)
+	admin.Post("/roles", h.CreateRole)
+	admin.Get("/roles/:id", h.GetRole)
+	admin.Put("/roles/:id", h.UpdateRole)
+	admin.Delete("/roles/:id", h.DeleteRole)
+	admin.Post("/roles/:id/permissions", h.AddPermissionToRole)
+	admin.Delete("/roles/:id/permissions/:perm_id", h.RemovePermissionFromRole)
+	admin.Get("/permissions", h.ListAvailablePermissions)
+
+	// User-role assignment
+	admin.Get("/users/:id/roles", h.GetUserRoles)
+	admin.Post("/users/:id/roles", h.AssignRoleToUser)
+	admin.Delete("/users/:id/roles/:role_id", h.RemoveRoleFromUser)
 
 	log.Println("Routes registered successfully")
 }

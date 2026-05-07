@@ -25,6 +25,9 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
+	if err := h.permCheck(c, services.PermV2SectionWrite); err != nil {
+		return err
+	}
 
 	// Use authenticated user ID if available, otherwise default to admin (1)
 	createdBy := req.CreatedBy
@@ -58,6 +61,9 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
+	if err := h.permCheck(c, services.PermV2SectionRead); err != nil {
+		return err
+	}
 
 	section, err := h.service.GetSection(c.Context(), int64(id))
 	if err != nil {
@@ -70,6 +76,9 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 
 // ListSections handles GET /api/v1/sections
 func (h *Handler) ListSections(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+		return err
+	}
 	sections, err := h.service.ListSections(c.Context())
 	if err != nil {
 		log.Printf("Error listing sections: %v", err)
@@ -89,6 +98,9 @@ func (h *Handler) UpdateSection(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SectionWrite, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
+		return err
 	}
 
 	req := new(UpdateSectionRequest)
@@ -117,6 +129,9 @@ func (h *Handler) DeleteSection(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SectionDelete, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
+		return err
 	}
 
 	if err := h.service.DeleteSection(c.Context(), int64(id)); err != nil {

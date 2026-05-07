@@ -25,6 +25,9 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
+	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+		return err
+	}
 
 	req := new(CreateSubnetRequest)
 	if err := c.BodyParser(req); err != nil {
@@ -54,6 +57,9 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
+	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
+		return err
+	}
 
 	subnet, err := h.service.GetSubnet(c.Context(), int64(id))
 	if err != nil {
@@ -69,6 +75,9 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 	sectionID, err := c.ParamsInt("sectionID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+		return err
 	}
 
 	subnets, err := h.service.ListSubnets(c.Context(), int64(sectionID))
@@ -89,6 +98,9 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(id)}); err != nil {
+		return err
 	}
 
 	req := new(UpdateSubnetRequest)
@@ -118,6 +130,9 @@ func (h *Handler) DeleteSubnet(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetDelete, services.ResourceScope{Type: "subnet", ID: int64(id)}); err != nil {
+		return err
 	}
 
 	if err := h.service.DeleteSubnet(c.Context(), int64(id)); err != nil {

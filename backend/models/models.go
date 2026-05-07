@@ -118,6 +118,35 @@ type IPAddress struct {
 	UpdatedAt time.Time
 }
 
+// Role represents a named set of permissions
+type Role struct {
+	ID          int64
+	Name        string
+	Description string
+	IsSystem    bool
+	Permissions []*RolePermission
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// RolePermission is a single permission entry within a role
+type RolePermission struct {
+	ID           int64
+	RoleID       int64
+	Permission   string
+	ResourceType *string // nil = all resources
+	ResourceID   *int64  // nil = all resources of that type
+	CreatedAt    time.Time
+}
+
+// UserRole links a user to a role
+type UserRole struct {
+	ID        int64
+	UserID    int64
+	RoleID    int64
+	CreatedAt time.Time
+}
+
 // VRF represents a Virtual Routing and Forwarding instance
 type VRF struct {
 	ID                 int64

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -256,5 +257,274 @@ func TestIsValidRole(t *testing.T) {
 			assert.Equal(t, tc.valid, IsValidRole(tc.role),
 				"IsValidRole(%q) should be %v", tc.role, tc.valid)
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — IsValidPermission
+// ---------------------------------------------------------------------------
+
+func TestIsValidPermission_AllKnownPermissions(t *testing.T) {
+	for _, p := range AllPermissions {
+		t.Run(p, func(t *testing.T) {
+			assert.True(t, IsValidPermission(p), "known permission %q should be valid", p)
+		})
+	}
+}
+
+func TestIsValidPermission_UnknownPermissions(t *testing.T) {
+	unknown := []string{
+		"",
+		"admin",
+		"section:read",
+		"ipam:section:*",
+		"ipam:section",
+		"IPAM:SECTION:READ",
+		"ipam:unknownresource:read",
+	}
+	for _, p := range unknown {
+		t.Run(p+"_invalid", func(t *testing.T) {
+			assert.False(t, IsValidPermission(p), "unknown permission %q should be invalid", p)
+		})
+	}
+}
+
+func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
+	expected := []string{
+		PermV2SectionList, PermV2SectionRead, PermV2SectionWrite, PermV2SectionDelete,
+		PermV2SubnetList, PermV2SubnetRead, PermV2SubnetWrite, PermV2SubnetDelete,
+		PermV2IPList, PermV2IPRead, PermV2IPAssign, PermV2IPRelease,
+		PermV2VRFList, PermV2VRFRead, PermV2VRFWrite, PermV2VRFDelete,
+		PermV2VLANList, PermV2VLANRead, PermV2VLANWrite, PermV2VLANDelete,
+		PermV2UserList, PermV2UserRead, PermV2UserWrite, PermV2AuditRead,
+	}
+	assert.Equal(t, len(expected), len(AllPermissions))
+	for _, p := range expected {
+		assert.Contains(t, AllPermissions, p)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — CheckPermission (validation guards only, no DB)
+// ---------------------------------------------------------------------------
+
+func TestCheckPermission_InvalidUserID(t *testing.T) {
+	svc := newTestService()
+	ctx := context.Background()
+
+	for _, id := range []int64{0, -1, -99} {
+		err := svc.CheckPermission(ctx, id, PermV2SectionRead)
+		assert.Error(t, err, "userID %d should be rejected", id)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — CreateRole validation
+// ---------------------------------------------------------------------------
+
+func TestCreateRole_EmptyName(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	_, err := svc.CreateRole(ctx, "", "some description")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "role name is required")
+}
+
+func TestCreateRole_InvalidNameChars(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	invalid := []string{"role name", "role.name", "role/name", "role@name"}
+	for _, name := range invalid {
+		t.Run(name, func(t *testing.T) {
+			_, err := svc.CreateRole(ctx, name, "")
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "letters, numbers")
+		})
+	}
+}
+
+func TestCreateRole_ValidName_ReachesRepo(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	assert.Panics(t, func() {
+		_, _ = svc.CreateRole(ctx, "my-role", "description")
+	})
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — GetRole validation
+// ---------------------------------------------------------------------------
+
+func TestGetRole_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	for _, id := range []int64{0, -1, -99} {
+		_, err := svc.GetRole(ctx, id)
+		assert.Error(t, err, "id %d should be rejected", id)
+		assert.Contains(t, err.Error(), "invalid role ID")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — UpdateRole validation
+// ---------------------------------------------------------------------------
+
+func TestUpdateRole_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	_, err := svc.UpdateRole(ctx, 0, "valid-name", "desc")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid role ID")
+}
+
+func TestUpdateRole_EmptyName(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	_, err := svc.UpdateRole(ctx, 1, "", "desc")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "role name is required")
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — DeleteRole validation
+// ---------------------------------------------------------------------------
+
+func TestDeleteRole_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	for _, id := range []int64{0, -1} {
+		err := svc.DeleteRole(ctx, id)
+		assert.Error(t, err, "id %d should be rejected", id)
+		assert.Contains(t, err.Error(), "invalid role ID")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — AddPermissionToRole validation
+// ---------------------------------------------------------------------------
+
+func TestAddPermissionToRole_InvalidRoleID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	_, err := svc.AddPermissionToRole(ctx, 0, PermV2SectionRead, nil, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid role ID")
+}
+
+func TestAddPermissionToRole_UnknownPermission(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	_, err := svc.AddPermissionToRole(ctx, 1, "not:a:real:permission", nil, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown permission")
+}
+
+func TestAddPermissionToRole_ValidArgs_ReachesRepo(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	assert.Panics(t, func() {
+		_, _ = svc.AddPermissionToRole(ctx, 1, PermV2SectionRead, nil, nil)
+	})
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — RemovePermissionFromRole validation
+// ---------------------------------------------------------------------------
+
+func TestRemovePermissionFromRole_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	for _, id := range []int64{0, -1} {
+		err := svc.RemovePermissionFromRole(ctx, id)
+		assert.Error(t, err, "id %d should be rejected", id)
+		assert.Contains(t, err.Error(), "invalid permission ID")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — AssignRoleToUser / RemoveRoleFromUser / GetUserRoles validation
+// ---------------------------------------------------------------------------
+
+func TestAssignRoleToUser_InvalidUserID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	err := svc.AssignRoleToUser(ctx, 0, 1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid user ID")
+}
+
+func TestAssignRoleToUser_InvalidRoleID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	err := svc.AssignRoleToUser(ctx, 1, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid role ID")
+}
+
+func TestRemoveRoleFromUser_InvalidUserID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	err := svc.RemoveRoleFromUser(ctx, 0, 1)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid user ID")
+}
+
+func TestRemoveRoleFromUser_InvalidRoleID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	err := svc.RemoveRoleFromUser(ctx, 1, 0)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid role ID")
+}
+
+func TestGetUserRoles_InvalidUserID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	for _, id := range []int64{0, -1} {
+		_, err := svc.GetUserRoles(ctx, id)
+		assert.Error(t, err, "id %d should be rejected", id)
+		assert.Contains(t, err.Error(), "invalid user ID")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// v0.8.11 — v2 permission constant values
+// ---------------------------------------------------------------------------
+
+func TestV2PermissionConstants_NonEmpty(t *testing.T) {
+	v2perms := map[string]string{
+		"PermV2SectionList":   PermV2SectionList,
+		"PermV2SectionRead":   PermV2SectionRead,
+		"PermV2SectionWrite":  PermV2SectionWrite,
+		"PermV2SectionDelete": PermV2SectionDelete,
+		"PermV2SubnetList":    PermV2SubnetList,
+		"PermV2SubnetRead":    PermV2SubnetRead,
+		"PermV2SubnetWrite":   PermV2SubnetWrite,
+		"PermV2SubnetDelete":  PermV2SubnetDelete,
+		"PermV2IPList":        PermV2IPList,
+		"PermV2IPRead":        PermV2IPRead,
+		"PermV2IPAssign":      PermV2IPAssign,
+		"PermV2IPRelease":     PermV2IPRelease,
+		"PermV2UserList":      PermV2UserList,
+		"PermV2UserRead":      PermV2UserRead,
+		"PermV2UserWrite":     PermV2UserWrite,
+		"PermV2AuditRead":     PermV2AuditRead,
+	}
+	for name, val := range v2perms {
+		t.Run(name, func(t *testing.T) {
+			assert.NotEmpty(t, val, "constant %s should have a non-empty value", name)
+		})
+	}
+}
+
+func TestV2PermissionConstants_Prefixed(t *testing.T) {
+	for _, p := range AllPermissions {
+		assert.True(t,
+			strings.HasPrefix(p, "ipam:") || strings.HasPrefix(p, "auth:"),
+			"permission %q should start with 'ipam:' or 'auth:'", p,
+		)
 	}
 }
