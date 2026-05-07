@@ -39,7 +39,7 @@ func TestGenerateAPIToken_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GenerateAPIToken(ctx, tt.userID, tt.tokenName)
+			_, err := svc.GenerateAPIToken(ctx, tt.userID, tt.tokenName, "read", 0)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})
@@ -51,7 +51,7 @@ func TestValidateAPIToken_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("empty token", func(t *testing.T) {
-		_, err := svc.ValidateAPIToken(ctx, "")
+		_, _, err := svc.ValidateAPIToken(ctx, "", "127.0.0.1")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token is required")
 	})

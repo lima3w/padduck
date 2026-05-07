@@ -10,11 +10,15 @@ import (
 )
 
 type Handler struct {
-	service *services.Service
+	service      *services.Service
+	tokenLimiter *tokenRateLimiter
 }
 
 func NewHandler(service *services.Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:      service,
+		tokenLimiter: newTokenRateLimiter(),
+	}
 }
 
 // permCheck verifies the authenticated user has the given permission (with optional resource scopes).
@@ -71,6 +75,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	me.Post("/logout", h.Logout)
 	me.Post("/tokens", h.GenerateTokenForMe)
 	me.Get("/tokens", h.ListMyTokens)
+	me.Post("/tokens/:id/rotate", h.RotateToken)
+	me.Post("/tokens/:id/extend", h.ExtendToken)
 	me.Get("/sessions", h.ListMySessions)
 	me.Delete("/sessions", h.LogoutAllDevices)
 	me.Delete("/sessions/:sessionID", h.RevokeMySession)

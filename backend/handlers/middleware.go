@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,7 +32,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	}
 
 	// Fall back to API token auth
-	user, err = h.service.ValidateAPIToken(c.Context(), token)
+	user, apiToken, err := h.service.ValidateAPIToken(c.Context(), token, c.IP())
 	if err != nil {
 		log.Printf("Auth error: %v", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Invalid or expired token")
@@ -43,6 +44,35 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 
 	c.Locals("user", user)
 	c.Locals("userID", user.ID)
+
+	// Store token scope and enforce rate limit
+	if apiToken != nil {
+		c.Locals("tokenScope", apiToken.Scope)
+
+		// Rate limit check
+		limitStr, _ := h.service.Config.Get("api_token_rate_limit_per_minute")
+		limit := 100
+		if n, err2 := strconv.Atoi(limitStr); err2 == nil && n >= 0 {
+			limit = n
+		}
+		if !h.tokenLimiter.Allow(apiToken.ID, limit) {
+			c.Set("Retry-After", "60")
+			return RespondError(c, fiber.StatusTooManyRequests, ErrServiceUnavailable, "rate limit exceeded")
+		}
+
+		// Enforce token scope
+		if scope, ok := c.Locals("tokenScope").(string); ok {
+			path := c.Path()
+			method := c.Method()
+			if scope == "read" && method != "GET" && method != "HEAD" && method != "OPTIONS" {
+				return RespondError(c, fiber.StatusForbidden, ErrForbidden, "token is read-only")
+			}
+			if scope == "write" && strings.HasPrefix(path, "/api/v1/admin") {
+				return RespondError(c, fiber.StatusForbidden, ErrForbidden, "token scope does not allow admin operations")
+			}
+			// "admin" scope: allow everything
+		}
+	}
 
 	return c.Next()
 }
@@ -69,7 +99,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	user, err = h.service.ValidateAPIToken(c.Context(), token)
+	user, _, err = h.service.ValidateAPIToken(c.Context(), token, c.IP())
 	if err == nil {
 		c.Locals("user", user)
 		c.Locals("userID", user.ID)

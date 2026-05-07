@@ -62,14 +62,18 @@ type Session struct {
 
 // APIToken represents an API authentication token
 type APIToken struct {
-	ID        int64
-	UserID    int64
-	TokenHash string
-	Name      string
-	LastUsedAt *time.Time
-	ExpiresAt *time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID                     int64      `json:"id"`
+	UserID                 int64      `json:"user_id"`
+	TokenHash              string     `json:"-"`
+	Name                   string     `json:"name"`
+	Scope                  string     `json:"scope"`
+	UsageCount             int64      `json:"usage_count"`
+	LastUsedAt             *time.Time `json:"last_used_at,omitempty"`
+	LastUsedIP             *string    `json:"last_used_ip,omitempty"`
+	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
+	RotationGraceExpiresAt *time.Time `json:"rotation_grace_expires_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
 }
 
 // PasswordReset represents a password reset request

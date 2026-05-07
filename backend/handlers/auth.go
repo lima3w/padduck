@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
@@ -23,19 +25,29 @@ func isAccountLocked(err error) bool {
 }
 
 type GenerateTokenRequest struct {
-	TokenName string `json:"token_name"`
+	TokenName     string `json:"token_name"`
+	Scope         string `json:"scope"`
+	ExpiresInDays int    `json:"expires_in_days"`
 }
 
 type GenerateTokenResponse struct {
-	Token string `json:"token"`
-	Name  string `json:"name"`
+	Token     string  `json:"token"`
+	Name      string  `json:"name"`
+	Scope     string  `json:"scope"`
+	ExpiresAt *string `json:"expires_at,omitempty"`
 }
 
 type ListTokensResponse struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	CreatedAt  string `json:"created_at"`
-	LastUsedAt string `json:"last_used_at"`
+	ID             int64   `json:"id"`
+	Name           string  `json:"name"`
+	Scope          string  `json:"scope"`
+	UsageCount     int64   `json:"usage_count"`
+	LastUsedAt     string  `json:"last_used_at"`
+	LastUsedIP     *string `json:"last_used_ip,omitempty"`
+	ExpiresAt      *string `json:"expires_at,omitempty"`
+	IsExpiringSoon bool    `json:"is_expiring_soon"`
+	IsRotated      bool    `json:"is_rotated"`
+	CreatedAt      string  `json:"created_at"`
 }
 
 type UserResponse struct {
@@ -70,7 +82,7 @@ func (h *Handler) GenerateToken(c *fiber.Ctx) error {
 		return h.StatusBadRequest(c, "Invalid request body")
 	}
 
-	token, err := h.service.GenerateAPIToken(c.Context(), int64(userID), req.TokenName)
+	token, err := h.service.GenerateAPIToken(c.Context(), int64(userID), req.TokenName, req.Scope, req.ExpiresInDays)
 	if err != nil {
 		return h.StatusInternalServerError(c, "Failed to generate token", err.Error())
 	}
@@ -86,10 +98,15 @@ func (h *Handler) GenerateToken(c *fiber.Ctx) error {
 		"IP":        c.IP(),
 	})
 
-	return c.Status(fiber.StatusCreated).JSON(GenerateTokenResponse{
+	resp := GenerateTokenResponse{
 		Token: token,
 		Name:  req.TokenName,
-	})
+		Scope: req.Scope,
+	}
+	if req.Scope == "" {
+		resp.Scope = "write"
+	}
+	return c.Status(fiber.StatusCreated).JSON(resp)
 }
 
 // ListTokens handles GET /api/v1/auth/tokens/:userID
@@ -113,11 +130,24 @@ func (h *Handler) ListTokens(c *fiber.Ctx) error {
 			if token.LastUsedAt != nil {
 				lastUsed = token.LastUsedAt.String()
 			}
+			var expiresAt *string
+			if token.ExpiresAt != nil {
+				s := token.ExpiresAt.Format(time.RFC3339)
+				expiresAt = &s
+			}
+			isExpiringSoon := token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now().Add(7*24*time.Hour))
+			isRotated := token.RotationGraceExpiresAt != nil
 			response = append(response, ListTokensResponse{
-				ID:         token.ID,
-				Name:       token.Name,
-				CreatedAt:  token.CreatedAt.String(),
-				LastUsedAt: lastUsed,
+				ID:             token.ID,
+				Name:           token.Name,
+				Scope:          token.Scope,
+				UsageCount:     token.UsageCount,
+				LastUsedAt:     lastUsed,
+				LastUsedIP:     token.LastUsedIP,
+				ExpiresAt:      expiresAt,
+				IsExpiringSoon: isExpiringSoon,
+				IsRotated:      isRotated,
+				CreatedAt:      token.CreatedAt.String(),
 			})
 		}
 	}
@@ -183,7 +213,7 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	token, err := h.service.GenerateAPIToken(c.Context(), userID, req.TokenName)
+	token, err := h.service.GenerateAPIToken(c.Context(), userID, req.TokenName, req.Scope, req.ExpiresInDays)
 	if err != nil {
 		log.Printf("Error generating token: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
@@ -195,9 +225,14 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 		ResourceType: "api_token", ResourceName: req.TokenName,
 	})
 
+	scope := req.Scope
+	if scope == "" {
+		scope = "write"
+	}
 	return c.Status(fiber.StatusCreated).JSON(GenerateTokenResponse{
 		Token: token,
 		Name:  req.TokenName,
+		Scope: scope,
 	})
 }
 
@@ -221,11 +256,24 @@ func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 			if token.LastUsedAt != nil {
 				lastUsed = token.LastUsedAt.String()
 			}
+			var expiresAt *string
+			if token.ExpiresAt != nil {
+				s := token.ExpiresAt.Format(time.RFC3339)
+				expiresAt = &s
+			}
+			isExpiringSoon := token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now().Add(7*24*time.Hour))
+			isRotated := token.RotationGraceExpiresAt != nil
 			response = append(response, ListTokensResponse{
-				ID:         token.ID,
-				Name:       token.Name,
-				CreatedAt:  token.CreatedAt.String(),
-				LastUsedAt: lastUsed,
+				ID:             token.ID,
+				Name:           token.Name,
+				Scope:          token.Scope,
+				UsageCount:     token.UsageCount,
+				LastUsedAt:     lastUsed,
+				LastUsedIP:     token.LastUsedIP,
+				ExpiresAt:      expiresAt,
+				IsExpiringSoon: isExpiringSoon,
+				IsRotated:      isRotated,
+				CreatedAt:      token.CreatedAt.String(),
 			})
 		}
 	}
@@ -414,4 +462,53 @@ func (h *Handler) LogoutAllDevices(c *fiber.Ctx) error {
 	})
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// RotateToken handles POST /api/v1/auth/me/tokens/:id/rotate
+func (h *Handler) RotateToken(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok {
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid token ID")
+	}
+
+	newToken, graceExpiresAt, err := h.service.RotateAPIToken(c.Context(), int64(id), user.ID)
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
+	}
+
+	return c.JSON(fiber.Map{
+		"new_token":            newToken,
+		"old_token_expires_at": graceExpiresAt.Format(time.RFC3339),
+		"message":              fmt.Sprintf("Old token valid for %s. Update your scripts before then.", graceExpiresAt.Format(time.RFC3339)),
+	})
+}
+
+// ExtendToken handles POST /api/v1/auth/me/tokens/:id/extend
+func (h *Handler) ExtendToken(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok {
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid token ID")
+	}
+
+	var req struct {
+		Days int `json:"days"`
+	}
+	_ = c.BodyParser(&req)
+
+	token, err := h.service.ExtendAPIToken(c.Context(), int64(id), user.ID, req.Days)
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
+	}
+
+	return c.JSON(token)
 }

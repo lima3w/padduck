@@ -497,11 +497,29 @@ func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, sta
 // API Token operations
 
 func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash, name string) (*models.APIToken, error) {
-	query := `INSERT INTO api_tokens (user_id, token_hash, name) VALUES ($1, $2, $3) RETURNING id, user_id, token_hash, name, last_used_at, expires_at, created_at, updated_at`
+	query := `INSERT INTO api_tokens (user_id, token_hash, name) VALUES ($1, $2, $3)
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, name)
 
 	token := &models.APIToken{}
-	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (r *Repository) CreateAPITokenFull(ctx context.Context, userID int64, tokenHash, name, scope string, expiresAt *time.Time) (*models.APIToken, error) {
+	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at)
+	          VALUES ($1, $2, $3, $4, $5)
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, userID, tokenHash, name, scope, expiresAt)
+	token := &models.APIToken{}
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -509,11 +527,13 @@ func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash
 }
 
 func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, last_used_at, expires_at, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
 	row := r.db.QueryRow(ctx, query, tokenHash)
 
 	token := &models.APIToken{}
-	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -521,7 +541,7 @@ func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*
 }
 
 func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, last_used_at, expires_at, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -531,7 +551,9 @@ func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*
 	tokens := make([]*models.APIToken, 0)
 	for rows.Next() {
 		token := &models.APIToken{}
-		err := rows.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.LastUsedAt, &token.ExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		err := rows.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+			&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -540,15 +562,56 @@ func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*
 	return tokens, rows.Err()
 }
 
-func (r *Repository) UpdateAPITokenLastUsed(ctx context.Context, tokenID int64) error {
-	query := `UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, tokenID)
+func (r *Repository) UpdateAPITokenLastUsed(ctx context.Context, tokenID int64, ip string) error {
+	query := `UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP, last_used_ip = $2, usage_count = usage_count + 1 WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, tokenID, nullableString(ip))
 	return err
 }
 
 func (r *Repository) DeleteAPIToken(ctx context.Context, tokenID int64) error {
 	query := `DELETE FROM api_tokens WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, tokenID)
+	return err
+}
+
+func (r *Repository) MarkAPITokenRotated(ctx context.Context, tokenID int64, graceExpiresAt time.Time) error {
+	query := `UPDATE api_tokens SET rotation_grace_expires_at = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, tokenID, graceExpiresAt)
+	return err
+}
+
+func (r *Repository) ExtendAPIToken(ctx context.Context, tokenID, userID int64, newExpiresAt time.Time) (*models.APIToken, error) {
+	query := `UPDATE api_tokens SET expires_at = $3, updated_at = CURRENT_TIMESTAMP
+	          WHERE id = $1 AND user_id = $2
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, tokenID, userID, newExpiresAt)
+	token := &models.APIToken{}
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (r *Repository) GetAPITokenByID(ctx context.Context, tokenID int64) (*models.APIToken, error) {
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at FROM api_tokens WHERE id = $1`
+	row := r.db.QueryRow(ctx, query, tokenID)
+	token := &models.APIToken{}
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (r *Repository) DeleteExpiredAPITokens(ctx context.Context) error {
+	// Delete tokens expired more than 30 days ago with no grace period active
+	query := `DELETE FROM api_tokens WHERE expires_at IS NOT NULL AND expires_at < NOW() - INTERVAL '30 days' AND (rotation_grace_expires_at IS NULL OR rotation_grace_expires_at < NOW() - INTERVAL '30 days')`
+	_, err := r.db.Exec(ctx, query)
 	return err
 }
 

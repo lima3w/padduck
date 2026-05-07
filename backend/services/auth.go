@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"time"
 
 	"ipam-next/models"
@@ -16,8 +17,10 @@ const (
 	TokenLength = 32
 )
 
-// GenerateAPIToken creates a new API token for a user
-func (s *Service) GenerateAPIToken(ctx context.Context, userID int64, tokenName string) (token string, err error) {
+// GenerateAPIToken creates a new API token for a user.
+// scope must be one of "read", "write", "admin" (defaults to "write" if empty).
+// expiresInDays == 0 means read from config; if config is 0 or missing, no expiry.
+func (s *Service) GenerateAPIToken(ctx context.Context, userID int64, tokenName, scope string, expiresInDays int) (string, error) {
 	if userID <= 0 {
 		return "", fmt.Errorf("invalid user ID")
 	}
@@ -25,31 +28,52 @@ func (s *Service) GenerateAPIToken(ctx context.Context, userID int64, tokenName 
 		return "", fmt.Errorf("token name is required")
 	}
 
+	// Validate / default scope
+	switch scope {
+	case "read", "write", "admin":
+		// valid
+	default:
+		scope = "write"
+	}
+
+	// Determine expiry
+	var expiresAt *time.Time
+	if expiresInDays == 0 {
+		defaultDaysStr, _ := s.Config.Get("api_token_default_expiration_days")
+		if n, err := strconv.Atoi(defaultDaysStr); err == nil && n > 0 {
+			t := time.Now().Add(time.Duration(n) * 24 * time.Hour)
+			expiresAt = &t
+		}
+		// else: no expiry
+	} else if expiresInDays > 0 {
+		t := time.Now().Add(time.Duration(expiresInDays) * 24 * time.Hour)
+		expiresAt = &t
+	}
+
 	// Generate random token
 	tokenBytes := make([]byte, TokenLength)
-	_, err = rand.Read(tokenBytes)
-	if err != nil {
+	if _, err := rand.Read(tokenBytes); err != nil {
 		return "", err
 	}
-	token = hex.EncodeToString(tokenBytes)
+	token := hex.EncodeToString(tokenBytes)
 
 	// Hash token for storage
 	hash := sha256.Sum256([]byte(token))
 	tokenHash := hex.EncodeToString(hash[:])
 
 	// Store token hash in database
-	_, err = s.repository.CreateAPIToken(ctx, userID, tokenHash, tokenName)
-	if err != nil {
+	if _, err := s.repository.CreateAPITokenFull(ctx, userID, tokenHash, tokenName, scope, expiresAt); err != nil {
 		return "", err
 	}
 
 	return token, nil
 }
 
-// ValidateAPIToken checks if a token is valid and returns the user
-func (s *Service) ValidateAPIToken(ctx context.Context, token string) (*models.User, error) {
+// ValidateAPIToken checks if a token is valid and returns the user and the token record.
+// ip is recorded as the last-used IP address.
+func (s *Service) ValidateAPIToken(ctx context.Context, token, ip string) (*models.User, *models.APIToken, error) {
 	if token == "" {
-		return nil, fmt.Errorf("token is required")
+		return nil, nil, fmt.Errorf("token is required")
 	}
 
 	// Hash the provided token
@@ -59,24 +83,105 @@ func (s *Service) ValidateAPIToken(ctx context.Context, token string) (*models.U
 	// Look up token in database
 	apiToken, err := s.repository.GetAPITokenByHash(ctx, tokenHash)
 	if err != nil {
-		return nil, fmt.Errorf("invalid token")
+		return nil, nil, fmt.Errorf("invalid token")
 	}
 
 	// Check if token has expired
 	if apiToken.ExpiresAt != nil && apiToken.ExpiresAt.Before(time.Now()) {
-		return nil, fmt.Errorf("token has expired")
+		return nil, nil, fmt.Errorf("token has expired")
 	}
 
-	// Update last used timestamp
-	_ = s.repository.UpdateAPITokenLastUsed(ctx, apiToken.ID)
+	// Check rotation grace period
+	if apiToken.RotationGraceExpiresAt != nil && apiToken.RotationGraceExpiresAt.Before(time.Now()) {
+		return nil, nil, fmt.Errorf("token has been rotated and grace period has expired")
+	}
+
+	// Update last used timestamp and IP
+	_ = s.repository.UpdateAPITokenLastUsed(ctx, apiToken.ID, ip)
 
 	// Get user information
 	user, err := s.repository.GetUserByID(ctx, apiToken.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, nil, fmt.Errorf("user not found")
 	}
 
-	return user, nil
+	return user, apiToken, nil
+}
+
+// RotateAPIToken marks the old token as rotated and creates a new one with the same name/scope.
+// Returns the new raw token and when the old token's grace period expires.
+func (s *Service) RotateAPIToken(ctx context.Context, tokenID, userID int64) (newToken string, graceExpiresAt time.Time, err error) {
+	// Fetch old token
+	oldToken, err := s.repository.GetAPITokenByID(ctx, tokenID)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("token not found")
+	}
+	if oldToken.UserID != userID {
+		return "", time.Time{}, fmt.Errorf("token does not belong to this user")
+	}
+
+	// Read grace period from config (default 24h)
+	gracePeriod := 24 * time.Hour
+	if graceHoursStr, err2 := s.Config.Get("api_token_rotation_grace_period_hours"); err2 == nil {
+		if n, err3 := strconv.Atoi(graceHoursStr); err3 == nil && n > 0 {
+			gracePeriod = time.Duration(n) * time.Hour
+		}
+	}
+
+	graceExpiresAt = time.Now().Add(gracePeriod)
+
+	// Mark old token as rotated
+	if err = s.repository.MarkAPITokenRotated(ctx, tokenID, graceExpiresAt); err != nil {
+		return "", time.Time{}, fmt.Errorf("failed to rotate token: %w", err)
+	}
+
+	// Determine new token expiry: preserve remaining time if old token had expiry
+	var expiresInDays int
+	if oldToken.ExpiresAt != nil {
+		remaining := time.Until(*oldToken.ExpiresAt)
+		if remaining < 24*time.Hour {
+			remaining = 24 * time.Hour
+		}
+		expiresInDays = int(remaining.Hours() / 24)
+	}
+
+	// Create new token with same name and scope
+	newRawToken, err := s.GenerateAPIToken(ctx, userID, oldToken.Name, oldToken.Scope, expiresInDays)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("failed to create replacement token: %w", err)
+	}
+
+	return newRawToken, graceExpiresAt, nil
+}
+
+// ExtendAPIToken extends the expiry of an existing token.
+// days == 0 means read from config default.
+func (s *Service) ExtendAPIToken(ctx context.Context, tokenID, userID int64, days int) (*models.APIToken, error) {
+	// Fetch token and verify ownership
+	existing, err := s.repository.GetAPITokenByID(ctx, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("token not found")
+	}
+	if existing.UserID != userID {
+		return nil, fmt.Errorf("token does not belong to this user")
+	}
+
+	if days == 0 {
+		defaultDaysStr, _ := s.Config.Get("api_token_default_expiration_days")
+		if n, err2 := strconv.Atoi(defaultDaysStr); err2 == nil && n > 0 {
+			days = n
+		} else {
+			days = 30
+		}
+	}
+
+	newExpiresAt := time.Now().Add(time.Duration(days) * 24 * time.Hour)
+	return s.repository.ExtendAPIToken(ctx, tokenID, userID, newExpiresAt)
+}
+
+// CleanupExpiredTokens removes tokens that have been expired for more than 30 days.
+func (s *Service) CleanupExpiredTokens(ctx context.Context) error {
+	return s.repository.DeleteExpiredAPITokens(ctx)
 }
 
 // RevokeAPIToken deletes a token
