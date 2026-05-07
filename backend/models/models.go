@@ -132,21 +132,24 @@ type IPTag struct {
 
 // IPAddress represents an individual IP address
 type IPAddress struct {
-	ID         int64
-	SubnetID   int64
-	Address    string
-	Hostname   string
-	Status     string // available, assigned, reserved
-	AssignedTo *string
-	AssignedAt *time.Time
-	ExpiresAt  *time.Time
-	TagID      *int64
-	Tag        *IPTag
-	LastSeen   *time.Time
-	MACAddress *string
-	PTRRecord  *string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID            int64
+	SubnetID      int64
+	Address       string
+	Hostname      string
+	Status        string // available, assigned, reserved
+	AssignedTo    *string
+	AssignedAt    *time.Time
+	ExpiresAt     *time.Time
+	TagID         *int64
+	Tag           *IPTag
+	LastSeen      *time.Time
+	MACAddress    *string
+	PTRRecord     *string
+	DeviceID      *int64
+	InterfaceName *string
+	IsPrimary     bool
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // Role represents a named set of permissions
@@ -406,4 +409,61 @@ type NotificationQueue struct {
 	ErrorMsg    *string    `json:"error_msg,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// DeviceType represents a category of network device
+type DeviceType struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Icon        string    `json:"icon"`
+	Description *string   `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// Device represents a network device in the inventory
+type Device struct {
+	ID          int64       `json:"id"`
+	Hostname    string      `json:"hostname"`
+	Description *string     `json:"description,omitempty"`
+	TypeID      *int64      `json:"type_id,omitempty"`
+	Type        *DeviceType `json:"type,omitempty"`
+	SectionID   *int64      `json:"section_id,omitempty"`
+	Vendor      *string     `json:"vendor,omitempty"`
+	Model       *string     `json:"model,omitempty"`
+	OSVersion   *string     `json:"os_version,omitempty"`
+	IsOnline    bool        `json:"is_online"`
+	LastPingAt  *time.Time  `json:"last_ping_at,omitempty"`
+	IPCount     int         `json:"ip_count"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+	// NOTE: SNMP fields intentionally omitted — use DeviceSNMP for credentials endpoint
+}
+
+// DeviceSNMP holds the SNMP credentials for a device (only returned via privileged endpoint)
+type DeviceSNMP struct {
+	DeviceID        int64   `json:"device_id"`
+	SNMPCommunity   *string `json:"snmp_community,omitempty"`
+	SNMPVersion     string  `json:"snmp_version"`
+	SNMPV3User      *string `json:"snmp_v3_user,omitempty"`
+	SNMPV3AuthProto *string `json:"snmp_v3_auth_proto,omitempty"`
+	SNMPV3AuthPass  *string `json:"snmp_v3_auth_pass,omitempty"`
+	SNMPV3PrivProto *string `json:"snmp_v3_priv_proto,omitempty"`
+	SNMPV3PrivPass  *string `json:"snmp_v3_priv_pass,omitempty"`
+}
+
+// DeviceInterface represents a network interface on a device
+type DeviceInterface struct {
+	ID                     int64   `json:"id"`
+	DeviceID               int64   `json:"device_id"`
+	Name                   string  `json:"name"`
+	Description            *string `json:"description,omitempty"`
+	SpeedMbps              *int    `json:"speed_mbps,omitempty"`
+	MediaType              *string `json:"media_type,omitempty"`
+	VLANID                 *int64  `json:"vlan_id,omitempty"`
+	IPAddressID            *int64  `json:"ip_address_id,omitempty"`
+	ConnectedToDeviceID    *int64  `json:"connected_to_device_id,omitempty"`
+	ConnectedToInterfaceID *int64  `json:"connected_to_interface_id,omitempty"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
 }

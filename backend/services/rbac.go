@@ -70,6 +70,11 @@ const (
 	PermV2UserRead  = "auth:user:read"
 	PermV2UserWrite = "auth:user:write"
 	PermV2AuditRead = "auth:audit:read"
+
+	PermV2DeviceRead   = "devices:read"
+	PermV2DeviceWrite  = "devices:write"
+	PermV2DeviceDelete = "devices:delete"
+	PermV2DeviceAdmin  = "devices:admin"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -80,6 +85,7 @@ var AllPermissions = []string{
 	PermV2VRFList, PermV2VRFRead, PermV2VRFWrite, PermV2VRFDelete,
 	PermV2VLANList, PermV2VLANRead, PermV2VLANWrite, PermV2VLANDelete,
 	PermV2UserList, PermV2UserRead, PermV2UserWrite, PermV2AuditRead,
+	PermV2DeviceRead, PermV2DeviceWrite, PermV2DeviceDelete, PermV2DeviceAdmin,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -153,7 +159,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 	case "admin":
 		return true // admin has everything
 	case "user":
-		adminOnly := map[string]bool{PermV2UserWrite: true, PermV2AuditRead: true}
+		adminOnly := map[string]bool{PermV2UserWrite: true, PermV2AuditRead: true, PermV2DeviceAdmin: true}
 		return !adminOnly[permission]
 	case "viewer":
 		readPerms := map[string]bool{
@@ -163,6 +169,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2VRFList: true, PermV2VRFRead: true,
 			PermV2VLANList: true, PermV2VLANRead: true,
 			PermV2UserList: true, PermV2UserRead: true,
+			PermV2DeviceRead: true,
 		}
 		return readPerms[permission]
 	}

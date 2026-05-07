@@ -1,0 +1,396 @@
+package handlers
+
+import (
+	"log"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"ipam-next/repository"
+	"ipam-next/services"
+)
+
+// ListDeviceTypes handles GET /api/v1/device-types
+func (h *Handler) ListDeviceTypes(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+		return err
+	}
+
+	types, err := h.service.ListDeviceTypes(c.Context())
+	if err != nil {
+		log.Printf("Error listing device types: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	return c.JSON(types)
+}
+
+// ListDevices handles GET /api/v1/devices
+func (h *Handler) ListDevices(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+		return err
+	}
+
+	page := c.QueryInt("page", 1)
+	limit := c.QueryInt("limit", 50)
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 50
+	}
+	offset := (page - 1) * limit
+
+	devices, total, err := h.service.ListDevices(c.Context(), limit, offset)
+	if err != nil {
+		log.Printf("Error listing devices: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(fiber.Map{
+		"data":  devices,
+		"total": total,
+		"page":  page,
+		"limit": limit,
+	})
+}
+
+// CreateDevice handles POST /api/v1/devices
+func (h *Handler) CreateDevice(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+		return err
+	}
+
+	req := new(repository.DeviceParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	req.Hostname = strings.TrimSpace(req.Hostname)
+	if req.Hostname == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "hostname is required"})
+	}
+
+	device, err := h.service.CreateDevice(c.Context(), req)
+	if err != nil {
+		log.Printf("Error creating device: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(device)
+}
+
+// GetDevice handles GET /api/v1/devices/:id
+func (h *Handler) GetDevice(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	device, err := h.service.GetDevice(c.Context(), int64(id))
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
+		}
+		log.Printf("Error getting device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(device)
+}
+
+// UpdateDevice handles PUT /api/v1/devices/:id
+func (h *Handler) UpdateDevice(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	req := new(repository.DeviceParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	req.Hostname = strings.TrimSpace(req.Hostname)
+	if req.Hostname == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "hostname is required"})
+	}
+
+	device, err := h.service.UpdateDevice(c.Context(), int64(id), req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
+		}
+		log.Printf("Error updating device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(device)
+}
+
+// DeleteDevice handles DELETE /api/v1/devices/:id
+func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceDelete); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	if err := h.service.DeleteDevice(c.Context(), int64(id)); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
+		}
+		log.Printf("Error deleting device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// GetDeviceSNMPCredentials handles GET /api/v1/devices/:id/snmp-credentials
+func (h *Handler) GetDeviceSNMPCredentials(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceAdmin); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	creds, err := h.service.GetDeviceSNMPCredentials(c.Context(), int64(id))
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
+		}
+		log.Printf("Error getting SNMP credentials for device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(creds)
+}
+
+// ListDeviceIPAddresses handles GET /api/v1/devices/:id/ip-addresses
+func (h *Handler) ListDeviceIPAddresses(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	ips, err := h.service.ListDeviceIPAddresses(c.Context(), int64(id))
+	if err != nil {
+		log.Printf("Error listing IP addresses for device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(ips)
+}
+
+type associateIPRequest struct {
+	InterfaceName *string `json:"interface_name"`
+	IsPrimary     bool    `json:"is_primary"`
+}
+
+// AssociateIPToDevice handles POST /api/v1/devices/:id/ip-addresses/:ip_id/associate
+func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	ipID, err := c.ParamsInt("ip_id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+
+	req := new(associateIPRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if err := h.service.AssociateIPToDevice(c.Context(), int64(id), int64(ipID), req.InterfaceName, req.IsPrimary); err != nil {
+		log.Printf("Error associating IP %d to device %d: %v", ipID, id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// UnlinkIPFromDevice handles DELETE /api/v1/devices/:id/ip-addresses/:ip_id
+func (h *Handler) UnlinkIPFromDevice(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	ipID, err := c.ParamsInt("ip_id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+
+	if err := h.service.UnlinkIPFromDevice(c.Context(), int64(id), int64(ipID)); err != nil {
+		if strings.Contains(err.Error(), "not associated") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		}
+		log.Printf("Error unlinking IP %d from device %d: %v", ipID, id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// ListDeviceInterfaces handles GET /api/v1/devices/:id/interfaces
+func (h *Handler) ListDeviceInterfaces(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	ifaces, err := h.service.ListDeviceInterfaces(c.Context(), int64(id))
+	if err != nil {
+		log.Printf("Error listing interfaces for device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(ifaces)
+}
+
+// CreateDeviceInterface handles POST /api/v1/devices/:id/interfaces
+func (h *Handler) CreateDeviceInterface(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	req := new(repository.DeviceInterfaceParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "interface name is required"})
+	}
+
+	iface, err := h.service.CreateDeviceInterface(c.Context(), int64(id), req)
+	if err != nil {
+		log.Printf("Error creating interface for device %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(iface)
+}
+
+// UpdateDeviceInterface handles PUT /api/v1/devices/:id/interfaces/:if_id
+func (h *Handler) UpdateDeviceInterface(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	ifID, err := c.ParamsInt("if_id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid interface ID"})
+	}
+
+	req := new(repository.DeviceInterfaceParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "interface name is required"})
+	}
+
+	iface, err := h.service.UpdateDeviceInterface(c.Context(), int64(id), int64(ifID), req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "interface not found"})
+		}
+		log.Printf("Error updating interface %d on device %d: %v", ifID, id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(iface)
+}
+
+// DeleteDeviceInterface handles DELETE /api/v1/devices/:id/interfaces/:if_id
+func (h *Handler) DeleteDeviceInterface(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceDelete); err != nil {
+		return err
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+	}
+
+	ifID, err := c.ParamsInt("if_id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid interface ID"})
+	}
+
+	if err := h.service.DeleteDeviceInterface(c.Context(), int64(id), int64(ifID)); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "interface not found"})
+		}
+		log.Printf("Error deleting interface %d on device %d: %v", ifID, id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// SearchDevices handles POST /api/v1/devices/search
+func (h *Handler) SearchDevices(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+		return err
+	}
+
+	filter := new(repository.DeviceSearchFilter)
+	if err := c.BodyParser(filter); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	devices, err := h.service.SearchDevices(c.Context(), filter)
+	if err != nil {
+		log.Printf("Error searching devices: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(devices)
+}

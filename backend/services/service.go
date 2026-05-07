@@ -7,14 +7,15 @@ import (
 )
 
 type Service struct {
-	repository   *repository.Repository
-	Config       *ConfigService
-	Email        *EmailService
-	Registration *RegistrationService
-	MFA          *MFAService
-	Audit        *AuditService
-	Notification *NotificationService
-	Discovery    *DiscoveryService
+	repository      *repository.Repository
+	encryptionKey   string
+	Config          *ConfigService
+	Email           *EmailService
+	Registration    *RegistrationService
+	MFA             *MFAService
+	Audit           *AuditService
+	Notification    *NotificationService
+	Discovery       *DiscoveryService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -28,13 +29,14 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	}
 
 	svc := &Service{
-		repository:   repo,
-		Config:       configSvc,
-		Email:        emailSvc,
-		Registration: registrationSvc,
-		MFA:          mfaSvc,
-		Notification: NewNotificationService(repo, emailSvc),
-		Discovery:    NewDiscoveryService(repo),
+		repository:    repo,
+		encryptionKey: mfaEncryptionKey,
+		Config:        configSvc,
+		Email:         emailSvc,
+		Registration:  registrationSvc,
+		MFA:           mfaSvc,
+		Notification:  NewNotificationService(repo, emailSvc),
+		Discovery:     NewDiscoveryService(repo),
 	}
 	svc.Audit = NewAuditService(svc)
 	return svc

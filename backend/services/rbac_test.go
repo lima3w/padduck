@@ -297,6 +297,8 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 		PermV2VRFList, PermV2VRFRead, PermV2VRFWrite, PermV2VRFDelete,
 		PermV2VLANList, PermV2VLANRead, PermV2VLANWrite, PermV2VLANDelete,
 		PermV2UserList, PermV2UserRead, PermV2UserWrite, PermV2AuditRead,
+		// v1.3.0 device permissions
+		PermV2DeviceRead, PermV2DeviceWrite, PermV2DeviceDelete, PermV2DeviceAdmin,
 	}
 	assert.Equal(t, len(expected), len(AllPermissions))
 	for _, p := range expected {
@@ -523,8 +525,8 @@ func TestV2PermissionConstants_NonEmpty(t *testing.T) {
 func TestV2PermissionConstants_Prefixed(t *testing.T) {
 	for _, p := range AllPermissions {
 		assert.True(t,
-			strings.HasPrefix(p, "ipam:") || strings.HasPrefix(p, "auth:"),
-			"permission %q should start with 'ipam:' or 'auth:'", p,
+			strings.HasPrefix(p, "ipam:") || strings.HasPrefix(p, "auth:") || strings.HasPrefix(p, "devices:"),
+			"permission %q should start with 'ipam:', 'auth:', or 'devices:'", p,
 		)
 	}
 }
