@@ -13,6 +13,8 @@ import AuditLogPage from './pages/AuditLogPage'
 import UserSettingsPage from './pages/UserSettingsPage'
 import AdminTagsPage from './pages/AdminTagsPage'
 import OverlapReportPage from './pages/OverlapReportPage'
+import DevicesPage from './pages/DevicesPage'
+import DeviceDetailPage from './pages/DeviceDetailPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -58,6 +60,8 @@ export default function App() {
           <Route path="admin/tags" element={<AdminTagsPage />} />
           <Route path="admin/overlap-report" element={<OverlapReportPage />} />
           <Route path="settings" element={<UserSettingsPage />} />
+          <Route path="devices" element={<DevicesPage />} />
+          <Route path="devices/:id" element={<DeviceDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

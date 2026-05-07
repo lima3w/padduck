@@ -13,13 +13,14 @@ const STATUS_COLORS = {
   reserved: 'bg-yellow-100 text-yellow-700',
 }
 
-const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'mac_address', 'ptr_record', 'last_seen']
+const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'ptr_record', 'last_seen']
 const COLUMN_LABELS = {
   address: 'Address',
   hostname: 'Hostname',
   status: 'Status',
   tag: 'Tag',
   assigned_to: 'Assigned To',
+  device: 'Device',
   mac_address: 'MAC Address',
   ptr_record: 'Hostname/PTR',
   last_seen: 'Last Seen',
@@ -388,6 +389,7 @@ export default function IPAddressesPage() {
               {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
               {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
               {col('assigned_to') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Assigned To</th>}
+              {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
               {col('mac_address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
               {col('last_seen') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>}
@@ -411,6 +413,15 @@ export default function IPAddressesPage() {
                 )}
                 {col('tag') && <td className="px-4 py-3"><TagBadge tag={ip.Tag} /></td>}
                 {col('assigned_to') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.AssignedTo || '—'}</td>}
+                {col('device') && (
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    {ip.device_id ? (
+                      <Link to={`/devices/${ip.device_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                        {ip.device?.hostname || `#${ip.device_id}`}
+                      </Link>
+                    ) : '—'}
+                  </td>
+                )}
                 {col('mac_address') && <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400 text-xs">{ip.MACAddress || '—'}</td>}
                 {col('ptr_record') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.PTRRecord || '—'}</td>}
                 {col('last_seen') && (
