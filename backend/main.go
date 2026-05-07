@@ -118,6 +118,8 @@ func main() {
 
 	// Setup HTTP server with centralized error handler
 	app := fiber.New(fiber.Config{
+		// Trust X-Real-IP set by the nginx proxy so c.IP() returns the client address.
+		ProxyHeader: "X-Real-IP",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			if e, ok := err.(*fiber.Error); ok {
