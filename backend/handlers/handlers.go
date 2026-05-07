@@ -131,6 +131,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// IP Addresses resource routes (top-level)
 	ipAddress := protected.Group("/ip-addresses")
 	ipAddress.Get("/:id", h.GetIPAddress)
+	ipAddress.Put("/:id", h.UpdateIPMeta)
 	ipAddress.Post("/:id/assign", h.AssignIPAddress)
 	ipAddress.Post("/:id/release", h.ReleaseIPAddress)
 	ipAddress.Post("/:id/assign-with-lease", h.AssignIPAddressWithLease)
@@ -222,6 +223,16 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	// Subnet tree (v1.1.0 #177)
 	sections.Get("/:id/subnets/tree", h.GetSubnetTree)
+
+	// Subnet overlap report (v1.2.0 #181)
+	admin.Get("/subnets/overlap-report", h.GetOverlapReport)
+
+	// IP Tags (v1.2.0 #179)
+	tags := protected.Group("/tags")
+	tags.Get("", h.ListTags)
+	tags.Post("", h.CreateTag)
+	tags.Put("/:id", h.UpdateTag)
+	tags.Delete("/:id", h.DeleteTag)
 
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)

@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"log"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 type SearchRequest struct {
@@ -12,6 +14,19 @@ type SearchRequest struct {
 	Limit  int64  `json:"limit"`
 	Offset int64  `json:"offset"`
 	Status string `json:"status"`
+}
+
+type IPSearchRequest struct {
+	Query          string     `json:"query"`
+	Limit          int64      `json:"limit"`
+	Offset         int64      `json:"offset"`
+	Status         string     `json:"status"`
+	TagID          *int64     `json:"tag_id"`
+	MACAddress     string     `json:"mac_address"`
+	PTRRecord      string     `json:"ptr_record"`
+	IsAssigned     *bool      `json:"is_assigned"`
+	LastSeenAfter  *time.Time `json:"last_seen_after"`
+	LastSeenBefore *time.Time `json:"last_seen_before"`
 }
 
 // SearchSections handles POST /api/v1/sections/search
@@ -68,12 +83,21 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
 
-	req := new(SearchRequest)
+	req := new(IPSearchRequest)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ips, err := h.service.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset)
+	opts := services.IPSearchOptions{
+		TagID:          req.TagID,
+		MACAddress:     req.MACAddress,
+		PTRRecord:      req.PTRRecord,
+		IsAssigned:     req.IsAssigned,
+		LastSeenAfter:  req.LastSeenAfter,
+		LastSeenBefore: req.LastSeenBefore,
+	}
+
+	ips, err := h.service.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset, opts)
 	if err != nil {
 		log.Printf("Error searching IP addresses: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
