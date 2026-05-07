@@ -1,1 +1,93 @@
 @import "tailwindcss";
+
+/* Dark mode variant: .dark class on <html> (set by useDarkMode hook) OR system preference */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Apply dark class from system preference on initial load before JS */
+@media (prefers-color-scheme: dark) {
+  html:not(.light) {
+    color-scheme: dark;
+  }
+}
+
+/* Global dark mode overrides for common bg/text patterns */
+.dark body {
+  background-color: #111827; /* gray-900 */
+  color: #f3f4f6; /* gray-100 */
+}
+
+/* Cards / panels */
+.dark .bg-white {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: #f3f4f6;
+}
+
+/* Inputs */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #374151; /* gray-700 */
+  color: #f3f4f6;
+  border-color: #4b5563; /* gray-600 */
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af; /* gray-400 */
+}
+
+/* Tables */
+.dark table {
+  color: #f3f4f6;
+}
+
+.dark thead {
+  background-color: #1f2937;
+  color: #d1d5db;
+}
+
+.dark tbody tr {
+  border-color: #374151;
+}
+
+.dark tbody tr:hover {
+  background-color: #374151;
+}
+
+/* Gray backgrounds used in pages */
+.dark .bg-gray-50 {
+  background-color: #1f2937 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #111827 !important;
+}
+
+/* Text colors */
+.dark .text-gray-900 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-700 {
+  color: #d1d5db !important;
+}
+
+.dark .text-gray-600 {
+  color: #9ca3af !important;
+}
+
+.dark .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+/* Borders */
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: #4b5563 !important;
+}
+
+/* Login page */
+.dark .min-h-screen.bg-gray-100,
+.dark .min-h-screen.bg-gray-50 {
+  background-color: #111827 !important;
+}

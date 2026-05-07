@@ -1,0 +1,1202 @@
+openapi: 3.0.3
+info:
+  title: IPAM Next API
+  description: IP Address Management system — full REST API
+  version: 0.9.0
+  contact:
+    name: IPAM Next
+servers:
+  - url: /api/v1
+    description: API v1
+
+components:
+  securitySchemes:
+    sessionToken:
+      type: apiKey
+      in: header
+      name: X-Session-Token
+    bearerToken:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, user, viewer]
+        state:
+          type: string
+          enum: [active, pending_email_verification, pending_admin_approval, rejected, disabled, suspended]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        created_by:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    Subnet:
+      type: object
+      properties:
+        id:
+          type: integer
+        section_id:
+          type: integer
+        network_address:
+          type: string
+        prefix_length:
+          type: integer
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    IPAddress:
+      type: object
+      properties:
+        id:
+          type: integer
+        subnet_id:
+          type: integer
+        address:
+          type: string
+        hostname:
+          type: string
+        status:
+          type: string
+          enum: [available, assigned, reserved]
+        assigned_to:
+          type: string
+          nullable: true
+        assigned_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    VRF:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        route_distinguisher:
+          type: string
+        description:
+          type: string
+
+    VLAN:
+      type: object
+      properties:
+        id:
+          type: integer
+        vrf_id:
+          type: integer
+          nullable: true
+        vlan_id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+
+    APIToken:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        scope:
+          type: string
+          enum: [read, write, admin]
+        usage_count:
+          type: integer
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    ScanJob:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        subnet_ids:
+          type: array
+          items:
+            type: integer
+        schedule_cron:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        last_run_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_run_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ScanResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        job_id:
+          type: integer
+        subnet_id:
+          type: integer
+        ip_address:
+          type: string
+        is_alive:
+          type: boolean
+        response_time_ms:
+          type: integer
+          nullable: true
+        scanned_at:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+        username:
+          type: string
+        action:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: integer
+          nullable: true
+        resource_name:
+          type: string
+        ip_address:
+          type: string
+        status:
+          type: string
+          enum: [success, failure]
+        created_at:
+          type: string
+          format: date-time
+
+security:
+  - sessionToken: []
+  - bearerToken: []
+
+paths:
+  # ── Authentication ───────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      summary: Log in
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  mfa_required:
+                    type: boolean
+        "401":
+          description: Invalid credentials
+
+  /auth/register:
+    post:
+      summary: Self-register
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password]
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "201":
+          description: User registered
+        "400":
+          description: Validation error
+
+  /auth/verify-email:
+    get:
+      summary: Verify email address
+      security: []
+      tags: [Auth]
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified
+        "400":
+          description: Invalid token
+
+  /auth/request-password-reset:
+    post:
+      summary: Request password reset email
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Reset email sent
+
+  /auth/reset-password:
+    post:
+      summary: Reset password using token
+      security: []
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, new_password]
+              properties:
+                token:
+                  type: string
+                new_password:
+                  type: string
+      responses:
+        "200":
+          description: Password reset
+        "400":
+          description: Invalid or expired token
+
+  /auth/me:
+    get:
+      summary: Get current user
+      tags: [Auth]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/me/logout:
+    post:
+      summary: Log out (revoke current session)
+      tags: [Auth]
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/me/sessions:
+    get:
+      summary: List active sessions
+      tags: [Auth]
+      responses:
+        "200":
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /auth/me/sessions:
+    delete:
+      summary: Revoke all sessions (logout all devices)
+      tags: [Auth]
+      responses:
+        "200":
+          description: All sessions revoked
+
+  /auth/me/export:
+    get:
+      summary: Export all personal data (GDPR)
+      tags: [Auth, GDPR]
+      responses:
+        "200":
+          description: JSON data export download
+
+  /auth/me/deletion-request:
+    post:
+      summary: Request account deletion (GDPR right to erasure)
+      tags: [Auth, GDPR]
+      responses:
+        "200":
+          description: Deletion request submitted
+
+  /auth/me/accept-privacy:
+    post:
+      summary: Accept the current privacy policy
+      tags: [Auth]
+      responses:
+        "200":
+          description: Consent recorded
+
+  /privacy-policy/version:
+    get:
+      summary: Get current privacy policy version
+      security: []
+      tags: [Auth]
+      responses:
+        "200":
+          description: Current version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+
+  # ── Sections ──────────────────────────────────────────────────────────────
+  /sections:
+    get:
+      summary: List sections
+      tags: [Sections]
+      responses:
+        "200":
+          description: Section list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Section"
+    post:
+      summary: Create section
+      tags: [Sections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Section created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Section"
+
+  /sections/{id}:
+    get:
+      summary: Get section
+      tags: [Sections]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Section
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Section"
+    put:
+      summary: Update section
+      tags: [Sections]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated section
+    delete:
+      summary: Delete section
+      tags: [Sections]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Subnets ────────────────────────────────────────────────────────────────
+  /sections/{sectionID}/subnets:
+    get:
+      summary: List subnets in a section
+      tags: [Subnets]
+      parameters:
+        - name: sectionID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subnet list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subnet"
+    post:
+      summary: Create subnet
+      tags: [Subnets]
+      parameters:
+        - name: sectionID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [network_address, prefix_length]
+              properties:
+                network_address:
+                  type: string
+                prefix_length:
+                  type: integer
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Subnet created
+
+  /subnets/{id}:
+    get:
+      summary: Get subnet
+      tags: [Subnets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subnet
+    put:
+      summary: Update subnet
+      tags: [Subnets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete subnet
+      tags: [Subnets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /subnets/{id}/utilization:
+    get:
+      summary: Get subnet utilization stats
+      tags: [Subnets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Utilization stats
+
+  /subnets/{id}/scan-results:
+    get:
+      summary: Get discovery scan results for a subnet
+      tags: [Subnets, Discovery]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Scan results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanResult"
+
+  # ── IP Addresses ───────────────────────────────────────────────────────────
+  /subnets/{subnetID}/ip-addresses:
+    get:
+      summary: List IP addresses in a subnet
+      tags: [IP Addresses]
+      parameters:
+        - name: subnetID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: IP address list
+    post:
+      summary: Create IP address
+      tags: [IP Addresses]
+      parameters:
+        - name: subnetID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: IP address created
+
+  /subnets/{subnetID}/ip-addresses/allocate:
+    post:
+      summary: Auto-allocate next available IP
+      tags: [IP Addresses]
+      parameters:
+        - name: subnetID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assigned_to]
+              properties:
+                assigned_to:
+                  type: string
+      responses:
+        "201":
+          description: IP allocated
+
+  /ip-addresses/{id}:
+    get:
+      summary: Get IP address
+      tags: [IP Addresses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: IP address
+    delete:
+      summary: Delete IP address
+      tags: [IP Addresses]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── VRFs ───────────────────────────────────────────────────────────────────
+  /vrfs:
+    get:
+      summary: List VRFs
+      tags: [VRFs]
+      responses:
+        "200":
+          description: VRF list
+    post:
+      summary: Create VRF
+      tags: [VRFs]
+      responses:
+        "201":
+          description: VRF created
+
+  /vrfs/{id}:
+    get:
+      summary: Get VRF
+      tags: [VRFs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: VRF
+    put:
+      summary: Update VRF
+      tags: [VRFs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete VRF
+      tags: [VRFs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── VLANs ──────────────────────────────────────────────────────────────────
+  /vlans:
+    get:
+      summary: List VLANs
+      tags: [VLANs]
+      responses:
+        "200":
+          description: VLAN list
+    post:
+      summary: Create VLAN
+      tags: [VLANs]
+      responses:
+        "201":
+          description: VLAN created
+
+  /vlans/{id}:
+    get:
+      summary: Get VLAN
+      tags: [VLANs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: VLAN
+    put:
+      summary: Update VLAN
+      tags: [VLANs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete VLAN
+      tags: [VLANs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Admin ──────────────────────────────────────────────────────────────────
+  /admin/users:
+    get:
+      summary: List all users (admin)
+      tags: [Admin]
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      summary: Create user (admin)
+      tags: [Admin]
+      responses:
+        "201":
+          description: User created
+
+  /admin/users/{id}/email:
+    put:
+      summary: Update user email (admin)
+      tags: [Admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Email updated
+
+  /admin/users/{id}/suspend:
+    post:
+      summary: Suspend a user (admin)
+      tags: [Admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: User suspended
+
+  /admin/users/{id}/unsuspend:
+    post:
+      summary: Unsuspend a user (admin)
+      tags: [Admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User unsuspended
+
+  /admin/users/{id}/impersonate:
+    post:
+      summary: Start impersonation session (admin)
+      tags: [Admin]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Impersonation token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /admin/users/{id}/gdpr-delete:
+    post:
+      summary: Anonymize user data (GDPR, admin)
+      tags: [Admin, GDPR]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User anonymized
+
+  /admin/users/bulk-import:
+    post:
+      summary: Bulk import users from CSV (admin)
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                default_password:
+                  type: string
+      responses:
+        "200":
+          description: Import results
+
+  /admin/users/bulk-suspend:
+    post:
+      summary: Bulk suspend users (admin)
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids]
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Suspended count
+
+  /admin/users/bulk-activate:
+    post:
+      summary: Bulk activate users (admin)
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids]
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Activated count
+
+  /admin/users/bulk-delete:
+    post:
+      summary: Bulk delete users (admin)
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_ids]
+              properties:
+                user_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        "200":
+          description: Deleted count
+
+  /admin/scan-jobs:
+    get:
+      summary: List scan jobs
+      tags: [Discovery]
+      responses:
+        "200":
+          description: Scan job list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScanJob"
+    post:
+      summary: Create scan job
+      tags: [Discovery]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, subnet_ids]
+              properties:
+                name:
+                  type: string
+                subnet_ids:
+                  type: array
+                  items:
+                    type: integer
+                schedule_cron:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Scan job created
+
+  /admin/scan-jobs/{id}:
+    get:
+      summary: Get scan job
+      tags: [Discovery]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scan job
+    put:
+      summary: Update scan job
+      tags: [Discovery]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete scan job
+      tags: [Discovery]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /admin/scan-jobs/{id}/run:
+    post:
+      summary: Run scan job immediately
+      tags: [Discovery]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job started
+
+  /admin/scan-jobs/{id}/results:
+    get:
+      summary: Get scan results for a job
+      tags: [Discovery]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        "200":
+          description: Scan results
+
+  /admin/audit-logs:
+    get:
+      summary: List audit logs (admin)
+      tags: [Admin, Audit]
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: until
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
+  /admin/audit-logs/export:
+    get:
+      summary: Export audit logs as CSV (admin)
+      tags: [Admin, Audit]
+      responses:
+        "200":
+          description: CSV download
+
+  /health:
+    get:
+      summary: Health check
+      security: []
+      tags: [System]
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  database:
+                    type: string

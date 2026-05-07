@@ -111,6 +111,12 @@ func (r *Repository) UpdateUserState(ctx context.Context, userID int64, state st
 	return err
 }
 
+func (r *Repository) UpdateUserEmail(ctx context.Context, userID int64, email string) error {
+	query := `UPDATE users SET email = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
+	_, err := r.db.Exec(ctx, query, userID, email)
+	return err
+}
+
 func (r *Repository) UpdateUserRole(ctx context.Context, userID int64, role string) (*models.User, error) {
 	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, role)

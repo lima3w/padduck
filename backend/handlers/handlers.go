@@ -169,6 +169,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/approvals/:id/reject", h.RejectUser)
 	admin.Post("/users/:id/unlock", h.AdminUnlockUser)
 	admin.Post("/users/:id/send-password-reset", h.SendPasswordResetEmail)
+	admin.Put("/users/:id/email", h.UpdateUserEmail)
 	admin.Get("/notification-stats", h.GetNotificationStats)
 	admin.Get("/audit-logs", h.GetAuditLogs)
 	admin.Get("/audit-logs/export", h.ExportAuditLogs)

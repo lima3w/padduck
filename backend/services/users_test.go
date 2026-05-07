@@ -198,6 +198,23 @@ func TestDeleteUser_InvalidID(t *testing.T) {
 	}
 }
 
+func TestUpdateUserEmail_Validation(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	t.Run("invalid user ID", func(t *testing.T) {
+		err := svc.UpdateUserEmail(ctx, 0, "valid@example.com")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid user ID")
+	})
+
+	t.Run("invalid email", func(t *testing.T) {
+		err := svc.UpdateUserEmail(ctx, 1, "not-an-email")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid email")
+	})
+}
+
 func TestSuspendUser_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()

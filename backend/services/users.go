@@ -96,6 +96,17 @@ func (s *Service) DeleteUser(ctx context.Context, userID int64) error {
 	return s.repository.DeleteUser(ctx, userID)
 }
 
+// UpdateUserEmail updates a user's email address (admin operation)
+func (s *Service) UpdateUserEmail(ctx context.Context, userID int64, email string) error {
+	if userID <= 0 {
+		return fmt.Errorf("invalid user ID")
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return fmt.Errorf("invalid email format")
+	}
+	return s.repository.UpdateUserEmail(ctx, userID, email)
+}
+
 // SuspendUser suspends a user account
 func (s *Service) SuspendUser(ctx context.Context, userID, adminID int64, reason string) error {
 	if userID <= 0 {

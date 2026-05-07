@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -11,9 +12,27 @@ import AuditLogPage from './pages/AuditLogPage'
 import UserSettingsPage from './pages/UserSettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
+// Apply system dark preference immediately on app mount (before useDarkMode hook runs)
+function DarkModeBootstrap() {
+  useEffect(() => {
+    const stored = localStorage.getItem('ipam-color-scheme')
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const html = document.documentElement
+    if (!stored || stored === 'system') {
+      html.classList.toggle('dark', mq.matches)
+      html.classList.toggle('light', !mq.matches)
+    } else {
+      html.classList.toggle('dark', stored === 'dark')
+      html.classList.toggle('light', stored === 'light')
+    }
+  }, [])
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <DarkModeBootstrap />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

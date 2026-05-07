@@ -224,6 +224,39 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+// UpdateUserEmail handles PUT /api/v1/admin/users/:id/email
+func (h *Handler) UpdateUserEmail(c *fiber.Ctx) error {
+	admin, ok := c.Locals("user").(*models.User)
+	if !ok || admin.Role != "admin" {
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	}
+
+	userID, err := c.ParamsInt("id")
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
+	}
+
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := c.BodyParser(&req); err != nil || req.Email == "" {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "email is required")
+	}
+
+	if err := h.service.UpdateUserEmail(c.Context(), int64(userID), req.Email); err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
+	}
+
+	h.auditLog(c, services.AuditEntry{
+		UserID: &admin.ID, Username: admin.Username,
+		Action: "user.update_email", ResourceType: "user",
+		ResourceID: resourceIDPtr(int64(userID)), ResourceName: req.Email,
+		Status: "success",
+	})
+
+	return c.JSON(fiber.Map{"message": "email updated"})
+}
+
 // SendPasswordResetEmail handles POST /api/v1/admin/users/:id/send-password-reset
 func (h *Handler) SendPasswordResetEmail(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)

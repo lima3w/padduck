@@ -117,6 +117,40 @@ func TestRespondError_WithoutDetails(t *testing.T) {
 	}
 }
 
+// TestRespondError_HandlerHelpers verifies that handler method wrappers call RespondError.
+func TestRespondError_HandlerHelpers(t *testing.T) {
+	h := NewHandler(nil)
+
+	tests := []struct {
+		name       string
+		fn         func(c *fiber.Ctx) error
+		statusCode int
+		code       string
+	}{
+		{"BadRequest", func(c *fiber.Ctx) error { return h.StatusBadRequest(c, "bad") }, 400, "BAD_REQUEST"},
+		{"Unauthorized", func(c *fiber.Ctx) error { return h.StatusUnauthorized(c, "unauth") }, 401, "UNAUTHORIZED"},
+		{"Forbidden", func(c *fiber.Ctx) error { return h.StatusForbidden(c, "forbidden") }, 403, "FORBIDDEN"},
+		{"NotFound", func(c *fiber.Ctx) error { return h.StatusNotFound(c, "not found") }, 404, "NOT_FOUND"},
+		{"Conflict", func(c *fiber.Ctx) error { return h.StatusConflict(c, "conflict") }, 409, "CONFLICT"},
+		{"InternalServerError", func(c *fiber.Ctx) error { return h.StatusInternalServerError(c, "server err") }, 500, "INTERNAL_SERVER_ERROR"},
+		{"ServiceUnavailable", func(c *fiber.Ctx) error { return h.StatusServiceUnavailable(c, "unavailable") }, 503, "SERVICE_UNAVAILABLE"},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			app := fiber.New()
+			app.Get("/test", tt.fn)
+			req := httptest.NewRequest("GET", "/test", nil)
+			resp, err := app.Test(req)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.statusCode, resp.StatusCode)
+			body := parseErrorResponse(t, resp.Body)
+			assert.Equal(t, tt.code, body["code"])
+		})
+	}
+}
+
 // TestRespondError_AllStatusCodes exercises each helper via RespondError directly.
 func TestRespondError_AllCodes(t *testing.T) {
 	tests := []struct {
