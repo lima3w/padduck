@@ -183,6 +183,17 @@ func (r *Repository) UpdateUserPassword(ctx context.Context, userID int64, passw
 	return err
 }
 
+// InitAdminPassword sets the admin password only when it is currently NULL (i.e. first boot).
+// Returns true if the password was set, false if it was already set.
+func (r *Repository) InitAdminPassword(ctx context.Context, passwordHash string) (bool, error) {
+	query := `UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE username = 'admin' AND password_hash IS NULL`
+	result, err := r.db.Exec(ctx, query, passwordHash)
+	if err != nil {
+		return false, err
+	}
+	return result.RowsAffected() > 0, nil
+}
+
 // Section operations
 
 func (r *Repository) CreateSection(ctx context.Context, name, description string, createdBy int64) (*models.Section, error) {

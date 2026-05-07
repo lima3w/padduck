@@ -250,3 +250,13 @@ func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword
 
 	return nil
 }
+
+// InitAdminPassword sets the admin password on first boot when it is NULL.
+// Returns true and the password used if it was set (or generated), false if already set.
+func (s *Service) InitAdminPassword(ctx context.Context, password string) (bool, error) {
+	hash, err := utils.HashPassword(password)
+	if err != nil {
+		return false, fmt.Errorf("hashing admin password: %w", err)
+	}
+	return s.repository.InitAdminPassword(ctx, hash)
+}

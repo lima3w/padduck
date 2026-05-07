@@ -3,6 +3,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"os"
@@ -17,6 +19,34 @@ import (
 	"ipam-next/repository"
 	"ipam-next/services"
 )
+
+func initAdminPassword(ctx context.Context, svc *services.Service) error {
+	password := os.Getenv("ADMIN_PASSWORD")
+	generated := false
+
+	if password == "" {
+		b := make([]byte, 16)
+		if _, err := rand.Read(b); err != nil {
+			return fmt.Errorf("generating random password: %w", err)
+		}
+		password = base64.RawURLEncoding.EncodeToString(b)
+		generated = true
+	}
+
+	set, err := svc.InitAdminPassword(ctx, password)
+	if err != nil {
+		return err
+	}
+
+	if set && generated {
+		log.Printf("========================================")
+		log.Printf("  Admin password (first boot):  %s", password)
+		log.Printf("  Set ADMIN_PASSWORD env var to override.")
+		log.Printf("========================================")
+	}
+
+	return nil
+}
 
 func main() {
 	// Load configuration
@@ -41,6 +71,11 @@ func main() {
 	repo := repository.NewRepository(database.Pool())
 	svc := services.NewService(repo, cfg.MFAEncryptionKey)
 	handler := handlers.NewHandler(svc)
+
+	// Initialize admin password on first boot
+	if err := initAdminPassword(ctx, svc); err != nil {
+		log.Fatalf("Failed to initialize admin password: %v", err)
+	}
 
 	// Setup HTTP server
 	app := fiber.New()

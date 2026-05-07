@@ -1,7 +1,7 @@
 -- +migrate Up
 
--- Set password for default admin user (bcrypt hash of "admin")
--- This should be changed in production
+-- Leave password_hash NULL so the app sets it on first boot from ADMIN_PASSWORD
+-- env var or a generated random password printed to stdout.
 UPDATE users
-SET password_hash = '$2a$10$N9qo8uLOickgx2ZMRZoHyeiYlXSyaWjrNmPIb7Dbt0HQzcdmBVWy6'
+SET password_hash = NULL
 WHERE username = 'admin';
