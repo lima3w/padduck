@@ -142,7 +142,7 @@ func TestResetPasswordWithToken_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.ResetPasswordWithToken(ctx, tt.token, tt.newPasswordHash)
+			_, err := svc.ResetPasswordWithToken(ctx, tt.token, tt.newPasswordHash)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})

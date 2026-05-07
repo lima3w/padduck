@@ -13,6 +13,7 @@ type Service struct {
 	Registration *RegistrationService
 	MFA          *MFAService
 	Audit        *AuditService
+	Notification *NotificationService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -31,6 +32,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Email:        emailSvc,
 		Registration: registrationSvc,
 		MFA:          mfaSvc,
+		Notification: NewNotificationService(repo, emailSvc),
 	}
 	svc.Audit = NewAuditService(svc)
 	return svc

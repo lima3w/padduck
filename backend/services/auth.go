@@ -238,9 +238,10 @@ func (s *Service) SendPasswordResetEmailByID(ctx context.Context, userID int64) 
 }
 
 // ResetPasswordWithToken verifies a reset token and updates the password
-func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPasswordHash string) error {
+// ResetPasswordWithToken verifies a reset token, updates the password, and returns the user ID.
+func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPasswordHash string) (int64, error) {
 	if token == "" || newPasswordHash == "" {
-		return fmt.Errorf("token and password hash required")
+		return 0, fmt.Errorf("token and password hash required")
 	}
 
 	// Hash the provided token
@@ -250,30 +251,26 @@ func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword
 	// Get the password reset record
 	resetRecord, err := s.repository.GetPasswordResetByToken(ctx, tokenHash)
 	if err != nil {
-		return fmt.Errorf("invalid reset token")
+		return 0, fmt.Errorf("invalid reset token")
 	}
 
-	// Check if token has expired
 	if resetRecord.ExpiresAt.Before(time.Now()) {
-		return fmt.Errorf("reset token has expired")
+		return 0, fmt.Errorf("reset token has expired")
 	}
 
-	// Check if token has already been used
 	if resetRecord.UsedAt != nil {
-		return fmt.Errorf("reset token has already been used")
+		return 0, fmt.Errorf("reset token has already been used")
 	}
 
-	// Update user's password
 	if err := s.repository.UpdateUserPassword(ctx, resetRecord.UserID, newPasswordHash); err != nil {
-		return err
+		return 0, err
 	}
 
-	// Mark token as used
 	if err := s.repository.MarkPasswordResetAsUsed(ctx, resetRecord.ID); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return resetRecord.UserID, nil
 }
 
 // InitAdminPassword sets the admin password when it is NULL (first boot).

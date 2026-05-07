@@ -81,6 +81,11 @@ func (h *Handler) GenerateToken(c *fiber.Ctx) error {
 		ResourceType: "api_token", ResourceName: req.TokenName,
 	})
 
+	_ = h.service.Notification.Queue(c.Context(), uid, services.NotifAPITokenCreated, map[string]interface{}{
+		"TokenName": req.TokenName,
+		"IP":        c.IP(),
+	})
+
 	return c.Status(fiber.StatusCreated).JSON(GenerateTokenResponse{
 		Token: token,
 		Name:  req.TokenName,
@@ -138,6 +143,12 @@ func (h *Handler) RevokeToken(c *fiber.Ctx) error {
 		UserID: uid, Username: uname, Action: "token_revoked",
 		ResourceType: "api_token", ResourceID: &tid,
 	})
+
+	if uid != nil {
+		_ = h.service.Notification.Queue(c.Context(), *uid, services.NotifAPITokenRevoked, map[string]interface{}{
+			"TokenName": "API token",
+		})
+	}
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -276,6 +287,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		ResourceType: "session", Status: "success",
 	})
 
+	_ = h.service.Notification.Queue(c.Context(), user.ID, services.NotifLoginSuccess, map[string]interface{}{
+		"IP":     c.IP(),
+		"Device": c.Get("User-Agent"),
+	})
+
 	return c.JSON(LoginResponse{
 		Token: token,
 		User: UserResponse{
@@ -370,6 +386,11 @@ func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "session_revoked",
 		ResourceType: "session", ResourceID: &sid,
+	})
+
+	_ = h.service.Notification.Queue(c.Context(), userID, services.NotifSessionRevoked, map[string]interface{}{
+		"IP":     c.IP(),
+		"Device": c.Get("User-Agent"),
 	})
 
 	return c.SendStatus(fiber.StatusNoContent)

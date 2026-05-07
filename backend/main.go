@@ -92,6 +92,9 @@ func main() {
 		log.Fatalf("Failed to initialize admin password: %v", err)
 	}
 
+	// Start notification queue worker
+	svc.Notification.StartWorker(ctx)
+
 	// Setup HTTP server
 	app := fiber.New()
 

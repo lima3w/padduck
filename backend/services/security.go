@@ -89,17 +89,17 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 		return err
 	}
 
-	// Send lockout email (best-effort)
-	user, err := s.repository.GetUserByID(ctx, userID)
-	if err == nil {
-		appURL, _ := s.Config.Get("app_url")
-		if appURL == "" {
-			appURL = "http://localhost:3000"
-		}
-		unlockURL := fmt.Sprintf("%s/unlock-account?token=%s", appURL, rawToken)
-		_ = s.Email.SendAccountLockedEmail(user.Email, user.Username, unlockURL, duration)
-		_ = s.repository.CreateSecurityNotification(ctx, userID, "account_locked", "")
+	// Queue lockout notification (best-effort)
+	appURL, _ := s.Config.Get("app_url")
+	if appURL == "" {
+		appURL = "http://localhost:3000"
 	}
+	unlockURL := fmt.Sprintf("%s/unlock-account?token=%s", appURL, rawToken)
+	_ = s.Notification.Queue(ctx, userID, NotifAccountLocked, map[string]interface{}{
+		"UnlockURL": unlockURL,
+		"Duration":  duration.String(),
+	})
+	_ = s.repository.CreateSecurityNotification(ctx, userID, "account_locked", "")
 
 	return nil
 }
@@ -112,12 +112,10 @@ func (s *Service) sendFailedLoginAlert(ctx context.Context, userID int64, userna
 		return err
 	}
 
-	user, err := s.repository.GetUserByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	if err := s.Email.SendFailedLoginAlertEmail(user.Email, user.Username, ipAddress, count); err != nil {
+	if err := s.Notification.Queue(ctx, userID, NotifLoginFailed, map[string]interface{}{
+		"IP":    ipAddress,
+		"Count": count,
+	}); err != nil {
 		return err
 	}
 

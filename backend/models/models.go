@@ -275,3 +275,35 @@ type AuditLogFilter struct {
 	Limit        int
 	Offset       int
 }
+
+// NotificationPreferences stores per-user email notification opt-in settings
+type NotificationPreferences struct {
+	ID              int64     `json:"id"`
+	UserID          int64     `json:"user_id"`
+	LoginSuccess    bool      `json:"login_success"`
+	LoginFailed     bool      `json:"login_failed"`
+	AccountLocked   bool      `json:"account_locked"`
+	PasswordChanged bool      `json:"password_changed"`
+	MFAChanges      bool      `json:"mfa_changes"`
+	APITokenChanges bool      `json:"api_token_changes"`
+	RoleChanges     bool      `json:"role_changes"`
+	SessionRevoked  bool      `json:"session_revoked"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// NotificationQueue is a durable outbox for outbound email notifications
+type NotificationQueue struct {
+	ID          int64      `json:"id"`
+	UserID      int64      `json:"user_id"`
+	Email       string     `json:"email"`
+	Template    string     `json:"template"`
+	Data        string     `json:"data"` // JSON string
+	Status      string     `json:"status"`
+	RetryCount  int        `json:"retry_count"`
+	NextRetryAt *time.Time `json:"next_retry_at,omitempty"`
+	SentAt      *time.Time `json:"sent_at,omitempty"`
+	ErrorMsg    *string    `json:"error_msg,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}

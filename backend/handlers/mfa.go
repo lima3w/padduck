@@ -124,6 +124,11 @@ func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 		UserID: &uid, Username: user.Username, Action: "mfa_enabled", ResourceType: "user", ResourceID: &uid,
 	})
 
+	_ = h.service.Notification.Queue(c.Context(), user.ID, services.NotifMFAEnabled, map[string]interface{}{
+		"IP":     c.IP(),
+		"Device": c.Get("User-Agent"),
+	})
+
 	return c.JSON(fiber.Map{
 		"message":      "MFA enabled. Save these backup codes — they will not be shown again.",
 		"backup_codes": backupCodes,
@@ -154,6 +159,11 @@ func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 	uid := user.ID
 	h.auditLog(c, services.AuditEntry{
 		UserID: &uid, Username: user.Username, Action: "mfa_disabled", ResourceType: "user", ResourceID: &uid,
+	})
+
+	_ = h.service.Notification.Queue(c.Context(), user.ID, services.NotifMFADisabled, map[string]interface{}{
+		"IP":     c.IP(),
+		"Device": c.Get("User-Agent"),
 	})
 
 	return c.JSON(fiber.Map{"message": "MFA disabled"})

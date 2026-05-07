@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/services"
 	"ipam-next/utils"
 )
 
@@ -62,9 +63,16 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to reset password"})
 	}
 
-	if err := h.service.ResetPasswordWithToken(c.Context(), req.Token, passwordHash); err != nil {
+	userID, err := h.service.ResetPasswordWithToken(c.Context(), req.Token, passwordHash)
+	if err != nil {
 		log.Printf("Error resetting password: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid or expired reset token"})
+	}
+
+	if userID > 0 {
+		_ = h.service.Notification.Queue(c.Context(), userID, services.NotifPasswordChanged, map[string]interface{}{
+			"IP": c.IP(),
+		})
 	}
 
 	return c.JSON(PasswordResetResponse{
