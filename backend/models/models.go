@@ -331,6 +331,49 @@ type ScanResult struct {
 	ScannedAt      time.Time `json:"scanned_at"`
 }
 
+// DashboardSummary holds aggregate IPAM statistics for the dashboard
+type DashboardSummary struct {
+	TotalSections    int64              `json:"total_sections"`
+	TotalSubnets     int64              `json:"total_subnets"`
+	TotalIPs         int64              `json:"total_ips"`
+	UsedIPs          int64              `json:"used_ips"`
+	UtilisationPct   float64            `json:"utilisation_pct"`
+	TopSubnets       []SubnetUtilisation `json:"top_subnets"`
+}
+
+// SubnetUtilisation holds utilisation data for a single subnet
+type SubnetUtilisation struct {
+	ID              int64   `json:"id"`
+	CIDR            string  `json:"cidr"`
+	Description     string  `json:"description"`
+	Used            int64   `json:"used"`
+	Total           int64   `json:"total"`
+	UtilisationPct  float64 `json:"utilisation_pct"`
+}
+
+// DashboardActivity is a single recent activity entry from audit_logs
+type DashboardActivity struct {
+	ID          int64   `json:"id"`
+	Action      string  `json:"action"`
+	EntityType  string  `json:"entity_type"`
+	EntityID    *int64  `json:"entity_id,omitempty"`
+	UserID      *int64  `json:"user_id,omitempty"`
+	Username    string  `json:"username"`
+	Description string  `json:"description"`
+	CreatedAt   string  `json:"created_at"`
+}
+
+// SubnetTreeNode represents a subnet in the tree hierarchy view
+type SubnetTreeNode struct {
+	ID             int64            `json:"id"`
+	CIDR           string           `json:"cidr"`
+	Description    string           `json:"description"`
+	Used           int64            `json:"used"`
+	Total          int64            `json:"total"`
+	UtilisationPct float64          `json:"utilisation_pct"`
+	Children       []SubnetTreeNode `json:"children"`
+}
+
 // NotificationQueue is a durable outbox for outbound email notifications
 type NotificationQueue struct {
 	ID          int64      `json:"id"`

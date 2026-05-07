@@ -57,6 +57,24 @@ export const assignIPAddress = (id, data) => api.post(`/ip-addresses/${id}/assig
 export const releaseIPAddress = (id) => api.post(`/ip-addresses/${id}/release`)
 export const deleteIPAddress = (id) => api.delete(`/ip-addresses/${id}`)
 
+// Logout (POST /auth/me/logout)
+export const logout = () => api.post('/auth/me/logout')
+
+// Dashboard
+export const getDashboardSummary = () => api.get('/dashboard/summary')
+export const getDashboardRecentActivity = () => api.get('/dashboard/recent-activity')
+
+// Subnet tree
+export const getSubnetTree = (sectionID) => api.get(`/sections/${sectionID}/subnets/tree`)
+
+// Paginated lists
+export const getSectionsPaginated = (page = 1, limit = 25) =>
+  api.get('/sections', { params: { page, limit } })
+export const getSubnetsPaginated = (sectionID, page = 1, limit = 25) =>
+  api.get(`/sections/${sectionID}/subnets`, { params: { page, limit } })
+export const getIPAddressesPaginated = (subnetID, page = 1, limit = 25) =>
+  api.get(`/subnets/${subnetID}/ip-addresses`, { params: { page, limit } })
+
 // Authentication
 export const generateToken = (userId, tokenName) =>
   api.post(`/auth/tokens/${userId}`, { token_name: tokenName })

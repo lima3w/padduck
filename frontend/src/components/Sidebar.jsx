@@ -10,6 +10,17 @@ export default function Sidebar() {
     <aside className="w-48 bg-gray-800 dark:bg-gray-900 text-gray-200 dark:text-gray-300 min-h-full flex flex-col border-r border-gray-700 dark:border-gray-700">
       <nav className="flex flex-col p-4 gap-1">
         <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          Dashboard
+        </NavLink>
+        <NavLink
           to="/sections"
           className={({ isActive }) =>
             `px-3 py-2 rounded text-sm font-medium transition-colors ${

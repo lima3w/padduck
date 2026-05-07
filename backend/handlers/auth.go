@@ -1,15 +1,24 @@
 package handlers
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
 )
+
+// gravatarURL computes the Gravatar URL for the given email.
+func gravatarURL(email string, size int) string {
+	normalized := strings.TrimSpace(strings.ToLower(email))
+	hash := md5.Sum([]byte(normalized))
+	return fmt.Sprintf("https://www.gravatar.com/avatar/%x?s=%d&d=identicon", hash, size)
+}
 
 type SessionResponse struct {
 	ID                int64  `json:"id"`
@@ -51,13 +60,14 @@ type ListTokensResponse struct {
 }
 
 type UserResponse struct {
-	ID        int64  `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Role      string `json:"role"`
-	State     string `json:"state"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID          int64  `json:"id"`
+	Username    string `json:"username"`
+	Email       string `json:"email"`
+	Role        string `json:"role"`
+	State       string `json:"state"`
+	GravatarURL string `json:"gravatar_url"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 type LoginRequest struct {
@@ -78,13 +88,14 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(UserResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Role:      user.Role,
-		State:     user.State,
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.String(),
+		ID:          user.ID,
+		Username:    user.Username,
+		Email:       user.Email,
+		Role:        user.Role,
+		State:       user.State,
+		GravatarURL: gravatarURL(user.Email, 80),
+		CreatedAt:   user.CreatedAt.String(),
+		UpdatedAt:   user.UpdatedAt.String(),
 	})
 }
 
@@ -230,13 +241,14 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	return c.JSON(LoginResponse{
 		Token: token,
 		User: UserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			Role:      user.Role,
-			State:     user.State,
-			CreatedAt: user.CreatedAt.String(),
-			UpdatedAt: user.UpdatedAt.String(),
+			ID:          user.ID,
+			Username:    user.Username,
+			Email:       user.Email,
+			Role:        user.Role,
+			State:       user.State,
+			GravatarURL: gravatarURL(user.Email, 80),
+			CreatedAt:   user.CreatedAt.String(),
+			UpdatedAt:   user.UpdatedAt.String(),
 		},
 	})
 }
