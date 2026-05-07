@@ -41,13 +41,14 @@ jobs:
           sudo firewall-cmd --permanent --add-port=3000/tcp || true
           sudo firewall-cmd --reload || true
 
+      - name: Build containers
+        run: docker compose build
+
       - name: Stop existing containers
         run: docker compose down || true
 
-      - name: Build and deploy services
-        run: |
-          docker compose build
-          docker compose up -d
+      - name: Start new containers
+        run: docker compose up -d
 
       - name: Verify health endpoint
         run: |
