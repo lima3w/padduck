@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import VerifyEmailPage from './pages/VerifyEmailPage'
+import DashboardPage from './pages/DashboardPage'
 import SectionsPage from './pages/SectionsPage'
 import SubnetsPage from './pages/SubnetsPage'
 import IPAddressesPage from './pages/IPAddressesPage'
@@ -45,7 +46,8 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/sections" replace />} />
+          <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="sections" element={<SectionsPage />} />
           <Route path="sections/:sectionID/subnets" element={<SubnetsPage />} />
           <Route path="subnets/:subnetID/ip-addresses" element={<IPAddressesPage />} />

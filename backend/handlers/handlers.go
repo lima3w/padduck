@@ -215,6 +215,14 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Subnet scan results (v0.9.0)
 	subnet.Get("/:id/scan-results", h.GetSubnetScanResults)
 
+	// Dashboard (v1.1.0 #174)
+	dashboard := protected.Group("/dashboard")
+	dashboard.Get("/summary", h.GetDashboardSummary)
+	dashboard.Get("/recent-activity", h.GetDashboardRecentActivity)
+
+	// Subnet tree (v1.1.0 #177)
+	sections.Get("/:id/subnets/tree", h.GetSubnetTree)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

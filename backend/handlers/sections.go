@@ -75,21 +75,47 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 }
 
 // ListSections handles GET /api/v1/sections
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListSections(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
 		return err
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	// If pagination params are provided, use paginated version
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		sections, total, err := h.service.ListSectionsPaginated(c.Context(), page, limit)
+		if err != nil {
+			log.Printf("Error listing sections: %v", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if sections == nil {
+			sections = make([]*models.Section, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  sections,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	sections, err := h.service.ListSections(c.Context())
 	if err != nil {
 		log.Printf("Error listing sections: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
-
-	// Return empty array instead of nil
 	if sections == nil {
 		sections = make([]*models.Section, 0)
 	}
-
 	return c.JSON(sections)
 }
 

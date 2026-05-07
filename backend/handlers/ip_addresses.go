@@ -69,6 +69,7 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 }
 
 // ListIPAddresses handles GET /api/v1/subnets/:subnetID/ip-addresses
+// Supports ?page=1&limit=25 for pagination.
 func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
@@ -78,16 +79,40 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		return err
 	}
 
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		ips, total, err := h.service.ListIPAddressesPaginated(c.Context(), int64(subnetID), page, limit)
+		if err != nil {
+			log.Printf("Error listing IP addresses for subnet %d: %v", subnetID, err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if ips == nil {
+			ips = make([]*models.IPAddress, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  ips,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	ips, err := h.service.ListIPAddresses(c.Context(), int64(subnetID))
 	if err != nil {
 		log.Printf("Error listing IP addresses for subnet %d: %v", subnetID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
-
 	if ips == nil {
 		ips = make([]*models.IPAddress, 0)
 	}
-
 	return c.JSON(ips)
 }
 

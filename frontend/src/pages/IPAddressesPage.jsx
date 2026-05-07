@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getSubnet, getIPAddresses, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses } from '../api/client'
+import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses } from '../api/client'
 import Modal from '../components/Modal'
+import Pagination from '../components/Pagination'
+
+const DEFAULT_LIMIT = 25
 
 const STATUS_COLORS = {
   available: 'bg-green-100 text-green-700',
@@ -13,26 +16,36 @@ export default function IPAddressesPage() {
   const { subnetID } = useParams()
   const [subnet, setSubnet] = useState(null)
   const [ips, setIPs] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchStatus, setSearchStatus] = useState('')
   const [searching, setSearching] = useState(false)
+  const [isSearchActive, setIsSearchActive] = useState(false)
   const [modal, setModal] = useState(null) // null | 'create' | { assign: ip }
   const [form, setForm] = useState({ address: '', hostname: '', status: 'available', assigned_to: '' })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [subnetID])
+  useEffect(() => {
+    setPage(1)
+    setIsSearchActive(false)
+    load(1)
+  }, [subnetID])
 
-  async function load() {
+  async function load(p = page) {
     try {
       setLoading(true)
       setSearchQuery('')
       setSearchStatus('')
-      const [subRes, ipRes] = await Promise.all([getSubnet(subnetID), getIPAddresses(subnetID)])
+      setIsSearchActive(false)
+      const [subRes, ipRes] = await Promise.all([getSubnet(subnetID), getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT)])
       setSubnet(subRes.data)
-      setIPs(ipRes.data)
+      const data = ipRes.data
+      setIPs(data.data ?? data)
+      setTotal(data.total ?? (Array.isArray(data) ? data.length : 0))
     } catch {
       setError('Failed to load IP addresses')
     } finally {
@@ -40,16 +53,26 @@ export default function IPAddressesPage() {
     }
   }
 
+  function handlePageChange(newPage) {
+    setPage(newPage)
+    load(newPage)
+  }
+
   async function handleSearch(e) {
     e.preventDefault()
     if (!searchQuery.trim() && !searchStatus) {
-      load()
+      setIsSearchActive(false)
+      load(1)
       return
     }
     try {
       setSearching(true)
+      setIsSearchActive(true)
       const res = await searchIPAddresses(subnetID, searchQuery, searchStatus)
-      setIPs(res.data)
+      const data = res.data
+      setIPs(Array.isArray(data) ? data : (data.data ?? []))
+      setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
+      setPage(1)
     } catch {
       setError('Failed to search IP addresses')
     } finally {
@@ -60,7 +83,8 @@ export default function IPAddressesPage() {
   function handleClearSearch() {
     setSearchQuery('')
     setSearchStatus('')
-    load()
+    setIsSearchActive(false)
+    load(1)
   }
 
   function openCreate() {
@@ -79,7 +103,7 @@ export default function IPAddressesPage() {
     try {
       await createIPAddress(subnetID, { address: form.address, hostname: form.hostname, status: form.status })
       setModal(null)
-      load()
+      load(page)
     } catch {
       setError('Failed to create IP address')
     } finally {
@@ -93,7 +117,7 @@ export default function IPAddressesPage() {
     try {
       await assignIPAddress(modal.assign.ID, { assigned_to: form.assigned_to })
       setModal(null)
-      load()
+      load(page)
     } catch {
       setError('Failed to assign IP address')
     } finally {
@@ -104,7 +128,7 @@ export default function IPAddressesPage() {
   async function handleRelease(id) {
     try {
       await releaseIPAddress(id)
-      load()
+      load(page)
     } catch {
       setError('Failed to release IP address')
     }
@@ -114,7 +138,7 @@ export default function IPAddressesPage() {
     try {
       await deleteIPAddress(id)
       setDeleteConfirm(null)
-      load()
+      load(page)
     } catch {
       setError('Failed to delete IP address')
     }
@@ -169,7 +193,7 @@ export default function IPAddressesPage() {
           >
             {searching ? 'Searching...' : 'Search'}
           </button>
-          {(searchQuery || searchStatus) && (
+          {isSearchActive && (
             <button
               type="button"
               onClick={handleClearSearch}
@@ -181,14 +205,20 @@ export default function IPAddressesPage() {
         </form>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {!isSearchActive && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          {total} address{total !== 1 ? 'es' : ''}
+        </p>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Address</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Hostname</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Status</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Assigned To</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Assigned To</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -197,15 +227,15 @@ export default function IPAddressesPage() {
               <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">No IP addresses yet</td></tr>
             )}
             {ips.map(ip => (
-              <tr key={ip.ID} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono font-medium text-gray-800">{ip.Address}</td>
-                <td className="px-4 py-3 text-gray-500">{ip.Hostname || '—'}</td>
+              <tr key={ip.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.Address}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.Hostname || '—'}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ip.Status] || 'bg-gray-100 text-gray-600'}`}>
                     {ip.Status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500">{ip.AssignedTo || '—'}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.AssignedTo || '—'}</td>
                 <td className="px-4 py-3 text-right space-x-2">
                   {ip.Status !== 'assigned' && (
                     <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
@@ -228,6 +258,15 @@ export default function IPAddressesPage() {
           </tbody>
         </table>
       </div>
+
+      {!isSearchActive && total > DEFAULT_LIMIT && (
+        <Pagination
+          page={page}
+          limit={DEFAULT_LIMIT}
+          total={total}
+          onChange={handlePageChange}
+        />
+      )}
 
       {modal === 'create' && (
         <Modal title="New IP Address" onClose={() => setModal(null)}>

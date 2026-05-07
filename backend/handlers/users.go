@@ -21,13 +21,14 @@ type UpdateUserRoleRequest struct {
 }
 
 type UserDetailResponse struct {
-	ID        int64  `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Role      string `json:"role"`
-	State     string `json:"state"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID          int64  `json:"id"`
+	Username    string `json:"username"`
+	Email       string `json:"email"`
+	Role        string `json:"role"`
+	State       string `json:"state"`
+	GravatarURL string `json:"gravatar_url"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 // ListUsers handles GET /api/v1/users (admin only)
@@ -47,13 +48,14 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	if users != nil {
 		for _, u := range users {
 			response = append(response, UserDetailResponse{
-				ID:        u.ID,
-				Username:  u.Username,
-				Email:     u.Email,
-				Role:      u.Role,
-				State:     u.State,
-				CreatedAt: u.CreatedAt.String(),
-				UpdatedAt: u.UpdatedAt.String(),
+				ID:          u.ID,
+				Username:    u.Username,
+				Email:       u.Email,
+				Role:        u.Role,
+				State:       u.State,
+				GravatarURL: gravatarURL(u.Email, 80),
+				CreatedAt:   u.CreatedAt.String(),
+				UpdatedAt:   u.UpdatedAt.String(),
 			})
 		}
 	}
@@ -83,13 +85,14 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(UserDetailResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Role:      user.Role,
-		State:     user.State,
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.String(),
+		ID:          user.ID,
+		Username:    user.Username,
+		Email:       user.Email,
+		Role:        user.Role,
+		State:       user.State,
+		GravatarURL: gravatarURL(user.Email, 80),
+		CreatedAt:   user.CreatedAt.String(),
+		UpdatedAt:   user.UpdatedAt.String(),
 	})
 }
 
@@ -137,13 +140,14 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	})
 
 	return c.Status(fiber.StatusCreated).JSON(UserDetailResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Role:      user.Role,
-		State:     user.State,
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.String(),
+		ID:          user.ID,
+		Username:    user.Username,
+		Email:       user.Email,
+		Role:        user.Role,
+		State:       user.State,
+		GravatarURL: gravatarURL(user.Email, 80),
+		CreatedAt:   user.CreatedAt.String(),
+		UpdatedAt:   user.UpdatedAt.String(),
 	})
 }
 

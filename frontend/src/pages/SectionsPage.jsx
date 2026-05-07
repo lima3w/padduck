@@ -1,28 +1,37 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getSections, createSection, updateSection, deleteSection, searchSections } from '../api/client'
+import { getSectionsPaginated, createSection, updateSection, deleteSection, searchSections } from '../api/client'
 import Modal from '../components/Modal'
+import Pagination from '../components/Pagination'
+
+const DEFAULT_LIMIT = 25
 
 export default function SectionsPage() {
   const navigate = useNavigate()
   const [sections, setSections] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searching, setSearching] = useState(false)
+  const [isSearchActive, setIsSearchActive] = useState(false)
   const [modal, setModal] = useState(null) // null | 'create' | { edit: section }
   const [form, setForm] = useState({ name: '', description: '' })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(1) }, [])
 
-  async function load() {
+  async function load(p = page) {
     try {
       setLoading(true)
       setSearchQuery('')
-      const res = await getSections()
-      setSections(res.data)
+      setIsSearchActive(false)
+      const res = await getSectionsPaginated(p, DEFAULT_LIMIT)
+      const data = res.data
+      setSections(data.data ?? data)
+      setTotal(data.total ?? (Array.isArray(data) ? data.length : 0))
     } catch {
       setError('Failed to load sections')
     } finally {
@@ -30,16 +39,26 @@ export default function SectionsPage() {
     }
   }
 
+  function handlePageChange(newPage) {
+    setPage(newPage)
+    load(newPage)
+  }
+
   async function handleSearch(e) {
     e.preventDefault()
     if (!searchQuery.trim()) {
-      load()
+      setIsSearchActive(false)
+      load(1)
       return
     }
     try {
       setSearching(true)
+      setIsSearchActive(true)
       const res = await searchSections(searchQuery)
-      setSections(res.data)
+      const data = res.data
+      setSections(Array.isArray(data) ? data : (data.data ?? []))
+      setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
+      setPage(1)
     } catch {
       setError('Failed to search sections')
     } finally {
@@ -49,7 +68,8 @@ export default function SectionsPage() {
 
   function handleClearSearch() {
     setSearchQuery('')
-    load()
+    setIsSearchActive(false)
+    load(1)
   }
 
   function openCreate() {
@@ -72,7 +92,7 @@ export default function SectionsPage() {
         await updateSection(modal.edit.ID, { name: form.name, description: form.description })
       }
       setModal(null)
-      load()
+      load(page)
     } catch {
       setError('Failed to save section')
     } finally {
@@ -84,7 +104,7 @@ export default function SectionsPage() {
     try {
       await deleteSection(id)
       setDeleteConfirm(null)
-      load()
+      load(page)
     } catch {
       setError('Failed to delete section')
     }
@@ -119,7 +139,7 @@ export default function SectionsPage() {
           >
             {searching ? 'Searching...' : 'Search'}
           </button>
-          {searchQuery && (
+          {isSearchActive && (
             <button
               type="button"
               onClick={handleClearSearch}
@@ -131,12 +151,18 @@ export default function SectionsPage() {
         </form>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {!isSearchActive && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          {total} section{total !== 1 ? 's' : ''}
+        </p>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Name</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Description</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -145,14 +171,14 @@ export default function SectionsPage() {
               <tr><td colSpan={3} className="px-4 py-6 text-center text-gray-400">No sections yet</td></tr>
             )}
             {sections.map(s => (
-              <tr key={s.ID} className="border-b last:border-0 hover:bg-gray-50">
+              <tr key={s.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td
-                  className="px-4 py-3 font-medium text-blue-600 cursor-pointer hover:underline"
+                  className="px-4 py-3 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                   onClick={() => navigate(`/sections/${s.ID}/subnets`)}
                 >
                   {s.Name}
                 </td>
-                <td className="px-4 py-3 text-gray-500">{s.Description}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.Description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
                   {deleteConfirm === s.ID ? (
@@ -170,6 +196,15 @@ export default function SectionsPage() {
           </tbody>
         </table>
       </div>
+
+      {!isSearchActive && total > DEFAULT_LIMIT && (
+        <Pagination
+          page={page}
+          limit={DEFAULT_LIMIT}
+          total={total}
+          onChange={handlePageChange}
+        />
+      )}
 
       {modal && (
         <Modal title={modal === 'create' ? 'New Section' : 'Edit Section'} onClose={() => setModal(null)}>
