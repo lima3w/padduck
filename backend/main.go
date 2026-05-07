@@ -22,15 +22,30 @@ import (
 
 func initAdminPassword(ctx context.Context, svc *services.Service) error {
 	password := os.Getenv("ADMIN_PASSWORD")
-	generated := false
+	forceReset := os.Getenv("RESET_ADMIN_PASSWORD") == "true"
+	generated := password == ""
 
-	if password == "" {
+	if generated {
 		b := make([]byte, 16)
 		if _, err := rand.Read(b); err != nil {
 			return fmt.Errorf("generating random password: %w", err)
 		}
 		password = base64.RawURLEncoding.EncodeToString(b)
-		generated = true
+	}
+
+	if forceReset {
+		if err := svc.ForceResetAdminPassword(ctx, password); err != nil {
+			return err
+		}
+		log.Printf("========================================")
+		if generated {
+			log.Printf("  Admin password RESET to:  %s", password)
+		} else {
+			log.Printf("  Admin password reset from ADMIN_PASSWORD.")
+		}
+		log.Printf("  Unset RESET_ADMIN_PASSWORD to disable this on next boot.")
+		log.Printf("========================================")
+		return nil
 	}
 
 	set, err := svc.InitAdminPassword(ctx, password)

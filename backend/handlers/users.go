@@ -223,3 +223,23 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+// SendPasswordResetEmail handles POST /api/v1/admin/users/:id/send-password-reset
+func (h *Handler) SendPasswordResetEmail(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok || user.Role != "admin" {
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
+	}
+
+	if err := h.service.SendPasswordResetEmailByID(c.Context(), int64(id)); err != nil {
+		log.Printf("Error sending password reset email for user %d: %v", id, err)
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to send password reset email")
+	}
+
+	return c.JSON(fiber.Map{"message": "Password reset email sent"})
+}

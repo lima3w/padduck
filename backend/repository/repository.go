@@ -194,6 +194,13 @@ func (r *Repository) InitAdminPassword(ctx context.Context, passwordHash string)
 	return result.RowsAffected() > 0, nil
 }
 
+// ForceSetAdminPassword unconditionally updates the admin user's password hash.
+func (r *Repository) ForceSetAdminPassword(ctx context.Context, passwordHash string) error {
+	query := `UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE username = 'admin'`
+	_, err := r.db.Exec(ctx, query, passwordHash)
+	return err
+}
+
 // Section operations
 
 func (r *Repository) CreateSection(ctx context.Context, name, description string, createdBy int64) (*models.Section, error) {

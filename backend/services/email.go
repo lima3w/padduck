@@ -205,6 +205,23 @@ If you did not attempt to log in, your password may be compromised. Please chang
 	return e.Send(to, subject, body)
 }
 
+func (e *EmailService) SendPasswordResetEmail(to, username, token string) error {
+	appURL, _ := e.configSvc.Get("app_url")
+	if appURL == "" {
+		appURL = "http://localhost:3000"
+	}
+	subject := "Reset your password"
+	body := fmt.Sprintf(`Hello %s,
+
+A password reset was requested for your account. Click the link below to set a new password:
+
+%s/reset-password?token=%s
+
+This link expires in 1 hour. If you did not request a reset, you can ignore this email.
+`, username, appURL, token)
+	return e.Send(to, subject, body)
+}
+
 func (e *EmailService) SendFailedLoginAlertEmail(to, username, ipAddress string, count int) error {
 	subject := "Multiple failed login attempts detected"
 	body := fmt.Sprintf(`Hello %s,

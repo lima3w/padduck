@@ -31,19 +31,13 @@ func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "email is required"})
 	}
 
-	// This is a placeholder - in production, you'd send an email with reset link
-	// For now, we'll generate and return the token (this should be sent via email)
-	token, err := h.service.CreatePasswordResetToken(c.Context(), req.Email)
-	if err != nil {
-		log.Printf("Error creating password reset token: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to request password reset"})
+	if err := h.service.SendPasswordResetEmail(c.Context(), req.Email); err != nil {
+		log.Printf("Error sending password reset email to %s: %v", req.Email, err)
 	}
 
-	// In production, send this token via email instead of returning it
-	// For development, we return it so it can be tested
+	// Always return success to prevent email enumeration
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Password reset link has been sent to your email",
-		"token":   token, // Remove this in production - only for testing
+		"message": "If that email is registered, a reset link has been sent.",
 	})
 }
 

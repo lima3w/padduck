@@ -180,7 +180,7 @@ func (s *Service) RevokeSessionToken(ctx context.Context, userID int64, token st
 	return s.repository.DeleteAPIToken(ctx, apiToken.ID)
 }
 
-// CreatePasswordResetToken creates a password reset token for a user
+// CreatePasswordResetToken creates a password reset token for a user.
 func (s *Service) CreatePasswordResetToken(ctx context.Context, email string) (token string, err error) {
 	if email == "" {
 		return "", fmt.Errorf("email is required")
@@ -191,7 +191,6 @@ func (s *Service) CreatePasswordResetToken(ctx context.Context, email string) (t
 		return "", fmt.Errorf("user not found")
 	}
 
-	// Generate random token
 	tokenBytes := make([]byte, TokenLength)
 	_, err = rand.Read(tokenBytes)
 	if err != nil {
@@ -199,17 +198,43 @@ func (s *Service) CreatePasswordResetToken(ctx context.Context, email string) (t
 	}
 	token = hex.EncodeToString(tokenBytes)
 
-	// Hash token for storage
 	hash := sha256.Sum256([]byte(token))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	// Store token in database with 1 hour expiration
 	_, err = s.repository.CreatePasswordReset(ctx, user.ID, tokenHash)
 	if err != nil {
 		return "", err
 	}
 
 	return token, nil
+}
+
+// SendPasswordResetEmail creates a reset token for the given email and sends it.
+// Returns a generic error (not revealing whether the email exists) to prevent enumeration.
+func (s *Service) SendPasswordResetEmail(ctx context.Context, email string) error {
+	token, err := s.CreatePasswordResetToken(ctx, email)
+	if err != nil {
+		return err
+	}
+	user, err := s.repository.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	return s.Email.SendPasswordResetEmail(user.Email, user.Username, token)
+}
+
+// SendPasswordResetEmailByID creates a reset token for the given user ID and sends it.
+// Used by admins to trigger a reset on behalf of another user.
+func (s *Service) SendPasswordResetEmailByID(ctx context.Context, userID int64) error {
+	user, err := s.repository.GetUserByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+	token, err := s.CreatePasswordResetToken(ctx, user.Email)
+	if err != nil {
+		return err
+	}
+	return s.Email.SendPasswordResetEmail(user.Email, user.Username, token)
 }
 
 // ResetPasswordWithToken verifies a reset token and updates the password
@@ -251,12 +276,21 @@ func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword
 	return nil
 }
 
-// InitAdminPassword sets the admin password on first boot when it is NULL.
-// Returns true and the password used if it was set (or generated), false if already set.
+// InitAdminPassword sets the admin password when it is NULL (first boot).
+// Returns true if the password was applied.
 func (s *Service) InitAdminPassword(ctx context.Context, password string) (bool, error) {
 	hash, err := utils.HashPassword(password)
 	if err != nil {
 		return false, fmt.Errorf("hashing admin password: %w", err)
 	}
 	return s.repository.InitAdminPassword(ctx, hash)
+}
+
+// ForceResetAdminPassword unconditionally sets the admin password.
+func (s *Service) ForceResetAdminPassword(ctx context.Context, password string) error {
+	hash, err := utils.HashPassword(password)
+	if err != nil {
+		return fmt.Errorf("hashing admin password: %w", err)
+	}
+	return s.repository.ForceSetAdminPassword(ctx, hash)
 }
