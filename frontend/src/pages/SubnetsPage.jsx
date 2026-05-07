@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getSection, getSubnets, createSubnet, updateSubnet, deleteSubnet, searchSubnets } from '../api/client'
 import Modal from '../components/Modal'
 
+const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false }
+
 export default function SubnetsPage() {
   const { sectionID } = useParams()
   const navigate = useNavigate()
@@ -13,7 +15,8 @@ export default function SubnetsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [modal, setModal] = useState(null)
-  const [form, setForm] = useState({ network_address: '', prefix_length: '', description: '' })
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [overlapError, setOverlapError] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
@@ -56,32 +59,55 @@ export default function SubnetsPage() {
   }
 
   function openCreate() {
-    setForm({ network_address: '', prefix_length: '', description: '' })
+    setForm(EMPTY_FORM)
+    setOverlapError(null)
     setModal('create')
   }
 
   function openEdit(subnet) {
-    setForm({ network_address: subnet.NetworkAddress, prefix_length: subnet.PrefixLength, description: subnet.Description })
+    setForm({
+      network_address: subnet.NetworkAddress,
+      prefix_length: subnet.PrefixLength,
+      description: subnet.Description || '',
+      gateway: subnet.Gateway || '',
+      auto_reserve_first: subnet.AutoReserveFirst || false,
+      auto_reserve_last: subnet.AutoReserveLast || false,
+    })
+    setOverlapError(null)
     setModal({ edit: subnet })
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
+    setOverlapError(null)
     try {
       if (modal === 'create') {
         await createSubnet(sectionID, {
           network_address: form.network_address,
           prefix_length: parseInt(form.prefix_length),
           description: form.description,
+          gateway: form.gateway || null,
+          auto_reserve_first: form.auto_reserve_first,
+          auto_reserve_last: form.auto_reserve_last,
         })
       } else {
-        await updateSubnet(modal.edit.ID, { description: form.description })
+        await updateSubnet(modal.edit.ID, {
+          description: form.description,
+          gateway: form.gateway || null,
+          auto_reserve_first: form.auto_reserve_first,
+          auto_reserve_last: form.auto_reserve_last,
+        })
       }
       setModal(null)
       load()
-    } catch {
-      setError('Failed to save subnet')
+    } catch(err) {
+      if (err.response?.status === 409) {
+        const conflicting = err.response.data.conflicting_cidr
+        setOverlapError(`Subnet overlaps with existing subnet${conflicting ? ': ' + conflicting : ''}`)
+      } else {
+        setError(err.response?.data?.error || 'Failed to save subnet')
+      }
     } finally {
       setSaving(false)
     }
@@ -150,13 +176,14 @@ export default function SubnetsPage() {
             <tr>
               <th className="text-left px-4 py-3 text-gray-600 font-medium">Network</th>
               <th className="text-left px-4 py-3 text-gray-600 font-medium">Prefix</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">Gateway</th>
               <th className="text-left px-4 py-3 text-gray-600 font-medium">Description</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {subnets.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
             )}
             {subnets.map(s => (
               <tr key={s.ID} className="border-b last:border-0 hover:bg-gray-50">
@@ -167,6 +194,7 @@ export default function SubnetsPage() {
                   {s.NetworkAddress}
                 </td>
                 <td className="px-4 py-3 text-gray-600">/{s.PrefixLength}</td>
+                <td className="px-4 py-3 font-mono text-gray-500">{s.Gateway || '—'}</td>
                 <td className="px-4 py-3 text-gray-500">{s.Description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
@@ -189,6 +217,9 @@ export default function SubnetsPage() {
       {modal && (
         <Modal title={modal === 'create' ? 'New Subnet' : 'Edit Subnet'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {overlapError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{overlapError}</div>
+            )}
             {modal === 'create' && (
               <>
                 <div>
@@ -221,6 +252,35 @@ export default function SubnetsPage() {
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Gateway (optional)</label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="192.168.0.1"
+                value={form.gateway}
+                onChange={e => setForm(f => ({ ...f, gateway: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.auto_reserve_first}
+                  onChange={e => setForm(f => ({ ...f, auto_reserve_first: e.target.checked }))}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">Auto-reserve first IP (network address)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.auto_reserve_last}
+                  onChange={e => setForm(f => ({ ...f, auto_reserve_last: e.target.checked }))}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700">Auto-reserve last IP (broadcast address)</span>
+              </label>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>

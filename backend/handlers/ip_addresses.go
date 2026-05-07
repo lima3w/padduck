@@ -9,13 +9,25 @@ import (
 )
 
 type CreateIPAddressRequest struct {
-	Address   string `json:"address"`
-	Hostname  string `json:"hostname"`
-	Status    string `json:"status"`
+	Address    string  `json:"address"`
+	Hostname   string  `json:"hostname"`
+	Status     string  `json:"status"`
+	TagID      *int64  `json:"tag_id"`
+	MACAddress *string `json:"mac_address"`
+	PTRRecord  *string `json:"ptr_record"`
 }
 
 type AssignIPAddressRequest struct {
-	AssignedTo string `json:"assigned_to"`
+	AssignedTo string  `json:"assigned_to"`
+	TagID      *int64  `json:"tag_id"`
+	MACAddress *string `json:"mac_address"`
+	PTRRecord  *string `json:"ptr_record"`
+}
+
+type UpdateIPMetaRequest struct {
+	TagID      *int64  `json:"tag_id"`
+	MACAddress *string `json:"mac_address"`
+	PTRRecord  *string `json:"ptr_record"`
 }
 
 // CreateIPAddress handles POST /api/v1/subnets/:subnetID/ip-addresses
@@ -33,10 +45,10 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status)
+	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord)
 	if err != nil {
 		log.Printf("Error creating IP address: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -170,6 +182,30 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 	})
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// UpdateIPMeta handles PUT /api/v1/ip-addresses/:id
+func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+		return err
+	}
+
+	req := new(UpdateIPMetaRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.TagID, req.MACAddress, req.PTRRecord)
+	if err != nil {
+		log.Printf("Error updating IP meta %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(ip)
 }
 
 // AllocateIPAddress handles POST /api/v1/subnets/:subnetID/ip-addresses/allocate

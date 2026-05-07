@@ -8,6 +8,15 @@ import (
 	"ipam-next/models"
 )
 
+// SubnetOverlapError is returned when a new subnet overlaps an existing one
+type SubnetOverlapError struct {
+	ConflictingCIDR string
+}
+
+func (e *SubnetOverlapError) Error() string {
+	return fmt.Sprintf("subnet overlaps with existing subnet %s", e.ConflictingCIDR)
+}
+
 // ValidateCIDR validates a CIDR notation
 func ValidateCIDR(address string, prefixLength int) error {
 	if prefixLength < 0 || prefixLength > 32 {
@@ -21,8 +30,109 @@ func ValidateCIDR(address string, prefixLength int) error {
 	return nil
 }
 
-// CreateSubnet creates a new subnet with CIDR validation
-func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string) (*models.Subnet, error) {
+// checkOverlap checks whether the given CIDR overlaps any existing subnet in the section (excluding excludeID)
+func (s *Service) checkOverlap(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, excludeID int64) error {
+	allowed, _ := s.Config.Get("allow_subnet_overlaps")
+	if allowed == "true" {
+		return nil
+	}
+
+	newCIDR := fmt.Sprintf("%s/%d", networkAddress, prefixLength)
+	_, newNet, err := net.ParseCIDR(newCIDR)
+	if err != nil {
+		return fmt.Errorf("invalid CIDR: %s", newCIDR)
+	}
+
+	existing, err := s.repository.ListSubnetsBySection(ctx, sectionID)
+	if err != nil {
+		return err
+	}
+
+	for _, sub := range existing {
+		if sub.ID == excludeID {
+			continue
+		}
+		existingCIDR := fmt.Sprintf("%s/%d", sub.NetworkAddress, sub.PrefixLength)
+		_, existingNet, err := net.ParseCIDR(existingCIDR)
+		if err != nil {
+			continue
+		}
+		if newNet.Contains(existingNet.IP) || existingNet.Contains(newNet.IP) {
+			return &SubnetOverlapError{ConflictingCIDR: existingCIDR}
+		}
+	}
+	return nil
+}
+
+// OverlapPair represents two overlapping subnets
+type OverlapPair struct {
+	SubnetA *models.Subnet `json:"subnet_a"`
+	SubnetB *models.Subnet `json:"subnet_b"`
+}
+
+// OverlapReport returns all overlapping subnet pairs across all sections
+func (s *Service) OverlapReport(ctx context.Context) ([]*OverlapPair, error) {
+	sections, err := s.repository.ListAllSections(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var pairs []*OverlapPair
+	for _, section := range sections {
+		subnets, err := s.repository.ListSubnetsBySection(ctx, section.ID)
+		if err != nil {
+			return nil, err
+		}
+		for i, a := range subnets {
+			_, netA, err := net.ParseCIDR(fmt.Sprintf("%s/%d", a.NetworkAddress, a.PrefixLength))
+			if err != nil {
+				continue
+			}
+			for j := i + 1; j < len(subnets); j++ {
+				b := subnets[j]
+				_, netB, err := net.ParseCIDR(fmt.Sprintf("%s/%d", b.NetworkAddress, b.PrefixLength))
+				if err != nil {
+					continue
+				}
+				if netA.Contains(netB.IP) || netB.Contains(netA.IP) {
+					pairs = append(pairs, &OverlapPair{SubnetA: a, SubnetB: b})
+				}
+			}
+		}
+	}
+	return pairs, nil
+}
+
+// broadcastAddr computes the broadcast address of a network
+func broadcastAddr(n *net.IPNet) string {
+	ip := n.IP.To4()
+	mask := n.Mask
+	broadcast := make(net.IP, 4)
+	for i := 0; i < 4; i++ {
+		broadcast[i] = ip[i] | ^mask[i]
+	}
+	return broadcast.String()
+}
+
+// validateGatewayInCIDR checks that the gateway IP is within the subnet
+func validateGatewayInCIDR(gateway, networkAddress string, prefixLength int) error {
+	gwIP := net.ParseIP(gateway)
+	if gwIP == nil {
+		return fmt.Errorf("gateway is not a valid IP address")
+	}
+	cidr := fmt.Sprintf("%s/%d", networkAddress, prefixLength)
+	_, ipNet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return err
+	}
+	if !ipNet.Contains(gwIP) {
+		return fmt.Errorf("gateway %s is not within subnet %s", gateway, cidr)
+	}
+	return nil
+}
+
+// CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
+func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	if sectionID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
@@ -31,7 +141,49 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		return nil, err
 	}
 
-	return s.repository.CreateSubnet(ctx, sectionID, networkAddress, prefixLength, description)
+	// Validate gateway if provided
+	if gateway != nil && *gateway != "" {
+		if err := validateGatewayInCIDR(*gateway, networkAddress, prefixLength); err != nil {
+			return nil, err
+		}
+	} else {
+		gateway = nil
+	}
+
+	if err := s.checkOverlap(ctx, sectionID, networkAddress, prefixLength, 0); err != nil {
+		return nil, err
+	}
+
+	// Apply global defaults
+	if !autoFirst {
+		if v, _ := s.Config.Get("default_auto_reserve_first"); v == "true" {
+			autoFirst = true
+		}
+	}
+	if !autoLast {
+		if v, _ := s.Config.Get("default_auto_reserve_last"); v == "true" {
+			autoLast = true
+		}
+	}
+
+	subnet, err := s.repository.CreateSubnet(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast)
+	if err != nil {
+		return nil, err
+	}
+
+	// Auto-reserve first/last IP
+	cidr := fmt.Sprintf("%s/%d", networkAddress, prefixLength)
+	_, ipNet, _ := net.ParseCIDR(cidr)
+	if autoFirst && ipNet != nil {
+		networkIP := ipNet.IP.String()
+		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil)
+	}
+	if autoLast && ipNet != nil {
+		bcastIP := broadcastAddr(ipNet)
+		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil)
+	}
+
+	return subnet, nil
 }
 
 // GetSubnet retrieves a subnet by ID
@@ -52,13 +204,25 @@ func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.S
 	return s.repository.ListSubnetsBySection(ctx, sectionID)
 }
 
-// UpdateSubnet updates a subnet's description
-func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string) (*models.Subnet, error) {
+// UpdateSubnet updates a subnet's description, gateway, and auto-reserve settings
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
 
-	return s.repository.UpdateSubnet(ctx, id, description)
+	if gateway != nil && *gateway != "" {
+		existing, err := s.repository.GetSubnetByID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if err := validateGatewayInCIDR(*gateway, existing.NetworkAddress, existing.PrefixLength); err != nil {
+			return nil, err
+		}
+	} else {
+		gateway = nil
+	}
+
+	return s.repository.UpdateSubnet(ctx, id, description, gateway, autoFirst, autoLast)
 }
 
 // DeleteSubnet deletes a subnet and its IP addresses (cascade)

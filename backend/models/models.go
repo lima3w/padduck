@@ -108,27 +108,45 @@ type Section struct {
 
 // Subnet represents a network subnet
 type Subnet struct {
-	ID             int64
-	SectionID      int64
-	NetworkAddress string
-	PrefixLength   int
-	Description    string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID               int64
+	SectionID        int64
+	NetworkAddress   string
+	PrefixLength     int
+	Description      string
+	Gateway          *string
+	AutoReserveFirst bool
+	AutoReserveLast  bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+// IPTag represents a named, colour-coded label for IP addresses
+type IPTag struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Colour      string    `json:"colour"`
+	Description *string   `json:"description,omitempty"`
+	IsSystem    bool      `json:"is_system"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // IPAddress represents an individual IP address
 type IPAddress struct {
-	ID        int64
-	SubnetID  int64
-	Address   string
-	Hostname  string
-	Status    string // available, assigned, reserved
+	ID         int64
+	SubnetID   int64
+	Address    string
+	Hostname   string
+	Status     string // available, assigned, reserved
 	AssignedTo *string
 	AssignedAt *time.Time
 	ExpiresAt  *time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	TagID      *int64
+	Tag        *IPTag
+	LastSeen   *time.Time
+	MACAddress *string
+	PTRRecord  *string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // Role represents a named set of permissions

@@ -134,5 +134,17 @@ export const searchSections = (query, limit = 50, offset = 0) =>
 export const searchSubnets = (sectionID, query, limit = 50, offset = 0) =>
   api.post(`/subnets/search/${sectionID}`, { query, limit, offset })
 
-export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offset = 0) =>
-  api.post(`/ip-addresses/search/${subnetID}`, { query, status, limit, offset })
+export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offset = 0, filters = {}) =>
+  api.post(`/ip-addresses/search/${subnetID}`, { query, status, limit, offset, ...filters })
+
+// IP Tags
+export const getTags = () => api.get('/tags')
+export const createTag = (data) => api.post('/tags', data)
+export const updateTag = (id, data) => api.put(`/tags/${id}`, data)
+export const deleteTag = (id) => api.delete(`/tags/${id}`)
+
+// IP address meta
+export const updateIPMeta = (id, data) => api.put(`/ip-addresses/${id}`, data)
+
+// Overlap report
+export const getOverlapReport = () => api.get('/admin/subnets/overlap-report')

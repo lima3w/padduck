@@ -48,17 +48,20 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	}
 
 	allowed := map[string]bool{
-		"app_url":                     true,
-		"registration_enabled":        true,
-		"require_email_verification":  true,
-		"require_admin_approval":      true,
-		"smtp_host":                   true,
-		"smtp_port":                   true,
-		"smtp_username":               true,
-		"smtp_password":               true,
-		"smtp_from":                   true,
-		"smtp_tls":                    true,
-		"audit_log_retention_days":    true,
+		"app_url":                      true,
+		"registration_enabled":         true,
+		"require_email_verification":   true,
+		"require_admin_approval":       true,
+		"smtp_host":                    true,
+		"smtp_port":                    true,
+		"smtp_username":                true,
+		"smtp_password":                true,
+		"smtp_from":                    true,
+		"smtp_tls":                     true,
+		"audit_log_retention_days":     true,
+		"allow_subnet_overlaps":        true,
+		"default_auto_reserve_first":   true,
+		"default_auto_reserve_last":    true,
 	}
 
 	for key, value := range updates {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as client from '../api/client'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function AdminSettingsPage() {
   const navigate = useNavigate()
@@ -114,6 +114,7 @@ export default function AdminSettingsPage() {
     { id: 'smtp', label: 'SMTP / Email' },
     { id: 'approvals', label: `Approvals${approvals.length > 0 ? ` (${approvals.length})` : ''}` },
     { id: 'audit', label: 'Audit' },
+    { id: 'tools', label: 'Tools' },
   ]
 
   return (
@@ -375,6 +376,41 @@ export default function AdminSettingsPage() {
               >
                 View Audit Log
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'tools' && (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Subnet Tools</h2>
+            <div className="space-y-3">
+              <Link
+                to="/admin/overlap-report"
+                className="flex items-center gap-3 p-3 rounded border hover:bg-gray-50 transition"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">Subnet Overlap Check</p>
+                  <p className="text-sm text-gray-500">Find all overlapping subnets across all sections</p>
+                </div>
+                <span className="ml-auto text-blue-600 text-sm">Open →</span>
+              </Link>
+            </div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">IP Tags</h2>
+            <div className="space-y-3">
+              <Link
+                to="/admin/tags"
+                className="flex items-center gap-3 p-3 rounded border hover:bg-gray-50 transition"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">Manage IP Tags</p>
+                  <p className="text-sm text-gray-500">Create, edit, and delete IP address tags with colour coding</p>
+                </div>
+                <span className="ml-auto text-blue-600 text-sm">Open →</span>
+              </Link>
             </div>
           </div>
         </div>

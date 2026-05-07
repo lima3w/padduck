@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
@@ -10,13 +11,19 @@ import (
 )
 
 type CreateSubnetRequest struct {
-	NetworkAddress string `json:"network_address"`
-	PrefixLength   int    `json:"prefix_length"`
-	Description    string `json:"description"`
+	NetworkAddress   string  `json:"network_address"`
+	PrefixLength     int     `json:"prefix_length"`
+	Description      string  `json:"description"`
+	Gateway          *string `json:"gateway"`
+	AutoReserveFirst bool    `json:"auto_reserve_first"`
+	AutoReserveLast  bool    `json:"auto_reserve_last"`
 }
 
 type UpdateSubnetRequest struct {
-	Description string `json:"description"`
+	Description      string  `json:"description"`
+	Gateway          *string `json:"gateway"`
+	AutoReserveFirst bool    `json:"auto_reserve_first"`
+	AutoReserveLast  bool    `json:"auto_reserve_last"`
 }
 
 // CreateSubnet handles POST /api/v1/sections/:sectionID/subnets
@@ -34,10 +41,14 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnet, err := h.service.CreateSubnet(c.Context(), int64(sectionID), req.NetworkAddress, req.PrefixLength, req.Description)
+	subnet, err := h.service.CreateSubnet(c.Context(), int64(sectionID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast)
 	if err != nil {
+		var overlapErr *services.SubnetOverlapError
+		if errors.As(err, &overlapErr) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": overlapErr.Error(), "conflicting_cidr": overlapErr.ConflictingCIDR})
+		}
 		log.Printf("Error creating subnet: %v", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -108,10 +119,10 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description)
+	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast)
 	if err != nil {
 		log.Printf("Error updating subnet %d: %v", id, err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -123,6 +134,26 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 	})
 
 	return c.JSON(subnet)
+}
+
+// GetOverlapReport handles GET /api/v1/admin/subnets/overlap-report
+func (h *Handler) GetOverlapReport(c *fiber.Ctx) error {
+	currentUser, ok := c.Locals("user").(*models.User)
+	if !ok || currentUser.Role != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	}
+
+	pairs, err := h.service.OverlapReport(c.Context())
+	if err != nil {
+		log.Printf("Error generating overlap report: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	if pairs == nil {
+		pairs = make([]*services.OverlapPair, 0)
+	}
+
+	return c.JSON(fiber.Map{"overlaps": pairs})
 }
 
 // DeleteSubnet handles DELETE /api/v1/subnets/:id

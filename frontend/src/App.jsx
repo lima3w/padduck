@@ -10,6 +10,8 @@ import IPAddressesPage from './pages/IPAddressesPage'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import AuditLogPage from './pages/AuditLogPage'
 import UserSettingsPage from './pages/UserSettingsPage'
+import AdminTagsPage from './pages/AdminTagsPage'
+import OverlapReportPage from './pages/OverlapReportPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -51,6 +53,8 @@ export default function App() {
           <Route path="subnets/:subnetID/ip-addresses" element={<IPAddressesPage />} />
           <Route path="admin/settings" element={<AdminSettingsPage />} />
           <Route path="admin/audit-log" element={<AuditLogPage />} />
+          <Route path="admin/tags" element={<AdminTagsPage />} />
+          <Route path="admin/overlap-report" element={<OverlapReportPage />} />
           <Route path="settings" element={<UserSettingsPage />} />
         </Route>
       </Routes>

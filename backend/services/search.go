@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"ipam-next/models"
+	"ipam-next/repository"
 )
 
 const (
@@ -54,13 +56,20 @@ func (s *Service) SearchSubnets(ctx context.Context, sectionID int64, query stri
 	return s.repository.SearchSubnets(ctx, sectionID, query, limit, offset)
 }
 
+// IPSearchOptions holds additional search filters for IP address search
+type IPSearchOptions struct {
+	TagID          *int64
+	MACAddress     string
+	PTRRecord      string
+	IsAssigned     *bool
+	LastSeenAfter  *time.Time
+	LastSeenBefore *time.Time
+}
+
 // SearchIPAddresses searches for IP addresses in a subnet
-func (s *Service) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64) ([]*models.IPAddress, error) {
+func (s *Service) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64, opts ...IPSearchOptions) ([]*models.IPAddress, error) {
 	if subnetID <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
-	}
-	if query == "" {
-		return nil, fmt.Errorf("search query is required")
 	}
 
 	// Validate status if provided
@@ -83,5 +92,18 @@ func (s *Service) SearchIPAddresses(ctx context.Context, subnetID int64, query s
 		offset = DefaultOffset
 	}
 
-	return s.repository.SearchIPAddresses(ctx, subnetID, query, status, limit, offset)
+	var repoFilter repository.IPSearchFilter
+	if len(opts) > 0 {
+		o := opts[0]
+		repoFilter = repository.IPSearchFilter{
+			TagID:          o.TagID,
+			MACAddress:     o.MACAddress,
+			PTRRecord:      o.PTRRecord,
+			IsAssigned:     o.IsAssigned,
+			LastSeenAfter:  o.LastSeenAfter,
+			LastSeenBefore: o.LastSeenBefore,
+		}
+	}
+
+	return s.repository.SearchIPAddresses(ctx, subnetID, query, status, limit, offset, repoFilter)
 }
