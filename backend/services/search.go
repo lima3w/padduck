@@ -35,7 +35,7 @@ func (s *Service) SearchSections(ctx context.Context, query string, limit, offse
 }
 
 // SearchSubnets searches for subnets in a section by network address or description
-func (s *Service) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
+func (s *Service) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64, cfFilters ...map[string]string) ([]*models.Subnet, error) {
 	if sectionID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
@@ -53,7 +53,11 @@ func (s *Service) SearchSubnets(ctx context.Context, sectionID int64, query stri
 		offset = DefaultOffset
 	}
 
-	return s.repository.SearchSubnets(ctx, sectionID, query, limit, offset)
+	var cf map[string]string
+	if len(cfFilters) > 0 {
+		cf = cfFilters[0]
+	}
+	return s.repository.SearchSubnetsWithCustomFields(ctx, sectionID, query, limit, offset, cf)
 }
 
 // IPSearchOptions holds additional search filters for IP address search
@@ -64,6 +68,7 @@ type IPSearchOptions struct {
 	IsAssigned     *bool
 	LastSeenAfter  *time.Time
 	LastSeenBefore *time.Time
+	CustomFields   map[string]string
 }
 
 // SearchIPAddresses searches for IP addresses in a subnet
@@ -93,6 +98,7 @@ func (s *Service) SearchIPAddresses(ctx context.Context, subnetID int64, query s
 	}
 
 	var repoFilter repository.IPSearchFilter
+	var cfFilters map[string]string
 	if len(opts) > 0 {
 		o := opts[0]
 		repoFilter = repository.IPSearchFilter{
@@ -103,7 +109,8 @@ func (s *Service) SearchIPAddresses(ctx context.Context, subnetID int64, query s
 			LastSeenAfter:  o.LastSeenAfter,
 			LastSeenBefore: o.LastSeenBefore,
 		}
+		cfFilters = o.CustomFields
 	}
 
-	return s.repository.SearchIPAddresses(ctx, subnetID, query, status, limit, offset, repoFilter)
+	return s.repository.SearchIPAddressesWithCustomFields(ctx, subnetID, query, status, limit, offset, repoFilter, cfFilters)
 }

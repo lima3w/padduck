@@ -10,23 +10,25 @@ import (
 )
 
 type SearchRequest struct {
-	Query  string `json:"query"`
-	Limit  int64  `json:"limit"`
-	Offset int64  `json:"offset"`
-	Status string `json:"status"`
+	Query        string            `json:"query"`
+	Limit        int64             `json:"limit"`
+	Offset       int64             `json:"offset"`
+	Status       string            `json:"status"`
+	CustomFields map[string]string `json:"custom_fields"`
 }
 
 type IPSearchRequest struct {
-	Query          string     `json:"query"`
-	Limit          int64      `json:"limit"`
-	Offset         int64      `json:"offset"`
-	Status         string     `json:"status"`
-	TagID          *int64     `json:"tag_id"`
-	MACAddress     string     `json:"mac_address"`
-	PTRRecord      string     `json:"ptr_record"`
-	IsAssigned     *bool      `json:"is_assigned"`
-	LastSeenAfter  *time.Time `json:"last_seen_after"`
-	LastSeenBefore *time.Time `json:"last_seen_before"`
+	Query          string            `json:"query"`
+	Limit          int64             `json:"limit"`
+	Offset         int64             `json:"offset"`
+	Status         string            `json:"status"`
+	TagID          *int64            `json:"tag_id"`
+	MACAddress     string            `json:"mac_address"`
+	PTRRecord      string            `json:"ptr_record"`
+	IsAssigned     *bool             `json:"is_assigned"`
+	LastSeenAfter  *time.Time        `json:"last_seen_after"`
+	LastSeenBefore *time.Time        `json:"last_seen_before"`
+	CustomFields   map[string]string `json:"custom_fields"`
 }
 
 // SearchSections handles POST /api/v1/sections/search
@@ -62,7 +64,7 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnets, err := h.service.SearchSubnets(c.Context(), int64(sectionID), req.Query, req.Limit, req.Offset)
+	subnets, err := h.service.SearchSubnets(c.Context(), int64(sectionID), req.Query, req.Limit, req.Offset, req.CustomFields)
 	if err != nil {
 		log.Printf("Error searching subnets: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -95,6 +97,7 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 		IsAssigned:     req.IsAssigned,
 		LastSeenAfter:  req.LastSeenAfter,
 		LastSeenBefore: req.LastSeenBefore,
+		CustomFields:   req.CustomFields,
 	}
 
 	ips, err := h.service.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset, opts)
