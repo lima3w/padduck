@@ -9,12 +9,13 @@ import (
 )
 
 type CreateIPAddressRequest struct {
-	Address    string  `json:"address"`
-	Hostname   string  `json:"hostname"`
-	Status     string  `json:"status"`
-	TagID      *int64  `json:"tag_id"`
-	MACAddress *string `json:"mac_address"`
-	PTRRecord  *string `json:"ptr_record"`
+	Address      string             `json:"address"`
+	Hostname     string             `json:"hostname"`
+	Status       string             `json:"status"`
+	TagID        *int64             `json:"tag_id"`
+	MACAddress   *string            `json:"mac_address"`
+	PTRRecord    *string            `json:"ptr_record"`
+	CustomFields map[string]*string `json:"custom_fields"`
 }
 
 type AssignIPAddressRequest struct {
@@ -25,9 +26,10 @@ type AssignIPAddressRequest struct {
 }
 
 type UpdateIPMetaRequest struct {
-	TagID      *int64  `json:"tag_id"`
-	MACAddress *string `json:"mac_address"`
-	PTRRecord  *string `json:"ptr_record"`
+	TagID        *int64             `json:"tag_id"`
+	MACAddress   *string            `json:"mac_address"`
+	PTRRecord    *string            `json:"ptr_record"`
+	CustomFields map[string]*string `json:"custom_fields"`
 }
 
 // CreateIPAddress handles POST /api/v1/subnets/:subnetID/ip-addresses
@@ -45,7 +47,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord)
+	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.CustomFields)
 	if err != nil {
 		log.Printf("Error creating IP address: %v", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -224,7 +226,7 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.TagID, req.MACAddress, req.PTRRecord)
+	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.TagID, req.MACAddress, req.PTRRecord, req.CustomFields)
 	if err != nil {
 		log.Printf("Error updating IP meta %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

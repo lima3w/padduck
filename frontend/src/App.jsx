@@ -15,6 +15,7 @@ import AdminTagsPage from './pages/AdminTagsPage'
 import OverlapReportPage from './pages/OverlapReportPage'
 import DevicesPage from './pages/DevicesPage'
 import DeviceDetailPage from './pages/DeviceDetailPage'
+import AdminCustomFieldsPage from './pages/AdminCustomFieldsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="settings" element={<UserSettingsPage />} />
           <Route path="devices" element={<DevicesPage />} />
           <Route path="devices/:id" element={<DeviceDetailPage />} />
+          <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

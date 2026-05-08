@@ -32,7 +32,17 @@ func (s *Service) CreateDevice(ctx context.Context, req *DeviceCreateRequest) (*
 		return nil, err
 	}
 
-	return s.repository.CreateDevice(ctx, req)
+	device, err := s.repository.CreateDevice(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.CustomFields != nil {
+		_ = s.SetCustomFieldValues(ctx, "device", device.ID, req.CustomFields)
+		device.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "device", device.ID)
+	}
+
+	return device, nil
 }
 
 // GetDevice retrieves a device by ID (without SNMP credentials).
@@ -40,7 +50,12 @@ func (s *Service) GetDevice(ctx context.Context, id int64) (*models.Device, erro
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid device ID")
 	}
-	return s.repository.GetDeviceByID(ctx, id)
+	device, err := s.repository.GetDeviceByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	device.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "device", id)
+	return device, nil
 }
 
 // UpdateDevice updates an existing device, encrypting SNMP credentials before storage.
@@ -56,7 +71,16 @@ func (s *Service) UpdateDevice(ctx context.Context, id int64, req *DeviceUpdateR
 		return nil, err
 	}
 
-	return s.repository.UpdateDevice(ctx, id, req)
+	device, err := s.repository.UpdateDevice(ctx, id, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.CustomFields != nil {
+		_ = s.SetCustomFieldValues(ctx, "device", device.ID, req.CustomFields)
+	}
+	device.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "device", device.ID)
+	return device, nil
 }
 
 // DeleteDevice deletes a device by ID.
@@ -228,8 +252,12 @@ func (s *Service) DeleteDeviceInterface(ctx context.Context, deviceID, ifaceID i
 }
 
 // SearchDevices searches devices based on the provided filter criteria.
-func (s *Service) SearchDevices(ctx context.Context, filter *repository.DeviceSearchFilter) ([]*models.Device, error) {
-	return s.repository.SearchDevices(ctx, filter)
+func (s *Service) SearchDevices(ctx context.Context, filter *repository.DeviceSearchFilter, cfFilters ...map[string]string) ([]*models.Device, error) {
+	var cf map[string]string
+	if len(cfFilters) > 0 {
+		cf = cfFilters[0]
+	}
+	return s.repository.SearchDevicesWithCustomFields(ctx, filter, cf)
 }
 
 // encryptDeviceCredentials encrypts SNMP fields in-place on a DeviceCreateRequest.

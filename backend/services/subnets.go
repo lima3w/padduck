@@ -132,7 +132,7 @@ func validateGatewayInCIDR(gateway, networkAddress string, prefixLength int) err
 }
 
 // CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
-func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
+func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, customFields ...map[string]*string) (*models.Subnet, error) {
 	if sectionID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
@@ -183,6 +183,11 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil)
 	}
 
+	if len(customFields) > 0 && customFields[0] != nil {
+		_ = s.SetCustomFieldValues(ctx, "subnet", subnet.ID, customFields[0])
+		subnet.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "subnet", subnet.ID)
+	}
+
 	return subnet, nil
 }
 
@@ -192,7 +197,12 @@ func (s *Service) GetSubnet(ctx context.Context, id int64) (*models.Subnet, erro
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
 
-	return s.repository.GetSubnetByID(ctx, id)
+	subnet, err := s.repository.GetSubnetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	subnet.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "subnet", id)
+	return subnet, nil
 }
 
 // ListSubnets returns all subnets in a section
@@ -205,7 +215,7 @@ func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.S
 }
 
 // UpdateSubnet updates a subnet's description, gateway, and auto-reserve settings
-func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, customFields ...map[string]*string) (*models.Subnet, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
@@ -222,7 +232,16 @@ func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string
 		gateway = nil
 	}
 
-	return s.repository.UpdateSubnet(ctx, id, description, gateway, autoFirst, autoLast)
+	subnet, err := s.repository.UpdateSubnet(ctx, id, description, gateway, autoFirst, autoLast)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(customFields) > 0 && customFields[0] != nil {
+		_ = s.SetCustomFieldValues(ctx, "subnet", subnet.ID, customFields[0])
+	}
+	subnet.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "subnet", subnet.ID)
+	return subnet, nil
 }
 
 // DeleteSubnet deletes a subnet and its IP addresses (cascade)

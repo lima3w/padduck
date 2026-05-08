@@ -375,18 +375,37 @@ func (h *Handler) DeleteDeviceInterface(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+type deviceSearchRequest struct {
+	Query        string            `json:"query"`
+	TypeID       *int64            `json:"type_id"`
+	SectionID    *int64            `json:"section_id"`
+	Vendor       *string           `json:"vendor"`
+	IsOnline     *bool             `json:"is_online"`
+	VLANID       *int64            `json:"vlan_id"`
+	CustomFields map[string]string `json:"custom_fields"`
+}
+
 // SearchDevices handles POST /api/v1/devices/search
 func (h *Handler) SearchDevices(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
 		return err
 	}
 
-	filter := new(repository.DeviceSearchFilter)
-	if err := c.BodyParser(filter); err != nil {
+	req := new(deviceSearchRequest)
+	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	devices, err := h.service.SearchDevices(c.Context(), filter)
+	filter := &repository.DeviceSearchFilter{
+		Query:     req.Query,
+		TypeID:    req.TypeID,
+		SectionID: req.SectionID,
+		Vendor:    req.Vendor,
+		IsOnline:  req.IsOnline,
+		VLANID:    req.VLANID,
+	}
+
+	devices, err := h.service.SearchDevices(c.Context(), filter, req.CustomFields)
 	if err != nil {
 		log.Printf("Error searching devices: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

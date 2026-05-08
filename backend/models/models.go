@@ -2,6 +2,31 @@ package models
 
 import "time"
 
+// CustomFieldDefinition defines a custom field for an entity type
+type CustomFieldDefinition struct {
+	ID           int64       `json:"id"`
+	EntityType   string      `json:"entity_type"`
+	Name         string      `json:"name"`
+	Label        string      `json:"label"`
+	FieldType    string      `json:"field_type"`
+	Options      interface{} `json:"options"`
+	IsRequired   bool        `json:"is_required"`
+	DefaultValue *string     `json:"default_value"`
+	Placeholder  *string     `json:"placeholder"`
+	DisplayOrder int         `json:"display_order"`
+	IsSearchable bool        `json:"is_searchable"`
+	CreatedAt    time.Time   `json:"created_at"`
+}
+
+// CustomFieldValue holds a value for a custom field on a specific entity
+type CustomFieldValue struct {
+	ID           int64   `json:"id"`
+	DefinitionID int64   `json:"definition_id"`
+	EntityID     int64   `json:"entity_id"`
+	EntityType   string  `json:"entity_type"`
+	Value        *string `json:"value"`
+}
+
 // User represents a system user
 type User struct {
 	ID                     int64
@@ -108,16 +133,17 @@ type Section struct {
 
 // Subnet represents a network subnet
 type Subnet struct {
-	ID               int64
-	SectionID        int64
-	NetworkAddress   string
-	PrefixLength     int
-	Description      string
-	Gateway          *string
-	AutoReserveFirst bool
-	AutoReserveLast  bool
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID               int64              `json:"id"`
+	SectionID        int64              `json:"section_id"`
+	NetworkAddress   string             `json:"network_address"`
+	PrefixLength     int                `json:"prefix_length"`
+	Description      string             `json:"description"`
+	Gateway          *string            `json:"gateway,omitempty"`
+	AutoReserveFirst bool               `json:"auto_reserve_first"`
+	AutoReserveLast  bool               `json:"auto_reserve_last"`
+	CreatedAt        time.Time          `json:"created_at"`
+	UpdatedAt        time.Time          `json:"updated_at"`
+	CustomFields     map[string]*string `json:"custom_fields,omitempty"`
 }
 
 // IPTag represents a named, colour-coded label for IP addresses
@@ -132,24 +158,25 @@ type IPTag struct {
 
 // IPAddress represents an individual IP address
 type IPAddress struct {
-	ID            int64
-	SubnetID      int64
-	Address       string
-	Hostname      string
-	Status        string // available, assigned, reserved
-	AssignedTo    *string
-	AssignedAt    *time.Time
-	ExpiresAt     *time.Time
-	TagID         *int64
-	Tag           *IPTag
-	LastSeen      *time.Time
-	MACAddress    *string
-	PTRRecord     *string
-	DeviceID      *int64
-	InterfaceName *string
-	IsPrimary     bool
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            int64              `json:"id"`
+	SubnetID      int64              `json:"subnet_id"`
+	Address       string             `json:"address"`
+	Hostname      string             `json:"hostname"`
+	Status        string             `json:"status"`
+	AssignedTo    *string            `json:"assigned_to,omitempty"`
+	AssignedAt    *time.Time         `json:"assigned_at,omitempty"`
+	ExpiresAt     *time.Time         `json:"expires_at,omitempty"`
+	TagID         *int64             `json:"tag_id,omitempty"`
+	Tag           *IPTag             `json:"tag,omitempty"`
+	LastSeen      *time.Time         `json:"last_seen,omitempty"`
+	MACAddress    *string            `json:"mac_address,omitempty"`
+	PTRRecord     *string            `json:"ptr_record,omitempty"`
+	DeviceID      *int64             `json:"device_id,omitempty"`
+	InterfaceName *string            `json:"interface_name,omitempty"`
+	IsPrimary     bool               `json:"is_primary"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	CustomFields  map[string]*string `json:"custom_fields,omitempty"`
 }
 
 // Role represents a named set of permissions
@@ -423,20 +450,21 @@ type DeviceType struct {
 
 // Device represents a network device in the inventory
 type Device struct {
-	ID          int64       `json:"id"`
-	Hostname    string      `json:"hostname"`
-	Description *string     `json:"description,omitempty"`
-	TypeID      *int64      `json:"type_id,omitempty"`
-	Type        *DeviceType `json:"type,omitempty"`
-	SectionID   *int64      `json:"section_id,omitempty"`
-	Vendor      *string     `json:"vendor,omitempty"`
-	Model       *string     `json:"model,omitempty"`
-	OSVersion   *string     `json:"os_version,omitempty"`
-	IsOnline    bool        `json:"is_online"`
-	LastPingAt  *time.Time  `json:"last_ping_at,omitempty"`
-	IPCount     int         `json:"ip_count"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID           int64              `json:"id"`
+	Hostname     string             `json:"hostname"`
+	Description  *string            `json:"description,omitempty"`
+	TypeID       *int64             `json:"type_id,omitempty"`
+	Type         *DeviceType        `json:"type,omitempty"`
+	SectionID    *int64             `json:"section_id,omitempty"`
+	Vendor       *string            `json:"vendor,omitempty"`
+	Model        *string            `json:"model,omitempty"`
+	OSVersion    *string            `json:"os_version,omitempty"`
+	IsOnline     bool               `json:"is_online"`
+	LastPingAt   *time.Time         `json:"last_ping_at,omitempty"`
+	IPCount      int                `json:"ip_count"`
+	CreatedAt    time.Time          `json:"created_at"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+	CustomFields map[string]*string `json:"custom_fields,omitempty"`
 	// NOTE: SNMP fields intentionally omitted — use DeviceSNMP for credentials endpoint
 }
 

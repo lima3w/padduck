@@ -4,6 +4,7 @@ import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, r
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
+import CustomFieldForm from '../components/CustomFieldForm'
 
 const DEFAULT_LIMIT = 25
 
@@ -58,12 +59,25 @@ export default function IPAddressesPage() {
   const [saving, setSaving] = useState(false)
   const [visibleCols, setVisibleCols] = useState(loadColumnVisibility)
   const [showColPicker, setShowColPicker] = useState(false)
+  const [cfDefs, setCfDefs] = useState([])
+  const [cfFilterRows, setCfFilterRows] = useState([])
+
+  const token = localStorage.getItem('token')
+  const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
     load(1)
+    loadCfDefs()
   }, [subnetID])
+
+  async function loadCfDefs() {
+    try {
+      const res = await fetch('/api/v1/admin/custom-fields?entity_type=ip_address', { headers: cfHeaders })
+      if (res.ok) setCfDefs(await res.json() || [])
+    } catch {}
+  }
 
   async function load(p = page) {
     try {
@@ -103,9 +117,37 @@ export default function IPAddressesPage() {
     localStorage.setItem(LS_KEY, JSON.stringify(final))
   }
 
+  const searchableFields = cfDefs.filter(d => d.is_searchable)
+
+  function addCfFilterRow() {
+    if (searchableFields.length === 0) return
+    setCfFilterRows(rows => [...rows, { field: searchableFields[0].name, op: 'is', value: '' }])
+  }
+
+  function updateCfFilterRow(idx, patch) {
+    setCfFilterRows(rows => rows.map((r, i) => i === idx ? { ...r, ...patch } : r))
+  }
+
+  function removeCfFilterRow(idx) {
+    setCfFilterRows(rows => rows.filter((_, i) => i !== idx))
+  }
+
+  function addCfFilterFromValue(fieldName, value) {
+    setCfFilterRows(rows => {
+      const existing = rows.findIndex(r => r.field === fieldName)
+      if (existing >= 0) {
+        return rows.map((r, i) => i === existing ? { ...r, value } : r)
+      }
+      return [...rows, { field: fieldName, op: 'is', value }]
+    })
+  }
+
   async function handleSearch(e) {
     e.preventDefault()
-    if (!searchQuery.trim() && !searchStatus && !Object.values(advFilters).some(Boolean)) {
+    const cfFilters = {}
+    cfFilterRows.forEach(r => { if (r.value.trim()) cfFilters[r.field] = r.value.trim() })
+    const hasCf = Object.keys(cfFilters).length > 0
+    if (!searchQuery.trim() && !searchStatus && !Object.values(advFilters).some(Boolean) && !hasCf) {
       setIsSearchActive(false)
       load(1)
       return
@@ -118,6 +160,7 @@ export default function IPAddressesPage() {
       if (advFilters.mac_address) filters.mac_address = advFilters.mac_address
       if (advFilters.ptr_record) filters.ptr_record = advFilters.ptr_record
       if (advFilters.is_assigned !== '') filters.is_assigned = advFilters.is_assigned === 'true'
+      if (hasCf) filters.custom_fields = cfFilters
       const res = await searchIPAddresses(subnetID, searchQuery, searchStatus, 50, 0, filters)
       const data = res.data
       setIPs(Array.isArray(data) ? data : (data.data ?? []))
@@ -134,12 +177,13 @@ export default function IPAddressesPage() {
     setSearchQuery('')
     setSearchStatus('')
     setIsSearchActive(false)
+    setCfFilterRows([])
     setAdvFilters({ tag_id: '', mac_address: '', ptr_record: '', is_assigned: '' })
     load(1)
   }
 
   function openCreate() {
-    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '' })
+    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', custom_fields: {} })
     setModal('create')
   }
 
@@ -153,6 +197,7 @@ export default function IPAddressesPage() {
       tag_id: ip.TagID ? String(ip.TagID) : '',
       mac_address: ip.MACAddress || '',
       ptr_record: ip.PTRRecord || '',
+      custom_fields: ip.custom_fields || {},
     })
     setModal({ meta: ip })
   }
@@ -168,6 +213,7 @@ export default function IPAddressesPage() {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
+        custom_fields: form.custom_fields || {},
       })
       setModal(null)
       load(page)
@@ -200,6 +246,7 @@ export default function IPAddressesPage() {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
+        custom_fields: form.custom_fields || {},
       })
       setModal(null)
       load(page)
@@ -307,6 +354,15 @@ export default function IPAddressesPage() {
           >
             {showAdvanced ? 'Hide Filters' : 'More Filters'}
           </button>
+          {searchableFields.length > 0 && (
+            <button
+              type="button"
+              onClick={addCfFilterRow}
+              className="px-3 py-2 text-sm border rounded hover:bg-gray-50 text-gray-600"
+            >
+              + Filter
+            </button>
+          )}
           <button
             type="submit"
             disabled={searching}
@@ -314,7 +370,7 @@ export default function IPAddressesPage() {
           >
             {searching ? 'Searching...' : 'Search'}
           </button>
-          {(isSearchActive || searchQuery || searchStatus || Object.values(advFilters).some(Boolean)) && (
+          {(isSearchActive || searchQuery || searchStatus || Object.values(advFilters).some(Boolean) || cfFilterRows.length > 0) && (
             <button
               type="button"
               onClick={handleClearSearch}
@@ -324,6 +380,40 @@ export default function IPAddressesPage() {
             </button>
           )}
         </form>
+        {cfFilterRows.map((row, idx) => (
+          <div key={idx} className="flex gap-2 items-center">
+            <select
+              value={row.field}
+              onChange={e => updateCfFilterRow(idx, { field: e.target.value })}
+              className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {searchableFields.map(d => <option key={d.name} value={d.name}>{d.label}</option>)}
+            </select>
+            <select
+              value={row.op}
+              onChange={e => updateCfFilterRow(idx, { op: e.target.value })}
+              className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="is">is</option>
+              <option value="contains">contains</option>
+              <option value="is not">is not</option>
+            </select>
+            <input
+              type="text"
+              value={row.value}
+              onChange={e => updateCfFilterRow(idx, { value: e.target.value })}
+              placeholder="value"
+              className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={() => removeCfFilterRow(idx)}
+              className="text-gray-400 hover:text-red-600 text-sm px-1"
+            >
+              &times;
+            </button>
+          </div>
+        ))}
 
         {showAdvanced && (
           <div className="border rounded p-4 bg-gray-50 grid grid-cols-2 gap-4 text-sm">
@@ -393,12 +483,15 @@ export default function IPAddressesPage() {
               {col('mac_address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
               {col('last_seen') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>}
+              {searchableFields.map(d => (
+                <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
+              ))}
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {ips.length === 0 && (
-              <tr><td colSpan={visibleCols.length + 1} className="px-4 py-6 text-center text-gray-400">No IP addresses yet</td></tr>
+              <tr><td colSpan={visibleCols.length + searchableFields.length + 1} className="px-4 py-6 text-center text-gray-400">No IP addresses yet</td></tr>
             )}
             {ips.map(ip => (
               <tr key={ip.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -429,6 +522,22 @@ export default function IPAddressesPage() {
                     {ip.LastSeen ? new Date(ip.LastSeen).toLocaleString() : '—'}
                   </td>
                 )}
+                {searchableFields.map(d => {
+                  const val = ip.custom_fields?.[d.name]
+                  return (
+                    <td key={d.name} className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {val ? (
+                        <button
+                          className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-dotted text-left"
+                          onClick={() => addCfFilterFromValue(d.name, val)}
+                          title="Filter by this value"
+                        >
+                          {val}
+                        </button>
+                      ) : '—'}
+                    </td>
+                  )
+                })}
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
                   {ip.Status !== 'assigned' && (
@@ -525,6 +634,16 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, ptr_record: e.target.value }))}
               />
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={form.custom_fields}
+                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
@@ -590,6 +709,16 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, ptr_record: e.target.value }))}
               />
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={form.custom_fields}
+                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
