@@ -25,4 +25,6 @@ jobs:
           node-version: '22'
 
       - name: Run CI Local
-        run: make ci-local
+        run: |
+          cd frontend && npm install
+          make ci-local
