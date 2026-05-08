@@ -165,6 +165,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/approvals", h.ListPendingApprovals)
 	admin.Post("/approvals/:id/approve", h.ApproveUser)
 	admin.Post("/approvals/:id/reject", h.RejectUser)
+	admin.Get("/users", h.ListUsers)
 	admin.Post("/users/:id/unlock", h.AdminUnlockUser)
 	admin.Post("/users/:id/send-password-reset", h.SendPasswordResetEmail)
 	admin.Put("/users/:id/email", h.UpdateUserEmail)
