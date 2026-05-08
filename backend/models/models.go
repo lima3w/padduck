@@ -141,6 +141,7 @@ type Subnet struct {
 	Gateway          *string            `json:"gateway,omitempty"`
 	AutoReserveFirst bool               `json:"auto_reserve_first"`
 	AutoReserveLast  bool               `json:"auto_reserve_last"`
+	LocationID       *int64             `json:"location_id,omitempty"`
 	CreatedAt        time.Time          `json:"created_at"`
 	UpdatedAt        time.Time          `json:"updated_at"`
 	CustomFields     map[string]*string `json:"custom_fields,omitempty"`
@@ -461,6 +462,7 @@ type Device struct {
 	OSVersion    *string            `json:"os_version,omitempty"`
 	IsOnline     bool               `json:"is_online"`
 	LastPingAt   *time.Time         `json:"last_ping_at,omitempty"`
+	LocationID    *int64             `json:"location_id,omitempty"`
 	RackID        *int64             `json:"rack_id,omitempty"`
 	RackUnitStart *int               `json:"rack_unit_start,omitempty"`
 	RackUnitSize  int                `json:"rack_unit_size"`

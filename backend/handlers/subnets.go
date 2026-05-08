@@ -17,6 +17,7 @@ type CreateSubnetRequest struct {
 	Gateway          *string            `json:"gateway"`
 	AutoReserveFirst bool               `json:"auto_reserve_first"`
 	AutoReserveLast  bool               `json:"auto_reserve_last"`
+	LocationID       *int64             `json:"location_id"`
 	CustomFields     map[string]*string `json:"custom_fields"`
 }
 
@@ -25,6 +26,7 @@ type UpdateSubnetRequest struct {
 	Gateway          *string            `json:"gateway"`
 	AutoReserveFirst bool               `json:"auto_reserve_first"`
 	AutoReserveLast  bool               `json:"auto_reserve_last"`
+	LocationID       *int64             `json:"location_id"`
 	CustomFields     map[string]*string `json:"custom_fields"`
 }
 
@@ -43,7 +45,7 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnet, err := h.service.CreateSubnet(c.Context(), int64(sectionID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.CustomFields)
+	subnet, err := h.service.CreateSubnet(c.Context(), int64(sectionID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.CustomFields)
 	if err != nil {
 		var overlapErr *services.SubnetOverlapError
 		if errors.As(err, &overlapErr) {
@@ -146,7 +148,7 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.CustomFields)
+	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.CustomFields)
 	if err != nil {
 		log.Printf("Error updating subnet %d: %v", id, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})

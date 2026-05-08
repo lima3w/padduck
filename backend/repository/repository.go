@@ -281,17 +281,26 @@ func scanSubnet(row interface {
 	subnet := &models.Subnet{}
 	err := row.Scan(&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
 		&subnet.Description, &subnet.Gateway, &subnet.AutoReserveFirst, &subnet.AutoReserveLast,
-		&subnet.CreatedAt, &subnet.UpdatedAt)
+		&subnet.LocationID, &subnet.CreatedAt, &subnet.UpdatedAt)
 	return subnet, err
 }
 
-const subnetSelectCols = `id, section_id, host(network_address), prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, created_at, updated_at`
+const subnetSelectCols = `id, section_id, host(network_address), prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, created_at, updated_at`
 
 func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7)
 	          RETURNING ` + subnetSelectCols
 	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast)
+	return scanSubnet(row)
+}
+
+// CreateSubnetWithLocation inserts a new subnet with an optional location.
+func (r *Repository) CreateSubnetWithLocation(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64) (*models.Subnet, error) {
+	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	          RETURNING ` + subnetSelectCols
+	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID)
 	return scanSubnet(row)
 }
 
@@ -320,11 +329,40 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) 
 	return subnets, rows.Err()
 }
 
+// ListSubnetsByLocation returns subnets assigned to a specific location.
+func (r *Repository) ListSubnetsByLocation(ctx context.Context, locationID int64) ([]*models.Subnet, error) {
+	query := `SELECT ` + subnetSelectCols + ` FROM subnets WHERE location_id=$1 ORDER BY network_address`
+	rows, err := r.db.Query(ctx, query, locationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	subnets := make([]*models.Subnet, 0)
+	for rows.Next() {
+		subnet, err := scanSubnet(rows)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, subnet)
+	}
+	return subnets, rows.Err()
+}
+
 func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `UPDATE subnets SET description = $1, gateway = $2, auto_reserve_first = $3, auto_reserve_last = $4,
 	          updated_at = CURRENT_TIMESTAMP WHERE id = $5
 	          RETURNING ` + subnetSelectCols
 	row := r.db.QueryRow(ctx, query, description, gateway, autoFirst, autoLast, id)
+	return scanSubnet(row)
+}
+
+// UpdateSubnetWithLocation updates a subnet including its location assignment.
+func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64) (*models.Subnet, error) {
+	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
+	          location_id=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$6
+	          RETURNING ` + subnetSelectCols
+	row := r.db.QueryRow(ctx, query, description, gateway, autoFirst, autoLast, locationID, id)
 	return scanSubnet(row)
 }
 
@@ -2376,6 +2414,7 @@ type DeviceParams struct {
 	SNMPV3AuthPass  *string            `json:"snmp_v3_auth_pass"`
 	SNMPV3PrivProto *string            `json:"snmp_v3_priv_proto"`
 	SNMPV3PrivPass  *string            `json:"snmp_v3_priv_pass"`
+	LocationID      *int64             `json:"location_id"`
 	RackID          *int64             `json:"rack_id"`
 	RackUnitStart   *int               `json:"rack_unit_start"`
 	RackUnitSize    int                `json:"rack_unit_size"`
@@ -2424,7 +2463,7 @@ func (r *Repository) ListDeviceTypes(ctx context.Context) ([]*models.DeviceType,
 	return types, rows.Err()
 }
 
-const deviceSelectCols = `d.id, d.hostname, d.description, d.type_id, d.section_id, d.vendor, d.model, d.os_version, d.is_online, d.last_ping_at, d.rack_id, d.rack_unit_start, d.rack_unit_size, d.created_at, d.updated_at`
+const deviceSelectCols = `d.id, d.hostname, d.description, d.type_id, d.section_id, d.vendor, d.model, d.os_version, d.is_online, d.last_ping_at, d.location_id, d.rack_id, d.rack_unit_start, d.rack_unit_size, d.created_at, d.updated_at`
 const deviceTypeSelectCols = `dt.id, dt.name, COALESCE(dt.icon, ''), dt.description, dt.created_at, dt.updated_at`
 
 func scanDevice(row pgx.Row) (*models.Device, error) {
@@ -2432,7 +2471,7 @@ func scanDevice(row pgx.Row) (*models.Device, error) {
 	err := row.Scan(
 		&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 		&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
-		&d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+		&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 		&d.CreatedAt, &d.UpdatedAt,
 	)
 	if err != nil {
@@ -2473,7 +2512,7 @@ func (r *Repository) ListDevices(ctx context.Context, limit, offset int) ([]*mod
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
-			&d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,
@@ -2499,15 +2538,15 @@ func (r *Repository) CreateDevice(ctx context.Context, p *DeviceParams) (*models
 		INSERT INTO devices (hostname, description, type_id, section_id, vendor, model, os_version,
 		                     snmp_community, snmp_version, snmp_v3_user, snmp_v3_auth_proto,
 		                     snmp_v3_auth_pass, snmp_v3_priv_proto, snmp_v3_priv_pass,
-		                     rack_id, rack_unit_start, rack_unit_size)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		                     location_id, rack_id, rack_unit_start, rack_unit_size)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		RETURNING id, hostname, description, type_id, section_id, vendor, model, os_version,
-		          is_online, last_ping_at, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
+		          is_online, last_ping_at, location_id, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query,
 		p.Hostname, p.Description, p.TypeID, p.SectionID, p.Vendor, p.Model, p.OSVersion,
 		p.SNMPCommunity, p.SNMPVersion, p.SNMPV3User, p.SNMPV3AuthProto,
 		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass,
-		p.RackID, p.RackUnitStart, p.RackUnitSize,
+		p.LocationID, p.RackID, p.RackUnitStart, p.RackUnitSize,
 	)
 	return scanDevice(row)
 }
@@ -2540,7 +2579,7 @@ func (r *Repository) GetDeviceByID(ctx context.Context, id int64) (*models.Devic
 	err = rows.Scan(
 		&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 		&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
-		&d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+		&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 		&d.CreatedAt, &d.UpdatedAt,
 		&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 		&d.IPCount,
@@ -2565,16 +2604,16 @@ func (r *Repository) UpdateDevice(ctx context.Context, id int64, p *DeviceParams
 		  hostname=$1, description=$2, type_id=$3, section_id=$4, vendor=$5, model=$6, os_version=$7,
 		  snmp_community=$8, snmp_version=$9, snmp_v3_user=$10, snmp_v3_auth_proto=$11,
 		  snmp_v3_auth_pass=$12, snmp_v3_priv_proto=$13, snmp_v3_priv_pass=$14,
-		  rack_id=$15, rack_unit_start=$16, rack_unit_size=$17,
+		  location_id=$15, rack_id=$16, rack_unit_start=$17, rack_unit_size=$18,
 		  updated_at=now()
-		WHERE id=$18
+		WHERE id=$19
 		RETURNING id, hostname, description, type_id, section_id, vendor, model, os_version,
-		          is_online, last_ping_at, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
+		          is_online, last_ping_at, location_id, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query,
 		p.Hostname, p.Description, p.TypeID, p.SectionID, p.Vendor, p.Model, p.OSVersion,
 		p.SNMPCommunity, p.SNMPVersion, p.SNMPV3User, p.SNMPV3AuthProto,
 		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass,
-		p.RackID, p.RackUnitStart, p.RackUnitSize, id,
+		p.LocationID, p.RackID, p.RackUnitStart, p.RackUnitSize, id,
 	)
 	d, err := scanDevice(row)
 	if err != nil {
@@ -2853,7 +2892,7 @@ func (r *Repository) SearchDevices(ctx context.Context, f *DeviceSearchFilter) (
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
-			&d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,
@@ -3302,7 +3341,7 @@ func (r *Repository) SearchDevicesWithCustomFields(ctx context.Context, f *Devic
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
-			&d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,
@@ -3599,7 +3638,7 @@ func (r *Repository) ListDevicesInRack(ctx context.Context, rackID int64) ([]*mo
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
-			&d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,
@@ -3619,4 +3658,48 @@ func (r *Repository) ListDevicesInRack(ctx context.Context, rackID int64) ([]*mo
 // ListRacksByLocation returns racks filtered by a specific location ID.
 func (r *Repository) ListRacksByLocation(ctx context.Context, locationID int64) ([]*models.Rack, error) {
 	return r.ListRacks(ctx, &locationID)
+}
+
+// ListDevicesByLocation returns devices assigned to a specific location.
+func (r *Repository) ListDevicesByLocation(ctx context.Context, locationID int64) ([]*models.Device, error) {
+	query := `
+		SELECT ` + deviceSelectCols + `,
+		       ` + deviceTypeSelectCols + `,
+		       COUNT(ip.id) AS ip_count
+		FROM devices d
+		LEFT JOIN device_types dt ON dt.id = d.type_id
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
+		WHERE d.location_id = $1
+		GROUP BY d.id, dt.id
+		ORDER BY d.hostname`
+
+	rows, err := r.db.Query(ctx, query, locationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	devices := make([]*models.Device, 0)
+	for rows.Next() {
+		d := &models.Device{}
+		dt := &models.DeviceType{}
+		var dtID *int64
+		err := rows.Scan(
+			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
+			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.CreatedAt, &d.UpdatedAt,
+			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
+			&d.IPCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if dtID != nil {
+			dt.ID = *dtID
+			d.Type = dt
+		}
+		devices = append(devices, d)
+	}
+	return devices, rows.Err()
 }
