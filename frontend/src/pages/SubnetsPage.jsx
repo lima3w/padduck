@@ -39,6 +39,7 @@ export default function SubnetsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
+  const [cfFilterRows, setCfFilterRows] = useState([])
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -95,9 +96,38 @@ export default function SubnetsPage() {
     }
   }
 
+  const searchableFields = cfDefs.filter(d => d.is_searchable)
+
+  function addCfFilterRow() {
+    if (searchableFields.length === 0) return
+    setCfFilterRows(rows => [...rows, { field: searchableFields[0].name, op: 'is', value: '' }])
+  }
+
+  function updateCfFilterRow(idx, patch) {
+    setCfFilterRows(rows => rows.map((r, i) => i === idx ? { ...r, ...patch } : r))
+  }
+
+  function removeCfFilterRow(idx) {
+    setCfFilterRows(rows => rows.filter((_, i) => i !== idx))
+  }
+
+  function addCfFilterFromValue(fieldName, value) {
+    setCfFilterRows(rows => {
+      const existing = rows.findIndex(r => r.field === fieldName)
+      if (existing >= 0) {
+        return rows.map((r, i) => i === existing ? { ...r, value } : r)
+      }
+      return [...rows, { field: fieldName, op: 'is', value }]
+    })
+  }
+
   async function handleSearch(e) {
     e.preventDefault()
-    if (!searchQuery.trim()) {
+    const hasQuery = searchQuery.trim()
+    const cfFilters = {}
+    cfFilterRows.forEach(r => { if (r.value.trim()) cfFilters[r.field] = r.value.trim() })
+    const hasCf = Object.keys(cfFilters).length > 0
+    if (!hasQuery && !hasCf) {
       setIsSearchActive(false)
       load(1)
       return
@@ -105,8 +135,15 @@ export default function SubnetsPage() {
     try {
       setSearching(true)
       setIsSearchActive(true)
-      const res = await searchSubnets(sectionID, searchQuery)
-      const data = res.data
+      const body = { query: searchQuery || '', limit: 100, offset: 0 }
+      if (hasCf) body.custom_fields = cfFilters
+      const res = await fetch(`/api/v1/subnets/search/${sectionID}`, {
+        method: 'POST',
+        headers: cfHeaders,
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
       setSubnets(Array.isArray(data) ? data : (data.data ?? []))
       setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
       setPage(1)
@@ -119,6 +156,7 @@ export default function SubnetsPage() {
 
   function handleClearSearch() {
     setSearchQuery('')
+    setCfFilterRows([])
     setIsSearchActive(false)
     load(1)
   }
@@ -245,7 +283,7 @@ export default function SubnetsPage() {
 
       {viewMode === 'list' && (
         <>
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             <form onSubmit={handleSearch} className="flex gap-2">
               <input
                 type="text"
@@ -254,6 +292,15 @@ export default function SubnetsPage() {
                 onChange={e => setSearchQuery(e.target.value)}
                 className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
               />
+              {searchableFields.length > 0 && (
+                <button
+                  type="button"
+                  onClick={addCfFilterRow}
+                  className="px-3 py-2 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+                >
+                  + Filter
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={searching}
@@ -261,7 +308,7 @@ export default function SubnetsPage() {
               >
                 {searching ? 'Searching...' : 'Search'}
               </button>
-              {isSearchActive && (
+              {(isSearchActive || cfFilterRows.length > 0) && (
                 <button
                   type="button"
                   onClick={handleClearSearch}
@@ -271,6 +318,40 @@ export default function SubnetsPage() {
                 </button>
               )}
             </form>
+            {cfFilterRows.map((row, idx) => (
+              <div key={idx} className="flex gap-2 items-center">
+                <select
+                  value={row.field}
+                  onChange={e => updateCfFilterRow(idx, { field: e.target.value })}
+                  className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                >
+                  {searchableFields.map(d => <option key={d.name} value={d.name}>{d.label}</option>)}
+                </select>
+                <select
+                  value={row.op}
+                  onChange={e => updateCfFilterRow(idx, { op: e.target.value })}
+                  className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                >
+                  <option value="is">is</option>
+                  <option value="contains">contains</option>
+                  <option value="is not">is not</option>
+                </select>
+                <input
+                  type="text"
+                  value={row.value}
+                  onChange={e => updateCfFilterRow(idx, { value: e.target.value })}
+                  placeholder="value"
+                  className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCfFilterRow(idx)}
+                  className="text-gray-400 hover:text-red-600 text-sm px-1"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
           </div>
 
           {!isSearchActive && (
@@ -287,12 +368,15 @@ export default function SubnetsPage() {
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Prefix</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Gateway</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+                  {searchableFields.map(d => (
+                    <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
+                  ))}
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>
                 {subnets.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
+                  <tr><td colSpan={5 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
                 )}
                 {subnets.map(s => (
                   <tr key={s.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -305,6 +389,22 @@ export default function SubnetsPage() {
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">/{s.PrefixLength}</td>
                     <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">{s.Gateway || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.Description}</td>
+                    {searchableFields.map(d => {
+                      const val = s.custom_fields?.[d.name]
+                      return (
+                        <td key={d.name} className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                          {val ? (
+                            <button
+                              className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-dotted text-left"
+                              onClick={() => addCfFilterFromValue(d.name, val)}
+                              title="Filter by this value"
+                            >
+                              {val}
+                            </button>
+                          ) : '—'}
+                        </td>
+                      )
+                    })}
                     <td className="px-4 py-3 text-right space-x-2">
                       <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
                       {deleteConfirm === s.ID ? (

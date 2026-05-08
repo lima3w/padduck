@@ -24,6 +24,7 @@ export default function DevicesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
+  const [cfFilterRows, setCfFilterRows] = useState([])
 
   const token = localStorage.getItem('token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -64,12 +65,40 @@ export default function DevicesPage() {
     }
   }
 
+  const searchableFields = cfDefs.filter(d => d.is_searchable)
+
+  function addCfFilterRow() {
+    if (searchableFields.length === 0) return
+    setCfFilterRows(rows => [...rows, { field: searchableFields[0].name, op: 'is', value: '' }])
+  }
+
+  function updateCfFilterRow(idx, patch) {
+    setCfFilterRows(rows => rows.map((r, i) => i === idx ? { ...r, ...patch } : r))
+  }
+
+  function removeCfFilterRow(idx) {
+    setCfFilterRows(rows => rows.filter((_, i) => i !== idx))
+  }
+
+  function addCfFilterFromValue(fieldName, value) {
+    setCfFilterRows(rows => {
+      const existing = rows.findIndex(r => r.field === fieldName)
+      if (existing >= 0) {
+        return rows.map((r, i) => i === existing ? { ...r, value } : r)
+      }
+      return [...rows, { field: fieldName, op: 'is', value }]
+    })
+  }
+
   async function handleSearch(e) {
     e.preventDefault()
     const body = {}
     if (filterHostname.trim()) body.hostname = filterHostname.trim()
     if (filterTypeId) body.type_id = parseInt(filterTypeId)
     if (filterOnline !== '') body.is_online = filterOnline === 'true'
+    const cfFilters = {}
+    cfFilterRows.forEach(r => { if (r.value.trim()) cfFilters[r.field] = r.value.trim() })
+    if (Object.keys(cfFilters).length) body.custom_fields = cfFilters
 
     if (!Object.keys(body).length) {
       setIsFiltered(false)
@@ -101,6 +130,7 @@ export default function DevicesPage() {
     setFilterHostname('')
     setFilterTypeId('')
     setFilterOnline('')
+    setCfFilterRows([])
     setIsFiltered(false)
     load(1)
   }
@@ -182,7 +212,7 @@ export default function DevicesPage() {
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
 
-      <div className="mb-4">
+      <div className="mb-4 space-y-2">
         <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
           <input
             type="text"
@@ -210,6 +240,15 @@ export default function DevicesPage() {
             <option value="true">Online only</option>
             <option value="false">Offline only</option>
           </select>
+          {searchableFields.length > 0 && (
+            <button
+              type="button"
+              onClick={addCfFilterRow}
+              className="px-3 py-2 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+            >
+              + Filter
+            </button>
+          )}
           <button
             type="submit"
             disabled={loading}
@@ -217,7 +256,7 @@ export default function DevicesPage() {
           >
             Search
           </button>
-          {(isFiltered || filterHostname || filterTypeId || filterOnline) && (
+          {(isFiltered || filterHostname || filterTypeId || filterOnline || cfFilterRows.length > 0) && (
             <button
               type="button"
               onClick={handleClearSearch}
@@ -227,6 +266,40 @@ export default function DevicesPage() {
             </button>
           )}
         </form>
+        {cfFilterRows.map((row, idx) => (
+          <div key={idx} className="flex gap-2 items-center">
+            <select
+              value={row.field}
+              onChange={e => updateCfFilterRow(idx, { field: e.target.value })}
+              className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            >
+              {searchableFields.map(d => <option key={d.name} value={d.name}>{d.label}</option>)}
+            </select>
+            <select
+              value={row.op}
+              onChange={e => updateCfFilterRow(idx, { op: e.target.value })}
+              className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            >
+              <option value="is">is</option>
+              <option value="contains">contains</option>
+              <option value="is not">is not</option>
+            </select>
+            <input
+              type="text"
+              value={row.value}
+              onChange={e => updateCfFilterRow(idx, { value: e.target.value })}
+              placeholder="value"
+              className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            />
+            <button
+              type="button"
+              onClick={() => removeCfFilterRow(idx)}
+              className="text-gray-400 hover:text-red-600 text-sm px-1"
+            >
+              &times;
+            </button>
+          </div>
+        ))}
       </div>
 
       {!isFiltered && (
@@ -245,12 +318,15 @@ export default function DevicesPage() {
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Section</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">IPs</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+              {searchableFields.map(f => (
+                <th key={f.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{f.label}</th>
+              ))}
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {devices.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No devices yet</td></tr>
+              <tr><td colSpan={7 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No devices yet</td></tr>
             )}
             {devices.map(d => (
               <tr key={d.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -281,6 +357,22 @@ export default function DevicesPage() {
                     </span>
                   </span>
                 </td>
+                {searchableFields.map(f => {
+                  const val = d.custom_fields?.[f.name]
+                  return (
+                    <td key={f.name} className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {val ? (
+                        <button
+                          className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-dotted text-left"
+                          onClick={() => addCfFilterFromValue(f.name, val)}
+                          title="Filter by this value"
+                        >
+                          {val}
+                        </button>
+                      ) : '—'}
+                    </td>
+                  )
+                })}
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openEdit(d)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
                   {deleteConfirm === d.id ? (
