@@ -228,7 +228,7 @@ export default function IPAddressesPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      await assignIPAddress(modal.assign.ID, { assigned_to: form.assigned_to })
+      await assignIPAddress(modal.assign.id, { assigned_to: form.assigned_to })
       setModal(null)
       load(page)
     } catch {
@@ -242,7 +242,7 @@ export default function IPAddressesPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      await updateIPMeta(modal.meta.ID, {
+      await updateIPMeta(modal.meta.id, {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
@@ -286,10 +286,10 @@ export default function IPAddressesPage() {
         <Link to="/sections" className="hover:text-blue-600">Sections</Link>
         <span>/</span>
         {subnet && (
-          <Link to={`/sections/${subnet.SectionID}/subnets`} className="hover:text-blue-600">Subnets</Link>
+          <Link to={`/sections/${subnet.sectionId}/subnets`} className="hover:text-blue-600">Subnets</Link>
         )}
         <span>/</span>
-        <span className="text-gray-800 font-medium font-mono">{subnet?.NetworkAddress}/{subnet?.PrefixLength}</span>
+        <span className="text-gray-800 font-medium font-mono">{subnet?.networkAddress}/{subnet?.prefixLength}</span>
       </nav>
 
       <div className="flex items-center justify-between mb-4">
@@ -494,7 +494,7 @@ export default function IPAddressesPage() {
               <tr><td colSpan={visibleCols.length + searchableFields.length + 1} className="px-4 py-6 text-center text-gray-400">No IP addresses yet</td></tr>
             )}
             {ips.map(ip => (
-              <tr key={ip.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+              <tr key={ip.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 {col('address') && <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.Address}</td>}
                 {col('hostname') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.Hostname || '—'}</td>}
                 {col('status') && (
@@ -544,16 +544,16 @@ export default function IPAddressesPage() {
                     <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
                   )}
                   {ip.Status === 'assigned' && (
-                    <button onClick={() => handleRelease(ip.ID)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
+                    <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
                   )}
-                  {deleteConfirm === ip.ID ? (
+                  {deleteConfirm === ip.id ? (
                     <>
                       <span className="text-red-600 text-xs">Confirm?</span>
-                      <button onClick={() => handleDelete(ip.ID)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
+                      <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
                       <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(ip.ID)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                    <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                   )}
                 </td>
               </tr>

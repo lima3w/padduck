@@ -54,7 +54,7 @@ function SubnetRow({ node, depth, onEdit, onDelete, deleteConfirm, setDeleteConf
           {node.used}/{node.total}
         </td>
         <td className="px-4 py-2.5">
-          <UtilBar pct={node.utilisation_pct} />
+          <UtilBar pct={node.utilisationPct} />
         </td>
         <td className="px-4 py-2.5 text-right text-xs space-x-2 whitespace-nowrap">
           {onEdit && (

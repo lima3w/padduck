@@ -57,24 +57,24 @@ export default function OverlapReportPage() {
                 <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <Link
-                      to={`/subnets/${pair.subnet_a.ID}/ip-addresses`}
+                      to={`/subnets/${pair.subnetA.id}/ip-addresses`}
                       className="font-mono text-blue-600 hover:underline font-medium"
                     >
-                      {pair.subnet_a.NetworkAddress}/{pair.subnet_a.PrefixLength}
+                      {pair.subnetA.networkAddress}/{pair.subnetA.prefixLength}
                     </Link>
-                    {pair.subnet_a.Description && (
-                      <span className="ml-2 text-gray-400 text-xs">{pair.subnet_a.Description}</span>
+                    {pair.subnetA.description && (
+                      <span className="ml-2 text-gray-400 text-xs">{pair.subnetA.description}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      to={`/subnets/${pair.subnet_b.ID}/ip-addresses`}
+                      to={`/subnets/${pair.subnetB.id}/ip-addresses`}
                       className="font-mono text-blue-600 hover:underline font-medium"
                     >
-                      {pair.subnet_b.NetworkAddress}/{pair.subnet_b.PrefixLength}
+                      {pair.subnetB.networkAddress}/{pair.subnetB.prefixLength}
                     </Link>
-                    {pair.subnet_b.Description && (
-                      <span className="ml-2 text-gray-400 text-xs">{pair.subnet_b.Description}</span>
+                    {pair.subnetB.description && (
+                      <span className="ml-2 text-gray-400 text-xs">{pair.subnetB.description}</span>
                     )}
                   </td>
                 </tr>

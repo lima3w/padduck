@@ -78,7 +78,7 @@ export default function SectionsPage() {
   }
 
   function openEdit(section) {
-    setForm({ name: section.Name, description: section.Description })
+    setForm({ name: section.name, description: section.description })
     setModal({ edit: section })
   }
 
@@ -89,7 +89,7 @@ export default function SectionsPage() {
       if (modal === 'create') {
         await createSection({ name: form.name, description: form.description, created_by: 1 })
       } else {
-        await updateSection(modal.edit.ID, { name: form.name, description: form.description })
+        await updateSection(modal.edit.id, { name: form.name, description: form.description })
       }
       setModal(null)
       load(page)
@@ -171,24 +171,24 @@ export default function SectionsPage() {
               <tr><td colSpan={3} className="px-4 py-6 text-center text-gray-400">No sections yet</td></tr>
             )}
             {sections.map(s => (
-              <tr key={s.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+              <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td
                   className="px-4 py-3 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                  onClick={() => navigate(`/sections/${s.ID}/subnets`)}
+                  onClick={() => navigate(`/sections/${s.id}/subnets`)}
                 >
-                  {s.Name}
+                  {s.name}
                 </td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.Description}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
-                  {deleteConfirm === s.ID ? (
+                  {deleteConfirm === s.id ? (
                     <>
                       <span className="text-red-600 text-xs">Confirm?</span>
-                      <button onClick={() => handleDelete(s.ID)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
+                      <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
                       <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(s.ID)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                    <button onClick={() => setDeleteConfirm(s.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                   )}
                 </td>
               </tr>

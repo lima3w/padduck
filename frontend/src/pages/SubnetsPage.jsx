@@ -150,13 +150,8 @@ export default function SubnetsPage() {
       const body = { query: searchQuery || '', limit: 100, offset: 0 }
       if (hasCf) body.custom_fields = cfFilters
       if (hasLoc) body.location_id = parseInt(filterLocationId)
-      const res = await fetch(`/api/v1/subnets/search/${sectionID}`, {
-        method: 'POST',
-        headers: cfHeaders,
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
+      const res = await searchSubnets(sectionID, body)
+      const data = res.data
       setSubnets(Array.isArray(data) ? data : (data.data ?? []))
       setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
       setPage(1)
@@ -188,14 +183,14 @@ export default function SubnetsPage() {
 
   function openEdit(subnet) {
     setForm({
-      network_address: subnet.NetworkAddress || subnet.cidr?.split('/')[0] || '',
-      prefix_length: subnet.PrefixLength || subnet.cidr?.split('/')[1] || '',
-      description: subnet.Description || subnet.description || '',
-      gateway: subnet.Gateway || '',
-      auto_reserve_first: subnet.AutoReserveFirst || false,
-      auto_reserve_last: subnet.AutoReserveLast || false,
-      location_id: subnet.location_id ? String(subnet.location_id) : '',
-      custom_fields: subnet.custom_fields || {},
+      network_address: subnet.networkAddress || subnet.cidr?.split('/')[0] || '',
+      prefix_length: subnet.prefixLength != null ? String(subnet.prefixLength) : (subnet.cidr?.split('/')[1] || ''),
+      description: subnet.description || '',
+      gateway: subnet.gateway || '',
+      auto_reserve_first: subnet.autoReserveFirst || false,
+      auto_reserve_last: subnet.autoReserveLast || false,
+      location_id: subnet.locationId ? String(subnet.locationId) : '',
+      custom_fields: subnet.customFields || {},
     })
     setOverlapError(null)
     setModal({ edit: subnet })
@@ -218,7 +213,7 @@ export default function SubnetsPage() {
           custom_fields: form.custom_fields || {},
         })
       } else {
-        const id = modal.edit.ID || modal.edit.id
+        const id = modal.edit.id
         await updateSubnet(id, {
           description: form.description,
           gateway: form.gateway || null,
@@ -261,7 +256,7 @@ export default function SubnetsPage() {
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1">
         <Link to="/sections" className="hover:text-blue-600">Sections</Link>
         <span>/</span>
-        <span className="text-gray-800 dark:text-gray-200 font-medium">{section?.Name}</span>
+        <span className="text-gray-800 dark:text-gray-200 font-medium">{section?.name}</span>
       </nav>
 
       <div className="flex items-center justify-between mb-4">
@@ -409,25 +404,25 @@ export default function SubnetsPage() {
                   <tr><td colSpan={6 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
                 )}
                 {subnets.map(s => (
-                  <tr key={s.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td
                       className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                      onClick={() => navigate(`/subnets/${s.ID}/ip-addresses`)}
+                      onClick={() => navigate(`/subnets/${s.id}/ip-addresses`)}
                     >
-                      {s.NetworkAddress}
+                      {s.networkAddress}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">/{s.PrefixLength}</td>
-                    <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">{s.Gateway || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">/{s.prefixLength}</td>
+                    <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">{s.gateway || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                      {s.location_id ? (
-                        <Link to={`/locations/${s.location_id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
-                          {locations.find(l => l.id === s.location_id)?.name || `#${s.location_id}`}
+                      {s.locationId ? (
+                        <Link to={`/locations/${s.locationId}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
+                          {locations.find(l => l.id === s.locationId)?.name || `#${s.locationId}`}
                         </Link>
                       ) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.Description}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                     {searchableFields.map(d => {
-                      const val = s.custom_fields?.[d.name]
+                      const val = s.customFields?.[d.name]
                       return (
                         <td key={d.name} className="px-4 py-3 text-gray-500 dark:text-gray-400">
                           {val ? (
@@ -444,14 +439,14 @@ export default function SubnetsPage() {
                     })}
                     <td className="px-4 py-3 text-right space-x-2">
                       <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
-                      {deleteConfirm === s.ID ? (
+                      {deleteConfirm === s.id ? (
                         <>
                           <span className="text-red-600 text-xs">Confirm?</span>
-                          <button onClick={() => handleDelete(s.ID)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
+                          <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
                           <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(s.ID)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                        <button onClick={() => setDeleteConfirm(s.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                       )}
                     </td>
                   </tr>
