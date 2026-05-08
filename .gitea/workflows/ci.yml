@@ -5,6 +5,7 @@ on:
     branches-ignore:
       - 'main' # Already handled by deploy.yml
   pull_request:
+  workflow_dispatch:
 
 jobs:
   ci-test:
