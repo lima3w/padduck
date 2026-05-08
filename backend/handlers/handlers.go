@@ -262,6 +262,15 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	devices.Delete("/:id/interfaces/:if_id", h.DeleteDeviceInterface)
 	devices.Get("/:id/snmp-credentials", h.GetDeviceSNMPCredentials)
 
+	// Locations (v1.5.0 #194)
+	locations := protected.Group("/locations")
+	locations.Get("", h.ListLocations)
+	locations.Get("/tree", h.GetLocationTree)
+	locations.Post("", h.CreateLocation)
+	locations.Get("/:id", h.GetLocation)
+	locations.Put("/:id", h.UpdateLocation)
+	locations.Delete("/:id", h.DeleteLocation)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

@@ -480,6 +480,26 @@ type DeviceSNMP struct {
 	SNMPV3PrivPass  *string `json:"snmp_v3_priv_pass,omitempty"`
 }
 
+// Location represents a physical place in the location hierarchy (site, building, floor, room, cage, etc.)
+type Location struct {
+	ID          int64      `json:"id"`
+	ParentID    *int64     `json:"parent_id,omitempty"`
+	Name        string     `json:"name"`
+	Type        string     `json:"type"`
+	Address     *string    `json:"address,omitempty"`
+	Lat         *float64   `json:"lat,omitempty"`
+	Lng         *float64   `json:"lng,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// LocationTreeNode is a Location with nested children for tree responses
+type LocationTreeNode struct {
+	Location
+	Children []*LocationTreeNode `json:"children"`
+}
+
 // DeviceInterface represents a network interface on a device
 type DeviceInterface struct {
 	ID                     int64   `json:"id"`
