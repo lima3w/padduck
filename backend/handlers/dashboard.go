@@ -10,7 +10,7 @@ import (
 // GetDashboardSummary handles GET /api/v1/dashboard/summary
 func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
-		return err
+		return nil
 	}
 
 	summary, err := h.service.GetDashboardSummary(c.Context())
@@ -25,7 +25,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 // GetDashboardRecentActivity handles GET /api/v1/dashboard/recent-activity
 func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
-		return err
+		return nil
 	}
 
 	activities, err := h.service.GetDashboardRecentActivity(c.Context())

@@ -70,7 +70,7 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
-		return err
+		return nil
 	}
 
 	ip, err := h.service.GetIPAddress(c.Context(), int64(id))
@@ -137,7 +137,7 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(AssignIPAddressRequest)
@@ -168,7 +168,7 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPRelease); err != nil {
-		return err
+		return nil
 	}
 
 	ip, err := h.service.ReleaseIPAddress(c.Context(), int64(id))
@@ -193,7 +193,7 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
-		return err
+		return nil
 	}
 
 	if err := h.service.DeleteIPAddress(c.Context(), int64(id)); err != nil {
@@ -218,7 +218,7 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(UpdateIPMetaRequest)

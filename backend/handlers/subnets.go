@@ -73,7 +73,7 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
 	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
-		return err
+		return nil
 	}
 
 	subnet, err := h.service.GetSubnet(c.Context(), int64(id))

@@ -26,7 +26,7 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 	if err := h.permCheck(c, services.PermV2SectionWrite); err != nil {
-		return err
+		return nil
 	}
 
 	// Use authenticated user ID if available, otherwise default to admin (1)
@@ -62,7 +62,7 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
 	if err := h.permCheck(c, services.PermV2SectionRead); err != nil {
-		return err
+		return nil
 	}
 
 	section, err := h.service.GetSection(c.Context(), int64(id))
@@ -78,7 +78,7 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListSections(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
-		return err
+		return nil
 	}
 
 	page := c.QueryInt("page", 0)

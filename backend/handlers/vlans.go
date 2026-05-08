@@ -23,7 +23,7 @@ type UpdateVLANRequest struct {
 
 func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2VLANList); err != nil {
-		return err
+		return nil
 	}
 	vlans, err := h.service.ListVLANs(c.Context())
 	if err != nil {
@@ -44,7 +44,7 @@ func (h *Handler) GetVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
 	}
 	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
-		return err
+		return nil
 	}
 
 	vlan, err := h.service.GetVLAN(c.Context(), int64(id))
@@ -62,7 +62,7 @@ func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 	if err := h.permCheck(c, services.PermV2VLANWrite); err != nil {
-		return err
+		return nil
 	}
 
 	vlan, err := h.service.CreateVLAN(c.Context(), req.VRFID, req.VlanID, req.Name, req.Description)
