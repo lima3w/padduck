@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   getSection,
+  getSubnet,
   getSubnetsPaginated,
   createSubnet,
   updateSubnet,
@@ -181,19 +182,25 @@ export default function SubnetsPage() {
     setModal('create')
   }
 
-  function openEdit(subnet) {
-    setForm({
-      network_address: subnet.networkAddress || subnet.cidr?.split('/')[0] || '',
-      prefix_length: subnet.prefixLength != null ? String(subnet.prefixLength) : (subnet.cidr?.split('/')[1] || ''),
-      description: subnet.description || '',
-      gateway: subnet.gateway || '',
-      auto_reserve_first: subnet.autoReserveFirst || false,
-      auto_reserve_last: subnet.autoReserveLast || false,
-      location_id: subnet.locationId ? String(subnet.locationId) : '',
-      custom_fields: subnet.customFields || {},
-    })
-    setOverlapError(null)
-    setModal({ edit: subnet })
+  async function openEdit(subnet) {
+    try {
+      const res = await getSubnet(subnet.id)
+      const full = res.data
+      setForm({
+        network_address: full.networkAddress || '',
+        prefix_length: full.prefixLength != null ? String(full.prefixLength) : '',
+        description: full.description || '',
+        gateway: full.gateway || '',
+        auto_reserve_first: full.autoReserveFirst || false,
+        auto_reserve_last: full.autoReserveLast || false,
+        location_id: full.locationId ? String(full.locationId) : '',
+        custom_fields: full.customFields || {},
+      })
+      setOverlapError(null)
+      setModal({ edit: full })
+    } catch {
+      setError('Failed to load subnet details')
+    }
   }
 
   async function handleSubmit(e) {
