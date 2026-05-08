@@ -213,6 +213,14 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/scan-jobs/:id/run", h.RunScanJobNow)
 	admin.Get("/scan-jobs/:id/results", h.GetScanJobResults)
 
+	// Custom fields admin CRUD (v1.4.0)
+	admin.Get("/custom-fields", h.ListCustomFieldDefinitions)
+	admin.Post("/custom-fields", h.CreateCustomFieldDefinition)
+	admin.Put("/custom-fields/reorder", h.ReorderCustomFieldDefinitions)
+	admin.Get("/custom-fields/:id", h.GetCustomFieldDefinition)
+	admin.Put("/custom-fields/:id", h.UpdateCustomFieldDefinition)
+	admin.Delete("/custom-fields/:id", h.DeleteCustomFieldDefinition)
+
 	// Subnet scan results (v0.9.0)
 	subnet.Get("/:id/scan-results", h.GetSubnetScanResults)
 
