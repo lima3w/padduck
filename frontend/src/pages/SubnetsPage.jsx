@@ -12,10 +12,11 @@ import {
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import SubnetTree from '../components/SubnetTree'
+import CustomFieldForm from '../components/CustomFieldForm'
 
 const DEFAULT_LIMIT = 25
 
-const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false }
+const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, custom_fields: {} }
 
 export default function SubnetsPage() {
   const { sectionID } = useParams()
@@ -37,13 +38,25 @@ export default function SubnetsPage() {
   const [overlapError, setOverlapError] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [cfDefs, setCfDefs] = useState([])
+
+  const token = localStorage.getItem('token')
+  const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
     setSearchQuery('')
     load(1)
+    loadCfDefs()
   }, [sectionID])
+
+  async function loadCfDefs() {
+    try {
+      const res = await fetch('/api/v1/admin/custom-fields?entity_type=subnet', { headers: cfHeaders })
+      if (res.ok) setCfDefs(await res.json() || [])
+    } catch {}
+  }
 
   async function load(p = page) {
     try {
@@ -129,6 +142,7 @@ export default function SubnetsPage() {
       gateway: subnet.Gateway || '',
       auto_reserve_first: subnet.AutoReserveFirst || false,
       auto_reserve_last: subnet.AutoReserveLast || false,
+      custom_fields: subnet.custom_fields || {},
     })
     setOverlapError(null)
     setModal({ edit: subnet })
@@ -147,6 +161,7 @@ export default function SubnetsPage() {
           gateway: form.gateway || null,
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
+          custom_fields: form.custom_fields || {},
         })
       } else {
         const id = modal.edit.ID || modal.edit.id
@@ -155,6 +170,7 @@ export default function SubnetsPage() {
           gateway: form.gateway || null,
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
+          custom_fields: form.custom_fields || {},
         })
       }
       setModal(null)
@@ -416,6 +432,16 @@ export default function SubnetsPage() {
                 <span className="text-sm text-gray-700">Auto-reserve last IP (broadcast address)</span>
               </label>
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t dark:border-gray-600 pt-4">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={form.custom_fields}
+                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
