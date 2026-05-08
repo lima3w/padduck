@@ -281,17 +281,26 @@ func scanSubnet(row interface {
 	subnet := &models.Subnet{}
 	err := row.Scan(&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
 		&subnet.Description, &subnet.Gateway, &subnet.AutoReserveFirst, &subnet.AutoReserveLast,
-		&subnet.CreatedAt, &subnet.UpdatedAt)
+		&subnet.LocationID, &subnet.CreatedAt, &subnet.UpdatedAt)
 	return subnet, err
 }
 
-const subnetSelectCols = `id, section_id, host(network_address), prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, created_at, updated_at`
+const subnetSelectCols = `id, section_id, host(network_address), prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, created_at, updated_at`
 
 func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7)
 	          RETURNING ` + subnetSelectCols
 	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast)
+	return scanSubnet(row)
+}
+
+// CreateSubnetWithLocation inserts a new subnet with an optional location.
+func (r *Repository) CreateSubnetWithLocation(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64) (*models.Subnet, error) {
+	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	          RETURNING ` + subnetSelectCols
+	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID)
 	return scanSubnet(row)
 }
 
@@ -320,11 +329,40 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) 
 	return subnets, rows.Err()
 }
 
+// ListSubnetsByLocation returns subnets assigned to a specific location.
+func (r *Repository) ListSubnetsByLocation(ctx context.Context, locationID int64) ([]*models.Subnet, error) {
+	query := `SELECT ` + subnetSelectCols + ` FROM subnets WHERE location_id=$1 ORDER BY network_address`
+	rows, err := r.db.Query(ctx, query, locationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	subnets := make([]*models.Subnet, 0)
+	for rows.Next() {
+		subnet, err := scanSubnet(rows)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, subnet)
+	}
+	return subnets, rows.Err()
+}
+
 func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `UPDATE subnets SET description = $1, gateway = $2, auto_reserve_first = $3, auto_reserve_last = $4,
 	          updated_at = CURRENT_TIMESTAMP WHERE id = $5
 	          RETURNING ` + subnetSelectCols
 	row := r.db.QueryRow(ctx, query, description, gateway, autoFirst, autoLast, id)
+	return scanSubnet(row)
+}
+
+// UpdateSubnetWithLocation updates a subnet including its location assignment.
+func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64) (*models.Subnet, error) {
+	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
+	          location_id=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$6
+	          RETURNING ` + subnetSelectCols
+	row := r.db.QueryRow(ctx, query, description, gateway, autoFirst, autoLast, locationID, id)
 	return scanSubnet(row)
 }
 
@@ -1715,6 +1753,39 @@ func (r *Repository) AssignRoleToUser(ctx context.Context, userID, roleID int64)
 	return err
 }
 
+// AssignRoleToUserWithLocation assigns a role to a user scoped to a specific location (or globally if locationID is nil).
+func (r *Repository) AssignRoleToUserWithLocation(ctx context.Context, userID, roleID int64, locationID *int64) error {
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO user_roles (user_id, role_id, location_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+		userID, roleID, locationID)
+	return err
+}
+
+// GetUserRoleLocationIDs returns distinct location_id values from user_roles for a user (nil = global/unscoped).
+func (r *Repository) GetUserRoleLocationIDs(ctx context.Context, userID int64) ([]int64, bool, error) {
+	query := `SELECT DISTINCT location_id FROM user_roles WHERE user_id=$1`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+
+	var scopedIDs []int64
+	hasGlobal := false
+	for rows.Next() {
+		var locID *int64
+		if err := rows.Scan(&locID); err != nil {
+			return nil, false, err
+		}
+		if locID == nil {
+			hasGlobal = true
+		} else {
+			scopedIDs = append(scopedIDs, *locID)
+		}
+	}
+	return scopedIDs, hasGlobal, rows.Err()
+}
+
 func (r *Repository) RemoveRoleFromUser(ctx context.Context, userID, roleID int64) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM user_roles WHERE user_id=$1 AND role_id=$2`, userID, roleID)
 	return err
@@ -2376,6 +2447,10 @@ type DeviceParams struct {
 	SNMPV3AuthPass  *string            `json:"snmp_v3_auth_pass"`
 	SNMPV3PrivProto *string            `json:"snmp_v3_priv_proto"`
 	SNMPV3PrivPass  *string            `json:"snmp_v3_priv_pass"`
+	LocationID      *int64             `json:"location_id"`
+	RackID          *int64             `json:"rack_id"`
+	RackUnitStart   *int               `json:"rack_unit_start"`
+	RackUnitSize    int                `json:"rack_unit_size"`
 	CustomFields    map[string]*string `json:"custom_fields"`
 }
 
@@ -2421,7 +2496,7 @@ func (r *Repository) ListDeviceTypes(ctx context.Context) ([]*models.DeviceType,
 	return types, rows.Err()
 }
 
-const deviceSelectCols = `d.id, d.hostname, d.description, d.type_id, d.section_id, d.vendor, d.model, d.os_version, d.is_online, d.last_ping_at, d.created_at, d.updated_at`
+const deviceSelectCols = `d.id, d.hostname, d.description, d.type_id, d.section_id, d.vendor, d.model, d.os_version, d.is_online, d.last_ping_at, d.location_id, d.rack_id, d.rack_unit_start, d.rack_unit_size, d.created_at, d.updated_at`
 const deviceTypeSelectCols = `dt.id, dt.name, COALESCE(dt.icon, ''), dt.description, dt.created_at, dt.updated_at`
 
 func scanDevice(row pgx.Row) (*models.Device, error) {
@@ -2429,6 +2504,7 @@ func scanDevice(row pgx.Row) (*models.Device, error) {
 	err := row.Scan(
 		&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 		&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+		&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 		&d.CreatedAt, &d.UpdatedAt,
 	)
 	if err != nil {
@@ -2469,6 +2545,7 @@ func (r *Repository) ListDevices(ctx context.Context, limit, offset int) ([]*mod
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,
@@ -2493,14 +2570,16 @@ func (r *Repository) CreateDevice(ctx context.Context, p *DeviceParams) (*models
 	query := `
 		INSERT INTO devices (hostname, description, type_id, section_id, vendor, model, os_version,
 		                     snmp_community, snmp_version, snmp_v3_user, snmp_v3_auth_proto,
-		                     snmp_v3_auth_pass, snmp_v3_priv_proto, snmp_v3_priv_pass)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		                     snmp_v3_auth_pass, snmp_v3_priv_proto, snmp_v3_priv_pass,
+		                     location_id, rack_id, rack_unit_start, rack_unit_size)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 		RETURNING id, hostname, description, type_id, section_id, vendor, model, os_version,
-		          is_online, last_ping_at, created_at, updated_at`
+		          is_online, last_ping_at, location_id, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query,
 		p.Hostname, p.Description, p.TypeID, p.SectionID, p.Vendor, p.Model, p.OSVersion,
 		p.SNMPCommunity, p.SNMPVersion, p.SNMPV3User, p.SNMPV3AuthProto,
 		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass,
+		p.LocationID, p.RackID, p.RackUnitStart, p.RackUnitSize,
 	)
 	return scanDevice(row)
 }
@@ -2533,6 +2612,7 @@ func (r *Repository) GetDeviceByID(ctx context.Context, id int64) (*models.Devic
 	err = rows.Scan(
 		&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 		&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+		&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 		&d.CreatedAt, &d.UpdatedAt,
 		&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 		&d.IPCount,
@@ -2557,14 +2637,16 @@ func (r *Repository) UpdateDevice(ctx context.Context, id int64, p *DeviceParams
 		  hostname=$1, description=$2, type_id=$3, section_id=$4, vendor=$5, model=$6, os_version=$7,
 		  snmp_community=$8, snmp_version=$9, snmp_v3_user=$10, snmp_v3_auth_proto=$11,
 		  snmp_v3_auth_pass=$12, snmp_v3_priv_proto=$13, snmp_v3_priv_pass=$14,
+		  location_id=$15, rack_id=$16, rack_unit_start=$17, rack_unit_size=$18,
 		  updated_at=now()
-		WHERE id=$15
+		WHERE id=$19
 		RETURNING id, hostname, description, type_id, section_id, vendor, model, os_version,
-		          is_online, last_ping_at, created_at, updated_at`
+		          is_online, last_ping_at, location_id, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query,
 		p.Hostname, p.Description, p.TypeID, p.SectionID, p.Vendor, p.Model, p.OSVersion,
 		p.SNMPCommunity, p.SNMPVersion, p.SNMPV3User, p.SNMPV3AuthProto,
-		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass, id,
+		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass,
+		p.LocationID, p.RackID, p.RackUnitStart, p.RackUnitSize, id,
 	)
 	d, err := scanDevice(row)
 	if err != nil {
@@ -2843,6 +2925,7 @@ func (r *Repository) SearchDevices(ctx context.Context, f *DeviceSearchFilter) (
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,
@@ -3291,6 +3374,353 @@ func (r *Repository) SearchDevicesWithCustomFields(ctx context.Context, f *Devic
 		err := rows.Scan(
 			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
 			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.CreatedAt, &d.UpdatedAt,
+			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
+			&d.IPCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if dtID != nil {
+			dt.ID = *dtID
+			d.Type = dt
+		}
+		devices = append(devices, d)
+	}
+	return devices, rows.Err()
+}
+
+// ---- Location management (v1.5.0) ----
+
+const locationSelectCols = `id, parent_id, name, type, address, lat, lng, description, created_at, updated_at`
+
+func scanLocation(row interface{ Scan(dest ...any) error }) (*models.Location, error) {
+	l := &models.Location{}
+	err := row.Scan(&l.ID, &l.ParentID, &l.Name, &l.Type, &l.Address, &l.Lat, &l.Lng, &l.Description, &l.CreatedAt, &l.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
+}
+
+// LocationParams holds fields for creating or updating a location.
+type LocationParams struct {
+	ParentID    *int64   `json:"parent_id"`
+	Name        string   `json:"name"`
+	Type        string   `json:"type"`
+	Address     *string  `json:"address"`
+	Lat         *float64 `json:"lat"`
+	Lng         *float64 `json:"lng"`
+	Description *string  `json:"description"`
+}
+
+// CreateLocation inserts a new location record.
+func (r *Repository) CreateLocation(ctx context.Context, p *LocationParams) (*models.Location, error) {
+	query := `INSERT INTO locations (parent_id, name, type, address, lat, lng, description)
+	          VALUES ($1,$2,$3,$4,$5,$6,$7)
+	          RETURNING ` + locationSelectCols
+	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.Lat, p.Lng, p.Description)
+	return scanLocation(row)
+}
+
+// GetLocationByID returns a single location.
+func (r *Repository) GetLocationByID(ctx context.Context, id int64) (*models.Location, error) {
+	query := `SELECT ` + locationSelectCols + ` FROM locations WHERE id=$1`
+	row := r.db.QueryRow(ctx, query, id)
+	l, err := scanLocation(row)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, fmt.Errorf("location not found")
+		}
+		return nil, err
+	}
+	return l, nil
+}
+
+// ListLocations returns all locations ordered by name.
+func (r *Repository) ListLocations(ctx context.Context) ([]*models.Location, error) {
+	query := `SELECT ` + locationSelectCols + ` FROM locations ORDER BY name`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	locs := make([]*models.Location, 0)
+	for rows.Next() {
+		l, err := scanLocation(rows)
+		if err != nil {
+			return nil, err
+		}
+		locs = append(locs, l)
+	}
+	return locs, rows.Err()
+}
+
+// UpdateLocation updates an existing location.
+func (r *Repository) UpdateLocation(ctx context.Context, id int64, p *LocationParams) (*models.Location, error) {
+	query := `UPDATE locations SET parent_id=$1, name=$2, type=$3, address=$4, lat=$5, lng=$6, description=$7, updated_at=now()
+	          WHERE id=$8
+	          RETURNING ` + locationSelectCols
+	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.Lat, p.Lng, p.Description, id)
+	l, err := scanLocation(row)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, fmt.Errorf("location not found")
+		}
+		return nil, err
+	}
+	return l, nil
+}
+
+// DeleteLocation deletes a location by ID.
+func (r *Repository) DeleteLocation(ctx context.Context, id int64) error {
+	ct, err := r.db.Exec(ctx, `DELETE FROM locations WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("location not found")
+	}
+	return nil
+}
+
+// GetLocationTree returns all locations in breadth-first order using a recursive CTE.
+func (r *Repository) GetLocationTree(ctx context.Context) ([]*models.Location, error) {
+	query := `
+		WITH RECURSIVE loc_tree AS (
+			SELECT id, parent_id, name, type, address, lat, lng, description, created_at, updated_at, 0 AS depth
+			FROM locations WHERE parent_id IS NULL
+			UNION ALL
+			SELECT l.id, l.parent_id, l.name, l.type, l.address, l.lat, l.lng, l.description, l.created_at, l.updated_at, lt.depth + 1
+			FROM locations l JOIN loc_tree lt ON l.parent_id = lt.id
+		)
+		SELECT id, parent_id, name, type, address, lat, lng, description, created_at, updated_at FROM loc_tree ORDER BY depth, name`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	locs := make([]*models.Location, 0)
+	for rows.Next() {
+		l, err := scanLocation(rows)
+		if err != nil {
+			return nil, err
+		}
+		locs = append(locs, l)
+	}
+	return locs, rows.Err()
+}
+
+// GetLocationAncestors returns the given location ID and all its ancestor IDs.
+func (r *Repository) GetLocationAncestors(ctx context.Context, locationID int64) ([]int64, error) {
+	query := `
+		WITH RECURSIVE ancestors AS (
+			SELECT id, parent_id FROM locations WHERE id=$1
+			UNION ALL
+			SELECT l.id, l.parent_id FROM locations l JOIN ancestors a ON l.id = a.parent_id
+		)
+		SELECT id FROM ancestors`
+	rows, err := r.db.Query(ctx, query, locationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+// ---- Rack management (v1.5.0) ----
+
+// RackParams holds fields for creating or updating a rack.
+type RackParams struct {
+	LocationID  *int64  `json:"location_id"`
+	Name        string  `json:"name"`
+	SizeU       int     `json:"size_u"`
+	Description *string `json:"description"`
+}
+
+const rackSelectCols = `id, location_id, name, size_u, description, created_at, updated_at`
+
+func scanRack(row interface{ Scan(dest ...any) error }) (*models.Rack, error) {
+	r := &models.Rack{}
+	err := row.Scan(&r.ID, &r.LocationID, &r.Name, &r.SizeU, &r.Description, &r.CreatedAt, &r.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+// CreateRack inserts a new rack record.
+func (r *Repository) CreateRack(ctx context.Context, p *RackParams) (*models.Rack, error) {
+	if p.SizeU <= 0 {
+		p.SizeU = 42
+	}
+	query := `INSERT INTO racks (location_id, name, size_u, description)
+	          VALUES ($1,$2,$3,$4)
+	          RETURNING ` + rackSelectCols
+	row := r.db.QueryRow(ctx, query, p.LocationID, p.Name, p.SizeU, p.Description)
+	return scanRack(row)
+}
+
+// GetRackByID returns a single rack.
+func (r *Repository) GetRackByID(ctx context.Context, id int64) (*models.Rack, error) {
+	query := `SELECT ` + rackSelectCols + ` FROM racks WHERE id=$1`
+	row := r.db.QueryRow(ctx, query, id)
+	rack, err := scanRack(row)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, fmt.Errorf("rack not found")
+		}
+		return nil, err
+	}
+	return rack, nil
+}
+
+// ListRacks returns all racks, optionally filtered by location_id.
+func (r *Repository) ListRacks(ctx context.Context, locationID *int64) ([]*models.Rack, error) {
+	query := `SELECT ` + rackSelectCols + ` FROM racks`
+	var args []interface{}
+	if locationID != nil {
+		query += ` WHERE location_id=$1`
+		args = append(args, *locationID)
+	}
+	query += ` ORDER BY name`
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	racks := make([]*models.Rack, 0)
+	for rows.Next() {
+		rack, err := scanRack(rows)
+		if err != nil {
+			return nil, err
+		}
+		racks = append(racks, rack)
+	}
+	return racks, rows.Err()
+}
+
+// UpdateRack updates an existing rack.
+func (r *Repository) UpdateRack(ctx context.Context, id int64, p *RackParams) (*models.Rack, error) {
+	if p.SizeU <= 0 {
+		p.SizeU = 42
+	}
+	query := `UPDATE racks SET location_id=$1, name=$2, size_u=$3, description=$4, updated_at=now()
+	          WHERE id=$5
+	          RETURNING ` + rackSelectCols
+	row := r.db.QueryRow(ctx, query, p.LocationID, p.Name, p.SizeU, p.Description, id)
+	rack, err := scanRack(row)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, fmt.Errorf("rack not found")
+		}
+		return nil, err
+	}
+	return rack, nil
+}
+
+// DeleteRack deletes a rack by ID.
+func (r *Repository) DeleteRack(ctx context.Context, id int64) error {
+	ct, err := r.db.Exec(ctx, `DELETE FROM racks WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("rack not found")
+	}
+	return nil
+}
+
+// ListDevicesInRack returns devices assigned to a rack, ordered by rack_unit_start.
+func (r *Repository) ListDevicesInRack(ctx context.Context, rackID int64) ([]*models.Device, error) {
+	query := `
+		SELECT ` + deviceSelectCols + `,
+		       ` + deviceTypeSelectCols + `,
+		       COUNT(ip.id) AS ip_count
+		FROM devices d
+		LEFT JOIN device_types dt ON dt.id = d.type_id
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
+		WHERE d.rack_id = $1
+		GROUP BY d.id, dt.id
+		ORDER BY d.rack_unit_start NULLS LAST, d.hostname`
+
+	rows, err := r.db.Query(ctx, query, rackID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	devices := make([]*models.Device, 0)
+	for rows.Next() {
+		d := &models.Device{}
+		dt := &models.DeviceType{}
+		var dtID *int64
+		err := rows.Scan(
+			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
+			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.CreatedAt, &d.UpdatedAt,
+			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
+			&d.IPCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if dtID != nil {
+			dt.ID = *dtID
+			d.Type = dt
+		}
+		devices = append(devices, d)
+	}
+	return devices, rows.Err()
+}
+
+// ListRacksByLocation returns racks filtered by a specific location ID.
+func (r *Repository) ListRacksByLocation(ctx context.Context, locationID int64) ([]*models.Rack, error) {
+	return r.ListRacks(ctx, &locationID)
+}
+
+// ListDevicesByLocation returns devices assigned to a specific location.
+func (r *Repository) ListDevicesByLocation(ctx context.Context, locationID int64) ([]*models.Device, error) {
+	query := `
+		SELECT ` + deviceSelectCols + `,
+		       ` + deviceTypeSelectCols + `,
+		       COUNT(ip.id) AS ip_count
+		FROM devices d
+		LEFT JOIN device_types dt ON dt.id = d.type_id
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
+		WHERE d.location_id = $1
+		GROUP BY d.id, dt.id
+		ORDER BY d.hostname`
+
+	rows, err := r.db.Query(ctx, query, locationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	devices := make([]*models.Device, 0)
+	for rows.Next() {
+		d := &models.Device{}
+		dt := &models.DeviceType{}
+		var dtID *int64
+		err := rows.Scan(
+			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
+			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
 			&d.CreatedAt, &d.UpdatedAt,
 			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
 			&d.IPCount,

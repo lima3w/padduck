@@ -141,6 +141,7 @@ type Subnet struct {
 	Gateway          *string            `json:"gateway,omitempty"`
 	AutoReserveFirst bool               `json:"auto_reserve_first"`
 	AutoReserveLast  bool               `json:"auto_reserve_last"`
+	LocationID       *int64             `json:"location_id,omitempty"`
 	CreatedAt        time.Time          `json:"created_at"`
 	UpdatedAt        time.Time          `json:"updated_at"`
 	CustomFields     map[string]*string `json:"custom_fields,omitempty"`
@@ -202,10 +203,11 @@ type RolePermission struct {
 
 // UserRole links a user to a role
 type UserRole struct {
-	ID        int64
-	UserID    int64
-	RoleID    int64
-	CreatedAt time.Time
+	ID         int64
+	UserID     int64
+	RoleID     int64
+	LocationID *int64 `json:"location_id,omitempty"`
+	CreatedAt  time.Time
 }
 
 // VRF represents a Virtual Routing and Forwarding instance
@@ -461,10 +463,14 @@ type Device struct {
 	OSVersion    *string            `json:"os_version,omitempty"`
 	IsOnline     bool               `json:"is_online"`
 	LastPingAt   *time.Time         `json:"last_ping_at,omitempty"`
-	IPCount      int                `json:"ip_count"`
-	CreatedAt    time.Time          `json:"created_at"`
-	UpdatedAt    time.Time          `json:"updated_at"`
-	CustomFields map[string]*string `json:"custom_fields,omitempty"`
+	LocationID    *int64             `json:"location_id,omitempty"`
+	RackID        *int64             `json:"rack_id,omitempty"`
+	RackUnitStart *int               `json:"rack_unit_start,omitempty"`
+	RackUnitSize  int                `json:"rack_unit_size"`
+	IPCount       int                `json:"ip_count"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	CustomFields  map[string]*string `json:"custom_fields,omitempty"`
 	// NOTE: SNMP fields intentionally omitted — use DeviceSNMP for credentials endpoint
 }
 
@@ -478,6 +484,37 @@ type DeviceSNMP struct {
 	SNMPV3AuthPass  *string `json:"snmp_v3_auth_pass,omitempty"`
 	SNMPV3PrivProto *string `json:"snmp_v3_priv_proto,omitempty"`
 	SNMPV3PrivPass  *string `json:"snmp_v3_priv_pass,omitempty"`
+}
+
+// Rack represents a physical equipment rack in a location
+type Rack struct {
+	ID          int64     `json:"id"`
+	LocationID  *int64    `json:"location_id,omitempty"`
+	Name        string    `json:"name"`
+	SizeU       int       `json:"size_u"`
+	Description *string   `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// Location represents a physical place in the location hierarchy (site, building, floor, room, cage, etc.)
+type Location struct {
+	ID          int64      `json:"id"`
+	ParentID    *int64     `json:"parent_id,omitempty"`
+	Name        string     `json:"name"`
+	Type        string     `json:"type"`
+	Address     *string    `json:"address,omitempty"`
+	Lat         *float64   `json:"lat,omitempty"`
+	Lng         *float64   `json:"lng,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// LocationTreeNode is a Location with nested children for tree responses
+type LocationTreeNode struct {
+	Location
+	Children []*LocationTreeNode `json:"children"`
 }
 
 // DeviceInterface represents a network interface on a device

@@ -251,6 +251,14 @@ func (s *Service) DeleteDeviceInterface(ctx context.Context, deviceID, ifaceID i
 	return nil
 }
 
+// ListDevicesByLocation returns all devices assigned to the given location.
+func (s *Service) ListDevicesByLocation(ctx context.Context, locationID int64) ([]*models.Device, error) {
+	if locationID <= 0 {
+		return nil, fmt.Errorf("invalid location ID")
+	}
+	return s.repository.ListDevicesByLocation(ctx, locationID)
+}
+
 // SearchDevices searches devices based on the provided filter criteria.
 func (s *Service) SearchDevices(ctx context.Context, filter *repository.DeviceSearchFilter, cfFilters ...map[string]string) ([]*models.Device, error) {
 	var cf map[string]string

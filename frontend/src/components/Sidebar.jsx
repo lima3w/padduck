@@ -38,7 +38,21 @@ export default function Sidebar() {
             }`
           }
         >
-          🖥️ Devices
+          Devices
+        </NavLink>
+
+        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Physical
+        </div>
+        <NavLink
+          to="/locations"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          Locations
         </NavLink>
 
         {isAdmin && (
@@ -46,6 +60,16 @@ export default function Sidebar() {
             <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Admin
             </div>
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Users &amp; Roles
+            </NavLink>
             <NavLink
               to="/admin/settings"
               className={({ isActive }) =>

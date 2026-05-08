@@ -167,7 +167,8 @@ func (h *Handler) GetUserRoles(c *fiber.Ctx) error {
 }
 
 type AssignRoleRequest struct {
-	RoleID int64 `json:"role_id"`
+	RoleID     int64  `json:"role_id"`
+	LocationID *int64 `json:"location_id"`
 }
 
 func (h *Handler) AssignRoleToUser(c *fiber.Ctx) error {
@@ -183,7 +184,7 @@ func (h *Handler) AssignRoleToUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.service.AssignRoleToUser(c.Context(), int64(id), req.RoleID); err != nil {
+	if err := h.service.AssignRoleToUser(c.Context(), int64(id), req.RoleID, req.LocationID); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 

@@ -13,10 +13,11 @@ import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import SubnetTree from '../components/SubnetTree'
 import CustomFieldForm from '../components/CustomFieldForm'
+import { getLocations } from '../api/locations'
 
 const DEFAULT_LIMIT = 25
 
-const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, custom_fields: {} }
+const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', custom_fields: {} }
 
 export default function SubnetsPage() {
   const { sectionID } = useParams()
@@ -40,6 +41,8 @@ export default function SubnetsPage() {
   const [saving, setSaving] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
   const [cfFilterRows, setCfFilterRows] = useState([])
+  const [locations, setLocations] = useState([])
+  const [filterLocationId, setFilterLocationId] = useState('')
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -50,7 +53,15 @@ export default function SubnetsPage() {
     setSearchQuery('')
     load(1)
     loadCfDefs()
+    loadLocations()
   }, [sectionID])
+
+  async function loadLocations() {
+    try {
+      const data = await getLocations()
+      setLocations(Array.isArray(data) ? data : (data?.locations ?? []))
+    } catch {}
+  }
 
   async function loadCfDefs() {
     try {
@@ -127,7 +138,8 @@ export default function SubnetsPage() {
     const cfFilters = {}
     cfFilterRows.forEach(r => { if (r.value.trim()) cfFilters[r.field] = r.value.trim() })
     const hasCf = Object.keys(cfFilters).length > 0
-    if (!hasQuery && !hasCf) {
+    const hasLoc = Boolean(filterLocationId)
+    if (!hasQuery && !hasCf && !hasLoc) {
       setIsSearchActive(false)
       load(1)
       return
@@ -137,6 +149,7 @@ export default function SubnetsPage() {
       setIsSearchActive(true)
       const body = { query: searchQuery || '', limit: 100, offset: 0 }
       if (hasCf) body.custom_fields = cfFilters
+      if (hasLoc) body.location_id = parseInt(filterLocationId)
       const res = await fetch(`/api/v1/subnets/search/${sectionID}`, {
         method: 'POST',
         headers: cfHeaders,
@@ -157,6 +170,7 @@ export default function SubnetsPage() {
   function handleClearSearch() {
     setSearchQuery('')
     setCfFilterRows([])
+    setFilterLocationId('')
     setIsSearchActive(false)
     load(1)
   }
@@ -180,6 +194,7 @@ export default function SubnetsPage() {
       gateway: subnet.Gateway || '',
       auto_reserve_first: subnet.AutoReserveFirst || false,
       auto_reserve_last: subnet.AutoReserveLast || false,
+      location_id: subnet.location_id ? String(subnet.location_id) : '',
       custom_fields: subnet.custom_fields || {},
     })
     setOverlapError(null)
@@ -199,6 +214,7 @@ export default function SubnetsPage() {
           gateway: form.gateway || null,
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
+          location_id: form.location_id ? parseInt(form.location_id) : null,
           custom_fields: form.custom_fields || {},
         })
       } else {
@@ -208,6 +224,7 @@ export default function SubnetsPage() {
           gateway: form.gateway || null,
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
+          location_id: form.location_id ? parseInt(form.location_id) : null,
           custom_fields: form.custom_fields || {},
         })
       }
@@ -284,14 +301,26 @@ export default function SubnetsPage() {
       {viewMode === 'list' && (
         <>
           <div className="mb-4 space-y-2">
-            <form onSubmit={handleSearch} className="flex gap-2">
+            <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
               <input
                 type="text"
                 placeholder="Search subnets..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                className="flex-1 min-w-40 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
               />
+              {locations.length > 0 && (
+                <select
+                  value={filterLocationId}
+                  onChange={e => setFilterLocationId(e.target.value)}
+                  className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                >
+                  <option value="">All Locations</option>
+                  {locations.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              )}
               {searchableFields.length > 0 && (
                 <button
                   type="button"
@@ -308,7 +337,7 @@ export default function SubnetsPage() {
               >
                 {searching ? 'Searching...' : 'Search'}
               </button>
-              {(isSearchActive || cfFilterRows.length > 0) && (
+              {(isSearchActive || cfFilterRows.length > 0 || filterLocationId) && (
                 <button
                   type="button"
                   onClick={handleClearSearch}
@@ -367,6 +396,7 @@ export default function SubnetsPage() {
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Network</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Prefix</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Gateway</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
                   {searchableFields.map(d => (
                     <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
@@ -376,7 +406,7 @@ export default function SubnetsPage() {
               </thead>
               <tbody>
                 {subnets.length === 0 && (
-                  <tr><td colSpan={5 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
+                  <tr><td colSpan={6 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
                 )}
                 {subnets.map(s => (
                   <tr key={s.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -388,6 +418,13 @@ export default function SubnetsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">/{s.PrefixLength}</td>
                     <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">{s.Gateway || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {s.location_id ? (
+                        <Link to={`/locations/${s.location_id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
+                          {locations.find(l => l.id === s.location_id)?.name || `#${s.location_id}`}
+                        </Link>
+                      ) : '—'}
+                    </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.Description}</td>
                     {searchableFields.map(d => {
                       const val = s.custom_fields?.[d.name]
@@ -504,13 +541,26 @@ export default function SubnetsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Gateway (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gateway (optional)</label>
               <input
-                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder="192.168.0.1"
                 value={form.gateway}
                 onChange={e => setForm(f => ({ ...f, gateway: e.target.value }))}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (optional)</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={form.location_id}
+                onChange={e => setForm(f => ({ ...f, location_id: e.target.value }))}
+              >
+                <option value="">No location</option>
+                {locations.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">

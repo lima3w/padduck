@@ -132,7 +132,7 @@ func validateGatewayInCIDR(gateway, networkAddress string, prefixLength int) err
 }
 
 // CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
-func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, customFields ...map[string]*string) (*models.Subnet, error) {
+func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if sectionID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
@@ -166,7 +166,7 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		}
 	}
 
-	subnet, err := s.repository.CreateSubnet(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast)
+	subnet, err := s.repository.CreateSubnetWithLocation(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID)
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +214,8 @@ func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.S
 	return s.repository.ListSubnetsBySection(ctx, sectionID)
 }
 
-// UpdateSubnet updates a subnet's description, gateway, and auto-reserve settings
-func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, customFields ...map[string]*string) (*models.Subnet, error) {
+// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, and location.
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
@@ -232,7 +232,7 @@ func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string
 		gateway = nil
 	}
 
-	subnet, err := s.repository.UpdateSubnet(ctx, id, description, gateway, autoFirst, autoLast)
+	subnet, err := s.repository.UpdateSubnetWithLocation(ctx, id, description, gateway, autoFirst, autoLast, locationID)
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +242,14 @@ func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string
 	}
 	subnet.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "subnet", subnet.ID)
 	return subnet, nil
+}
+
+// ListSubnetsByLocation returns all subnets assigned to the given location.
+func (s *Service) ListSubnetsByLocation(ctx context.Context, locationID int64) ([]*models.Subnet, error) {
+	if locationID <= 0 {
+		return nil, fmt.Errorf("invalid location ID")
+	}
+	return s.repository.ListSubnetsByLocation(ctx, locationID)
 }
 
 // DeleteSubnet deletes a subnet and its IP addresses (cascade)
