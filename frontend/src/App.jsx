@@ -16,6 +16,7 @@ import OverlapReportPage from './pages/OverlapReportPage'
 import DevicesPage from './pages/DevicesPage'
 import DeviceDetailPage from './pages/DeviceDetailPage'
 import AdminCustomFieldsPage from './pages/AdminCustomFieldsPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 import LocationsPage from './pages/LocationsPage'
 import LocationDetailPage from './pages/LocationDetailPage'
 import RackDetailPage from './pages/RackDetailPage'
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="devices" element={<DevicesPage />} />
           <Route path="devices/:id" element={<DeviceDetailPage />} />
           <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
+          <Route path="admin/users" element={<AdminUsersPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="locations/:id" element={<LocationDetailPage />} />
           <Route path="racks/:id" element={<RackDetailPage />} />
