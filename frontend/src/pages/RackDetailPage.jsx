@@ -36,14 +36,14 @@ export default function RackDetailPage() {
       setRackDevices(Array.isArray(devicesData) ? devicesData : (devicesData?.devices ?? []))
 
       // Build location breadcrumb
-      if (rackData.location_id) {
+      if (rackData.locationId) {
         const crumbs = []
-        let locId = rackData.location_id
+        let locId = rackData.locationId
         while (locId) {
           try {
             const loc = await getLocation(locId)
             crumbs.unshift({ id: loc.id, name: loc.name })
-            locId = loc.parent_id || null
+            locId = loc.parentId || null
           } catch {
             break
           }
@@ -60,13 +60,13 @@ export default function RackDetailPage() {
   if (loading) return <p className="text-gray-500">Loading rack...</p>
   if (error && !rack) return <p className="text-red-600">{error}</p>
 
-  const sizeU = rack?.size_u ?? 42
+  const sizeU = rack?.sizeU ?? 42
 
   // Build slot occupancy map: slotNumber -> device info
   const slotMap = {}
   rackDevices.forEach((d, idx) => {
-    const start = d.rack_unit_start ?? 1
-    const size = d.rack_unit_size ?? 1
+    const start = d.rackUnitStart ?? 1
+    const size = d.rackUnitSize ?? 1
     const colorClass = DEVICE_COLORS[idx % DEVICE_COLORS.length]
     for (let u = start; u < start + size; u++) {
       slotMap[u] = {
@@ -78,7 +78,7 @@ export default function RackDetailPage() {
     }
   })
 
-  const usedU = rackDevices.reduce((acc, d) => acc + (d.rack_unit_size ?? 1), 0)
+  const usedU = rackDevices.reduce((acc, d) => acc + (d.rackUnitSize ?? 1), 0)
   const freeU = sizeU - usedU
 
   return (
@@ -199,13 +199,13 @@ export default function RackDetailPage() {
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{d.type?.name || '—'}</td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono">
-                        {d.rack_unit_start != null ? `U${d.rack_unit_start}–U${d.rack_unit_start + (d.rack_unit_size ?? 1) - 1}` : '—'}
+                        {d.rackUnitStart != null ? `U${d.rackUnitStart}–U${d.rackUnitStart + (d.rackUnitSize ?? 1) - 1}` : '—'}
                       </td>
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1.5 text-xs font-medium">
-                          <span className={`w-2 h-2 rounded-full ${d.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                          <span className={d.is_online ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                            {d.is_online ? 'Online' : 'Offline'}
+                          <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                          <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+                            {d.isOnline ? 'Online' : 'Offline'}
                           </span>
                         </span>
                       </td>

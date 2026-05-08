@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
-import { getLocationTree, createLocation, updateLocation, deleteLocation } from '../api/locations'
+import { getLocationTree, getLocations, createLocation, updateLocation, deleteLocation } from '../api/locations'
 
 const LOCATION_TYPES = ['site', 'building', 'floor', 'room', 'cage', 'other']
 
@@ -84,9 +84,7 @@ export default function LocationsPage() {
       setError(null)
       const [treeData, flatData] = await Promise.all([
         getLocationTree(),
-        fetch('/api/v1/locations', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
-        }).then(r => r.ok ? r.json() : [])
+        getLocations(),
       ])
       setTree(Array.isArray(treeData) ? treeData : [])
       setAllLocations(Array.isArray(flatData) ? flatData : (flatData?.locations ?? []))
@@ -106,7 +104,7 @@ export default function LocationsPage() {
     setForm({
       name: loc.name || '',
       type: loc.type || 'site',
-      parent_id: loc.parent_id ? String(loc.parent_id) : '',
+      parent_id: loc.parentId ? String(loc.parentId) : '',
       address: loc.address || '',
       description: loc.description || '',
     })
