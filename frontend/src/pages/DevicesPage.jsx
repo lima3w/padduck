@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import CustomFieldForm from '../components/CustomFieldForm'
 
 const DEFAULT_LIMIT = 50
 
-const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '' }
+const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', custom_fields: {} }
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState([])
@@ -22,6 +23,7 @@ export default function DevicesPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [cfDefs, setCfDefs] = useState([])
 
   const token = localStorage.getItem('token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -29,7 +31,15 @@ export default function DevicesPage() {
   useEffect(() => {
     loadDeviceTypes()
     load(1)
+    loadCfDefs()
   }, [])
+
+  async function loadCfDefs() {
+    try {
+      const res = await fetch('/api/v1/admin/custom-fields?entity_type=device', { headers })
+      if (res.ok) setCfDefs(await res.json() || [])
+    } catch {}
+  }
 
   async function loadDeviceTypes() {
     try {
@@ -113,6 +123,7 @@ export default function DevicesPage() {
       vendor: device.vendor || '',
       model: device.model || '',
       os_version: device.os_version || '',
+      custom_fields: device.custom_fields || {},
     })
     setModal({ edit: device })
   }
@@ -128,6 +139,7 @@ export default function DevicesPage() {
         vendor: form.vendor || null,
         model: form.model || null,
         os_version: form.os_version || null,
+        custom_fields: form.custom_fields || {},
       }
       if (modal === 'create') {
         const res = await fetch('/api/v1/devices', { method: 'POST', headers, body: JSON.stringify(body) })
@@ -363,6 +375,16 @@ export default function DevicesPage() {
                 onChange={e => setForm(f => ({ ...f, os_version: e.target.value }))}
               />
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t dark:border-gray-600 pt-4">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={form.custom_fields}
+                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Modal from '../components/Modal'
+import CustomFieldForm from '../components/CustomFieldForm'
 
 const MEDIA_TYPES = ['copper', 'fiber', 'SFP', 'SFP+', 'QSFP', 'other']
 
@@ -22,13 +23,22 @@ export default function DeviceDetailPage() {
   const [deleteIfaceConfirm, setDeleteIfaceConfirm] = useState(null)
   const [deleteIpConfirm, setDeleteIpConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [cfDefs, setCfDefs] = useState([])
 
   const token = localStorage.getItem('token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   useEffect(() => {
     loadAll()
+    loadCfDefs()
   }, [id])
+
+  async function loadCfDefs() {
+    try {
+      const res = await fetch('/api/v1/admin/custom-fields?entity_type=device', { headers })
+      if (res.ok) setCfDefs(await res.json() || [])
+    } catch {}
+  }
 
   async function loadAll() {
     try {
@@ -71,6 +81,7 @@ export default function DeviceDetailPage() {
       vendor: device.vendor || '',
       model: device.model || '',
       os_version: device.os_version || '',
+      custom_fields: device.custom_fields || {},
     })
     setModal('edit')
   }
@@ -86,6 +97,7 @@ export default function DeviceDetailPage() {
         vendor: editForm.vendor || null,
         model: editForm.model || null,
         os_version: editForm.os_version || null,
+        custom_fields: editForm.custom_fields || {},
       }
       const res = await fetch(`/api/v1/devices/${id}`, { method: 'PUT', headers, body: JSON.stringify(body) })
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
@@ -255,6 +267,31 @@ export default function DeviceDetailPage() {
             </dd>
           </div>
         </dl>
+        {cfDefs.length > 0 && device?.custom_fields && Object.keys(device.custom_fields).length > 0 && (
+          <div className="mt-4 border-t dark:border-gray-700 pt-4">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
+            <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+              {cfDefs.map(def => {
+                const val = device.custom_fields[def.name]
+                if (val == null) return null
+                const today = new Date().toISOString().split('T')[0]
+                const isPast = def.field_type === 'date' && val && val < today
+                return (
+                  <div key={def.id}>
+                    <dt className="text-gray-500 dark:text-gray-400">{def.label}</dt>
+                    <dd className={`font-medium ${isPast ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                      {def.field_type === 'url' && val ? (
+                        <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">{val}</a>
+                      ) : def.field_type === 'checkbox' ? (
+                        val === 'true' ? 'Yes' : 'No'
+                      ) : val || '—'}
+                    </dd>
+                  </div>
+                )
+              })}
+            </dl>
+          </div>
+        )}
       </div>
 
       <div className="flex border-b dark:border-gray-700 mb-4">
@@ -451,6 +488,16 @@ export default function DeviceDetailPage() {
                 onChange={e => setEditForm(f => ({ ...f, os_version: e.target.value }))}
               />
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t dark:border-gray-600 pt-4">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={editForm.custom_fields}
+                  onChange={(name, value) => setEditForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
