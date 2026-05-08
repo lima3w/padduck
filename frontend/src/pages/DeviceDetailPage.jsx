@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import CustomFieldForm from '../components/CustomFieldForm'
+import { getLocations } from '../api/locations'
+import { getRacks } from '../api/racks'
 
 const MEDIA_TYPES = ['copper', 'fiber', 'SFP', 'SFP+', 'QSFP', 'other']
 
@@ -24,6 +26,8 @@ export default function DeviceDetailPage() {
   const [deleteIpConfirm, setDeleteIpConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
+  const [locations, setLocations] = useState([])
+  const [racks, setRacks] = useState([])
 
   const token = localStorage.getItem('token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -31,7 +35,23 @@ export default function DeviceDetailPage() {
   useEffect(() => {
     loadAll()
     loadCfDefs()
+    loadLocationsList()
   }, [id])
+
+  async function loadLocationsList() {
+    try {
+      const data = await getLocations()
+      setLocations(Array.isArray(data) ? data : (data?.locations ?? []))
+    } catch {}
+  }
+
+  async function loadRacksForLocation(locationId) {
+    if (!locationId) { setRacks([]); return }
+    try {
+      const data = await getRacks(locationId)
+      setRacks(Array.isArray(data) ? data : (data?.racks ?? []))
+    } catch { setRacks([]) }
+  }
 
   async function loadCfDefs() {
     try {
@@ -74,6 +94,8 @@ export default function DeviceDetailPage() {
   }
 
   function openEdit() {
+    const locId = device.location_id ? String(device.location_id) : ''
+    if (locId) loadRacksForLocation(locId)
     setEditForm({
       hostname: device.hostname || '',
       type_id: device.type_id ? String(device.type_id) : '',
@@ -81,6 +103,10 @@ export default function DeviceDetailPage() {
       vendor: device.vendor || '',
       model: device.model || '',
       os_version: device.os_version || '',
+      location_id: locId,
+      rack_id: device.rack_id ? String(device.rack_id) : '',
+      rack_unit_start: device.rack_unit_start != null ? String(device.rack_unit_start) : '',
+      rack_unit_size: device.rack_unit_size != null ? String(device.rack_unit_size) : '',
       custom_fields: device.custom_fields || {},
     })
     setModal('edit')
@@ -97,6 +123,10 @@ export default function DeviceDetailPage() {
         vendor: editForm.vendor || null,
         model: editForm.model || null,
         os_version: editForm.os_version || null,
+        location_id: editForm.location_id ? parseInt(editForm.location_id) : null,
+        rack_id: editForm.rack_id ? parseInt(editForm.rack_id) : null,
+        rack_unit_start: editForm.rack_unit_start ? parseInt(editForm.rack_unit_start) : null,
+        rack_unit_size: editForm.rack_unit_size ? parseInt(editForm.rack_unit_size) : null,
         custom_fields: editForm.custom_fields || {},
       }
       const res = await fetch(`/api/v1/devices/${id}`, { method: 'PUT', headers, body: JSON.stringify(body) })
@@ -266,6 +296,27 @@ export default function DeviceDetailPage() {
               {device?.last_ping_at ? new Date(device.last_ping_at).toLocaleString() : '—'}
             </dd>
           </div>
+          {device?.location_id && (
+            <div>
+              <dt className="text-gray-500 dark:text-gray-400">Location</dt>
+              <dd className="text-gray-800 dark:text-gray-200">
+                <Link to={`/locations/${device.location_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                  {locations.find(l => l.id === device.location_id)?.name || `#${device.location_id}`}
+                </Link>
+              </dd>
+            </div>
+          )}
+          {device?.rack_id && (
+            <div>
+              <dt className="text-gray-500 dark:text-gray-400">Rack</dt>
+              <dd className="text-gray-800 dark:text-gray-200">
+                <Link to={`/racks/${device.rack_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                  Rack #{device.rack_id}
+                  {device.rack_unit_start != null && ` (U${device.rack_unit_start}–U${device.rack_unit_start + (device.rack_unit_size ?? 1) - 1})`}
+                </Link>
+              </dd>
+            </div>
+          )}
         </dl>
         {cfDefs.length > 0 && device?.custom_fields && Object.keys(device.custom_fields).length > 0 && (
           <div className="mt-4 border-t dark:border-gray-700 pt-4">
@@ -488,6 +539,66 @@ export default function DeviceDetailPage() {
                 onChange={e => setEditForm(f => ({ ...f, os_version: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (optional)</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={editForm.location_id || ''}
+                onChange={e => {
+                  const locId = e.target.value
+                  setEditForm(f => ({ ...f, location_id: locId, rack_id: '', rack_unit_start: '', rack_unit_size: '' }))
+                  loadRacksForLocation(locId)
+                }}
+              >
+                <option value="">No location</option>
+                {locations.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+            {editForm.location_id && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack (optional)</label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    value={editForm.rack_id || ''}
+                    onChange={e => setEditForm(f => ({ ...f, rack_id: e.target.value }))}
+                  >
+                    <option value="">No rack</option>
+                    {racks.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {editForm.rack_id && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack Unit Start</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        placeholder="1"
+                        value={editForm.rack_unit_start || ''}
+                        onChange={e => setEditForm(f => ({ ...f, rack_unit_start: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack Unit Size</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        placeholder="1"
+                        value={editForm.rack_unit_size || ''}
+                        onChange={e => setEditForm(f => ({ ...f, rack_unit_size: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>

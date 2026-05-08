@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import CustomFieldForm from '../components/CustomFieldForm'
+import { getLocations } from '../api/locations'
+import { getRacks } from '../api/racks'
 
 const DEFAULT_LIMIT = 50
 
-const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', custom_fields: {} }
+const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', location_id: '', rack_id: '', rack_unit_start: '', rack_unit_size: '', custom_fields: {} }
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState([])
@@ -25,6 +27,9 @@ export default function DevicesPage() {
   const [saving, setSaving] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
   const [cfFilterRows, setCfFilterRows] = useState([])
+  const [locations, setLocations] = useState([])
+  const [racks, setRacks] = useState([])
+  const [filterLocationId, setFilterLocationId] = useState('')
 
   const token = localStorage.getItem('token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -33,7 +38,23 @@ export default function DevicesPage() {
     loadDeviceTypes()
     load(1)
     loadCfDefs()
+    loadLocations()
   }, [])
+
+  async function loadLocations() {
+    try {
+      const data = await getLocations()
+      setLocations(Array.isArray(data) ? data : (data?.locations ?? []))
+    } catch {}
+  }
+
+  async function loadRacksForLocation(locationId) {
+    if (!locationId) { setRacks([]); return }
+    try {
+      const data = await getRacks(locationId)
+      setRacks(Array.isArray(data) ? data : (data?.racks ?? []))
+    } catch { setRacks([]) }
+  }
 
   async function loadCfDefs() {
     try {
@@ -96,6 +117,7 @@ export default function DevicesPage() {
     if (filterHostname.trim()) body.hostname = filterHostname.trim()
     if (filterTypeId) body.type_id = parseInt(filterTypeId)
     if (filterOnline !== '') body.is_online = filterOnline === 'true'
+    if (filterLocationId) body.location_id = parseInt(filterLocationId)
     const cfFilters = {}
     cfFilterRows.forEach(r => { if (r.value.trim()) cfFilters[r.field] = r.value.trim() })
     if (Object.keys(cfFilters).length) body.custom_fields = cfFilters
@@ -130,6 +152,7 @@ export default function DevicesPage() {
     setFilterHostname('')
     setFilterTypeId('')
     setFilterOnline('')
+    setFilterLocationId('')
     setCfFilterRows([])
     setIsFiltered(false)
     load(1)
@@ -146,6 +169,8 @@ export default function DevicesPage() {
   }
 
   function openEdit(device) {
+    const locId = device.location_id ? String(device.location_id) : ''
+    if (locId) loadRacksForLocation(locId)
     setForm({
       hostname: device.hostname || '',
       type_id: device.type_id ? String(device.type_id) : '',
@@ -153,6 +178,10 @@ export default function DevicesPage() {
       vendor: device.vendor || '',
       model: device.model || '',
       os_version: device.os_version || '',
+      location_id: locId,
+      rack_id: device.rack_id ? String(device.rack_id) : '',
+      rack_unit_start: device.rack_unit_start != null ? String(device.rack_unit_start) : '',
+      rack_unit_size: device.rack_unit_size != null ? String(device.rack_unit_size) : '',
       custom_fields: device.custom_fields || {},
     })
     setModal({ edit: device })
@@ -169,6 +198,10 @@ export default function DevicesPage() {
         vendor: form.vendor || null,
         model: form.model || null,
         os_version: form.os_version || null,
+        location_id: form.location_id ? parseInt(form.location_id) : null,
+        rack_id: form.rack_id ? parseInt(form.rack_id) : null,
+        rack_unit_start: form.rack_unit_start ? parseInt(form.rack_unit_start) : null,
+        rack_unit_size: form.rack_unit_size ? parseInt(form.rack_unit_size) : null,
         custom_fields: form.custom_fields || {},
       }
       if (modal === 'create') {
@@ -240,6 +273,18 @@ export default function DevicesPage() {
             <option value="true">Online only</option>
             <option value="false">Offline only</option>
           </select>
+          {locations.length > 0 && (
+            <select
+              value={filterLocationId}
+              onChange={e => setFilterLocationId(e.target.value)}
+              className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            >
+              <option value="">All Locations</option>
+              {locations.map(l => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
           {searchableFields.length > 0 && (
             <button
               type="button"
@@ -256,7 +301,7 @@ export default function DevicesPage() {
           >
             Search
           </button>
-          {(isFiltered || filterHostname || filterTypeId || filterOnline || cfFilterRows.length > 0) && (
+          {(isFiltered || filterHostname || filterTypeId || filterOnline || filterLocationId || cfFilterRows.length > 0) && (
             <button
               type="button"
               onClick={handleClearSearch}
@@ -315,7 +360,7 @@ export default function DevicesPage() {
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Vendor / Model</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Section</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">IPs</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
               {searchableFields.map(f => (
@@ -328,6 +373,7 @@ export default function DevicesPage() {
             {devices.length === 0 && (
               <tr><td colSpan={7 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No devices yet</td></tr>
             )}
+
             {devices.map(d => (
               <tr key={d.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
@@ -344,7 +390,11 @@ export default function DevicesPage() {
                   {[d.vendor, d.model].filter(Boolean).join(' / ') || '—'}
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                  {d.section_id ? `#${d.section_id}` : '—'}
+                  {d.location_id ? (
+                    <Link to={`/locations/${d.location_id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
+                      {locations.find(l => l.id === d.location_id)?.name || `#${d.location_id}`}
+                    </Link>
+                  ) : '—'}
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   {d.ip_count ?? 0}
@@ -467,6 +517,66 @@ export default function DevicesPage() {
                 onChange={e => setForm(f => ({ ...f, os_version: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (optional)</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={form.location_id}
+                onChange={e => {
+                  const locId = e.target.value
+                  setForm(f => ({ ...f, location_id: locId, rack_id: '', rack_unit_start: '', rack_unit_size: '' }))
+                  loadRacksForLocation(locId)
+                }}
+              >
+                <option value="">No location</option>
+                {locations.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+            {form.location_id && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack (optional)</label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    value={form.rack_id}
+                    onChange={e => setForm(f => ({ ...f, rack_id: e.target.value }))}
+                  >
+                    <option value="">No rack</option>
+                    {racks.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {form.rack_id && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack Unit Start</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        placeholder="1"
+                        value={form.rack_unit_start}
+                        onChange={e => setForm(f => ({ ...f, rack_unit_start: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack Unit Size</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        placeholder="1"
+                        value={form.rack_unit_size}
+                        onChange={e => setForm(f => ({ ...f, rack_unit_size: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
