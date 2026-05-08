@@ -11,7 +11,7 @@ import (
 
 // ListLocations handles GET /api/v1/locations
 func (h *Handler) ListLocations(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
 		return err
 	}
 	locs, err := h.service.ListLocations(c.Context())
@@ -24,7 +24,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 
 // GetLocationTree handles GET /api/v1/locations/tree
 func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
 		return err
 	}
 	tree, err := h.service.GetLocationTree(c.Context())
@@ -37,7 +37,7 @@ func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 
 // CreateLocation handles POST /api/v1/locations
 func (h *Handler) CreateLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
 		return err
 	}
 	req := new(repository.LocationParams)
@@ -58,7 +58,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 
 // GetLocation handles GET /api/v1/locations/:id
 func (h *Handler) GetLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+	if err := h.permCheck(c, services.PermV2LocationRead); err != nil {
 		return err
 	}
 	id, err := c.ParamsInt("id")
@@ -78,7 +78,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 
 // UpdateLocation handles PUT /api/v1/locations/:id
 func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
+	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
 		return err
 	}
 	id, err := c.ParamsInt("id")
@@ -106,7 +106,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 
 // DeleteLocation handles DELETE /api/v1/locations/:id
 func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceDelete); err != nil {
+	if err := h.permCheck(c, services.PermV2LocationDelete); err != nil {
 		return err
 	}
 	id, err := c.ParamsInt("id")

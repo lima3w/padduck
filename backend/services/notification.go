@@ -277,6 +277,9 @@ func preferenceEnabled(prefs *models.NotificationPreferences, tmplName string) b
 // Queue enqueues a notification for the given user. It respects notification
 // preferences and a per-hour rate limit unless the template is critical.
 func (n *NotificationService) Queue(ctx context.Context, userID int64, tmplName string, data map[string]interface{}) error {
+	if !n.email.configSvc.IsSMTPConfigured() {
+		return nil
+	}
 	// 1. Fetch user for email and username.
 	user, err := n.repo.GetUserByID(ctx, userID)
 	if err != nil {
@@ -349,6 +352,9 @@ func retryDelay(retryCount int) *time.Duration {
 
 // ProcessQueue fetches pending notifications and attempts to deliver them.
 func (n *NotificationService) ProcessQueue(ctx context.Context) {
+	if !n.email.configSvc.IsSMTPConfigured() {
+		return
+	}
 	items, err := n.repo.GetPendingNotifications(ctx, 50)
 	if err != nil {
 		log.Printf("[notification] get pending notifications: %v", err)
@@ -409,6 +415,9 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 // StartWorker launches a background goroutine that calls ProcessQueue every 30
 // seconds until ctx is cancelled.
 func (n *NotificationService) StartWorker(ctx context.Context) {
+	if !n.email.configSvc.IsSMTPConfigured() {
+		log.Printf("[notification] SMTP not configured — email delivery disabled")
+	}
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()

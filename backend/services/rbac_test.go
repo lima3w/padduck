@@ -299,6 +299,8 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 		PermV2UserList, PermV2UserRead, PermV2UserWrite, PermV2AuditRead,
 		// v1.3.0 device permissions
 		PermV2DeviceRead, PermV2DeviceWrite, PermV2DeviceDelete, PermV2DeviceAdmin,
+		// v1.5.1 location permissions
+		PermV2LocationList, PermV2LocationRead, PermV2LocationWrite, PermV2LocationDelete,
 	}
 	assert.Equal(t, len(expected), len(AllPermissions))
 	for _, p := range expected {

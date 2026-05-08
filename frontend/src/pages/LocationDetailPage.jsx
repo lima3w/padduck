@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getLocation } from '../api/locations'
 import { getRacks, createRack, updateRack, deleteRack } from '../api/racks'
+import { api } from '../api/client'
 import Modal from '../components/Modal'
 
 const RACK_EMPTY_FORM = { name: '', size_u: '42', description: '' }
@@ -20,8 +21,6 @@ export default function LocationDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token')}` }
-
   useEffect(() => {
     loadAll()
   }, [id])
@@ -38,9 +37,9 @@ export default function LocationDetailPage() {
       let current = loc
       while (current) {
         crumbs.unshift({ id: current.id, name: current.name })
-        if (current.parent_id) {
+        if (current.parentId) {
           try {
-            current = await getLocation(current.parent_id)
+            current = await getLocation(current.parentId)
           } catch {
             break
           }
@@ -60,15 +59,15 @@ export default function LocationDetailPage() {
 
   async function loadSubnets() {
     try {
-      const res = await fetch(`/api/v1/locations/${id}/subnets`, { headers })
-      if (res.ok) setSubnets(await res.json() || [])
+      const res = await api.get(`/locations/${id}/subnets`)
+      setSubnets(res.data || [])
     } catch {}
   }
 
   async function loadDevices() {
     try {
-      const res = await fetch(`/api/v1/locations/${id}/devices`, { headers })
-      if (res.ok) setDevices(await res.json() || [])
+      const res = await api.get(`/locations/${id}/devices`)
+      setDevices(res.data || [])
     } catch {}
   }
 
@@ -87,7 +86,7 @@ export default function LocationDetailPage() {
   function openEditRack(rack) {
     setRackForm({
       name: rack.name || '',
-      size_u: rack.size_u ? String(rack.size_u) : '42',
+      size_u: rack.sizeU ? String(rack.sizeU) : '42',
       description: rack.description || '',
     })
     setRackModal({ edit: rack })
@@ -197,8 +196,8 @@ export default function LocationDetailPage() {
               </thead>
               <tbody>
                 {racks.map(rack => {
-                  const usedU = rack.used_u ?? 0
-                  const sizeU = rack.size_u ?? 42
+                  const usedU = rack.usedU ?? 0
+                  const sizeU = rack.sizeU ?? 42
                   const pct = sizeU > 0 ? Math.round((usedU / sizeU) * 100) : 0
                   return (
                     <tr key={rack.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -258,16 +257,16 @@ export default function LocationDetailPage() {
               </thead>
               <tbody>
                 {subnets.map(s => (
-                  <tr key={s.id || s.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td className="px-4 py-3 font-mono font-medium">
                       <Link
-                        to={`/subnets/${s.id || s.ID}/ip-addresses`}
+                        to={`/subnets/${s.id}/ip-addresses`}
                         className="text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        {s.network_address || s.NetworkAddress}/{s.prefix_length || s.PrefixLength}
+                        {s.networkAddress}/{s.prefixLength}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description || s.Description || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -302,9 +301,9 @@ export default function LocationDetailPage() {
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{d.type?.name || '—'}</td>
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-1.5 text-xs font-medium">
-                        <span className={`w-2 h-2 rounded-full ${d.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                        <span className={d.is_online ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                          {d.is_online ? 'Online' : 'Offline'}
+                        <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                        <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+                          {d.isOnline ? 'Online' : 'Offline'}
                         </span>
                       </span>
                     </td>

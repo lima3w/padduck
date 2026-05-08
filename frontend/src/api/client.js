@@ -5,10 +5,28 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[1]) : null
 }
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 })
+
+// Keys whose values contain user-defined data and must not have their keys transformed.
+const OPAQUE_FIELDS = new Set(['custom_fields'])
+
+function snakeToCamel(str) {
+  return str.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())
+}
+
+function deepCamelKeys(obj, opaque = false) {
+  if (Array.isArray(obj)) return obj.map(item => deepCamelKeys(item, opaque))
+  if (obj !== null && typeof obj === 'object') {
+    if (opaque) return obj
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [snakeToCamel(k), deepCamelKeys(v, OPAQUE_FIELDS.has(k))])
+    )
+  }
+  return obj
+}
 
 // Add auth token and CSRF token to every request
 api.interceptors.request.use((config) => {
@@ -23,9 +41,14 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle 401 responses (token expired)
+// Normalise response data to camelCase and handle 401s.
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && typeof response.data === 'object' && !(response.data instanceof Blob)) {
+      response.data = deepCamelKeys(response.data)
+    }
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
@@ -149,8 +172,8 @@ export const adminUnlockUser = (id) => api.post(`/admin/users/${id}/unlock`)
 export const searchSections = (query, limit = 50, offset = 0) =>
   api.post('/sections/search', { query, limit, offset })
 
-export const searchSubnets = (sectionID, query, limit = 50, offset = 0) =>
-  api.post(`/subnets/search/${sectionID}`, { query, limit, offset })
+export const searchSubnets = (sectionID, body) =>
+  api.post(`/subnets/search/${sectionID}`, body)
 
 export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offset = 0, filters = {}) =>
   api.post(`/ip-addresses/search/${subnetID}`, { query, status, limit, offset, ...filters })
