@@ -262,6 +262,15 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	devices.Delete("/:id/interfaces/:if_id", h.DeleteDeviceInterface)
 	devices.Get("/:id/snmp-credentials", h.GetDeviceSNMPCredentials)
 
+	// Racks (v1.5.0 #195)
+	racks := protected.Group("/racks")
+	racks.Get("", h.ListRacks)
+	racks.Post("", h.CreateRack)
+	racks.Get("/:id", h.GetRack)
+	racks.Put("/:id", h.UpdateRack)
+	racks.Delete("/:id", h.DeleteRack)
+	racks.Get("/:id/devices", h.ListDevicesInRack)
+
 	// Locations (v1.5.0 #194)
 	locations := protected.Group("/locations")
 	locations.Get("", h.ListLocations)
