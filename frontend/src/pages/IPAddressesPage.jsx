@@ -4,6 +4,7 @@ import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, r
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
+import CustomFieldForm from '../components/CustomFieldForm'
 
 const DEFAULT_LIMIT = 25
 
@@ -58,12 +59,24 @@ export default function IPAddressesPage() {
   const [saving, setSaving] = useState(false)
   const [visibleCols, setVisibleCols] = useState(loadColumnVisibility)
   const [showColPicker, setShowColPicker] = useState(false)
+  const [cfDefs, setCfDefs] = useState([])
+
+  const token = localStorage.getItem('token')
+  const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
     load(1)
+    loadCfDefs()
   }, [subnetID])
+
+  async function loadCfDefs() {
+    try {
+      const res = await fetch('/api/v1/admin/custom-fields?entity_type=ip_address', { headers: cfHeaders })
+      if (res.ok) setCfDefs(await res.json() || [])
+    } catch {}
+  }
 
   async function load(p = page) {
     try {
@@ -139,7 +152,7 @@ export default function IPAddressesPage() {
   }
 
   function openCreate() {
-    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '' })
+    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', custom_fields: {} })
     setModal('create')
   }
 
@@ -153,6 +166,7 @@ export default function IPAddressesPage() {
       tag_id: ip.TagID ? String(ip.TagID) : '',
       mac_address: ip.MACAddress || '',
       ptr_record: ip.PTRRecord || '',
+      custom_fields: ip.custom_fields || {},
     })
     setModal({ meta: ip })
   }
@@ -168,6 +182,7 @@ export default function IPAddressesPage() {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
+        custom_fields: form.custom_fields || {},
       })
       setModal(null)
       load(page)
@@ -200,6 +215,7 @@ export default function IPAddressesPage() {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
+        custom_fields: form.custom_fields || {},
       })
       setModal(null)
       load(page)
@@ -525,6 +541,16 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, ptr_record: e.target.value }))}
               />
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={form.custom_fields}
+                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
@@ -590,6 +616,16 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, ptr_record: e.target.value }))}
               />
             </div>
+            {cfDefs.length > 0 && (
+              <div className="border-t pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
+                <CustomFieldForm
+                  definitions={cfDefs}
+                  values={form.custom_fields}
+                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
