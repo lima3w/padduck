@@ -1753,6 +1753,39 @@ func (r *Repository) AssignRoleToUser(ctx context.Context, userID, roleID int64)
 	return err
 }
 
+// AssignRoleToUserWithLocation assigns a role to a user scoped to a specific location (or globally if locationID is nil).
+func (r *Repository) AssignRoleToUserWithLocation(ctx context.Context, userID, roleID int64, locationID *int64) error {
+	_, err := r.db.Exec(ctx,
+		`INSERT INTO user_roles (user_id, role_id, location_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+		userID, roleID, locationID)
+	return err
+}
+
+// GetUserRoleLocationIDs returns distinct location_id values from user_roles for a user (nil = global/unscoped).
+func (r *Repository) GetUserRoleLocationIDs(ctx context.Context, userID int64) ([]int64, bool, error) {
+	query := `SELECT DISTINCT location_id FROM user_roles WHERE user_id=$1`
+	rows, err := r.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+
+	var scopedIDs []int64
+	hasGlobal := false
+	for rows.Next() {
+		var locID *int64
+		if err := rows.Scan(&locID); err != nil {
+			return nil, false, err
+		}
+		if locID == nil {
+			hasGlobal = true
+		} else {
+			scopedIDs = append(scopedIDs, *locID)
+		}
+	}
+	return scopedIDs, hasGlobal, rows.Err()
+}
+
 func (r *Repository) RemoveRoleFromUser(ctx context.Context, userID, roleID int64) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM user_roles WHERE user_id=$1 AND role_id=$2`, userID, roleID)
 	return err

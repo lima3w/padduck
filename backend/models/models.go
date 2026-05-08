@@ -203,10 +203,11 @@ type RolePermission struct {
 
 // UserRole links a user to a role
 type UserRole struct {
-	ID        int64
-	UserID    int64
-	RoleID    int64
-	CreatedAt time.Time
+	ID         int64
+	UserID     int64
+	RoleID     int64
+	LocationID *int64 `json:"location_id,omitempty"`
+	CreatedAt  time.Time
 }
 
 // VRF represents a Virtual Routing and Forwarding instance

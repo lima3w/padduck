@@ -100,13 +100,18 @@ func IsValidPermission(p string) bool {
 
 // ResourceScope identifies a resource that a permission check should be scoped to.
 type ResourceScope struct {
-	Type string
-	ID   int64
+	Type          string
+	ID            int64
+	LocationScope *int64 // optional location scope for location-based access control
 }
 
 // CheckPermission returns nil if userID has the given permission (optionally scoped
 // to any of the provided resources). Falls back to the legacy role column when the
 // user has no assigned roles yet.
+//
+// Location scope: if a user has only location-scoped role assignments, they can only
+// act on resources in those locations (and their children). Users with at least one
+// global (unscoped) role assignment bypass location restrictions.
 func (s *Service) CheckPermission(ctx context.Context, userID int64, permission string, scopes ...ResourceScope) error {
 	if userID <= 0 {
 		return fmt.Errorf("permission denied")
@@ -118,10 +123,28 @@ func (s *Service) CheckPermission(ctx context.Context, userID int64, permission 
 		if err != nil {
 			return fmt.Errorf("permission denied")
 		}
-		if permMatches(perms, permission, scopes) {
-			return nil
+		if !permMatches(perms, permission, scopes) {
+			return fmt.Errorf("permission denied: %s", permission)
 		}
-		return fmt.Errorf("permission denied: %s", permission)
+
+		// Check location scope: if any scope has a LocationScope, validate it
+		for _, scope := range scopes {
+			if scope.LocationScope == nil {
+				continue
+			}
+			// Determine if user has a global (unscoped) role assignment
+			_, hasGlobal, err := s.repository.GetUserRoleLocationIDs(ctx, userID)
+			if err != nil || hasGlobal {
+				// Global role — no location restriction
+				return nil
+			}
+			// User has only location-scoped roles; check if the resource location is allowed
+			allowed, err := s.isLocationAllowed(ctx, userID, *scope.LocationScope)
+			if err != nil || !allowed {
+				return fmt.Errorf("permission denied: location not in scope")
+			}
+		}
+		return nil
 	}
 
 	// Legacy fallback: use the role column
@@ -133,6 +156,30 @@ func (s *Service) CheckPermission(ctx context.Context, userID int64, permission 
 		return nil
 	}
 	return fmt.Errorf("permission denied: %s", permission)
+}
+
+// isLocationAllowed returns true if the given location is in the user's allowed location scope
+// (i.e., the location or any of its ancestors is in the user's role location set).
+func (s *Service) isLocationAllowed(ctx context.Context, userID int64, locationID int64) (bool, error) {
+	// Get the location's ancestors (including itself)
+	ancestors, err := s.repository.GetLocationAncestors(ctx, locationID)
+	if err != nil {
+		return false, err
+	}
+	// Get the user's scoped location IDs
+	scopedIDs, _, err := s.repository.GetUserRoleLocationIDs(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	// Check if any of the ancestors matches a scoped location
+	for _, anc := range ancestors {
+		for _, allowed := range scopedIDs {
+			if anc == allowed {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 // permMatches returns true if any permission in perms satisfies the request.
@@ -313,14 +360,18 @@ func (s *Service) GetUserRoles(ctx context.Context, userID int64) ([]*models.Rol
 	return roles, nil
 }
 
-func (s *Service) AssignRoleToUser(ctx context.Context, userID, roleID int64) error {
+func (s *Service) AssignRoleToUser(ctx context.Context, userID, roleID int64, locationID ...*int64) error {
 	if userID <= 0 {
 		return fmt.Errorf("invalid user ID")
 	}
 	if roleID <= 0 {
 		return fmt.Errorf("invalid role ID")
 	}
-	return s.repository.AssignRoleToUser(ctx, userID, roleID)
+	var locID *int64
+	if len(locationID) > 0 {
+		locID = locationID[0]
+	}
+	return s.repository.AssignRoleToUserWithLocation(ctx, userID, roleID, locID)
 }
 
 func (s *Service) RemoveRoleFromUser(ctx context.Context, userID, roleID int64) error {
