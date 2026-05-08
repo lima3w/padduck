@@ -10,7 +10,7 @@ import (
 )
 
 // CreateIPAddress creates a new IP address record
-func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error) {
+func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord *string, customFields ...map[string]*string) (*models.IPAddress, error) {
 	if subnetID <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
@@ -24,15 +24,34 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 		return nil, fmt.Errorf("invalid IP status: %s", status)
 	}
 
-	return s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, tagID, macAddress, ptrRecord)
+	ip, err := s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, tagID, macAddress, ptrRecord)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(customFields) > 0 && customFields[0] != nil {
+		_ = s.SetCustomFieldValues(ctx, "ip_address", ip.ID, customFields[0])
+		ip.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "ip_address", ip.ID)
+	}
+
+	return ip, nil
 }
 
 // UpdateIPAddressMeta updates tag, mac, and ptr_record fields of an IP address
-func (s *Service) UpdateIPAddressMeta(ctx context.Context, id int64, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error) {
+func (s *Service) UpdateIPAddressMeta(ctx context.Context, id int64, tagID *int64, macAddress, ptrRecord *string, customFields ...map[string]*string) (*models.IPAddress, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
-	return s.repository.UpdateIPAddressFull(ctx, id, tagID, macAddress, ptrRecord)
+	ip, err := s.repository.UpdateIPAddressFull(ctx, id, tagID, macAddress, ptrRecord)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(customFields) > 0 && customFields[0] != nil {
+		_ = s.SetCustomFieldValues(ctx, "ip_address", ip.ID, customFields[0])
+	}
+	ip.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "ip_address", ip.ID)
+	return ip, nil
 }
 
 // GetIPAddress retrieves an IP address by ID
@@ -41,7 +60,12 @@ func (s *Service) GetIPAddress(ctx context.Context, id int64) (*models.IPAddress
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
 
-	return s.repository.GetIPAddressByID(ctx, id)
+	ip, err := s.repository.GetIPAddressByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	ip.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "ip_address", id)
+	return ip, nil
 }
 
 // ListIPAddresses returns all IP addresses in a subnet
