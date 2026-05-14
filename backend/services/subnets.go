@@ -132,7 +132,7 @@ func validateGatewayInCIDR(gateway, networkAddress string, prefixLength int) err
 }
 
 // CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
-func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
+func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if sectionID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
@@ -166,7 +166,7 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		}
 	}
 
-	subnet, err := s.repository.CreateSubnetWithLocation(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID)
+	subnet, err := s.repository.CreateSubnetWithLocation(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID)
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +214,8 @@ func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.S
 	return s.repository.ListSubnetsBySection(ctx, sectionID)
 }
 
-// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, and location.
-func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
+// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, location, and nameserver.
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
@@ -232,7 +232,7 @@ func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string
 		gateway = nil
 	}
 
-	subnet, err := s.repository.UpdateSubnetWithLocation(ctx, id, description, gateway, autoFirst, autoLast, locationID)
+	subnet, err := s.repository.UpdateSubnetWithLocation(ctx, id, description, gateway, autoFirst, autoLast, locationID, nameserverID)
 	if err != nil {
 		return nil, err
 	}

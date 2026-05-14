@@ -290,6 +290,23 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	locations.Put("/:id", h.UpdateLocation)
 	locations.Delete("/:id", h.DeleteLocation)
 
+	// Nameservers (v1.6.0 #198)
+	nameservers := protected.Group("/nameservers")
+	nameservers.Get("", h.ListNameservers)
+	nameservers.Post("", h.CreateNameserver)
+	nameservers.Get("/:id", h.GetNameserver)
+	nameservers.Put("/:id", h.UpdateNameserver)
+	nameservers.Delete("/:id", h.DeleteNameserver)
+
+	// DNS admin endpoints (v1.6.0 #199, #200)
+	admin.Post("/dns/check-all", h.CheckAllDNS)
+	admin.Post("/dns/test", h.TestPowerDNSConnection)
+
+	// DNS zone browser (v1.6.0 #201)
+	dns := protected.Group("/dns")
+	dns.Get("/zones", h.ListDNSZones)
+	dns.Get("/zones/:zone/records", h.GetDNSZoneRecords)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

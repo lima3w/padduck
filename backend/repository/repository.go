@@ -275,43 +275,76 @@ func (r *Repository) DeleteSection(ctx context.Context, id int64) error {
 
 // Subnet operations
 
+// subnetSelectCols is the base column list for subnets (no JOIN).
+const subnetSelectCols = `s.id, s.section_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at`
+
+const subnetFromJoin = `FROM subnets s LEFT JOIN nameservers ns ON s.nameserver_id = ns.id`
+
 func scanSubnet(row interface {
 	Scan(dest ...any) error
 }) (*models.Subnet, error) {
 	subnet := &models.Subnet{}
-	err := row.Scan(&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
+	var nsID *int64
+	var nsName, nsServer1 *string
+	var nsServer2, nsServer3, nsDesc *string
+	var nsCreatedAt, nsUpdatedAt *time.Time
+	err := row.Scan(
+		&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
 		&subnet.Description, &subnet.Gateway, &subnet.AutoReserveFirst, &subnet.AutoReserveLast,
-		&subnet.LocationID, &subnet.CreatedAt, &subnet.UpdatedAt)
-	return subnet, err
+		&subnet.LocationID, &subnet.NameserverID, &subnet.CreatedAt, &subnet.UpdatedAt,
+		&nsID, &nsName, &nsServer1, &nsServer2, &nsServer3, &nsDesc, &nsCreatedAt, &nsUpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if nsID != nil {
+		subnet.Nameserver = &models.Nameserver{
+			ID:          *nsID,
+			Name:        *nsName,
+			Server1:     *nsServer1,
+			Server2:     nsServer2,
+			Server3:     nsServer3,
+			Description: nsDesc,
+			CreatedAt:   *nsCreatedAt,
+			UpdatedAt:   *nsUpdatedAt,
+		}
+	}
+	return subnet, nil
 }
-
-const subnetSelectCols = `id, section_id, host(network_address), prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, created_at, updated_at`
 
 func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7)
-	          RETURNING ` + subnetSelectCols
-	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast)
-	return scanSubnet(row)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+	var id int64
+	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast).Scan(&id); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, id)
 }
 
 // CreateSubnetWithLocation inserts a new subnet with an optional location.
-func (r *Repository) CreateSubnetWithLocation(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	          RETURNING ` + subnetSelectCols
-	row := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID)
-	return scanSubnet(row)
+func (r *Repository) CreateSubnetWithLocation(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
+	var nsID *int64
+	if len(nameserverID) > 0 {
+		nsID = nameserverID[0]
+	}
+	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
+	var id int64
+	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nsID).Scan(&id); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, id)
 }
 
 func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` FROM subnets WHERE id = $1`
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.id = $1`
 	row := r.db.QueryRow(ctx, query, id)
 	return scanSubnet(row)
 }
 
 func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` FROM subnets WHERE section_id = $1 ORDER BY network_address`
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.section_id = $1 ORDER BY s.network_address`
 	rows, err := r.db.Query(ctx, query, sectionID)
 	if err != nil {
 		return nil, err
@@ -331,7 +364,7 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) 
 
 // ListSubnetsByLocation returns subnets assigned to a specific location.
 func (r *Repository) ListSubnetsByLocation(ctx context.Context, locationID int64) ([]*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` FROM subnets WHERE location_id=$1 ORDER BY network_address`
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.location_id=$1 ORDER BY s.network_address`
 	rows, err := r.db.Query(ctx, query, locationID)
 	if err != nil {
 		return nil, err
@@ -351,19 +384,25 @@ func (r *Repository) ListSubnetsByLocation(ctx context.Context, locationID int64
 
 func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `UPDATE subnets SET description = $1, gateway = $2, auto_reserve_first = $3, auto_reserve_last = $4,
-	          updated_at = CURRENT_TIMESTAMP WHERE id = $5
-	          RETURNING ` + subnetSelectCols
-	row := r.db.QueryRow(ctx, query, description, gateway, autoFirst, autoLast, id)
-	return scanSubnet(row)
+	          updated_at = CURRENT_TIMESTAMP WHERE id = $5`
+	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, id); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, id)
 }
 
-// UpdateSubnetWithLocation updates a subnet including its location assignment.
-func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64) (*models.Subnet, error) {
+// UpdateSubnetWithLocation updates a subnet including its location and nameserver assignment.
+func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
+	var nsID *int64
+	if len(nameserverID) > 0 {
+		nsID = nameserverID[0]
+	}
 	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
-	          location_id=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$6
-	          RETURNING ` + subnetSelectCols
-	row := r.db.QueryRow(ctx, query, description, gateway, autoFirst, autoLast, locationID, id)
-	return scanSubnet(row)
+	          location_id=$5, nameserver_id=$6, updated_at=CURRENT_TIMESTAMP WHERE id=$7`
+	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nsID, id); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, id)
 }
 
 func (r *Repository) DeleteSubnet(ctx context.Context, id int64) error {
@@ -378,6 +417,7 @@ func (r *Repository) DeleteSubnet(ctx context.Context, id int64) error {
 const ipSelectCols = `ip.id, ip.subnet_id, ip.address::text, ip.hostname, ip.status, ip.assigned_to,
 	ip.tag_id, t.id, t.name, t.colour, t.description, t.is_system, t.created_at,
 	ip.last_seen, ip.mac_address, ip.ptr_record,
+	ip.dns_name, ip.dns_records::text, ip.dns_last_checked,
 	ip.created_at, ip.updated_at`
 
 const ipFromJoin = `FROM ip_addresses ip LEFT JOIN ip_tags t ON ip.tag_id = t.id`
@@ -398,6 +438,7 @@ func scanIP(row interface {
 		&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo,
 		&tagID, &tagIDInner, &tagName, &tagColour, &tagDesc, &tagIsSystem, &tagCreatedAt,
 		&ip.LastSeen, &ip.MACAddress, &ip.PTRRecord,
+		&ip.DNSName, &ip.DNSRecords, &ip.DNSLastChecked,
 		&ip.CreatedAt, &ip.UpdatedAt,
 	)
 	if err != nil {
@@ -421,7 +462,7 @@ func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, addres
 	query := `WITH ins AS (
 		INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to, tag_id, mac_address, ptr_record)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, subnet_id, address, hostname, status, assigned_to, tag_id, last_seen, mac_address, ptr_record, created_at, updated_at
+		RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM ins)`
 	row := r.db.QueryRow(ctx, query, subnetID, address, hostname, status, assignedTo, tagID, macAddress, ptrRecord)
@@ -872,9 +913,9 @@ func (r *Repository) SearchSections(ctx context.Context, query string, limit, of
 }
 
 func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
-	sql := `SELECT ` + subnetSelectCols + ` FROM subnets
-	        WHERE section_id = $1 AND (host(network_address) ILIKE $2 OR description ILIKE $2)
-	        ORDER BY network_address ASC
+	sql := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
+	        WHERE s.section_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)
+	        ORDER BY s.network_address ASC
 	        LIMIT $3 OFFSET $4`
 	searchQuery := "%" + query + "%"
 	rows, err := r.db.Query(ctx, sql, sectionID, searchQuery, limit, offset)
@@ -3160,8 +3201,8 @@ func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, sectionI
 		defByName[d.Name] = d
 	}
 
-	base := `SELECT ` + subnetSelectCols + ` FROM subnets
-	         WHERE section_id = $1 AND (host(network_address) ILIKE $2 OR description ILIKE $2)`
+	base := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
+	         WHERE s.section_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)`
 	args := []interface{}{sectionID, "%" + query + "%"}
 	n := 3
 
@@ -3173,15 +3214,15 @@ func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, sectionI
 		placeholder := fmt.Sprintf("$%d", n)
 		n++
 		if textLikeFieldTypes[def.FieldType] {
-			base += fmt.Sprintf(` AND EXISTS (SELECT 1 FROM custom_field_values cfv WHERE cfv.entity_type='subnet' AND cfv.entity_id=id AND cfv.definition_id=%d AND cfv.value ILIKE %s)`, def.ID, placeholder)
+			base += fmt.Sprintf(` AND EXISTS (SELECT 1 FROM custom_field_values cfv WHERE cfv.entity_type='subnet' AND cfv.entity_id=s.id AND cfv.definition_id=%d AND cfv.value ILIKE %s)`, def.ID, placeholder)
 			args = append(args, "%"+fval+"%")
 		} else {
-			base += fmt.Sprintf(` AND EXISTS (SELECT 1 FROM custom_field_values cfv WHERE cfv.entity_type='subnet' AND cfv.entity_id=id AND cfv.definition_id=%d AND cfv.value = %s)`, def.ID, placeholder)
+			base += fmt.Sprintf(` AND EXISTS (SELECT 1 FROM custom_field_values cfv WHERE cfv.entity_type='subnet' AND cfv.entity_id=s.id AND cfv.definition_id=%d AND cfv.value = %s)`, def.ID, placeholder)
 			args = append(args, fval)
 		}
 	}
 
-	base += fmt.Sprintf(` ORDER BY network_address ASC LIMIT $%d OFFSET $%d`, n, n+1)
+	base += fmt.Sprintf(` ORDER BY s.network_address ASC LIMIT $%d OFFSET $%d`, n, n+1)
 	args = append(args, limit, offset)
 
 	rows, err := r.db.Query(ctx, base, args...)
@@ -3735,4 +3776,121 @@ func (r *Repository) ListDevicesByLocation(ctx context.Context, locationID int64
 		devices = append(devices, d)
 	}
 	return devices, rows.Err()
+}
+
+// ---------------------------------------------------------------------------
+// Nameserver operations
+// ---------------------------------------------------------------------------
+
+const nsSelectCols = `id, name, server1, server2, server3, description, created_at, updated_at`
+
+func scanNameserver(row interface {
+	Scan(dest ...any) error
+}) (*models.Nameserver, error) {
+	ns := &models.Nameserver{}
+	return ns, row.Scan(&ns.ID, &ns.Name, &ns.Server1, &ns.Server2, &ns.Server3, &ns.Description, &ns.CreatedAt, &ns.UpdatedAt)
+}
+
+// NameserverParams holds fields for creating or updating a nameserver.
+type NameserverParams struct {
+	Name        string  `json:"name"`
+	Server1     string  `json:"server1"`
+	Server2     *string `json:"server2"`
+	Server3     *string `json:"server3"`
+	Description *string `json:"description"`
+}
+
+// CreateNameserver inserts a new nameserver record.
+func (r *Repository) CreateNameserver(ctx context.Context, p *NameserverParams) (*models.Nameserver, error) {
+	query := `INSERT INTO nameservers (name, server1, server2, server3, description)
+	          VALUES ($1, $2, $3, $4, $5) RETURNING ` + nsSelectCols
+	return scanNameserver(r.db.QueryRow(ctx, query, p.Name, p.Server1, p.Server2, p.Server3, p.Description))
+}
+
+// GetNameserverByID returns a single nameserver.
+func (r *Repository) GetNameserverByID(ctx context.Context, id int64) (*models.Nameserver, error) {
+	ns, err := scanNameserver(r.db.QueryRow(ctx, `SELECT `+nsSelectCols+` FROM nameservers WHERE id=$1`, id))
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, fmt.Errorf("nameserver not found")
+		}
+		return nil, err
+	}
+	return ns, nil
+}
+
+// ListNameservers returns all nameservers ordered by name.
+func (r *Repository) ListNameservers(ctx context.Context) ([]*models.Nameserver, error) {
+	rows, err := r.db.Query(ctx, `SELECT `+nsSelectCols+` FROM nameservers ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]*models.Nameserver, 0)
+	for rows.Next() {
+		ns, err := scanNameserver(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, ns)
+	}
+	return result, rows.Err()
+}
+
+// UpdateNameserver updates an existing nameserver.
+func (r *Repository) UpdateNameserver(ctx context.Context, id int64, p *NameserverParams) (*models.Nameserver, error) {
+	query := `UPDATE nameservers SET name=$1, server1=$2, server2=$3, server3=$4, description=$5, updated_at=now()
+	          WHERE id=$6 RETURNING ` + nsSelectCols
+	ns, err := scanNameserver(r.db.QueryRow(ctx, query, p.Name, p.Server1, p.Server2, p.Server3, p.Description, id))
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, fmt.Errorf("nameserver not found")
+		}
+		return nil, err
+	}
+	return ns, nil
+}
+
+// DeleteNameserver removes a nameserver by ID.
+func (r *Repository) DeleteNameserver(ctx context.Context, id int64) error {
+	ct, err := r.db.Exec(ctx, `DELETE FROM nameservers WHERE id=$1`, id)
+	if err != nil {
+		return err
+	}
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("nameserver not found")
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// DNS field update for IP addresses
+// ---------------------------------------------------------------------------
+
+// UpdateIPDNSFields stores the result of a DNS check on an IP address.
+func (r *Repository) UpdateIPDNSFields(ctx context.Context, ipID int64, ptrRecord string, dnsRecords json.RawMessage, lastChecked time.Time) error {
+	_, err := r.db.Exec(ctx,
+		`UPDATE ip_addresses SET ptr_record=$2, dns_records=$3, dns_last_checked=$4, updated_at=now() WHERE id=$1`,
+		ipID, ptrRecord, string(dnsRecords), lastChecked,
+	)
+	return err
+}
+
+// ListIPAddressesWithDNSName returns all IP addresses that have a dns_name set.
+func (r *Repository) ListIPAddressesWithDNSName(ctx context.Context) ([]*models.IPAddress, error) {
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.dns_name IS NOT NULL AND ip.dns_name != '' ORDER BY ip.id`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ips := make([]*models.IPAddress, 0)
+	for rows.Next() {
+		ip, err := scanIP(rows)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, rows.Err()
 }
