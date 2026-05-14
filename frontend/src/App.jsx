@@ -20,6 +20,9 @@ import AdminUsersPage from './pages/AdminUsersPage'
 import LocationsPage from './pages/LocationsPage'
 import LocationDetailPage from './pages/LocationDetailPage'
 import RackDetailPage from './pages/RackDetailPage'
+import NameserversPage from './pages/NameserversPage'
+import DnsZonesPage from './pages/DnsZonesPage'
+import DnsZoneDetailPage from './pages/DnsZoneDetailPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -72,6 +75,9 @@ export default function App() {
           <Route path="locations" element={<LocationsPage />} />
           <Route path="locations/:id" element={<LocationDetailPage />} />
           <Route path="racks/:id" element={<RackDetailPage />} />
+          <Route path="dns/nameservers" element={<NameserversPage />} />
+          <Route path="dns/zones" element={<DnsZonesPage />} />
+          <Route path="dns/zones/:zone" element={<DnsZoneDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

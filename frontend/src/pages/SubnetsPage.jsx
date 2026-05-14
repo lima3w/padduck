@@ -9,6 +9,7 @@ import {
   deleteSubnet,
   searchSubnets,
   getSubnetTree,
+  getNameservers,
 } from '../api/client'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -18,7 +19,7 @@ import { getLocations } from '../api/locations'
 
 const DEFAULT_LIMIT = 25
 
-const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', custom_fields: {} }
+const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', custom_fields: {} }
 
 export default function SubnetsPage() {
   const { sectionID } = useParams()
@@ -44,6 +45,7 @@ export default function SubnetsPage() {
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [locations, setLocations] = useState([])
   const [filterLocationId, setFilterLocationId] = useState('')
+  const [nameservers, setNameservers] = useState([])
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -55,12 +57,21 @@ export default function SubnetsPage() {
     load(1)
     loadCfDefs()
     loadLocations()
+    loadNameservers()
   }, [sectionID])
 
   async function loadLocations() {
     try {
       const data = await getLocations()
       setLocations(Array.isArray(data) ? data : (data?.locations ?? []))
+    } catch {}
+  }
+
+  async function loadNameservers() {
+    try {
+      const res = await getNameservers()
+      const data = res.data
+      setNameservers(Array.isArray(data) ? data : (data?.nameservers ?? []))
     } catch {}
   }
 
@@ -194,6 +205,7 @@ export default function SubnetsPage() {
         auto_reserve_first: full.autoReserveFirst || false,
         auto_reserve_last: full.autoReserveLast || false,
         location_id: full.locationId ? String(full.locationId) : '',
+        nameserver_id: full.nameserverId ? String(full.nameserverId) : '',
         custom_fields: full.customFields || {},
       })
       setOverlapError(null)
@@ -217,6 +229,7 @@ export default function SubnetsPage() {
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
           location_id: form.location_id ? parseInt(form.location_id) : null,
+          nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
           custom_fields: form.custom_fields || {},
         })
       } else {
@@ -227,6 +240,7 @@ export default function SubnetsPage() {
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
           location_id: form.location_id ? parseInt(form.location_id) : null,
+          nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
           custom_fields: form.custom_fields || {},
         })
       }
@@ -399,6 +413,7 @@ export default function SubnetsPage() {
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Prefix</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Gateway</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Nameserver</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
                   {searchableFields.map(d => (
                     <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
@@ -408,7 +423,7 @@ export default function SubnetsPage() {
               </thead>
               <tbody>
                 {subnets.length === 0 && (
-                  <tr><td colSpan={6 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
+                  <tr><td colSpan={7 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
                 )}
                 {subnets.map(s => (
                   <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -426,6 +441,9 @@ export default function SubnetsPage() {
                           {locations.find(l => l.id === s.locationId)?.name || `#${s.locationId}`}
                         </Link>
                       ) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                      {s.nameserverId ? (nameservers.find(ns => ns.id === s.nameserverId)?.name || `#${s.nameserverId}`) : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                     {searchableFields.map(d => {
@@ -561,6 +579,19 @@ export default function SubnetsPage() {
                 <option value="">No location</option>
                 {locations.map(l => (
                   <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nameserver (optional)</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={form.nameserver_id}
+                onChange={e => setForm(f => ({ ...f, nameserver_id: e.target.value }))}
+              >
+                <option value="">No nameserver</option>
+                {nameservers.map(ns => (
+                  <option key={ns.id} value={ns.id}>{ns.name} ({ns.server1})</option>
                 ))}
               </select>
             </div>
