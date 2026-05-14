@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -8,6 +9,11 @@ import (
 	"ipam-next/models"
 	"ipam-next/services"
 )
+
+// errResponseWritten is a sentinel returned by permCheck after it has already
+// written the error response. Callers must return nil (not this error) so Fiber
+// does not invoke the default error handler on top of the written response.
+var errResponseWritten = errors.New("response written")
 
 type Handler struct {
 	service      *services.Service
@@ -21,15 +27,18 @@ func NewHandler(service *services.Service) *Handler {
 	}
 }
 
-// permCheck verifies the authenticated user has the given permission (with optional resource scopes).
-// Returns a Fiber error response if denied, nil if allowed.
+// permCheck verifies the authenticated user has the given permission.
+// On denial it writes the error response and returns errResponseWritten (non-nil).
+// Callers must do: if err := h.permCheck(...); err != nil { return nil }
 func (h *Handler) permCheck(c *fiber.Ctx, permission string, scopes ...services.ResourceScope) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
+		_ = RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
+		return errResponseWritten
 	}
 	if err := h.service.CheckPermission(c.Context(), user.ID, permission, scopes...); err != nil {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "permission denied")
+		_ = RespondError(c, fiber.StatusForbidden, ErrForbidden, "permission denied")
+		return errResponseWritten
 	}
 	return nil
 }
@@ -280,6 +289,23 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	locations.Get("/:id", h.GetLocation)
 	locations.Put("/:id", h.UpdateLocation)
 	locations.Delete("/:id", h.DeleteLocation)
+
+	// Nameservers (v1.6.0 #198)
+	nameservers := protected.Group("/nameservers")
+	nameservers.Get("", h.ListNameservers)
+	nameservers.Post("", h.CreateNameserver)
+	nameservers.Get("/:id", h.GetNameserver)
+	nameservers.Put("/:id", h.UpdateNameserver)
+	nameservers.Delete("/:id", h.DeleteNameserver)
+
+	// DNS admin endpoints (v1.6.0 #199, #200)
+	admin.Post("/dns/check-all", h.CheckAllDNS)
+	admin.Post("/dns/test", h.TestPowerDNSConnection)
+
+	// DNS zone browser (v1.6.0 #201)
+	dns := protected.Group("/dns")
+	dns.Get("/zones", h.ListDNSZones)
+	dns.Get("/zones/:zone/records", h.GetDNSZoneRecords)
 
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)

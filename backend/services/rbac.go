@@ -80,6 +80,11 @@ const (
 	PermV2LocationRead   = "ipam:location:read"
 	PermV2LocationWrite  = "ipam:location:write"
 	PermV2LocationDelete = "ipam:location:delete"
+
+	PermV2NameserverList   = "ipam:nameserver:list"
+	PermV2NameserverRead   = "ipam:nameserver:read"
+	PermV2NameserverWrite  = "ipam:nameserver:write"
+	PermV2NameserverDelete = "ipam:nameserver:delete"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -92,6 +97,7 @@ var AllPermissions = []string{
 	PermV2UserList, PermV2UserRead, PermV2UserWrite, PermV2AuditRead,
 	PermV2DeviceRead, PermV2DeviceWrite, PermV2DeviceDelete, PermV2DeviceAdmin,
 	PermV2LocationList, PermV2LocationRead, PermV2LocationWrite, PermV2LocationDelete,
+	PermV2NameserverList, PermV2NameserverRead, PermV2NameserverWrite, PermV2NameserverDelete,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -224,6 +230,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2UserList: true, PermV2UserRead: true,
 			PermV2DeviceRead: true,
 			PermV2LocationList: true, PermV2LocationRead: true,
+			PermV2NameserverList: true, PermV2NameserverRead: true,
 		}
 		return readPerms[permission]
 	}

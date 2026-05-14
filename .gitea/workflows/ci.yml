@@ -1,0 +1,55 @@
+name: CI Test Suite
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ci-test:
+    runs-on: linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Check migrations
+        run: |
+          bad_up=$(grep -rL '^\-\- +migrate Up' backend/migrations/*.up.sql 2>/dev/null)
+          bad_down=$(grep -rL '^\-\- +migrate Down' backend/migrations/*.down.sql 2>/dev/null)
+          if [ -n "$bad_up" ] || [ -n "$bad_down" ]; then
+            echo "ERROR: missing sql-migrate annotation in:"
+            echo "$bad_up $bad_down" | tr ' ' '\n' | grep -v '^$'
+            exit 1
+          fi
+
+      - name: Vet backend
+        working-directory: ./backend
+        run: go vet ./...
+
+      - name: Test backend
+        working-directory: ./backend
+        run: go test -race -count=1 ./...
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build --silent

@@ -22,7 +22,7 @@ type UpdateVRFRequest struct {
 
 func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2VRFList); err != nil {
-		return err
+		return nil
 	}
 	vrfs, err := h.service.ListVRFs(c.Context())
 	if err != nil {
@@ -43,7 +43,7 @@ func (h *Handler) GetVRF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
 	}
 	if err := h.permCheck(c, services.PermV2VRFRead); err != nil {
-		return err
+		return nil
 	}
 
 	vrf, err := h.service.GetVRF(c.Context(), int64(id))
@@ -61,7 +61,7 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 	if err := h.permCheck(c, services.PermV2VRFWrite); err != nil {
-		return err
+		return nil
 	}
 
 	vrf, err := h.service.CreateVRF(c.Context(), req.Name, req.RouteDistinguisher, req.Description)

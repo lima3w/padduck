@@ -12,7 +12,7 @@ import (
 // ListDeviceTypes handles GET /api/v1/device-types
 func (h *Handler) ListDeviceTypes(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
-		return err
+		return nil
 	}
 
 	types, err := h.service.ListDeviceTypes(c.Context())
@@ -26,7 +26,7 @@ func (h *Handler) ListDeviceTypes(c *fiber.Ctx) error {
 // ListDevices handles GET /api/v1/devices
 func (h *Handler) ListDevices(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
-		return err
+		return nil
 	}
 
 	page := c.QueryInt("page", 1)
@@ -56,7 +56,7 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 // CreateDevice handles POST /api/v1/devices
 func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(repository.DeviceParams)
@@ -81,7 +81,7 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 // GetDevice handles GET /api/v1/devices/:id
 func (h *Handler) GetDevice(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -104,7 +104,7 @@ func (h *Handler) GetDevice(c *fiber.Ctx) error {
 // UpdateDevice handles PUT /api/v1/devices/:id
 func (h *Handler) UpdateDevice(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -137,7 +137,7 @@ func (h *Handler) UpdateDevice(c *fiber.Ctx) error {
 // DeleteDevice handles DELETE /api/v1/devices/:id
 func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceDelete); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -159,7 +159,7 @@ func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
 // GetDeviceSNMPCredentials handles GET /api/v1/devices/:id/snmp-credentials
 func (h *Handler) GetDeviceSNMPCredentials(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceAdmin); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -182,7 +182,7 @@ func (h *Handler) GetDeviceSNMPCredentials(c *fiber.Ctx) error {
 // ListDeviceIPAddresses handles GET /api/v1/devices/:id/ip-addresses
 func (h *Handler) ListDeviceIPAddresses(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -207,7 +207,7 @@ type associateIPRequest struct {
 // AssociateIPToDevice handles POST /api/v1/devices/:id/ip-addresses/:ip_id/associate
 func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -236,7 +236,7 @@ func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
 // UnlinkIPFromDevice handles DELETE /api/v1/devices/:id/ip-addresses/:ip_id
 func (h *Handler) UnlinkIPFromDevice(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -263,7 +263,7 @@ func (h *Handler) UnlinkIPFromDevice(c *fiber.Ctx) error {
 // ListDeviceInterfaces handles GET /api/v1/devices/:id/interfaces
 func (h *Handler) ListDeviceInterfaces(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -283,7 +283,7 @@ func (h *Handler) ListDeviceInterfaces(c *fiber.Ctx) error {
 // CreateDeviceInterface handles POST /api/v1/devices/:id/interfaces
 func (h *Handler) CreateDeviceInterface(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -313,7 +313,7 @@ func (h *Handler) CreateDeviceInterface(c *fiber.Ctx) error {
 // UpdateDeviceInterface handles PUT /api/v1/devices/:id/interfaces/:if_id
 func (h *Handler) UpdateDeviceInterface(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceWrite); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -351,7 +351,7 @@ func (h *Handler) UpdateDeviceInterface(c *fiber.Ctx) error {
 // DeleteDeviceInterface handles DELETE /api/v1/devices/:id/interfaces/:if_id
 func (h *Handler) DeleteDeviceInterface(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceDelete); err != nil {
-		return err
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")
@@ -388,7 +388,7 @@ type deviceSearchRequest struct {
 // SearchDevices handles POST /api/v1/devices/search
 func (h *Handler) SearchDevices(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(deviceSearchRequest)

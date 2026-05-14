@@ -12,7 +12,7 @@ import (
 // ListLocations handles GET /api/v1/locations
 func (h *Handler) ListLocations(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
-		return err
+		return nil
 	}
 	locs, err := h.service.ListLocations(c.Context())
 	if err != nil {
@@ -25,7 +25,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 // GetLocationTree handles GET /api/v1/locations/tree
 func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
-		return err
+		return nil
 	}
 	tree, err := h.service.GetLocationTree(c.Context())
 	if err != nil {
@@ -38,7 +38,7 @@ func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 // CreateLocation handles POST /api/v1/locations
 func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
-		return err
+		return nil
 	}
 	req := new(repository.LocationParams)
 	if err := c.BodyParser(req); err != nil {
@@ -59,7 +59,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 // GetLocation handles GET /api/v1/locations/:id
 func (h *Handler) GetLocation(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationRead); err != nil {
-		return err
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -79,7 +79,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 // UpdateLocation handles PUT /api/v1/locations/:id
 func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
-		return err
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -107,7 +107,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 // DeleteLocation handles DELETE /api/v1/locations/:id
 func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationDelete); err != nil {
-		return err
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {

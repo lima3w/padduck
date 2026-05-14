@@ -131,6 +131,18 @@ type Section struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// Nameserver represents a set of DNS nameservers that can be assigned to subnets.
+type Nameserver struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Server1     string    `json:"server1"`
+	Server2     *string   `json:"server2,omitempty"`
+	Server3     *string   `json:"server3,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // Subnet represents a network subnet
 type Subnet struct {
 	ID               int64              `json:"id"`
@@ -142,6 +154,8 @@ type Subnet struct {
 	AutoReserveFirst bool               `json:"auto_reserve_first"`
 	AutoReserveLast  bool               `json:"auto_reserve_last"`
 	LocationID       *int64             `json:"location_id,omitempty"`
+	NameserverID     *int64             `json:"nameserver_id,omitempty"`
+	Nameserver       *Nameserver        `json:"nameserver,omitempty"`
 	CreatedAt        time.Time          `json:"created_at"`
 	UpdatedAt        time.Time          `json:"updated_at"`
 	CustomFields     map[string]*string `json:"custom_fields,omitempty"`
@@ -159,25 +173,28 @@ type IPTag struct {
 
 // IPAddress represents an individual IP address
 type IPAddress struct {
-	ID            int64              `json:"id"`
-	SubnetID      int64              `json:"subnet_id"`
-	Address       string             `json:"address"`
-	Hostname      string             `json:"hostname"`
-	Status        string             `json:"status"`
-	AssignedTo    *string            `json:"assigned_to,omitempty"`
-	AssignedAt    *time.Time         `json:"assigned_at,omitempty"`
-	ExpiresAt     *time.Time         `json:"expires_at,omitempty"`
-	TagID         *int64             `json:"tag_id,omitempty"`
-	Tag           *IPTag             `json:"tag,omitempty"`
-	LastSeen      *time.Time         `json:"last_seen,omitempty"`
-	MACAddress    *string            `json:"mac_address,omitempty"`
-	PTRRecord     *string            `json:"ptr_record,omitempty"`
-	DeviceID      *int64             `json:"device_id,omitempty"`
-	InterfaceName *string            `json:"interface_name,omitempty"`
-	IsPrimary     bool               `json:"is_primary"`
-	CreatedAt     time.Time          `json:"created_at"`
-	UpdatedAt     time.Time          `json:"updated_at"`
-	CustomFields  map[string]*string `json:"custom_fields,omitempty"`
+	ID             int64              `json:"id"`
+	SubnetID       int64              `json:"subnet_id"`
+	Address        string             `json:"address"`
+	Hostname       string             `json:"hostname"`
+	Status         string             `json:"status"`
+	AssignedTo     *string            `json:"assigned_to,omitempty"`
+	AssignedAt     *time.Time         `json:"assigned_at,omitempty"`
+	ExpiresAt      *time.Time         `json:"expires_at,omitempty"`
+	TagID          *int64             `json:"tag_id,omitempty"`
+	Tag            *IPTag             `json:"tag,omitempty"`
+	LastSeen       *time.Time         `json:"last_seen,omitempty"`
+	MACAddress     *string            `json:"mac_address,omitempty"`
+	PTRRecord      *string            `json:"ptr_record,omitempty"`
+	DNSName        *string            `json:"dns_name,omitempty"`
+	DNSRecords     *string            `json:"dns_records,omitempty"` // JSON string
+	DNSLastChecked *time.Time         `json:"dns_last_checked,omitempty"`
+	DeviceID       *int64             `json:"device_id,omitempty"`
+	InterfaceName  *string            `json:"interface_name,omitempty"`
+	IsPrimary      bool               `json:"is_primary"`
+	CreatedAt      time.Time          `json:"created_at"`
+	UpdatedAt      time.Time          `json:"updated_at"`
+	CustomFields   map[string]*string `json:"custom_fields,omitempty"`
 }
 
 // Role represents a named set of permissions

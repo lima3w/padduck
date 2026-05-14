@@ -42,4 +42,5 @@ scripts/
 
 # Gitea data exports and backups
 gitea/
+gitea_api_calls.txt
 
