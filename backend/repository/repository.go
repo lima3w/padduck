@@ -2364,6 +2364,10 @@ func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 		return nil, err
 	}
 
+	// Pending request counts (tables may not exist yet in older deployments — treat as 0)
+	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnet_requests WHERE status = 'pending'`).Scan(&summary.PendingSubnetRequests)
+	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_requests WHERE status = 'pending'`).Scan(&summary.PendingIPRequests)
+
 	return summary, nil
 }
 

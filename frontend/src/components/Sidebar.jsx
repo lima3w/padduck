@@ -1,10 +1,28 @@
 import { NavLink } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { getPendingRequestCount } from '../api/requests'
 
 export default function Sidebar() {
   const user = (() => {
     try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null }
   })()
   const isAdmin = user?.role === 'admin'
+
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+    async function fetchCount() {
+      try {
+        const res = await getPendingRequestCount()
+        if (!cancelled) setPendingCount(res.data?.count ?? 0)
+      } catch {}
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 30000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [isAdmin])
 
   return (
     <aside className="w-48 bg-gray-800 dark:bg-gray-900 text-gray-200 dark:text-gray-300 min-h-full flex flex-col border-r border-gray-700 dark:border-gray-700">
@@ -40,6 +58,18 @@ export default function Sidebar() {
         >
           Devices
         </NavLink>
+        {!isAdmin && (
+          <NavLink
+            to="/requests"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            My Requests
+          </NavLink>
+        )}
 
         <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Physical
@@ -84,6 +114,21 @@ export default function Sidebar() {
             <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Admin
             </div>
+            <NavLink
+              to="/admin/requests"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-between ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <span>Requests</span>
+              {pendingCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-yellow-500 rounded-full">
+                  {pendingCount}
+                </span>
+              )}
+            </NavLink>
             <NavLink
               to="/admin/users"
               className={({ isActive }) =>
