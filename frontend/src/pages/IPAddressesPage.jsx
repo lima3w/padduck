@@ -14,7 +14,7 @@ const STATUS_COLORS = {
   reserved: 'bg-yellow-100 text-yellow-700',
 }
 
-const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'ptr_record', 'last_seen']
+const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen']
 const COLUMN_LABELS = {
   address: 'Address',
   hostname: 'Hostname',
@@ -23,6 +23,7 @@ const COLUMN_LABELS = {
   assigned_to: 'Assigned To',
   device: 'Device',
   mac_address: 'MAC Address',
+  dns_name: 'DNS Name',
   ptr_record: 'Hostname/PTR',
   last_seen: 'Last Seen',
 }
@@ -54,7 +55,7 @@ export default function IPAddressesPage() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [advFilters, setAdvFilters] = useState({ tag_id: '', mac_address: '', ptr_record: '', is_assigned: '' })
   const [modal, setModal] = useState(null) // null | 'create' | { assign: ip } | { meta: ip }
-  const [form, setForm] = useState({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '' })
+  const [form, setForm] = useState({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '' })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
   const [visibleCols, setVisibleCols] = useState(loadColumnVisibility)
@@ -183,7 +184,7 @@ export default function IPAddressesPage() {
   }
 
   function openCreate() {
-    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', custom_fields: {} })
+    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
     setModal('create')
   }
 
@@ -196,7 +197,8 @@ export default function IPAddressesPage() {
     setForm({
       tag_id: ip.TagID ? String(ip.TagID) : '',
       mac_address: ip.MACAddress || '',
-      ptr_record: ip.PTRRecord || '',
+      ptr_record: ip.PTRRecord || ip.ptrRecord || '',
+      dns_name: ip.dnsName || '',
       custom_fields: ip.custom_fields || {},
     })
     setModal({ meta: ip })
@@ -213,6 +215,7 @@ export default function IPAddressesPage() {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
+        dns_name: form.dns_name || null,
         custom_fields: form.custom_fields || {},
       })
       setModal(null)
@@ -246,6 +249,7 @@ export default function IPAddressesPage() {
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
+        dns_name: form.dns_name || null,
         custom_fields: form.custom_fields || {},
       })
       setModal(null)
@@ -481,6 +485,7 @@ export default function IPAddressesPage() {
               {col('assigned_to') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Assigned To</th>}
               {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
               {col('mac_address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th>}
+              {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
               {col('last_seen') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>}
               {searchableFields.map(d => (
@@ -516,7 +521,22 @@ export default function IPAddressesPage() {
                   </td>
                 )}
                 {col('mac_address') && <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400 text-xs">{ip.MACAddress || '—'}</td>}
-                {col('ptr_record') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.PTRRecord || '—'}</td>}
+                {col('dns_name') && (
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1">
+                      {ip.dnsName || '—'}
+                      {ip.dnsName && ip.dnsRecords && !ip.dnsRecords.includes(ip.Address) && (
+                        <span
+                          title="DNS mismatch: DNS records do not include this IP's address"
+                          className="text-yellow-500 cursor-help"
+                        >
+                          &#9888;
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                )}
+                {col('ptr_record') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.PTRRecord || ip.ptrRecord || '—'}</td>}
                 {col('last_seen') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                     {ip.LastSeen ? new Date(ip.LastSeen).toLocaleString() : '—'}
@@ -634,6 +654,15 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, ptr_record: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">DNS Name</label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="web01.example.com"
+                value={form.dns_name}
+                onChange={e => setForm(f => ({ ...f, dns_name: e.target.value }))}
+              />
+            </div>
             {cfDefs.length > 0 && (
               <div className="border-t pt-4">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
@@ -709,6 +738,24 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, ptr_record: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">DNS Name</label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="web01.example.com"
+                value={form.dns_name}
+                onChange={e => setForm(f => ({ ...f, dns_name: e.target.value }))}
+              />
+            </div>
+            {(modal.meta.dnsLastChecked) && (
+              <div className="border-t pt-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">DNS Info (read-only)</p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <span className="font-medium">Last DNS Check:</span>
+                  <span>{modal.meta.dnsLastChecked ? new Date(modal.meta.dnsLastChecked).toLocaleString() : '—'}</span>
+                </div>
+              </div>
+            )}
             {cfDefs.length > 0 && (
               <div className="border-t pt-4">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
