@@ -85,6 +85,10 @@ const (
 	PermV2NameserverRead   = "ipam:nameserver:read"
 	PermV2NameserverWrite  = "ipam:nameserver:write"
 	PermV2NameserverDelete = "ipam:nameserver:delete"
+
+	// Request workflow permissions (v1.7.0 #202 #203)
+	PermV2SubnetRequestSubmit = "ipam:subnet_request:submit"
+	PermV2SubnetRequestReview = "ipam:subnet_request:review"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -98,6 +102,7 @@ var AllPermissions = []string{
 	PermV2DeviceRead, PermV2DeviceWrite, PermV2DeviceDelete, PermV2DeviceAdmin,
 	PermV2LocationList, PermV2LocationRead, PermV2LocationWrite, PermV2LocationDelete,
 	PermV2NameserverList, PermV2NameserverRead, PermV2NameserverWrite, PermV2NameserverDelete,
+	PermV2SubnetRequestSubmit, PermV2SubnetRequestReview,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -218,7 +223,10 @@ func legacyRoleHasPermission(role, permission string) bool {
 	case "admin":
 		return true // admin has everything
 	case "user":
-		adminOnly := map[string]bool{PermV2UserWrite: true, PermV2AuditRead: true, PermV2DeviceAdmin: true}
+		adminOnly := map[string]bool{
+			PermV2UserWrite: true, PermV2AuditRead: true, PermV2DeviceAdmin: true,
+			PermV2SubnetRequestReview: true,
+		}
 		return !adminOnly[permission]
 	case "viewer":
 		readPerms := map[string]bool{
@@ -231,6 +239,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2DeviceRead: true,
 			PermV2LocationList: true, PermV2LocationRead: true,
 			PermV2NameserverList: true, PermV2NameserverRead: true,
+			// Viewers cannot submit or review requests
 		}
 		return readPerms[permission]
 	}

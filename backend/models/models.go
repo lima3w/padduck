@@ -400,12 +400,14 @@ type ScanResult struct {
 
 // DashboardSummary holds aggregate IPAM statistics for the dashboard
 type DashboardSummary struct {
-	TotalSections    int64              `json:"total_sections"`
-	TotalSubnets     int64              `json:"total_subnets"`
-	TotalIPs         int64              `json:"total_ips"`
-	UsedIPs          int64              `json:"used_ips"`
-	UtilisationPct   float64            `json:"utilisation_pct"`
-	TopSubnets       []SubnetUtilisation `json:"top_subnets"`
+	TotalSections          int64               `json:"total_sections"`
+	TotalSubnets           int64               `json:"total_subnets"`
+	TotalIPs               int64               `json:"total_ips"`
+	UsedIPs                int64               `json:"used_ips"`
+	UtilisationPct         float64             `json:"utilisation_pct"`
+	TopSubnets             []SubnetUtilisation `json:"top_subnets"`
+	PendingSubnetRequests  int64               `json:"pending_subnet_requests"`
+	PendingIPRequests      int64               `json:"pending_ip_requests"`
 }
 
 // SubnetUtilisation holds utilisation data for a single subnet
@@ -532,6 +534,53 @@ type Location struct {
 type LocationTreeNode struct {
 	Location
 	Children []*LocationTreeNode `json:"children"`
+}
+
+// SubnetRequest represents a user request for a new subnet allocation
+type SubnetRequest struct {
+	ID                 int64     `json:"id"`
+	RequesterID        int64     `json:"requester_id"`
+	RequesterUsername  string    `json:"requester_username,omitempty"`
+	SectionID          int64     `json:"section_id"`
+	ParentSubnetID     *int64    `json:"parent_subnet_id,omitempty"`
+	RequestedPrefixLen int       `json:"requested_prefix_len"`
+	Purpose            string    `json:"purpose"`
+	Status             string    `json:"status"`
+	ReviewerID         *int64    `json:"reviewer_id,omitempty"`
+	ReviewerUsername   string    `json:"reviewer_username,omitempty"`
+	ReviewerNote       string    `json:"reviewer_note"`
+	SubnetID           *int64    `json:"subnet_id,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+}
+
+// IPRequest represents a user request for an IP address assignment
+type IPRequest struct {
+	ID                int64     `json:"id"`
+	RequesterID       int64     `json:"requester_id"`
+	RequesterUsername string    `json:"requester_username,omitempty"`
+	SubnetID          int64     `json:"subnet_id"`
+	RequestedIP       *string   `json:"requested_ip,omitempty"`
+	DNSName           string    `json:"dns_name"`
+	Purpose           string    `json:"purpose"`
+	Status            string    `json:"status"`
+	ReviewerID        *int64    `json:"reviewer_id,omitempty"`
+	ReviewerUsername  string    `json:"reviewer_username,omitempty"`
+	ReviewerNote      string    `json:"reviewer_note"`
+	IPAddressID       *int64    `json:"ip_address_id,omitempty"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+// RequestComment represents a comment on a subnet or IP request
+type RequestComment struct {
+	ID          int64     `json:"id"`
+	RequestType string    `json:"request_type"`
+	RequestID   int64     `json:"request_id"`
+	AuthorID    int64     `json:"author_id"`
+	AuthorUsername string `json:"author_username,omitempty"`
+	Body        string    `json:"body"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // DeviceInterface represents a network interface on a device

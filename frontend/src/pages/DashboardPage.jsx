@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getDashboardSummary, getDashboardRecentActivity } from '../api/client'
 
 function formatRelativeTime(isoString) {
@@ -47,9 +48,12 @@ function UtilisationBar({ pct }) {
   )
 }
 
-function SummaryCard({ label, value, sub }) {
+function SummaryCard({ label, value, sub, onClick, highlight }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex flex-col gap-1">
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex flex-col gap-1 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${highlight ? 'ring-2 ring-yellow-400' : ''}`}
+      onClick={onClick}
+    >
       <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
       <span className="text-3xl font-bold text-gray-800 dark:text-gray-100">{value}</span>
       {sub && <span className="text-xs text-gray-400 dark:text-gray-500">{sub}</span>}
@@ -58,6 +62,10 @@ function SummaryCard({ label, value, sub }) {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
+  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const isAdmin = user?.role === 'admin'
+
   const [summary, setSummary] = useState(null)
   const [activity, setActivity] = useState([])
   const [loading, setLoading] = useState(true)
@@ -136,6 +144,22 @@ export default function DashboardPage() {
           sub="assigned IPs"
         />
       </div>
+
+      {/* Pending Requests card (admin) */}
+      {isAdmin && (() => {
+        const pendingCount = (summary?.pending_subnet_requests ?? 0) + (summary?.pending_ip_requests ?? 0)
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <SummaryCard
+              label="Pending Requests"
+              value={pendingCount}
+              sub={pendingCount > 0 ? 'Click to review' : 'No pending requests'}
+              onClick={() => navigate('/admin/requests')}
+              highlight={pendingCount > 0}
+            />
+          </div>
+        )
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top subnets */}

@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSectionsPaginated, createSection, updateSection, deleteSection, searchSections } from '../api/client'
+import { submitSubnetRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 
 const DEFAULT_LIMIT = 25
 
+const SUBNET_REQUEST_EMPTY = { section_id: '', prefix_length: '24', purpose: '', parent_subnet_id: '' }
+
 export default function SectionsPage() {
   const navigate = useNavigate()
+  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const canCreateSubnet = user?.role === 'admin'
+
   const [sections, setSections] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -16,8 +22,11 @@ export default function SectionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [isSearchActive, setIsSearchActive] = useState(false)
-  const [modal, setModal] = useState(null) // null | 'create' | { edit: section }
+  const [modal, setModal] = useState(null) // null | 'create' | { edit: section } | { requestSubnet: section|null }
   const [form, setForm] = useState({ name: '', description: '' })
+  const [subnetReqForm, setSubnetReqForm] = useState(SUBNET_REQUEST_EMPTY)
+  const [subnetReqError, setSubnetReqError] = useState(null)
+  const [subnetReqSuccess, setSubnetReqSuccess] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
@@ -110,15 +119,54 @@ export default function SectionsPage() {
     }
   }
 
+  function openSubnetRequest(section) {
+    setSubnetReqForm({ ...SUBNET_REQUEST_EMPTY, section_id: section ? String(section.id) : '' })
+    setSubnetReqError(null)
+    setSubnetReqSuccess(false)
+    setModal({ requestSubnet: section })
+  }
+
+  async function handleSubnetRequestSubmit(e) {
+    e.preventDefault()
+    setSubnetReqError(null)
+    setSaving(true)
+    try {
+      await submitSubnetRequest({
+        section_id: subnetReqForm.section_id ? parseInt(subnetReqForm.section_id) : null,
+        prefix_length: parseInt(subnetReqForm.prefix_length),
+        purpose: subnetReqForm.purpose,
+        parent_subnet_id: subnetReqForm.parent_subnet_id ? parseInt(subnetReqForm.parent_subnet_id) : null,
+      })
+      setSubnetReqSuccess(true)
+      setTimeout(() => setModal(null), 1500)
+    } catch (err) {
+      setSubnetReqError(err.response?.data?.error || 'Failed to submit request')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading sections...</p>
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800">Sections</h1>
-        <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-          + New Section
-        </button>
+        <div className="flex items-center gap-2">
+          {!canCreateSubnet && (
+            <button
+              onClick={() => openSubnetRequest(null)}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
+            >
+              Request Subnet
+            </button>
+          )}
+          {canCreateSubnet && (
+            <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+              + New Section
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
@@ -180,15 +228,22 @@ export default function SectionsPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
-                  {deleteConfirm === s.id ? (
+                  {!canCreateSubnet && (
+                    <button onClick={() => openSubnetRequest(s)} className="text-green-600 hover:text-green-800 text-xs font-medium">Request Subnet</button>
+                  )}
+                  {canCreateSubnet && (
                     <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
-                      <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                      <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                      {deleteConfirm === s.id ? (
+                        <>
+                          <span className="text-red-600 text-xs">Confirm?</span>
+                          <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirm(s.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                      )}
                     </>
-                  ) : (
-                    <button onClick={() => setDeleteConfirm(s.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                   )}
                 </td>
               </tr>
@@ -206,7 +261,7 @@ export default function SectionsPage() {
         />
       )}
 
-      {modal && (
+      {(modal === 'create' || modal?.edit) && (
         <Modal title={modal === 'create' ? 'New Section' : 'Edit Section'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -233,6 +288,84 @@ export default function SectionsPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {modal?.requestSubnet !== undefined && (
+        <Modal title="Request Subnet" onClose={() => setModal(null)}>
+          {subnetReqSuccess ? (
+            <div className="py-4 text-center text-green-600 font-medium">Request submitted successfully!</div>
+          ) : (
+            <form onSubmit={handleSubnetRequestSubmit} className="space-y-4">
+              {subnetReqError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{subnetReqError}</div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Section <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  value={subnetReqForm.section_id}
+                  onChange={e => setSubnetReqForm(f => ({ ...f, section_id: e.target.value }))}
+                  required
+                >
+                  <option value="">Select a section...</option>
+                  {sections.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Prefix Length <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="8"
+                  max="30"
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  placeholder="24"
+                  value={subnetReqForm.prefix_length}
+                  onChange={e => setSubnetReqForm(f => ({ ...f, prefix_length: e.target.value }))}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Between 8 and 30</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Parent Subnet ID <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  placeholder="Parent subnet ID (if known)"
+                  value={subnetReqForm.parent_subnet_id}
+                  onChange={e => setSubnetReqForm(f => ({ ...f, parent_subnet_id: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Purpose <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  rows={3}
+                  placeholder="Describe why you need this subnet..."
+                  value={subnetReqForm.purpose}
+                  onChange={e => setSubnetReqForm(f => ({ ...f, purpose: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50">
+                  {saving ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
+          )}
         </Modal>
       )}
     </div>

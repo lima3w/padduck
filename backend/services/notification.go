@@ -25,6 +25,13 @@ const (
 	NotifAPITokenRevoked = "api-token-revoked"
 	NotifRoleChanged     = "role-changed"
 	NotifSessionRevoked  = "session-revoked"
+
+	// Request workflow notifications (#205)
+	NotifRequestSubmitted     = "request-submitted"
+	NotifRequestApprovedSubnet = "request-approved-subnet"
+	NotifRequestApprovedIP    = "request-approved-ip"
+	NotifRequestRejected      = "request-rejected"
+	NotifRequestComment       = "request-comment"
 )
 
 // criticalNotifications lists templates that bypass preferences and rate limits.
@@ -205,6 +212,78 @@ Time:      {{.Timestamp}}
 If you did not sign out this session, someone else may have access to your account. Change your password and review your active sessions immediately.
 
 If this was not you, secure your account immediately.
+
+IPAM System`,
+	},
+
+	NotifRequestSubmitted: {
+		Subject: "New {{.RequestType}} request submitted",
+		Body: `Hello {{.Username}},
+
+A new {{.RequestType}} request has been submitted and requires your review.
+
+Request ID: {{.RequestID}}
+Purpose:    {{.Purpose}}
+
+Please log in to the IPAM system to review and action this request.
+
+IPAM System`,
+	},
+
+	NotifRequestApprovedSubnet: {
+		Subject: "Your subnet request has been approved",
+		Body: `Hello {{.Username}},
+
+Your subnet request has been approved.
+
+Request ID:  {{.RequestID}}
+Subnet CIDR: {{.SubnetCIDR}}
+{{if .ReviewerNote}}Reviewer Note: {{.ReviewerNote}}{{end}}
+
+Log in to the IPAM system to view your new subnet.
+
+IPAM System`,
+	},
+
+	NotifRequestApprovedIP: {
+		Subject: "Your IP address request has been approved",
+		Body: `Hello {{.Username}},
+
+Your IP address request has been approved.
+
+Request ID:  {{.RequestID}}
+Assigned IP: {{.AssignedIP}}
+{{if .ReviewerNote}}Reviewer Note: {{.ReviewerNote}}{{end}}
+
+Log in to the IPAM system to view your assigned IP address.
+
+IPAM System`,
+	},
+
+	NotifRequestRejected: {
+		Subject: "Your {{.RequestType}} request has been rejected",
+		Body: `Hello {{.Username}},
+
+Your {{.RequestType}} request has been rejected.
+
+Request ID:    {{.RequestID}}
+Reviewer Note: {{.ReviewerNote}}
+
+If you have questions, please contact your administrator.
+
+IPAM System`,
+	},
+
+	NotifRequestComment: {
+		Subject: "New comment on your {{.RequestType}} request",
+		Body: `Hello {{.Username}},
+
+A new comment has been added to your {{.RequestType}} request (ID: {{.RequestID}}).
+
+From:    {{.AuthorName}}
+Comment: {{.Body}}
+
+Log in to the IPAM system to view the full conversation.
 
 IPAM System`,
 	},

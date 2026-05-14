@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta } from '../api/client'
+import { submitIPRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
@@ -39,8 +40,13 @@ function loadColumnVisibility() {
   return DEFAULT_VISIBLE
 }
 
+const IP_REQUEST_EMPTY = { specific_ip: '', dns_name: '', purpose: '' }
+
 export default function IPAddressesPage() {
   const { subnetID } = useParams()
+  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const canAssignIP = user?.role === 'admin'
+
   const [subnet, setSubnet] = useState(null)
   const [ips, setIPs] = useState([])
   const [total, setTotal] = useState(0)
@@ -54,7 +60,7 @@ export default function IPAddressesPage() {
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [advFilters, setAdvFilters] = useState({ tag_id: '', mac_address: '', ptr_record: '', is_assigned: '' })
-  const [modal, setModal] = useState(null) // null | 'create' | { assign: ip } | { meta: ip }
+  const [modal, setModal] = useState(null) // null | 'create' | { assign: ip } | { meta: ip } | 'requestIP'
   const [form, setForm] = useState({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '' })
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -62,6 +68,9 @@ export default function IPAddressesPage() {
   const [showColPicker, setShowColPicker] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
   const [cfFilterRows, setCfFilterRows] = useState([])
+  const [ipReqForm, setIPReqForm] = useState(IP_REQUEST_EMPTY)
+  const [ipReqError, setIPReqError] = useState(null)
+  const [ipReqSuccess, setIPReqSuccess] = useState(false)
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -280,6 +289,37 @@ export default function IPAddressesPage() {
     }
   }
 
+  function openIPRequest() {
+    setIPReqForm(IP_REQUEST_EMPTY)
+    setIPReqError(null)
+    setIPReqSuccess(false)
+    setModal('requestIP')
+  }
+
+  async function handleIPRequestSubmit(e) {
+    e.preventDefault()
+    setIPReqError(null)
+    setSaving(true)
+    try {
+      await submitIPRequest({
+        subnet_id: parseInt(subnetID),
+        specific_ip: ipReqForm.specific_ip || null,
+        dns_name: ipReqForm.dns_name || null,
+        purpose: ipReqForm.purpose,
+      })
+      setIPReqSuccess(true)
+      setTimeout(() => setModal(null), 1500)
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setIPReqError('That IP address is already taken. Please choose a different one or leave blank for auto-assign.')
+      } else {
+        setIPReqError(err.response?.data?.error || 'Failed to submit request')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading IP addresses...</p>
 
   const col = (key) => visibleCols.includes(key)
@@ -324,9 +364,16 @@ export default function IPAddressesPage() {
               </div>
             )}
           </div>
-          <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-            + New IP
-          </button>
+          {!canAssignIP && (
+            <button onClick={openIPRequest} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
+              Request IP
+            </button>
+          )}
+          {canAssignIP && (
+            <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+              + New IP
+            </button>
+          )}
         </div>
       </div>
 
@@ -703,6 +750,69 @@ export default function IPAddressesPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {modal === 'requestIP' && (
+        <Modal title="Request IP Address" onClose={() => setModal(null)}>
+          {ipReqSuccess ? (
+            <div className="py-4 text-center text-green-600 font-medium">Request submitted successfully!</div>
+          ) : (
+            <form onSubmit={handleIPRequestSubmit} className="space-y-4">
+              {ipReqError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{ipReqError}</div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subnet</label>
+                <input
+                  className="w-full border rounded px-3 py-2 text-sm font-mono bg-gray-50 text-gray-500"
+                  value={subnet ? `${subnet.networkAddress}/${subnet.prefixLength}` : `Subnet #${subnetID}`}
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Specific IP <span className="text-gray-400 font-normal">(optional — leave blank for auto-assign)</span>
+                </label>
+                <input
+                  className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. 192.168.1.42"
+                  value={ipReqForm.specific_ip}
+                  onChange={e => setIPReqForm(f => ({ ...f, specific_ip: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  DNS Name <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. myserver.example.com"
+                  value={ipReqForm.dns_name}
+                  onChange={e => setIPReqForm(f => ({ ...f, dns_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Purpose <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder="Describe why you need this IP address..."
+                  value={ipReqForm.purpose}
+                  onChange={e => setIPReqForm(f => ({ ...f, purpose: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50">
+                  {saving ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
+          )}
         </Modal>
       )}
 
