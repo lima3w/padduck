@@ -276,7 +276,7 @@ func (r *Repository) DeleteSection(ctx context.Context, id int64) error {
 // Subnet operations
 
 // subnetSelectCols is the base column list for subnets (no JOIN).
-const subnetSelectCols = `s.id, s.section_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at`
+const subnetSelectCols = `s.id, s.section_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at`
 
 const subnetFromJoin = `FROM subnets s LEFT JOIN nameservers ns ON s.nameserver_id = ns.id`
 
@@ -291,7 +291,7 @@ func scanSubnet(row interface {
 	err := row.Scan(
 		&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
 		&subnet.Description, &subnet.Gateway, &subnet.AutoReserveFirst, &subnet.AutoReserveLast,
-		&subnet.LocationID, &subnet.NameserverID, &subnet.CreatedAt, &subnet.UpdatedAt,
+		&subnet.LocationID, &subnet.NameserverID, &subnet.VLANID, &subnet.CreatedAt, &subnet.UpdatedAt,
 		&nsID, &nsName, &nsServer1, &nsServer2, &nsServer3, &nsDesc, &nsCreatedAt, &nsUpdatedAt,
 	)
 	if err != nil {
@@ -332,6 +332,16 @@ func (r *Repository) CreateSubnetWithLocation(ctx context.Context, sectionID int
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 	var id int64
 	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nsID).Scan(&id); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, id)
+}
+
+func (r *Repository) CreateSubnetWithVLAN(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id, vlan_id)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
+	var id int64
+	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -400,6 +410,16 @@ func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, des
 	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
 	          location_id=$5, nameserver_id=$6, updated_at=CURRENT_TIMESTAMP WHERE id=$7`
 	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nsID, id); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, id)
+}
+
+// UpdateSubnetWithVLAN updates a subnet including vlan_id assignment.
+func (r *Repository) UpdateSubnetWithVLAN(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
+	          location_id=$5, nameserver_id=$6, vlan_id=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8`
+	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID, id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -1147,6 +1167,26 @@ func (r *Repository) UpdateVLAN(ctx context.Context, id int64, domainID *int64, 
 func (r *Repository) DeleteVLAN(ctx context.Context, id int64) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM vlans WHERE id = $1`, id)
 	return err
+}
+
+// GetVLANSubnets returns all subnets assigned to a VLAN.
+func (r *Repository) GetVLANSubnets(ctx context.Context, vlanID int64) ([]*models.Subnet, error) {
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.vlan_id = $1 ORDER BY s.network_address`
+	rows, err := r.db.Query(ctx, query, vlanID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	subnets := make([]*models.Subnet, 0)
+	for rows.Next() {
+		subnet, err := scanSubnet(rows)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, subnet)
+	}
+	return subnets, rows.Err()
 }
 
 // VLANDomain operations

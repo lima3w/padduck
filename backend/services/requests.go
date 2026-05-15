@@ -75,7 +75,7 @@ func (s *Service) ApproveSubnetRequest(ctx context.Context, requestID, reviewerI
 		return nil, fmt.Errorf("could not allocate subnet block: %w", err)
 	}
 
-	subnet, err := s.CreateSubnet(ctx, sr.SectionID, networkAddr, sr.RequestedPrefixLen, sr.Purpose, nil, false, false, nil, nil)
+	subnet, err := s.CreateSubnet(ctx, sr.SectionID, networkAddr, sr.RequestedPrefixLen, sr.Purpose, nil, false, false, nil, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create subnet: %w", err)
 	}

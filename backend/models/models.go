@@ -156,6 +156,7 @@ type Subnet struct {
 	LocationID       *int64             `json:"location_id,omitempty"`
 	NameserverID     *int64             `json:"nameserver_id,omitempty"`
 	Nameserver       *Nameserver        `json:"nameserver,omitempty"`
+	VLANID           *int64             `json:"vlan_id,omitempty"`
 	CreatedAt        time.Time          `json:"created_at"`
 	UpdatedAt        time.Time          `json:"updated_at"`
 	CustomFields     map[string]*string `json:"custom_fields,omitempty"`

@@ -149,6 +149,30 @@ func TestListVLANsByVRF_InvalidVRFID(t *testing.T) {
 	}
 }
 
+// GetVLANSubnets service unit tests
+
+func TestGetVLANSubnets_InvalidID(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name   string
+		vlanID int64
+	}{
+		{"zero", 0},
+		{"negative", -1},
+		{"large negative", -100},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.GetVLANSubnets(ctx, tt.vlanID)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid VLAN ID")
+		})
+	}
+}
+
 // VLANDomain service unit tests
 
 func TestCreateVLANDomain_EmptyName(t *testing.T) {

@@ -161,6 +161,28 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+func (h *Handler) GetVLANSubnets(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+	}
+	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+		return nil
+	}
+
+	subnets, err := h.service.GetVLANSubnets(c.Context(), int64(id))
+	if err != nil {
+		log.Printf("Error getting subnets for VLAN %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	if subnets == nil {
+		subnets = make([]*models.Subnet, 0)
+	}
+
+	return c.JSON(subnets)
+}
+
 func (h *Handler) ListVLANsByVRF(c *fiber.Ctx) error {
 	vrfID, err := c.ParamsInt("vrfID")
 	if err != nil {

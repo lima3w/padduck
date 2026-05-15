@@ -148,7 +148,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateSubnet(ctx, tt.sectionID, tt.networkAddress, tt.prefixLength, "", nil, false, false, nil, nil)
+			_, err := svc.CreateSubnet(ctx, tt.sectionID, tt.networkAddress, tt.prefixLength, "", nil, false, false, nil, nil, nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorContains)
@@ -216,7 +216,7 @@ func TestUpdateSubnet_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateSubnet(ctx, tt.id, "new description", nil, false, false, nil, nil)
+			_, err := svc.UpdateSubnet(ctx, tt.id, "new description", nil, false, false, nil, nil, nil)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})

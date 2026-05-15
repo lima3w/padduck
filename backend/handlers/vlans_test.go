@@ -13,6 +13,43 @@ import (
 var unprivVLAN = &models.User{ID: 0, Role: "viewer"}
 
 // ---------------------------------------------------------------------------
+// GetVLANSubnets — GET /vlans/:id/subnets
+// ---------------------------------------------------------------------------
+
+func TestGetVLANSubnets_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans/:id/subnets", h.GetVLANSubnets)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/1/subnets", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGetVLANSubnets_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans/:id/subnets", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.GetVLANSubnets(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/1/subnets", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGetVLANSubnets_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans/:id/subnets", h.GetVLANSubnets)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/abc/subnets", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
 // ListVLANDomains — GET /vlan-domains
 // ---------------------------------------------------------------------------
 
