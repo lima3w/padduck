@@ -14,10 +14,14 @@ type CreateScanJobRequest struct {
 }
 
 type UpdateScanJobRequest struct {
-	Name         string  `json:"name"`
-	SubnetIDs    []int64 `json:"subnet_ids"`
-	ScheduleCron *string `json:"schedule_cron,omitempty"`
-	IsActive     bool    `json:"is_active"`
+	Name            string  `json:"name"`
+	SubnetIDs       []int64 `json:"subnet_ids"`
+	ScheduleCron    *string `json:"schedule_cron,omitempty"`
+	IsActive        bool    `json:"is_active"`
+	PingConcurrency int     `json:"ping_concurrency,omitempty"`
+	NotifyOnChange  bool    `json:"notify_on_change,omitempty"`
+	ScanType        string  `json:"scan_type,omitempty"`
+	AgentID         *int64  `json:"agent_id,omitempty"`
 }
 
 // ListScanJobs handles GET /api/v1/admin/scan-jobs
@@ -81,7 +85,7 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
-	job, err := h.service.Discovery.UpdateJob(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive)
+	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}

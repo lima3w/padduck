@@ -62,6 +62,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"allow_subnet_overlaps":        true,
 		"default_auto_reserve_first":   true,
 		"default_auto_reserve_last":    true,
+		"scanner_resolve_hostnames":    true,
 	}
 
 	for key, value := range updates {

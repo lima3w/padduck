@@ -4,19 +4,27 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"ipam-next/internal/scanner"
 	"ipam-next/models"
 )
 
 // DiscoveryService handles network scanning and IP detection
 type DiscoveryService struct {
 	repository discoveryRepo
+	config     *ConfigService
+	// in-flight tracks running job IDs (value is struct{})
+	inFlight sync.Map
+	// semaphore channel limits concurrent RunJob executions
+	semaphore chan struct{}
 }
 
 type discoveryRepo interface {
@@ -27,15 +35,54 @@ type discoveryRepo interface {
 	ListScanJobs(ctx context.Context) ([]*models.ScanJob, error)
 	ListActiveScanJobs(ctx context.Context) ([]*models.ScanJob, error)
 	UpdateScanJob(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool) (*models.ScanJob, error)
+	UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64) (*models.ScanJob, error)
 	UpdateScanJobRunTime(ctx context.Context, id int64, nextRunAt *time.Time) error
 	DeleteScanJob(ctx context.Context, id int64) error
-	CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64) (*models.ScanResult, error)
+	CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64, ptrRecord *string, fwdRevMismatch bool) (*models.ScanResult, error)
 	ListScanResultsByJob(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error)
 	ListScanResultsBySubnet(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error)
+	SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string) error
+	// Port scan (#214)
+	UpdateIPPortScan(ctx context.Context, ipID int64, ports map[string]bool) error
+	// Scan runs (#211)
+	CreateScanRun(ctx context.Context, scanJobID int64) (*models.ScanRun, error)
+	FinishScanRun(ctx context.Context, runID int64, newCount, goneCount, changedCount int) error
+	CreateScanRunChange(ctx context.Context, runID int64, ipAddress, changeType string) (*models.ScanRunChange, error)
+	ListScanRuns(ctx context.Context, jobID int64, limit int) ([]*models.ScanRun, error)
+	GetScanRun(ctx context.Context, runID int64) (*models.ScanRun, error)
+	ListScanRunChanges(ctx context.Context, runID int64) ([]*models.ScanRunChange, error)
+	GetLastAliveIPsForJob(ctx context.Context, jobID int64) (map[string]bool, error)
+	// SNMP (#210)
+	UpdateIPFromSNMP(ctx context.Context, ipID int64, macAddress, hostname string) error
+	// Scan agents (#212)
+	CreateScanAgent(ctx context.Context, name, tokenHash string) (*models.ScanAgent, error)
+	GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error)
+	GetScanAgentByID(ctx context.Context, id int64) (*models.ScanAgent, error)
+	ListScanAgents(ctx context.Context) ([]*models.ScanAgent, error)
+	UpdateScanAgentLastSeen(ctx context.Context, id int64) error
+	UpdateScanAgentActive(ctx context.Context, id int64, isActive bool) (*models.ScanAgent, error)
+	UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string) (*models.ScanAgent, error)
+	DeleteScanAgent(ctx context.Context, id int64) error
+	ListScanJobsForAgent(ctx context.Context, agentID int64) ([]*models.ScanJob, error)
 }
 
-func NewDiscoveryService(repo discoveryRepo) *DiscoveryService {
-	return &DiscoveryService{repository: repo}
+// maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
+func maxConcurrentJobsFromEnv() int {
+	if v := os.Getenv("SCAN_MAX_CONCURRENT_JOBS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 1 {
+			return n
+		}
+	}
+	return 4
+}
+
+func NewDiscoveryService(repo discoveryRepo, configSvc *ConfigService) *DiscoveryService {
+	maxJobs := maxConcurrentJobsFromEnv()
+	return &DiscoveryService{
+		repository: repo,
+		config:     configSvc,
+		semaphore:  make(chan struct{}, maxJobs),
+	}
 }
 
 // PingHost checks if a host responds to ICMP ping, returning response time in ms
@@ -50,15 +97,74 @@ func PingHost(host string, timeout time.Duration) (bool, int64) {
 	return true, elapsed
 }
 
-// ScanSubnet scans all IPs in a subnet CIDR range for liveness
-func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64, networkAddr string, prefixLen int, existingIPs map[string]int64, concurrency int) ([]*models.ScanResult, error) {
+// portScanConcurrency returns the configured per-job port scan concurrency.
+func (d *DiscoveryService) portScanConcurrency() int {
+	if d.config != nil {
+		if v, _ := d.config.Get("scanner_port_scan_concurrency"); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				return n
+			}
+		}
+	}
+	return 10
+}
+
+// parsePorts splits a comma-separated port list string into a slice of strings.
+func parsePorts(portList string) []string {
+	raw := strings.Split(portList, ",")
+	out := make([]string, 0, len(raw))
+	for _, p := range raw {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// ScanSubnet scans all IPs in a subnet CIDR range for liveness.
+// #248: concurrency comes from job.PingConcurrency.
+// #214: performs port scan on alive IPs when enabled.
+// #210: performs SNMP scan when scan_type includes snmp.
+func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64, networkAddr string, prefixLen int, existingIPs map[string]int64, concurrency int, runID int64, prevAlive map[string]bool, job *models.ScanJob) ([]*models.ScanResult, int, int, int, error) {
 	if concurrency <= 0 {
 		concurrency = 20
 	}
 
+	resolveHostnames := true
+	portScanEnabled := false
+	portList := "22,80,443,3306,5432,8080,8443"
+
+	if d.config != nil {
+		if v, _ := d.config.Get("scanner_resolve_hostnames"); v == "false" {
+			resolveHostnames = false
+		}
+		if v, _ := d.config.Get("scanner_port_scan_enabled"); v == "true" {
+			portScanEnabled = true
+		}
+		if v, _ := d.config.Get("scanner_port_list"); v != "" {
+			portList = v
+		}
+	}
+
+	ports := parsePorts(portList)
+	portConcurrency := d.portScanConcurrency()
+
+	doSNMP := job != nil && (job.ScanType == "snmp" || job.ScanType == "ping+snmp")
+	snmpCommunity := "public"
+	snmpVersion := "2c"
+	if d.config != nil {
+		if v, _ := d.config.Get("scanner_snmp_community"); v != "" {
+			snmpCommunity = v
+		}
+		if v, _ := d.config.Get("scanner_snmp_version"); v != "" {
+			snmpVersion = v
+		}
+	}
+
 	ips, err := enumerateCIDR(networkAddr, prefixLen)
 	if err != nil {
-		return nil, fmt.Errorf("enumerate CIDR: %w", err)
+		return nil, 0, 0, 0, fmt.Errorf("enumerate CIDR: %w", err)
 	}
 
 	type work struct {
@@ -68,6 +174,8 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		ip             string
 		alive          bool
 		responseTimeMs int64
+		ptr            *string
+		fwdRevMismatch bool
 	}
 
 	workCh := make(chan work, len(ips))
@@ -85,7 +193,15 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 				default:
 				}
 				alive, ms := PingHost(w.ip, 2*time.Second)
-				resultCh <- result{ip: w.ip, alive: alive, responseTimeMs: ms}
+				r := result{ip: w.ip, alive: alive, responseTimeMs: ms}
+				if alive && resolveHostnames {
+					dns := scanner.ResolveHostname(w.ip, 2*time.Second)
+					if dns.PTR != "" {
+						r.ptr = &dns.PTR
+						r.fwdRevMismatch = dns.FwdRevMismatch
+					}
+				}
+				resultCh <- r
 			}
 		}()
 	}
@@ -100,6 +216,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		close(resultCh)
 	}()
 
+	var newCount, goneCount, changedCount int
 	scanResults := make([]*models.ScanResult, 0, len(ips))
 	for r := range resultCh {
 		var ipAddressID *int64
@@ -110,31 +227,126 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		if r.responseTimeMs > 0 {
 			ms = &r.responseTimeMs
 		}
-		sr, err := d.repository.CreateScanResult(ctx, jobID, subnetID, ipAddressID, r.ip, r.alive, ms)
+		sr, err := d.repository.CreateScanResult(ctx, jobID, subnetID, ipAddressID, r.ip, r.alive, ms, r.ptr, r.fwdRevMismatch)
 		if err == nil {
 			scanResults = append(scanResults, sr)
+			if r.ptr != nil && ipAddressID != nil {
+				_ = d.repository.SetIPAddressPTRFromScan(ctx, *ipAddressID, *r.ptr)
+			}
+		}
+
+		// --- Port scan (#214) ---
+		if portScanEnabled && r.alive && ipAddressID != nil {
+			portResult := scanner.ScanPorts(ctx, r.ip, ports, portConcurrency, time.Second)
+			if err2 := d.repository.UpdateIPPortScan(ctx, *ipAddressID, portResult); err2 != nil {
+				log.Printf("port scan update error ip=%s: %v", r.ip, err2)
+			}
+		}
+
+		// --- SNMP scan (#210) ---
+		if doSNMP && r.alive && ipAddressID != nil {
+			snmpResult, err2 := scanner.ScanSNMP(ctx, r.ip, snmpCommunity, snmpVersion, 5*time.Second)
+			if err2 == nil && snmpResult != nil {
+				mac := ""
+				if len(snmpResult.Interfaces) > 0 {
+					mac = snmpResult.Interfaces[0].MACAddress
+				}
+				_ = d.repository.UpdateIPFromSNMP(ctx, *ipAddressID, mac, snmpResult.SysName)
+			}
+		}
+
+		// --- Change detection (#211) ---
+		if runID > 0 && prevAlive != nil {
+			wasAlive, hadPrev := prevAlive[r.ip]
+			if !hadPrev && r.alive {
+				newCount++
+				_, _ = d.repository.CreateScanRunChange(ctx, runID, r.ip, "new")
+			} else if hadPrev && wasAlive && !r.alive {
+				goneCount++
+				_, _ = d.repository.CreateScanRunChange(ctx, runID, r.ip, "gone")
+			} else if hadPrev && !wasAlive && r.alive {
+				changedCount++
+				_, _ = d.repository.CreateScanRunChange(ctx, runID, r.ip, "changed")
+			}
 		}
 	}
-	return scanResults, nil
+	return scanResults, newCount, goneCount, changedCount, nil
 }
 
-// RunJob executes a scan job immediately
+// RunJob executes a scan job immediately.
+// #248: acquires semaphore slot and records in-flight state.
 func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) error {
+	// Check in-flight (skip if already running)
+	if _, loaded := d.inFlight.LoadOrStore(job.ID, struct{}{}); loaded {
+		log.Printf("scan job %d already running, skipping", job.ID)
+		return nil
+	}
+	defer d.inFlight.Delete(job.ID)
+
+	// Acquire semaphore slot
+	select {
+	case d.semaphore <- struct{}{}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	defer func() { <-d.semaphore }()
+
+	log.Printf("scan job %d started", job.ID)
+	defer log.Printf("scan job %d finished", job.ID)
+
+	concurrency := job.PingConcurrency
+	if concurrency <= 0 {
+		concurrency = 20
+	}
+
+	// Create scan run (#211)
+	var runID int64
+	var prevAlive map[string]bool
+	run, err := d.repository.CreateScanRun(ctx, job.ID)
+	if err == nil {
+		runID = run.ID
+		prevAlive, _ = d.repository.GetLastAliveIPsForJob(ctx, job.ID)
+	} else {
+		log.Printf("scan job %d: create scan run error: %v", job.ID, err)
+	}
+
+	var totalNew, totalGone, totalChanged int
+
 	for _, subnetID := range job.SubnetIDs {
 		subnet, err := d.repository.GetSubnetByID(ctx, subnetID)
 		if err != nil {
+			log.Printf("scan job %d: get subnet %d error: %v", job.ID, subnetID, err)
 			continue
 		}
 		ips, err := d.repository.ListIPAddressesBySubnet(ctx, subnetID)
 		if err != nil {
+			log.Printf("scan job %d: list IPs for subnet %d error: %v", job.ID, subnetID, err)
 			continue
 		}
 		existingIPs := make(map[string]int64, len(ips))
 		for _, ip := range ips {
 			existingIPs[ip.Address] = ip.ID
 		}
-		_, _ = d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, 20)
+		_, n, g, ch, err := d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, concurrency, runID, prevAlive, job)
+		if err != nil {
+			log.Printf("scan job %d: subnet %d scan error: %v", job.ID, subnetID, err)
+		}
+		totalNew += n
+		totalGone += g
+		totalChanged += ch
 	}
+
+	// Finish scan run (#211)
+	if runID > 0 {
+		if err := d.repository.FinishScanRun(ctx, runID, totalNew, totalGone, totalChanged); err != nil {
+			log.Printf("scan job %d: finish scan run error: %v", job.ID, err)
+		}
+		// notify_on_change: log (full email notification would need notification service wiring)
+		if job.NotifyOnChange && (totalNew+totalGone+totalChanged) > 0 {
+			log.Printf("scan job %d: changes detected: new=%d gone=%d changed=%d (notify_on_change=true)", job.ID, totalNew, totalGone, totalChanged)
+		}
+	}
+
 	return d.repository.UpdateScanJobRunTime(ctx, job.ID, nil)
 }
 
@@ -174,6 +386,29 @@ func (d *DiscoveryService) UpdateJob(ctx context.Context, id int64, name string,
 	return d.repository.UpdateScanJob(ctx, id, name, subnetIDs, scheduleCron, isActive)
 }
 
+// UpdateJobFull updates all mutable fields of a scan job.
+func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64) (*models.ScanJob, error) {
+	if scheduleCron != nil && *scheduleCron != "" {
+		if err := validateCron(*scheduleCron); err != nil {
+			return nil, fmt.Errorf("invalid cron expression: %w", err)
+		}
+	}
+	if pingConcurrency <= 0 {
+		pingConcurrency = 20
+	}
+	if pingConcurrency > 100 {
+		pingConcurrency = 100
+	}
+	validTypes := map[string]bool{"ping": true, "snmp": true, "ping+snmp": true}
+	if scanType == "" {
+		scanType = "ping"
+	}
+	if !validTypes[scanType] {
+		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
+	}
+	return d.repository.UpdateScanJobFull(ctx, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID)
+}
+
 // DeleteJob deletes a scan job
 func (d *DiscoveryService) DeleteJob(ctx context.Context, id int64) error {
 	return d.repository.DeleteScanJob(ctx, id)
@@ -195,7 +430,26 @@ func (d *DiscoveryService) ListSubnetResults(ctx context.Context, subnetID int64
 	return d.repository.ListScanResultsBySubnet(ctx, subnetID, limit)
 }
 
-// StartScheduler starts the background scheduler that runs active jobs on their cron schedule
+// ListScanRuns returns the last 50 scan runs for a job.
+func (d *DiscoveryService) ListScanRuns(ctx context.Context, jobID int64) ([]*models.ScanRun, error) {
+	return d.repository.ListScanRuns(ctx, jobID, 50)
+}
+
+// GetScanRunWithChanges returns a scan run and its changes.
+func (d *DiscoveryService) GetScanRunWithChanges(ctx context.Context, runID int64) (*models.ScanRun, []*models.ScanRunChange, error) {
+	run, err := d.repository.GetScanRun(ctx, runID)
+	if err != nil {
+		return nil, nil, err
+	}
+	changes, err := d.repository.ListScanRunChanges(ctx, runID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return run, changes, nil
+}
+
+// StartScheduler starts the background scheduler that runs active jobs on their cron schedule.
+// #248: uses bounded worker pool via semaphore + in-flight tracking.
 func (d *DiscoveryService) StartScheduler(ctx context.Context) {
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
@@ -296,4 +550,121 @@ func enumerateCIDR(networkAddr string, prefixLen int) ([]string, error) {
 		ips = append(ips, net.IP(b).String())
 	}
 	return ips, nil
+}
+
+// ---------------------------------------------------------------------------
+// Scan agent service methods (#212)
+// ---------------------------------------------------------------------------
+
+// CreateAgent creates a new scan agent and returns the raw token (shown once).
+func (d *DiscoveryService) CreateAgent(ctx context.Context, name string) (*models.ScanAgent, string, error) {
+	if name == "" {
+		return nil, "", fmt.Errorf("agent name is required")
+	}
+	rawToken, tokenHash, err := generateAgentToken()
+	if err != nil {
+		return nil, "", fmt.Errorf("generate token: %w", err)
+	}
+	agent, err := d.repository.CreateScanAgent(ctx, name, tokenHash)
+	if err != nil {
+		return nil, "", err
+	}
+	return agent, rawToken, nil
+}
+
+// ListAgents returns all scan agents.
+func (d *DiscoveryService) ListAgents(ctx context.Context) ([]*models.ScanAgent, error) {
+	return d.repository.ListScanAgents(ctx)
+}
+
+// GetAgent retrieves a scan agent by ID.
+func (d *DiscoveryService) GetAgent(ctx context.Context, id int64) (*models.ScanAgent, error) {
+	return d.repository.GetScanAgentByID(ctx, id)
+}
+
+// RotateToken issues a new token for an agent and returns the raw token.
+func (d *DiscoveryService) RotateToken(ctx context.Context, id int64) (*models.ScanAgent, string, error) {
+	rawToken, tokenHash, err := generateAgentToken()
+	if err != nil {
+		return nil, "", fmt.Errorf("generate token: %w", err)
+	}
+	agent, err := d.repository.UpdateScanAgentToken(ctx, id, tokenHash)
+	if err != nil {
+		return nil, "", err
+	}
+	return agent, rawToken, nil
+}
+
+// DeleteAgent removes a scan agent.
+func (d *DiscoveryService) DeleteAgent(ctx context.Context, id int64) error {
+	return d.repository.DeleteScanAgent(ctx, id)
+}
+
+// MarkOfflineStale marks agents offline if last_seen > 15 minutes ago.
+func (d *DiscoveryService) MarkOfflineStale(ctx context.Context) error {
+	agents, err := d.repository.ListScanAgents(ctx)
+	if err != nil {
+		return err
+	}
+	threshold := time.Now().Add(-15 * time.Minute)
+	for _, a := range agents {
+		if a.IsActive && a.LastSeen != nil && a.LastSeen.Before(threshold) {
+			if _, err := d.repository.UpdateScanAgentActive(ctx, a.ID, false); err != nil {
+				log.Printf("mark agent %d offline error: %v", a.ID, err)
+			}
+		}
+	}
+	return nil
+}
+
+// AuthenticateAgent validates a Bearer token and returns the agent.
+func (d *DiscoveryService) AuthenticateAgent(ctx context.Context, rawToken string) (*models.ScanAgent, error) {
+	tokenHash := hashAgentToken(rawToken)
+	return d.repository.GetScanAgentByToken(ctx, tokenHash)
+}
+
+// GetJobsForAgent returns active scan jobs assigned to an agent.
+func (d *DiscoveryService) GetJobsForAgent(ctx context.Context, agentID int64) ([]*models.ScanJob, error) {
+	return d.repository.ListScanJobsForAgent(ctx, agentID)
+}
+
+// HeartbeatAgent records that an agent is alive.
+func (d *DiscoveryService) HeartbeatAgent(ctx context.Context, agentID int64) error {
+	return d.repository.UpdateScanAgentLastSeen(ctx, agentID)
+}
+
+// AcceptAgentResults processes scan results submitted by a remote agent.
+func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64, jobID int64, results []AgentScanResult) error {
+	job, err := d.repository.GetScanJobByID(ctx, jobID)
+	if err != nil {
+		return fmt.Errorf("job not found: %w", err)
+	}
+	if job.AgentID == nil || *job.AgentID != agentID {
+		return fmt.Errorf("job not assigned to this agent")
+	}
+	for _, res := range results {
+		var ipAddrID *int64
+		if res.IPAddressID > 0 {
+			v := res.IPAddressID
+			ipAddrID = &v
+		}
+		var ms *int64
+		if res.ResponseTimeMs > 0 {
+			ms = &res.ResponseTimeMs
+		}
+		_, err := d.repository.CreateScanResult(ctx, jobID, res.SubnetID, ipAddrID, res.IPAddress, res.IsAlive, ms, nil, false)
+		if err != nil {
+			log.Printf("agent %d: store result for %s: %v", agentID, res.IPAddress, err)
+		}
+	}
+	return d.repository.UpdateScanJobRunTime(ctx, jobID, nil)
+}
+
+// AgentScanResult is the payload submitted by an agent for a single IP.
+type AgentScanResult struct {
+	SubnetID      int64  `json:"subnet_id"`
+	IPAddressID   int64  `json:"ip_address_id,omitempty"`
+	IPAddress     string `json:"ip_address"`
+	IsAlive       bool   `json:"is_alive"`
+	ResponseTimeMs int64 `json:"response_time_ms,omitempty"`
 }

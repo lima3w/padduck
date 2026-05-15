@@ -129,6 +129,7 @@ export default function AdminSettingsPage() {
     { id: 'approvals', label: `Approvals${approvals.length > 0 ? ` (${approvals.length})` : ''}` },
     { id: 'audit', label: 'Audit' },
     { id: 'dns', label: 'DNS' },
+    { id: 'scanner', label: 'Scanner' },
     { id: 'tools', label: 'Tools' },
   ]
 
@@ -482,6 +483,43 @@ export default function AdminSettingsPage() {
             >
               {dnsTestStatus === 'testing' ? 'Testing...' : 'Test Connection'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'scanner' && config && (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Discovery Scanner</h2>
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.scanner_resolve_hostnames !== 'false'}
+                  onChange={(e) =>
+                    handleConfigChange('scanner_resolve_hostnames', e.target.checked ? 'true' : 'false')
+                  }
+                  className="w-4 h-4 text-blue-600"
+                />
+                <div>
+                  <span className="font-medium text-gray-900">Resolve hostnames via reverse DNS</span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    After a successful ping, the scanner performs a PTR lookup and stores the result in the
+                    IP address record. A forward lookup is also done to flag mismatches. Adds up to 2 s per
+                    alive host. Default: enabled.
+                  </p>
+                </div>
+              </label>
+            </div>
+            <div className="flex gap-3 items-center mt-6">
+              <button
+                onClick={handleSaveConfig}
+                disabled={saving}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       )}

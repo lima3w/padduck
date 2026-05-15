@@ -15,7 +15,29 @@ const STATUS_COLORS = {
   reserved: 'bg-yellow-100 text-yellow-700',
 }
 
-const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen']
+const PORT_NAMES = {
+  21: 'FTP', 22: 'SSH', 23: 'Telnet', 25: 'SMTP', 53: 'DNS',
+  80: 'HTTP', 110: 'POP3', 143: 'IMAP', 443: 'HTTPS', 445: 'SMB',
+  3306: 'MySQL', 3389: 'RDP', 5432: 'PostgreSQL', 6379: 'Redis',
+  8080: 'HTTP-Alt', 8443: 'HTTPS-Alt', 27017: 'MongoDB',
+}
+
+function PortBadges({ portOpen }) {
+  if (!portOpen || typeof portOpen !== 'object') return null
+  const open = Object.entries(portOpen).filter(([, v]) => v).map(([p]) => Number(p))
+  if (open.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1">
+      {open.map(port => (
+        <span key={port} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+          {port}{PORT_NAMES[port] ? ` ${PORT_NAMES[port]}` : ''}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
 const COLUMN_LABELS = {
   address: 'Address',
   hostname: 'Hostname',
@@ -27,6 +49,7 @@ const COLUMN_LABELS = {
   dns_name: 'DNS Name',
   ptr_record: 'Hostname/PTR',
   last_seen: 'Last Seen',
+  services: 'Services',
 }
 const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'assigned_to']
 
@@ -535,6 +558,7 @@ export default function IPAddressesPage() {
               {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
               {col('last_seen') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>}
+              {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Services</th>}
               {searchableFields.map(d => (
                 <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
               ))}
@@ -587,6 +611,11 @@ export default function IPAddressesPage() {
                 {col('last_seen') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                     {ip.LastSeen ? new Date(ip.LastSeen).toLocaleString() : '—'}
+                  </td>
+                )}
+                {col('services') && (
+                  <td className="px-4 py-3">
+                    <PortBadges portOpen={ip.port_open} />
                   </td>
                 )}
                 {searchableFields.map(d => {
@@ -857,6 +886,12 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, dns_name: e.target.value }))}
               />
             </div>
+            {modal.meta.port_open && Object.values(modal.meta.port_open).some(Boolean) && (
+              <div className="border-t pt-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Open Ports (read-only)</p>
+                <PortBadges portOpen={modal.meta.port_open} />
+              </div>
+            )}
             {(modal.meta.dnsLastChecked) && (
               <div className="border-t pt-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">DNS Info (read-only)</p>
