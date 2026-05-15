@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { getDashboardSummary, getDashboardRecentActivity } from '../api/client'
+import { useNavigate, Link } from 'react-router-dom'
+import { getDashboardSummary, getDashboardRecentActivity, api } from '../api/client'
 
 function formatRelativeTime(isoString) {
   const now = Date.now()
@@ -68,6 +68,7 @@ export default function DashboardPage() {
 
   const [summary, setSummary] = useState(null)
   const [activity, setActivity] = useState([])
+  const [nearCapacity, setNearCapacity] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -83,6 +84,11 @@ export default function DashboardPage() {
       ])
       setSummary(sumRes.data)
       setActivity(actRes.data)
+      // Load subnets near capacity (best-effort, non-blocking)
+      try {
+        const capRes = await api.get('/admin/reports/subnets-near-capacity')
+        setNearCapacity(Array.isArray(capRes.data) ? capRes.data : [])
+      } catch {}
     } catch {
       setError('Failed to load dashboard data')
     } finally {
@@ -160,6 +166,39 @@ export default function DashboardPage() {
           </div>
         )
       })()}
+
+      {/* Subnets Near Capacity */}
+      {isAdmin && nearCapacity.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              Subnets Near Capacity
+            </h2>
+            <Link to="/reports/utilisation-trends" className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
+              View trends →
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {nearCapacity.map(s => (
+              <div key={s.id}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-mono text-gray-800 dark:text-gray-200 truncate">{s.cidr}</span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-2 whitespace-nowrap text-xs">
+                    {(s.utilisationPct ?? 0).toFixed(1)}%
+                  </span>
+                </div>
+                {s.description && <p className="text-xs text-gray-400 mb-1">{s.description}</p>}
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div
+                    className={`${s.utilisationPct >= 90 ? 'bg-red-500' : 'bg-yellow-500'} h-2 rounded-full transition-all`}
+                    style={{ width: `${Math.min(s.utilisationPct ?? 0, 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top subnets */}

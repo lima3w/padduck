@@ -34,6 +34,9 @@ import ScanJobsPage from './pages/ScanJobsPage'
 import AdminAgentsPage from './pages/AdminAgentsPage'
 import CalculatorPage from './pages/CalculatorPage'
 import TopologyPage from './pages/TopologyPage'
+import UtilisationTrendsPage from './pages/UtilisationTrendsPage'
+import ScheduledReportsPage from './pages/ScheduledReportsPage'
+import InactiveIPsPage from './pages/InactiveIPsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -100,6 +103,9 @@ export default function App() {
           <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
           <Route path="tools/calculator" element={<CalculatorPage />} />
           <Route path="sections/:id/topology" element={<TopologyPage />} />
+          <Route path="reports/utilisation-trends" element={<UtilisationTrendsPage />} />
+          <Route path="reports/inactive-ips" element={<InactiveIPsPage />} />
+          <Route path="admin/reports/scheduled" element={<ScheduledReportsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
