@@ -131,8 +131,34 @@ func validateGatewayInCIDR(gateway, networkAddress string, prefixLength int) err
 	return nil
 }
 
+// validateVLANVRFConsistency checks that if a subnet's VLAN belongs to a domain,
+// all other subnets in that domain use the same VRF (or no VRF). Returns an error if mismatch.
+func (s *Service) validateVLANVRFConsistency(ctx context.Context, vlanID int64, subnetVRFID *int64) error {
+	vlan, err := s.repository.GetVLANByID(ctx, vlanID)
+	if err != nil {
+		return fmt.Errorf("VLAN not found")
+	}
+	// Only enforce if the VLAN belongs to a domain
+	if vlan.DomainID == nil {
+		return nil
+	}
+	// Get the VLAN's own VRF
+	if vlan.VRFID != nil && subnetVRFID != nil && *vlan.VRFID != *subnetVRFID {
+		return fmt.Errorf("subnet VRF does not match VLAN VRF (VLAN is in domain %d)", *vlan.DomainID)
+	}
+	return nil
+}
+
+// GetVLANSubnets returns all subnets assigned to a VLAN.
+func (s *Service) GetVLANSubnets(ctx context.Context, vlanID int64) ([]*models.Subnet, error) {
+	if vlanID <= 0 {
+		return nil, fmt.Errorf("invalid VLAN ID")
+	}
+	return s.repository.GetVLANSubnets(ctx, vlanID)
+}
+
 // CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
-func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
+func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if sectionID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
@@ -166,7 +192,14 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		}
 	}
 
-	subnet, err := s.repository.CreateSubnetWithLocation(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID)
+	// VRF consistency check for VLAN-domain subnets
+	if vlanID != nil {
+		if err := s.validateVLANVRFConsistency(ctx, *vlanID, nil); err != nil {
+			return nil, err
+		}
+	}
+
+	subnet, err := s.repository.CreateSubnetWithVLAN(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID)
 	if err != nil {
 		return nil, err
 	}
@@ -214,8 +247,8 @@ func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.S
 	return s.repository.ListSubnetsBySection(ctx, sectionID)
 }
 
-// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, location, and nameserver.
-func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
+// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, location, nameserver, and VLAN.
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
@@ -232,7 +265,14 @@ func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string
 		gateway = nil
 	}
 
-	subnet, err := s.repository.UpdateSubnetWithLocation(ctx, id, description, gateway, autoFirst, autoLast, locationID, nameserverID)
+	// VRF consistency check for VLAN-domain subnets
+	if vlanID != nil {
+		if err := s.validateVLANVRFConsistency(ctx, *vlanID, nil); err != nil {
+			return nil, err
+		}
+	}
+
+	subnet, err := s.repository.UpdateSubnetWithVLAN(ctx, id, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID)
 	if err != nil {
 		return nil, err
 	}

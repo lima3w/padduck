@@ -305,6 +305,10 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 		PermV2NameserverList, PermV2NameserverRead, PermV2NameserverWrite, PermV2NameserverDelete,
 		// v1.7.0 request workflow permissions
 		PermV2SubnetRequestSubmit, PermV2SubnetRequestReview,
+		// v1.8.0 vlan domain permissions
+		PermV2VLANDomainList, PermV2VLANDomainRead, PermV2VLANDomainWrite, PermV2VLANDomainDelete,
+		// v1.8.0 vlan group permissions
+		PermV2VLANGroupList, PermV2VLANGroupRead, PermV2VLANGroupWrite, PermV2VLANGroupDelete,
 	}
 	assert.Equal(t, len(expected), len(AllPermissions))
 	for _, p := range expected {

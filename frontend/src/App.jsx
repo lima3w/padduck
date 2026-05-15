@@ -25,6 +25,11 @@ import DnsZonesPage from './pages/DnsZonesPage'
 import DnsZoneDetailPage from './pages/DnsZoneDetailPage'
 import AdminRequestsPage from './pages/AdminRequestsPage'
 import MyRequestsPage from './pages/MyRequestsPage'
+import VlansPage from './pages/VlansPage'
+import VlanDetailPage from './pages/VlanDetailPage'
+import VlanDomainsPage from './pages/VlanDomainsPage'
+import VlanGroupsPage from './pages/VlanGroupsPage'
+import VlanUsageReportPage from './pages/VlanUsageReportPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -82,6 +87,11 @@ export default function App() {
           <Route path="dns/zones/:zone" element={<DnsZoneDetailPage />} />
           <Route path="admin/requests" element={<AdminRequestsPage />} />
           <Route path="requests" element={<MyRequestsPage />} />
+          <Route path="vlans" element={<VlansPage />} />
+          <Route path="vlans/:id" element={<VlanDetailPage />} />
+          <Route path="admin/vlan-domains" element={<VlanDomainsPage />} />
+          <Route path="admin/vlan-groups" element={<VlanGroupsPage />} />
+          <Route path="admin/vlans/usage-report" element={<VlanUsageReportPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

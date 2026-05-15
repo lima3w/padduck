@@ -86,6 +86,20 @@ export default function Sidebar() {
         </NavLink>
 
         <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          VLANs
+        </div>
+        <NavLink
+          to="/vlans"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          VLANs
+        </NavLink>
+
+        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           DNS
         </div>
         <NavLink
@@ -168,6 +182,36 @@ export default function Sidebar() {
               }
             >
               Custom Fields
+            </NavLink>
+            <NavLink
+              to="/admin/vlan-domains"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              VLAN Domains
+            </NavLink>
+            <NavLink
+              to="/admin/vlan-groups"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              VLAN Groups
+            </NavLink>
+            <NavLink
+              to="/admin/vlans/usage-report"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              VLAN Usage
             </NavLink>
           </>
         )}

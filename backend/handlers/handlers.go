@@ -165,6 +165,23 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vlans.Get("/:id", h.GetVLAN)
 	vlans.Put("/:id", h.UpdateVLAN)
 	vlans.Delete("/:id", h.DeleteVLAN)
+	vlans.Get("/:id/subnets", h.GetVLANSubnets)
+
+	// VLAN Domains routes (v1.8.0 #206)
+	vlanDomains := protected.Group("/vlan-domains")
+	vlanDomains.Get("", h.ListVLANDomains)
+	vlanDomains.Post("", h.CreateVLANDomain)
+	vlanDomains.Get("/:id", h.GetVLANDomain)
+	vlanDomains.Put("/:id", h.UpdateVLANDomain)
+	vlanDomains.Delete("/:id", h.DeleteVLANDomain)
+
+	// VLAN Groups routes (v1.8.0 #207)
+	vlanGroups := protected.Group("/vlan-groups")
+	vlanGroups.Get("", h.ListVLANGroups)
+	vlanGroups.Post("", h.CreateVLANGroup)
+	vlanGroups.Get("/:id", h.GetVLANGroup)
+	vlanGroups.Put("/:id", h.UpdateVLANGroup)
+	vlanGroups.Delete("/:id", h.DeleteVLANGroup)
 
 	// Admin routes (protected + admin role required)
 	admin := protected.Group("/admin")
@@ -327,6 +344,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/requests/ips/:id/approve", h.ApproveIPRequest)
 	admin.Post("/requests/ips/:id/reject", h.RejectIPRequest)
 	admin.Get("/requests/pending-count", h.GetPendingRequestCount)
+
+	// VLAN usage report (v1.8.0 #209)
+	admin.Get("/vlans/usage-report", h.GetVLANUsageReport)
 
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
