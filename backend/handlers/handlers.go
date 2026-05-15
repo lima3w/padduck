@@ -364,6 +364,21 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// VLAN usage report (v1.8.0 #209)
 	admin.Get("/vlans/usage-report", h.GetVLANUsageReport)
 
+	// Network tools (v1.10.0 #216 #217)
+	admin.Post("/subnets/:id/split", h.SplitSubnet)
+	admin.Post("/subnets/merge", h.MergeSubnets)
+	admin.Post("/subnets/:id/resize", h.ResizeSubnet)
+
+	// IPv6 delegations (v1.10.0 #218)
+	subnet.Get("/:id/delegations", h.ListDelegations)
+	subnet.Post("/:id/delegations", h.CreateDelegation)
+	delegations := protected.Group("/delegations")
+	delegations.Put("/:id", h.UpdateDelegation)
+	delegations.Delete("/:id", h.DeleteDelegation)
+
+	// Network topology (v1.10.0 #219)
+	sections.Get("/:id/topology", h.GetSectionTopology)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

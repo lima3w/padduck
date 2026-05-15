@@ -157,9 +157,50 @@ type Subnet struct {
 	NameserverID     *int64             `json:"nameserver_id,omitempty"`
 	Nameserver       *Nameserver        `json:"nameserver,omitempty"`
 	VLANID           *int64             `json:"vlan_id,omitempty"`
+	ParentSubnetID   *int64             `json:"parent_subnet_id,omitempty"`
+	IsContainer      bool               `json:"is_container"`
 	CreatedAt        time.Time          `json:"created_at"`
 	UpdatedAt        time.Time          `json:"updated_at"`
 	CustomFields     map[string]*string `json:"custom_fields,omitempty"`
+}
+
+// IPv6Delegation represents a delegated IPv6 prefix assigned to a device or description
+type IPv6Delegation struct {
+	ID                     int64      `json:"id"`
+	ParentSubnetID         int64      `json:"parent_subnet_id"`
+	DelegatedPrefix        string     `json:"delegated_prefix"`
+	DelegatedToDeviceID    *int64     `json:"delegated_to_device_id,omitempty"`
+	DelegatedToDescription *string    `json:"delegated_to_description,omitempty"`
+	ValidLifetimeSec       *int       `json:"valid_lifetime_sec,omitempty"`
+	PreferredLifetimeSec   *int       `json:"preferred_lifetime_sec,omitempty"`
+	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
+	IsExpired              bool       `json:"is_expired"`
+	CreatedAt              time.Time  `json:"created_at"`
+}
+
+// TopologyNode represents a subnet node in the network topology graph
+type TopologyNode struct {
+	ID          int64   `json:"id"`
+	Label       string  `json:"label"`
+	CIDR        string  `json:"cidr"`
+	PrefixLen   int     `json:"prefix_len"`
+	IsContainer bool    `json:"is_container"`
+	ParentID    *int64  `json:"parent_id,omitempty"`
+	VLANID      *int64  `json:"vlan_id,omitempty"`
+	Utilisation float64 `json:"utilisation"`
+}
+
+// TopologyEdge represents a directed edge in the network topology graph
+type TopologyEdge struct {
+	Source int64  `json:"source"`
+	Target int64  `json:"target"`
+	Type   string `json:"type"` // "parent_child" or "subnet_vlan"
+}
+
+// SectionTopology holds the full topology graph for a section
+type SectionTopology struct {
+	Nodes []*TopologyNode `json:"nodes"`
+	Edges []*TopologyEdge `json:"edges"`
 }
 
 // IPTag represents a named, colour-coded label for IP addresses

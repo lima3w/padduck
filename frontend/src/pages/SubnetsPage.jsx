@@ -10,6 +10,7 @@ import {
   searchSubnets,
   getSubnetTree,
   getNameservers,
+  api,
 } from '../api/client'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -20,6 +21,24 @@ import { getLocations } from '../api/locations'
 const DEFAULT_LIMIT = 25
 
 const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', custom_fields: {} }
+
+function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
+  if (!networkAddress || isNaN(newPrefix) || newPrefix <= currentPrefix || newPrefix > 32) return []
+  const parts = networkAddress.split('.').map(Number)
+  if (parts.length !== 4 || parts.some(isNaN)) return []
+  let base = 0
+  for (const p of parts) base = (base << 8) | p
+  base = base >>> 0
+  const count = Math.pow(2, newPrefix - currentPrefix)
+  const size = Math.pow(2, 32 - newPrefix)
+  const results = []
+  for (let i = 0; i < Math.min(count, 64); i++) {
+    const net = (base + i * size) >>> 0
+    const octets = [24, 16, 8, 0].map(s => (net >>> s) & 0xff)
+    results.push(`${octets.join('.')}/${newPrefix}`)
+  }
+  return results
+}
 
 export default function SubnetsPage() {
   const { sectionID } = useParams()
@@ -46,6 +65,30 @@ export default function SubnetsPage() {
   const [locations, setLocations] = useState([])
   const [filterLocationId, setFilterLocationId] = useState('')
   const [nameservers, setNameservers] = useState([])
+
+  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const isAdmin = user?.role === 'admin'
+
+  // Split modal state
+  const [splitModal, setSplitModal] = useState(null) // null | { subnet }
+  const [splitPrefix, setSplitPrefix] = useState('')
+  const [splitting, setSplitting] = useState(false)
+  const [splitError, setSplitError] = useState('')
+  const [splitSuccess, setSplitSuccess] = useState(false)
+
+  // Merge modal state
+  const [mergeModal, setMergeModal] = useState(null) // null | { subnet, siblings: [] }
+  const [mergeSelected, setMergeSelected] = useState([])
+  const [merging, setMerging] = useState(false)
+  const [mergeError, setMergeError] = useState('')
+
+  // Resize modal state
+  const [resizeModal, setResizeModal] = useState(null) // null | { subnet }
+  const [resizePrefix, setResizePrefix] = useState('')
+  const [resizing, setResizing] = useState(false)
+  const [resizeError, setResizeError] = useState(null) // null | { message, conflictingIps, conflictingSubnets }
+  const [resizeConfirmText, setResizeConfirmText] = useState('')
+  const [toast, setToast] = useState('')
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -270,6 +313,100 @@ export default function SubnetsPage() {
     }
   }
 
+  function showToast(msg) {
+    setToast(msg)
+    setTimeout(() => setToast(''), 3000)
+  }
+
+  function openSplit(subnet) {
+    setSplitModal({ subnet })
+    setSplitPrefix(String(subnet.prefixLength + 1))
+    setSplitError('')
+    setSplitSuccess(false)
+  }
+
+  async function handleSplit() {
+    if (!splitModal) return
+    setSplitting(true)
+    setSplitError('')
+    try {
+      await api.post(`/admin/subnets/${splitModal.subnet.id}/split`, { new_prefix_len: parseInt(splitPrefix) })
+      setSplitSuccess(true)
+      setSplitModal(null)
+      showToast('Subnet split successfully')
+      load(page)
+      if (viewMode === 'tree') loadTree()
+    } catch (err) {
+      setSplitError(err.response?.data?.error || 'Failed to split subnet')
+    } finally {
+      setSplitting(false)
+    }
+  }
+
+  async function openMerge(subnet) {
+    try {
+      const res = await api.get(`/sections/${sectionID}/subnets`)
+      const all = res.data?.data ?? res.data ?? []
+      const siblings = all.filter(s => s.id !== subnet.id && s.prefixLength === subnet.prefixLength)
+      setMergeModal({ subnet, siblings })
+      setMergeSelected([])
+      setMergeError('')
+    } catch {
+      setError('Failed to load siblings for merge')
+    }
+  }
+
+  async function handleMerge() {
+    if (!mergeModal) return
+    setMerging(true)
+    setMergeError('')
+    try {
+      const ids = [mergeModal.subnet.id, ...mergeSelected]
+      await api.post('/admin/subnets/merge', { subnet_ids: ids })
+      setMergeModal(null)
+      showToast('Subnets merged successfully')
+      load(page)
+      if (viewMode === 'tree') loadTree()
+    } catch (err) {
+      setMergeError(err.response?.data?.error || 'Failed to merge subnets')
+    } finally {
+      setMerging(false)
+    }
+  }
+
+  function openResize(subnet) {
+    setResizeModal({ subnet })
+    setResizePrefix(`${subnet.networkAddress}/${subnet.prefixLength}`)
+    setResizeError(null)
+    setResizeConfirmText('')
+  }
+
+  async function handleResize() {
+    if (!resizeModal) return
+    setResizing(true)
+    setResizeError(null)
+    try {
+      await api.post(`/admin/subnets/${resizeModal.subnet.id}/resize`, { new_prefix: resizePrefix })
+      setResizeModal(null)
+      showToast('Subnet resized successfully')
+      load(page)
+      if (viewMode === 'tree') loadTree()
+    } catch (err) {
+      if (err.response?.status === 409) {
+        const d = err.response.data
+        setResizeError({
+          message: d.error || 'Resize conflicts with existing data',
+          conflictingIps: d.conflicting_ips || [],
+          conflictingSubnets: d.conflicting_subnets || [],
+        })
+      } else {
+        setResizeError({ message: err.response?.data?.error || 'Failed to resize subnet' })
+      }
+    } finally {
+      setResizing(false)
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading subnets...</p>
 
   return (
@@ -445,7 +582,9 @@ export default function SubnetsPage() {
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                       {s.nameserverId ? (nameservers.find(ns => ns.id === s.nameserverId)?.name || `#${s.nameserverId}`) : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {s.isContainer ? <span className="text-gray-400 italic text-xs">Container subnet</span> : s.description}
+                    </td>
                     {searchableFields.map(d => {
                       const val = s.customFields?.[d.name]
                       return (
@@ -464,6 +603,13 @@ export default function SubnetsPage() {
                     })}
                     <td className="px-4 py-3 text-right space-x-2">
                       <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => openSplit(s)} className="text-gray-400 hover:text-purple-600 text-xs">Split</button>
+                          <button onClick={() => openMerge(s)} className="text-gray-400 hover:text-indigo-600 text-xs">Merge</button>
+                          <button onClick={() => openResize(s)} className="text-gray-400 hover:text-teal-600 text-xs">Resize</button>
+                        </>
+                      )}
                       {deleteConfirm === s.id ? (
                         <>
                           <span className="text-red-600 text-xs">Confirm?</span>
@@ -519,6 +665,153 @@ export default function SubnetsPage() {
             </div>
           )}
         </>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg text-sm z-50 transition-opacity">
+          {toast}
+        </div>
+      )}
+
+      {splitModal && (
+        <Modal title={`Split ${splitModal.subnet.networkAddress}/${splitModal.subnet.prefixLength}`} onClose={() => setSplitModal(null)}>
+          <div className="space-y-4">
+            {splitError && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{splitError}</div>}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Prefix Length</label>
+              <input
+                type="number"
+                min={splitModal.subnet.prefixLength + 1}
+                max={32}
+                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={splitPrefix}
+                onChange={e => setSplitPrefix(e.target.value)}
+              />
+            </div>
+            {splitPrefix && !isNaN(parseInt(splitPrefix)) && parseInt(splitPrefix) > splitModal.subnet.prefixLength && (
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Preview — child CIDRs to create:</p>
+                <div className="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto">
+                  {splitCidrPreview(splitModal.subnet.networkAddress, splitModal.subnet.prefixLength, parseInt(splitPrefix)).map((c, i) => (
+                    <span key={i} className="font-mono text-xs bg-gray-50 dark:bg-gray-700 rounded px-2 py-1">{c}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setSplitModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button
+                onClick={handleSplit}
+                disabled={splitting || !splitPrefix || isNaN(parseInt(splitPrefix)) || parseInt(splitPrefix) <= splitModal.subnet.prefixLength}
+                className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50"
+              >
+                {splitting ? 'Splitting...' : 'Split'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {mergeModal && (
+        <Modal title={`Merge with ${mergeModal.subnet.networkAddress}/${mergeModal.subnet.prefixLength}`} onClose={() => setMergeModal(null)}>
+          <div className="space-y-4">
+            {mergeError && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{mergeError}</div>}
+            {mergeModal.siblings.length === 0 ? (
+              <p className="text-sm text-gray-500">No sibling subnets with the same prefix length found in this section.</p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Select subnets to merge with <strong className="font-mono">{mergeModal.subnet.networkAddress}/{mergeModal.subnet.prefixLength}</strong>:</p>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {mergeModal.siblings.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4"
+                        checked={mergeSelected.includes(s.id)}
+                        onChange={e => setMergeSelected(prev => e.target.checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
+                      />
+                      <span className="font-mono text-sm">{s.networkAddress}/{s.prefixLength}</span>
+                      {s.description && <span className="text-xs text-gray-400">{s.description}</span>}
+                    </label>
+                  ))}
+                </div>
+                {mergeSelected.length > 0 && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-blue-800 dark:text-blue-300">
+                    Merging {1 + mergeSelected.length} subnets with /{mergeModal.subnet.prefixLength - 1} prefix
+                  </div>
+                )}
+              </>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setMergeModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              {mergeModal.siblings.length > 0 && (
+                <button
+                  onClick={handleMerge}
+                  disabled={merging || mergeSelected.length === 0}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {merging ? 'Merging...' : 'Merge'}
+                </button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {resizeModal && (
+        <Modal title={`Resize ${resizeModal.subnet.networkAddress}/${resizeModal.subnet.prefixLength}`} onClose={() => setResizeModal(null)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New CIDR</label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                placeholder="192.168.0.0/23"
+                value={resizePrefix}
+                onChange={e => { setResizePrefix(e.target.value); setResizeError(null); setResizeConfirmText('') }}
+              />
+            </div>
+            {resizeError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm dark:bg-red-900/20 dark:border-red-700 dark:text-red-400">
+                <p className="font-medium mb-1">{resizeError.message}</p>
+                {(resizeError.conflictingIps?.length > 0 || resizeError.conflictingSubnets?.length > 0) && (
+                  <>
+                    {resizeError.conflictingIps?.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-semibold">Conflicting IPs:</p>
+                        <p className="font-mono text-xs">{resizeError.conflictingIps.join(', ')}</p>
+                      </div>
+                    )}
+                    {resizeError.conflictingSubnets?.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-semibold">Conflicting Subnets:</p>
+                        <p className="font-mono text-xs">{resizeError.conflictingSubnets.join(', ')}</p>
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <label className="block text-xs font-medium mb-1">Type CONFIRM to proceed anyway:</label>
+                      <input
+                        className="w-full border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400 dark:bg-gray-700 dark:border-gray-600"
+                        placeholder="CONFIRM"
+                        value={resizeConfirmText}
+                        onChange={e => setResizeConfirmText(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setResizeModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button
+                onClick={handleResize}
+                disabled={resizing || !resizePrefix || (resizeError?.conflictingIps?.length > 0 && resizeConfirmText !== 'CONFIRM')}
+                className="px-4 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 disabled:opacity-50"
+              >
+                {resizing ? 'Resizing...' : 'Resize'}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {modal && (

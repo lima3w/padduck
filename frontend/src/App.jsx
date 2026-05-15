@@ -32,6 +32,8 @@ import VlanGroupsPage from './pages/VlanGroupsPage'
 import VlanUsageReportPage from './pages/VlanUsageReportPage'
 import ScanJobsPage from './pages/ScanJobsPage'
 import AdminAgentsPage from './pages/AdminAgentsPage'
+import CalculatorPage from './pages/CalculatorPage'
+import TopologyPage from './pages/TopologyPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -96,6 +98,8 @@ export default function App() {
           <Route path="admin/vlans/usage-report" element={<VlanUsageReportPage />} />
           <Route path="admin/scan-jobs" element={<ScanJobsPage />} />
           <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
+          <Route path="tools/calculator" element={<CalculatorPage />} />
+          <Route path="sections/:id/topology" element={<TopologyPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

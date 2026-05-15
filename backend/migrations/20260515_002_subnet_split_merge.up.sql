@@ -1,0 +1,3 @@
+-- +migrate Up
+ALTER TABLE subnets ADD COLUMN parent_subnet_id BIGINT REFERENCES subnets(id) ON DELETE SET NULL;
+ALTER TABLE subnets ADD COLUMN is_container BOOLEAN NOT NULL DEFAULT false;

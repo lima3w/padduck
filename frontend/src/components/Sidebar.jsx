@@ -123,6 +123,20 @@ export default function Sidebar() {
           DNS Zones
         </NavLink>
 
+        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Tools
+        </div>
+        <NavLink
+          to="/tools/calculator"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          IP Calculator
+        </NavLink>
+
         {isAdmin && (
           <>
             <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
