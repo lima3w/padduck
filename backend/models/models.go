@@ -237,10 +237,20 @@ type VRF struct {
 	UpdatedAt          time.Time
 }
 
+// VLANDomain represents an L2 domain that groups VLANs
+type VLANDomain struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // VLAN represents a Virtual LAN segment
 type VLAN struct {
 	ID          int64
 	VRFID       *int64
+	DomainID    *int64
 	VlanID      int
 	Name        string
 	Description string
