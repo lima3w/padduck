@@ -3,6 +3,10 @@ import { useParams, Link } from 'react-router-dom'
 import { getVlan, getVlanSubnets, getVlanDomains, getVlanGroups, updateVlan } from '../api/client'
 import Modal from '../components/Modal'
 
+// VLAN model has no JSON tags — Go field names come through as PascalCase:
+//   ID, VlanID, DomainID, GroupID, VRFID, Name, Description, CreatedAt, UpdatedAt
+// VLANDomain/VLANGroup have json tags → snake_case → camelCase via interceptor
+
 function GroupBadge({ group }) {
   if (!group) return <span className="text-gray-400">—</span>
   const hex = (group.colour || '#6B7280').replace('#', '')
@@ -79,11 +83,11 @@ export default function VlanDetailPage() {
   function openEdit() {
     if (!vlan) return
     setForm({
-      vlanId: vlan.vlanId != null ? String(vlan.vlanId) : '',
-      name: vlan.name || '',
-      description: vlan.description || '',
-      domainId: vlan.domainId != null ? String(vlan.domainId) : '',
-      groupId: vlan.groupId != null ? String(vlan.groupId) : '',
+      vlanId: vlan.VlanID != null ? String(vlan.VlanID) : '',
+      name: vlan.Name || '',
+      description: vlan.Description || '',
+      domainId: vlan.DomainID != null ? String(vlan.DomainID) : '',
+      groupId: vlan.GroupID != null ? String(vlan.GroupID) : '',
     })
     setEditModal(true)
   }
@@ -114,15 +118,16 @@ export default function VlanDetailPage() {
   if (error && !vlan) return <p className="text-red-600">{error}</p>
   if (!vlan) return <p className="text-gray-500">VLAN not found.</p>
 
-  const domain = getDomain(vlan.domainId)
-  const group = getGroup(vlan.groupId)
+  // VLAN fields are PascalCase; domain/group use camelCase (have json tags)
+  const domain = getDomain(vlan.DomainID)
+  const group = getGroup(vlan.GroupID)
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-2 mb-4 text-sm text-gray-500 dark:text-gray-400">
         <Link to="/vlans" className="hover:text-blue-600 dark:hover:text-blue-400">VLANs</Link>
         <span>/</span>
-        <span className="text-gray-800 dark:text-gray-200 font-medium">VLAN {vlan.vlanId} — {vlan.name}</span>
+        <span className="text-gray-800 dark:text-gray-200 font-medium">VLAN {vlan.VlanID} — {vlan.Name}</span>
       </div>
 
       {message && (
@@ -141,7 +146,7 @@ export default function VlanDetailPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
           <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-            VLAN {vlan.vlanId} — {vlan.name}
+            VLAN {vlan.VlanID} — {vlan.Name}
           </h1>
           <button
             onClick={openEdit}
@@ -153,11 +158,11 @@ export default function VlanDetailPage() {
         <div className="px-6 py-4 grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">VLAN ID</p>
-            <p className="font-mono font-semibold text-gray-800 dark:text-gray-200">{vlan.vlanId}</p>
+            <p className="font-mono font-semibold text-gray-800 dark:text-gray-200">{vlan.VlanID}</p>
           </div>
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Name</p>
-            <p className="font-medium text-gray-800 dark:text-gray-200">{vlan.name}</p>
+            <p className="font-medium text-gray-800 dark:text-gray-200">{vlan.Name}</p>
           </div>
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Domain</p>
@@ -171,10 +176,10 @@ export default function VlanDetailPage() {
             <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Group</p>
             <GroupBadge group={group} />
           </div>
-          {vlan.description && (
+          {vlan.Description && (
             <div className="col-span-2">
               <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Description</p>
-              <p className="text-gray-700 dark:text-gray-300">{vlan.description}</p>
+              <p className="text-gray-700 dark:text-gray-300">{vlan.Description}</p>
             </div>
           )}
         </div>
@@ -185,7 +190,7 @@ export default function VlanDetailPage() {
         <div className="px-6 py-4 border-b dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Subnets in this VLAN</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {subnets.length} subnet{subnets.length !== 1 ? 's' : ''} assigned to VLAN {vlan.vlanId}
+            {subnets.length} subnet{subnets.length !== 1 ? 's' : ''} assigned to VLAN {vlan.VlanID}
           </p>
         </div>
         <table className="w-full text-sm">
@@ -204,31 +209,39 @@ export default function VlanDetailPage() {
                 </td>
               </tr>
             )}
-            {subnets.map(subnet => (
-              <tr key={subnet.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <td className="px-6 py-3">
-                  <Link
-                    to={`/subnets/${subnet.id}/ip-addresses`}
-                    className="font-mono text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                  >
-                    {subnet.networkAddress || subnet.network_address}/{subnet.prefixLength ?? subnet.prefix_length}
-                  </Link>
-                </td>
-                <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
-                  {subnet.description || '—'}
-                </td>
-                <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
-                  {subnet.sectionId || subnet.section_id ? (
+            {subnets.map(subnet => {
+              // Subnet model may or may not have json tags — handle both
+              const cidr = subnet.networkAddress || subnet.network_address || subnet.NetworkAddress || ''
+              const prefix = subnet.prefixLength ?? subnet.prefix_length ?? subnet.PrefixLength ?? ''
+              const desc = subnet.description || subnet.Description || ''
+              const secId = subnet.sectionId ?? subnet.section_id ?? subnet.SectionID
+              const subnetId = subnet.id ?? subnet.ID
+              return (
+                <tr key={subnetId} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <td className="px-6 py-3">
                     <Link
-                      to={`/sections/${subnet.sectionId ?? subnet.section_id}/subnets`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                      to={`/subnets/${subnetId}/ip-addresses`}
+                      className="font-mono text-blue-600 dark:text-blue-400 hover:underline font-medium"
                     >
-                      Section #{subnet.sectionId ?? subnet.section_id}
+                      {cidr}/{prefix}
                     </Link>
-                  ) : '—'}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
+                    {desc || '—'}
+                  </td>
+                  <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
+                    {secId ? (
+                      <Link
+                        to={`/sections/${secId}/subnets`}
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                      >
+                        Section #{secId}
+                      </Link>
+                    ) : '—'}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
