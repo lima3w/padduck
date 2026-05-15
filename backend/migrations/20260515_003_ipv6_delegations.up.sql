@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE ipv6_delegations (
     id BIGSERIAL PRIMARY KEY,
     parent_subnet_id BIGINT NOT NULL REFERENCES subnets(id) ON DELETE CASCADE,
