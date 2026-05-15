@@ -17,6 +17,7 @@ type Service struct {
 	Notification    *NotificationService
 	Discovery       *DiscoveryService
 	DNS             *DNSService
+	Reports         *ReportsService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -41,6 +42,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	}
 	svc.Audit = NewAuditService(svc)
 	svc.DNS = NewDNSService(svc)
+	svc.Reports = NewReportsService(repo, configSvc, emailSvc, svc.Audit)
 	return svc
 }
 
