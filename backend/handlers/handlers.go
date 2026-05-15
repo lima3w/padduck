@@ -231,7 +231,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// GDPR admin (v0.8.14 #170)
 	admin.Post("/users/:id/gdpr-delete", h.GDPRDeleteUser)
 
-	// Discovery / scan jobs (v0.9.0)
+	// Discovery / scan jobs (v0.9.0) + advanced scanning (v1.9.0)
 	admin.Get("/scan-jobs", h.ListScanJobs)
 	admin.Post("/scan-jobs", h.CreateScanJob)
 	admin.Get("/scan-jobs/:id", h.GetScanJob)
@@ -239,6 +239,22 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Delete("/scan-jobs/:id", h.DeleteScanJob)
 	admin.Post("/scan-jobs/:id/run", h.RunScanJobNow)
 	admin.Get("/scan-jobs/:id/results", h.GetScanJobResults)
+	// Scan history (#211)
+	admin.Get("/scan-jobs/:id/history", h.GetScanJobHistory)
+	admin.Get("/scan-jobs/:id/history/:run_id", h.GetScanRunDetail)
+	// Scan agents (#212)
+	admin.Get("/scan-agents", h.ListScanAgents)
+	admin.Post("/scan-agents", h.CreateScanAgent)
+	admin.Get("/scan-agents/:id", h.GetScanAgent)
+	admin.Post("/scan-agents/:id/rotate-token", h.RotateScanAgentToken)
+	admin.Delete("/scan-agents/:id", h.DeleteScanAgent)
+
+	// Agent API routes (#212) — authenticated via Bearer token
+	scanAgent := api.Group("/scan-agent")
+	scanAgent.Use(h.AgentAuthMiddleware)
+	scanAgent.Get("/jobs", h.AgentGetJobs)
+	scanAgent.Post("/results", h.AgentPostResults)
+	scanAgent.Post("/heartbeat", h.AgentHeartbeat)
 
 	// Custom fields admin CRUD (v1.4.0)
 	admin.Get("/custom-fields", h.ListCustomFieldDefinitions)

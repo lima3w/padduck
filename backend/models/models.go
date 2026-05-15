@@ -193,6 +193,7 @@ type IPAddress struct {
 	DeviceID       *int64             `json:"device_id,omitempty"`
 	InterfaceName  *string            `json:"interface_name,omitempty"`
 	IsPrimary      bool               `json:"is_primary"`
+	PortOpen       map[string]bool    `json:"port_open,omitempty"`
 	CreatedAt      time.Time          `json:"created_at"`
 	UpdatedAt      time.Time          `json:"updated_at"`
 	CustomFields   map[string]*string `json:"custom_fields,omitempty"`
@@ -396,16 +397,50 @@ type NotificationPreferences struct {
 
 // ScanJob represents a scheduled or one-time network discovery scan
 type ScanJob struct {
-	ID           int64      `json:"id"`
-	Name         string     `json:"name"`
-	SubnetIDs    []int64    `json:"subnet_ids"`
-	ScheduleCron *string    `json:"schedule_cron,omitempty"`
-	IsActive     bool       `json:"is_active"`
-	LastRunAt    *time.Time `json:"last_run_at,omitempty"`
-	NextRunAt    *time.Time `json:"next_run_at,omitempty"`
-	CreatedBy    int64      `json:"created_by"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
+	ID              int64      `json:"id"`
+	Name            string     `json:"name"`
+	SubnetIDs       []int64    `json:"subnet_ids"`
+	ScheduleCron    *string    `json:"schedule_cron,omitempty"`
+	IsActive        bool       `json:"is_active"`
+	LastRunAt       *time.Time `json:"last_run_at,omitempty"`
+	NextRunAt       *time.Time `json:"next_run_at,omitempty"`
+	CreatedBy       int64      `json:"created_by"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	PingConcurrency int        `json:"ping_concurrency"`
+	NotifyOnChange  bool       `json:"notify_on_change"`
+	ScanType        string     `json:"scan_type"`
+	AgentID         *int64     `json:"agent_id,omitempty"`
+}
+
+// ScanRun records a single execution of a scan job
+type ScanRun struct {
+	ID          int64      `json:"id"`
+	ScanJobID   int64      `json:"scan_job_id"`
+	StartedAt   time.Time  `json:"started_at"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
+	NewCount    int        `json:"new_count"`
+	GoneCount   int        `json:"gone_count"`
+	ChangedCount int       `json:"changed_count"`
+}
+
+// ScanRunChange records a single IP change detected during a scan run
+type ScanRunChange struct {
+	ID         int64     `json:"id"`
+	RunID      int64     `json:"run_id"`
+	IPAddress  string    `json:"ip_address"`
+	ChangeType string    `json:"change_type"`
+	ScannedAt  time.Time `json:"scanned_at"`
+}
+
+// ScanAgent represents a remote scanning agent
+type ScanAgent struct {
+	ID        int64      `json:"id"`
+	Name      string     `json:"name"`
+	TokenHash string     `json:"-"`
+	LastSeen  *time.Time `json:"last_seen,omitempty"`
+	IsActive  bool       `json:"is_active"`
+	CreatedAt time.Time  `json:"created_at"`
 }
 
 // ScanResult records the outcome of scanning a single IP address
