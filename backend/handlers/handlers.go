@@ -379,6 +379,27 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Network topology (v1.10.0 #219)
 	sections.Get("/:id/topology", h.GetSectionTopology)
 
+	// Reporting & Analytics (v1.11.0 #220 #221 #222 #223 #224)
+	// Utilisation history
+	subnet.Get("/:id/utilisation/history", h.GetSubnetUtilisationHistory)
+	admin.Get("/reports/utilisation-trends", h.GetUtilisationTrends)
+	// Threshold alerts
+	admin.Get("/reports/subnets-near-capacity", h.GetSubnetsNearCapacity)
+	// Scheduled reports
+	admin.Get("/reports/scheduled", h.ListScheduledReports)
+	admin.Post("/reports/scheduled", h.CreateScheduledReport)
+	admin.Get("/reports/scheduled/:id", h.GetScheduledReport)
+	admin.Put("/reports/scheduled/:id", h.UpdateScheduledReport)
+	admin.Delete("/reports/scheduled/:id", h.DeleteScheduledReport)
+	admin.Post("/reports/scheduled/:id/run", h.RunScheduledReportNow)
+	// Export endpoints
+	admin.Get("/reports/export/subnets", h.ExportSubnets)
+	admin.Get("/reports/export/ips", h.ExportIPs)
+	admin.Get("/reports/export/inactive-ips", h.ExportInactiveIPs)
+	// Inactive IP reclamation
+	admin.Get("/reports/inactive-ips", h.GetInactiveIPs)
+	admin.Post("/ip-addresses/bulk-release", h.BulkReleaseIPs)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

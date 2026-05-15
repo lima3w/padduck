@@ -145,23 +145,25 @@ type Nameserver struct {
 
 // Subnet represents a network subnet
 type Subnet struct {
-	ID               int64              `json:"id"`
-	SectionID        int64              `json:"section_id"`
-	NetworkAddress   string             `json:"network_address"`
-	PrefixLength     int                `json:"prefix_length"`
-	Description      string             `json:"description"`
-	Gateway          *string            `json:"gateway,omitempty"`
-	AutoReserveFirst bool               `json:"auto_reserve_first"`
-	AutoReserveLast  bool               `json:"auto_reserve_last"`
-	LocationID       *int64             `json:"location_id,omitempty"`
-	NameserverID     *int64             `json:"nameserver_id,omitempty"`
-	Nameserver       *Nameserver        `json:"nameserver,omitempty"`
-	VLANID           *int64             `json:"vlan_id,omitempty"`
-	ParentSubnetID   *int64             `json:"parent_subnet_id,omitempty"`
-	IsContainer      bool               `json:"is_container"`
-	CreatedAt        time.Time          `json:"created_at"`
-	UpdatedAt        time.Time          `json:"updated_at"`
-	CustomFields     map[string]*string `json:"custom_fields,omitempty"`
+	ID                  int64              `json:"id"`
+	SectionID           int64              `json:"section_id"`
+	NetworkAddress      string             `json:"network_address"`
+	PrefixLength        int                `json:"prefix_length"`
+	Description         string             `json:"description"`
+	Gateway             *string            `json:"gateway,omitempty"`
+	AutoReserveFirst    bool               `json:"auto_reserve_first"`
+	AutoReserveLast     bool               `json:"auto_reserve_last"`
+	LocationID          *int64             `json:"location_id,omitempty"`
+	NameserverID        *int64             `json:"nameserver_id,omitempty"`
+	Nameserver          *Nameserver        `json:"nameserver,omitempty"`
+	VLANID              *int64             `json:"vlan_id,omitempty"`
+	ParentSubnetID      *int64             `json:"parent_subnet_id,omitempty"`
+	IsContainer         bool               `json:"is_container"`
+	AlertThresholdPct   *int               `json:"alert_threshold_pct,omitempty"`
+	AlertEmailOverride  *string            `json:"alert_email_override,omitempty"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	CustomFields        map[string]*string `json:"custom_fields,omitempty"`
 }
 
 // IPv6Delegation represents a delegated IPv6 prefix assigned to a device or description
@@ -714,4 +716,57 @@ type DeviceInterface struct {
 	ConnectedToInterfaceID *int64  `json:"connected_to_interface_id,omitempty"`
 	CreatedAt              time.Time `json:"created_at"`
 	UpdatedAt              time.Time `json:"updated_at"`
+}
+
+// SubnetUtilisationPoint is a single time-series data point for subnet utilisation history.
+type SubnetUtilisationPoint struct {
+	RecordedAt     time.Time `json:"recorded_at"`
+	UsedCount      int       `json:"used_count"`
+	TotalCount     int       `json:"total_count"`
+	UtilisationPct float64   `json:"utilisation_pct"`
+}
+
+// SubnetUtilisationTrend holds current utilisation and the delta vs 7 days ago for a subnet.
+type SubnetUtilisationTrend struct {
+	SubnetID    int64   `json:"subnet_id"`
+	CIDR        string  `json:"cidr"`
+	Description string  `json:"description"`
+	CurrentPct  float64 `json:"current_pct"`
+	WeekAgoPct  float64 `json:"week_ago_pct"`
+	DeltaPct    float64 `json:"delta_pct"`
+}
+
+// AlertCooldown tracks when a threshold alert was last sent for a subnet.
+type AlertCooldown struct {
+	ID         int64     `json:"id"`
+	SubnetID   int64     `json:"subnet_id"`
+	AlertedAt  time.Time `json:"alerted_at"`
+	AlertedPct float64   `json:"alerted_pct"`
+}
+
+// ScheduledReport defines a recurring report that is emailed to recipients.
+type ScheduledReport struct {
+	ID              int64          `json:"id"`
+	Name            string         `json:"name"`
+	ReportType      string         `json:"report_type"`
+	ScheduleCron    string         `json:"schedule_cron"`
+	RecipientEmails []string       `json:"recipient_emails"`
+	Filters         map[string]any `json:"filters"`
+	Format          string         `json:"format"`
+	LastRunAt       *time.Time     `json:"last_run_at,omitempty"`
+	CreatedBy       int64          `json:"created_by"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+// InactiveIPReport describes an IP address that has not been seen recently.
+type InactiveIPReport struct {
+	IPID         int64      `json:"ip_id"`
+	IPAddress    string     `json:"ip_address"`
+	Hostname     string     `json:"hostname"`
+	SubnetCIDR   string     `json:"subnet_cidr"`
+	SectionName  string     `json:"section_name"`
+	AssignedTo   *string    `json:"assigned_to,omitempty"`
+	LastSeen     *time.Time `json:"last_seen,omitempty"`
+	DaysInactive int        `json:"days_inactive"`
 }

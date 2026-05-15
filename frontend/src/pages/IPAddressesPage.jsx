@@ -6,6 +6,8 @@ import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
 import CustomFieldForm from '../components/CustomFieldForm'
+import { downloadFile } from '../utils/download'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 function DelegationsTab({ subnetId }) {
   const [delegations, setDelegations] = useState([])
@@ -232,6 +234,71 @@ function loadColumnVisibility() {
 
 const IP_REQUEST_EMPTY = { specific_ip: '', dns_name: '', purpose: '' }
 
+const HISTORY_DAYS_OPTIONS = [7, 30, 90, 365]
+
+function UtilisationHistorySection({ subnetId }) {
+  const [historyDays, setHistoryDays] = useState(30)
+  const [historyData, setHistoryData] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState('')
+
+  useEffect(() => {
+    async function fetchHistory() {
+      setHistoryLoading(true)
+      setHistoryError('')
+      try {
+        const { data } = await api.get(`/subnets/${subnetId}/utilisation/history`, { params: { days: historyDays } })
+        setHistoryData(Array.isArray(data) ? data : [])
+      } catch {
+        setHistoryError('Failed to load utilisation history')
+      } finally {
+        setHistoryLoading(false)
+      }
+    }
+    if (subnetId) fetchHistory()
+  }, [subnetId, historyDays])
+
+  const chartData = historyData.map(d => ({
+    date: new Date(d.recordedAt).toLocaleDateString(),
+    pct: d.utilisationPct != null ? parseFloat(d.utilisationPct.toFixed(1)) : 0,
+  }))
+
+  return (
+    <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Utilisation History</h2>
+        <div className="flex gap-1">
+          {HISTORY_DAYS_OPTIONS.map(d => (
+            <button
+              key={d}
+              onClick={() => setHistoryDays(d)}
+              className={`px-2 py-1 rounded text-xs font-medium transition ${historyDays === d ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            >
+              {d}d
+            </button>
+          ))}
+        </div>
+      </div>
+      {historyLoading && <p className="text-gray-400 text-sm">Loading history...</p>}
+      {historyError && <p className="text-red-500 text-sm">{historyError}</p>}
+      {!historyLoading && !historyError && chartData.length === 0 && (
+        <p className="text-gray-400 text-sm">No utilisation history available for this period.</p>
+      )}
+      {!historyLoading && chartData.length > 0 && (
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+            <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} tick={{ fontSize: 11 }} />
+            <Tooltip formatter={v => [`${v}%`, 'Utilisation']} />
+            <Line type="monotone" dataKey="pct" stroke="#3b82f6" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  )
+}
+
 export default function IPAddressesPage() {
   const { subnetID } = useParams()
   const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
@@ -262,6 +329,7 @@ export default function IPAddressesPage() {
   const [ipReqError, setIPReqError] = useState(null)
   const [ipReqSuccess, setIPReqSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState('ips') // 'ips' | 'delegations'
+  const [downloading, setDownloading] = useState(false)
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -511,6 +579,17 @@ export default function IPAddressesPage() {
     }
   }
 
+  async function handleExportIPs() {
+    setDownloading(true)
+    try {
+      await downloadFile(`/api/v1/admin/reports/export/ips?format=csv&subnet_id=${subnetID}`, `ips-subnet-${subnetID}.csv`)
+    } catch {
+      setError('Export failed')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading IP addresses...</p>
 
   const col = (key) => visibleCols.includes(key)
@@ -571,6 +650,14 @@ export default function IPAddressesPage() {
               </div>
             )}
           </div>
+          <button
+            onClick={handleExportIPs}
+            disabled={downloading}
+            className="px-3 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm disabled:opacity-50"
+            title="Export IP list as CSV"
+          >
+            {downloading ? 'Exporting...' : 'Export CSV'}
+          </button>
           {!canAssignIP && (
             <button onClick={openIPRequest} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
               Request IP
@@ -851,7 +938,9 @@ export default function IPAddressesPage() {
           total={total}
           onChange={handlePageChange}
         />
-      )}</>}
+      )}
+      <UtilisationHistorySection subnetId={subnetID} />
+      </>}
 
       {modal === 'create' && (
         <Modal title="New IP Address" onClose={() => setModal(null)}>

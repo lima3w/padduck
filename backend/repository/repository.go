@@ -276,7 +276,7 @@ func (r *Repository) DeleteSection(ctx context.Context, id int64) error {
 // Subnet operations
 
 // subnetSelectCols is the base column list for subnets (no JOIN).
-const subnetSelectCols = `s.id, s.section_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.parent_subnet_id, s.is_container, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at`
+const subnetSelectCols = `s.id, s.section_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.parent_subnet_id, s.is_container, s.alert_threshold_pct, s.alert_email_override, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at`
 
 const subnetFromJoin = `FROM subnets s LEFT JOIN nameservers ns ON s.nameserver_id = ns.id`
 
@@ -292,6 +292,7 @@ func scanSubnet(row interface {
 		&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
 		&subnet.Description, &subnet.Gateway, &subnet.AutoReserveFirst, &subnet.AutoReserveLast,
 		&subnet.LocationID, &subnet.NameserverID, &subnet.VLANID, &subnet.ParentSubnetID, &subnet.IsContainer,
+		&subnet.AlertThresholdPct, &subnet.AlertEmailOverride,
 		&subnet.CreatedAt, &subnet.UpdatedAt,
 		&nsID, &nsName, &nsServer1, &nsServer2, &nsServer3, &nsDesc, &nsCreatedAt, &nsUpdatedAt,
 	)

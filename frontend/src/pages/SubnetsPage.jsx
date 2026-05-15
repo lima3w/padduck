@@ -17,10 +17,11 @@ import Pagination from '../components/Pagination'
 import SubnetTree from '../components/SubnetTree'
 import CustomFieldForm from '../components/CustomFieldForm'
 import { getLocations } from '../api/locations'
+import { downloadFile } from '../utils/download'
 
 const DEFAULT_LIMIT = 25
 
-const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', custom_fields: {} }
+const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
 
 function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
   if (!networkAddress || isNaN(newPrefix) || newPrefix <= currentPrefix || newPrefix > 32) return []
@@ -89,6 +90,8 @@ export default function SubnetsPage() {
   const [resizeError, setResizeError] = useState(null) // null | { message, conflictingIps, conflictingSubnets }
   const [resizeConfirmText, setResizeConfirmText] = useState('')
   const [toast, setToast] = useState('')
+
+  const [downloading, setDownloading] = useState(false)
 
   const token = localStorage.getItem('token')
   const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -250,6 +253,8 @@ export default function SubnetsPage() {
         location_id: full.locationId ? String(full.locationId) : '',
         nameserver_id: full.nameserverId ? String(full.nameserverId) : '',
         custom_fields: full.customFields || {},
+        alert_threshold_pct: full.alertThresholdPct != null ? String(full.alertThresholdPct) : '',
+        alert_email_override: full.alertEmailOverride || '',
       })
       setOverlapError(null)
       setModal({ edit: full })
@@ -285,6 +290,8 @@ export default function SubnetsPage() {
           location_id: form.location_id ? parseInt(form.location_id) : null,
           nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
           custom_fields: form.custom_fields || {},
+          alert_threshold_pct: form.alert_threshold_pct ? parseInt(form.alert_threshold_pct) : null,
+          alert_email_override: form.alert_email_override || null,
         })
       }
       setModal(null)
@@ -407,6 +414,17 @@ export default function SubnetsPage() {
     }
   }
 
+  async function handleExportSubnets() {
+    setDownloading(true)
+    try {
+      await downloadFile(`/api/v1/admin/reports/export/subnets?format=csv`, `subnets-section-${sectionID}.csv`)
+    } catch {
+      setError('Export failed')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading subnets...</p>
 
   return (
@@ -443,6 +461,13 @@ export default function SubnetsPage() {
               Tree
             </button>
           </div>
+          <button
+            onClick={handleExportSubnets}
+            disabled={downloading}
+            className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50"
+          >
+            {downloading ? 'Exporting...' : 'Export CSV'}
+          </button>
           <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
             + New Subnet
           </button>
@@ -907,6 +932,31 @@ export default function SubnetsPage() {
                 />
                 <span className="text-sm text-gray-700">Auto-reserve last IP (broadcast address)</span>
               </label>
+            </div>
+            <div className="border-t dark:border-gray-600 pt-4 space-y-4">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Alert Settings</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Threshold % (optional)</label>
+                <input
+                  type="number" min="1" max="100"
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  placeholder="e.g. 80"
+                  value={form.alert_threshold_pct}
+                  onChange={e => setForm(f => ({ ...f, alert_threshold_pct: e.target.value }))}
+                />
+                <p className="text-xs text-gray-400 mt-1">Send alert when utilisation exceeds this percentage</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Email Override (optional)</label>
+                <input
+                  type="email"
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  placeholder="alerts@example.com"
+                  value={form.alert_email_override}
+                  onChange={e => setForm(f => ({ ...f, alert_email_override: e.target.value }))}
+                />
+                <p className="text-xs text-gray-400 mt-1">Override the default alert recipient for this subnet</p>
+              </div>
             </div>
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">

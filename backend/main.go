@@ -158,6 +158,10 @@ func main() {
 	// Start discovery scheduler
 	svc.Discovery.StartScheduler(ctx)
 
+	// Start reporting jobs (utilisation snapshots + scheduled reports)
+	svc.Reports.StartUtilisationSnapshotJob(ctx)
+	svc.Reports.StartScheduledReportJob(ctx)
+
 	// Setup HTTP server with centralized error handler
 	trustedProxies := parseTrustedProxies(os.Getenv("TRUSTED_PROXIES"))
 	app := fiber.New(fiber.Config{
