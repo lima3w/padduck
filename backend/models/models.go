@@ -246,11 +246,22 @@ type VLANDomain struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// VLANGroup represents a named grouping/category of VLANs
+type VLANGroup struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	Colour      *string   `json:"colour,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // VLAN represents a Virtual LAN segment
 type VLAN struct {
 	ID          int64
 	VRFID       *int64
 	DomainID    *int64
+	GroupID     *int64
 	VlanID      int
 	Name        string
 	Description string

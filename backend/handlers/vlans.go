@@ -12,6 +12,7 @@ import (
 type CreateVLANRequest struct {
 	VRFID       *int64 `json:"vrf_id"`
 	DomainID    *int64 `json:"domain_id"`
+	GroupID     *int64 `json:"group_id"`
 	VlanID      int    `json:"vlan_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -19,6 +20,7 @@ type CreateVLANRequest struct {
 
 type UpdateVLANRequest struct {
 	DomainID    *int64 `json:"domain_id"`
+	GroupID     *int64 `json:"group_id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
@@ -31,6 +33,18 @@ type CreateVLANDomainRequest struct {
 type UpdateVLANDomainRequest struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
+}
+
+type CreateVLANGroupRequest struct {
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	Colour      *string `json:"colour"`
+}
+
+type UpdateVLANGroupRequest struct {
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	Colour      *string `json:"colour"`
 }
 
 func (h *Handler) ListVLANs(c *fiber.Ctx) error {
@@ -77,7 +91,7 @@ func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	vlan, err := h.service.CreateVLAN(c.Context(), req.VRFID, req.DomainID, req.VlanID, req.Name, req.Description)
+	vlan, err := h.service.CreateVLAN(c.Context(), req.VRFID, req.DomainID, req.GroupID, req.VlanID, req.Name, req.Description)
 	if err != nil {
 		log.Printf("Error creating VLAN: %v", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
@@ -107,7 +121,7 @@ func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	vlan, err := h.service.UpdateVLAN(c.Context(), int64(id), req.DomainID, req.Name, req.Description)
+	vlan, err := h.service.UpdateVLAN(c.Context(), int64(id), req.DomainID, req.GroupID, req.Name, req.Description)
 	if err != nil {
 		log.Printf("Error updating VLAN %d: %v", id, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
@@ -272,6 +286,117 @@ func (h *Handler) DeleteVLANDomain(c *fiber.Ctx) error {
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "vlan_domain_deleted",
 		ResourceType: "vlan_domain", ResourceID: &did,
+	})
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// VLAN Group handlers
+
+func (h *Handler) ListVLANGroups(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANGroupList); err != nil {
+		return nil
+	}
+	groups, err := h.service.ListVLANGroups(c.Context())
+	if err != nil {
+		log.Printf("Error listing VLAN groups: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	if groups == nil {
+		groups = make([]*models.VLANGroup, 0)
+	}
+	return c.JSON(groups)
+}
+
+func (h *Handler) GetVLANGroup(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
+	}
+	if err := h.permCheck(c, services.PermV2VLANGroupRead); err != nil {
+		return nil
+	}
+	group, err := h.service.GetVLANGroup(c.Context(), int64(id))
+	if err != nil {
+		log.Printf("Error getting VLAN group %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	return c.JSON(group)
+}
+
+func (h *Handler) CreateVLANGroup(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANGroupWrite); err != nil {
+		return nil
+	}
+	req := new(CreateVLANGroupRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	group, err := h.service.CreateVLANGroup(c.Context(), req.Name, req.Description, req.Colour)
+	if err != nil {
+		log.Printf("Error creating VLAN group: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_group_created",
+		ResourceType: "vlan_group", ResourceID: &group.ID, ResourceName: group.Name,
+		NewValues: map[string]interface{}{"name": group.Name},
+	})
+
+	return c.Status(fiber.StatusCreated).JSON(group)
+}
+
+func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
+	}
+	if err := h.permCheck(c, services.PermV2VLANGroupWrite); err != nil {
+		return nil
+	}
+	req := new(UpdateVLANGroupRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	group, err := h.service.UpdateVLANGroup(c.Context(), int64(id), req.Name, req.Description, req.Colour)
+	if err != nil {
+		log.Printf("Error updating VLAN group %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_group_updated",
+		ResourceType: "vlan_group", ResourceID: &group.ID, ResourceName: group.Name,
+		NewValues: map[string]interface{}{"name": req.Name},
+	})
+
+	return c.JSON(group)
+}
+
+func (h *Handler) DeleteVLANGroup(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
+	}
+	if err := h.permCheck(c, services.PermV2VLANGroupDelete); err != nil {
+		return nil
+	}
+
+	if err := h.service.DeleteVLANGroup(c.Context(), int64(id)); err != nil {
+		log.Printf("Error deleting VLAN group %d: %v", id, err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	gid := int64(id)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_group_deleted",
+		ResourceType: "vlan_group", ResourceID: &gid,
 	})
 
 	return c.SendStatus(fiber.StatusNoContent)

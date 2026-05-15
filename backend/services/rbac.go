@@ -95,6 +95,12 @@ const (
 	PermV2VLANDomainRead   = "ipam:vlan_domain:read"
 	PermV2VLANDomainWrite  = "ipam:vlan_domain:write"
 	PermV2VLANDomainDelete = "ipam:vlan_domain:delete"
+
+	// VLAN group permissions (v1.8.0 #207)
+	PermV2VLANGroupList   = "ipam:vlan_group:list"
+	PermV2VLANGroupRead   = "ipam:vlan_group:read"
+	PermV2VLANGroupWrite  = "ipam:vlan_group:write"
+	PermV2VLANGroupDelete = "ipam:vlan_group:delete"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -110,6 +116,7 @@ var AllPermissions = []string{
 	PermV2NameserverList, PermV2NameserverRead, PermV2NameserverWrite, PermV2NameserverDelete,
 	PermV2SubnetRequestSubmit, PermV2SubnetRequestReview,
 	PermV2VLANDomainList, PermV2VLANDomainRead, PermV2VLANDomainWrite, PermV2VLANDomainDelete,
+	PermV2VLANGroupList, PermV2VLANGroupRead, PermV2VLANGroupWrite, PermV2VLANGroupDelete,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -247,6 +254,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2LocationList: true, PermV2LocationRead: true,
 			PermV2NameserverList: true, PermV2NameserverRead: true,
 			PermV2VLANDomainList: true, PermV2VLANDomainRead: true,
+			PermV2VLANGroupList: true, PermV2VLANGroupRead: true,
 			// Viewers cannot submit or review requests
 		}
 		return readPerms[permission]

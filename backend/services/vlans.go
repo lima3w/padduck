@@ -7,14 +7,14 @@ import (
 	"ipam-next/models"
 )
 
-func (s *Service) CreateVLAN(ctx context.Context, vrfID *int64, domainID *int64, vlanID int, name, description string) (*models.VLAN, error) {
+func (s *Service) CreateVLAN(ctx context.Context, vrfID *int64, domainID *int64, groupID *int64, vlanID int, name, description string) (*models.VLAN, error) {
 	if vlanID < 1 || vlanID > 4094 {
 		return nil, fmt.Errorf("VLAN ID must be between 1 and 4094")
 	}
 	if name == "" {
 		return nil, fmt.Errorf("VLAN name is required")
 	}
-	return s.repository.CreateVLAN(ctx, vrfID, domainID, vlanID, name, description)
+	return s.repository.CreateVLAN(ctx, vrfID, domainID, groupID, vlanID, name, description)
 }
 
 func (s *Service) GetVLAN(ctx context.Context, id int64) (*models.VLAN, error) {
@@ -35,14 +35,14 @@ func (s *Service) ListVLANsByVRF(ctx context.Context, vrfID int64) ([]*models.VL
 	return s.repository.ListVLANsByVRF(ctx, vrfID)
 }
 
-func (s *Service) UpdateVLAN(ctx context.Context, id int64, domainID *int64, name, description string) (*models.VLAN, error) {
+func (s *Service) UpdateVLAN(ctx context.Context, id int64, domainID *int64, groupID *int64, name, description string) (*models.VLAN, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid VLAN ID")
 	}
 	if name == "" {
 		return nil, fmt.Errorf("VLAN name is required")
 	}
-	return s.repository.UpdateVLAN(ctx, id, domainID, name, description)
+	return s.repository.UpdateVLAN(ctx, id, domainID, groupID, name, description)
 }
 
 func (s *Service) DeleteVLAN(ctx context.Context, id int64) error {
@@ -87,4 +87,41 @@ func (s *Service) DeleteVLANDomain(ctx context.Context, id int64) error {
 		return fmt.Errorf("invalid VLAN domain ID")
 	}
 	return s.repository.DeleteVLANDomain(ctx, id)
+}
+
+// VLAN Group methods
+
+func (s *Service) CreateVLANGroup(ctx context.Context, name string, description *string, colour *string) (*models.VLANGroup, error) {
+	if name == "" {
+		return nil, fmt.Errorf("VLAN group name is required")
+	}
+	return s.repository.CreateVLANGroup(ctx, name, description, colour)
+}
+
+func (s *Service) GetVLANGroup(ctx context.Context, id int64) (*models.VLANGroup, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid VLAN group ID")
+	}
+	return s.repository.GetVLANGroupByID(ctx, id)
+}
+
+func (s *Service) ListVLANGroups(ctx context.Context) ([]*models.VLANGroup, error) {
+	return s.repository.ListVLANGroups(ctx)
+}
+
+func (s *Service) UpdateVLANGroup(ctx context.Context, id int64, name string, description *string, colour *string) (*models.VLANGroup, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid VLAN group ID")
+	}
+	if name == "" {
+		return nil, fmt.Errorf("VLAN group name is required")
+	}
+	return s.repository.UpdateVLANGroup(ctx, id, name, description, colour)
+}
+
+func (s *Service) DeleteVLANGroup(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("invalid VLAN group ID")
+	}
+	return s.repository.DeleteVLANGroup(ctx, id)
 }

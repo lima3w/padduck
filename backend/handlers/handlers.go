@@ -174,6 +174,14 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vlanDomains.Put("/:id", h.UpdateVLANDomain)
 	vlanDomains.Delete("/:id", h.DeleteVLANDomain)
 
+	// VLAN Groups routes (v1.8.0 #207)
+	vlanGroups := protected.Group("/vlan-groups")
+	vlanGroups.Get("", h.ListVLANGroups)
+	vlanGroups.Post("", h.CreateVLANGroup)
+	vlanGroups.Get("/:id", h.GetVLANGroup)
+	vlanGroups.Put("/:id", h.UpdateVLANGroup)
+	vlanGroups.Delete("/:id", h.DeleteVLANGroup)
+
 	// Admin routes (protected + admin role required)
 	admin := protected.Group("/admin")
 	admin.Get("/config", h.GetConfig)

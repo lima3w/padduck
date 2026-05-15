@@ -1073,28 +1073,28 @@ func (r *Repository) DeleteVRF(ctx context.Context, id int64) error {
 
 // VLAN operations
 
-func (r *Repository) CreateVLAN(ctx context.Context, vrfID *int64, domainID *int64, vlanID int, name, description string) (*models.VLAN, error) {
-	query := `INSERT INTO vlans (vrf_id, domain_id, vlan_id, name, description)
-	          VALUES ($1, $2, $3, $4, $5)
-	          RETURNING id, vrf_id, domain_id, vlan_id, name, description, created_at, updated_at`
+func (r *Repository) CreateVLAN(ctx context.Context, vrfID *int64, domainID *int64, groupID *int64, vlanID int, name, description string) (*models.VLAN, error) {
+	query := `INSERT INTO vlans (vrf_id, domain_id, group_id, vlan_id, name, description)
+	          VALUES ($1, $2, $3, $4, $5, $6)
+	          RETURNING id, vrf_id, domain_id, group_id, vlan_id, name, description, created_at, updated_at`
 	vlan := &models.VLAN{}
-	err := r.db.QueryRow(ctx, query, vrfID, domainID, vlanID, name, description).Scan(
-		&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
+	err := r.db.QueryRow(ctx, query, vrfID, domainID, groupID, vlanID, name, description).Scan(
+		&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.GroupID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
 	)
 	return vlan, err
 }
 
 func (r *Repository) GetVLANByID(ctx context.Context, id int64) (*models.VLAN, error) {
-	query := `SELECT id, vrf_id, domain_id, vlan_id, name, description, created_at, updated_at FROM vlans WHERE id = $1`
+	query := `SELECT id, vrf_id, domain_id, group_id, vlan_id, name, description, created_at, updated_at FROM vlans WHERE id = $1`
 	vlan := &models.VLAN{}
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
+		&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.GroupID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
 	)
 	return vlan, err
 }
 
 func (r *Repository) ListAllVLANs(ctx context.Context) ([]*models.VLAN, error) {
-	query := `SELECT id, vrf_id, domain_id, vlan_id, name, description, created_at, updated_at FROM vlans ORDER BY vlan_id ASC`
+	query := `SELECT id, vrf_id, domain_id, group_id, vlan_id, name, description, created_at, updated_at FROM vlans ORDER BY vlan_id ASC`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -1104,7 +1104,7 @@ func (r *Repository) ListAllVLANs(ctx context.Context) ([]*models.VLAN, error) {
 	vlans := make([]*models.VLAN, 0)
 	for rows.Next() {
 		vlan := &models.VLAN{}
-		err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt)
+		err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.GroupID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -1114,7 +1114,7 @@ func (r *Repository) ListAllVLANs(ctx context.Context) ([]*models.VLAN, error) {
 }
 
 func (r *Repository) ListVLANsByVRF(ctx context.Context, vrfID int64) ([]*models.VLAN, error) {
-	query := `SELECT id, vrf_id, domain_id, vlan_id, name, description, created_at, updated_at FROM vlans WHERE vrf_id = $1 ORDER BY vlan_id ASC`
+	query := `SELECT id, vrf_id, domain_id, group_id, vlan_id, name, description, created_at, updated_at FROM vlans WHERE vrf_id = $1 ORDER BY vlan_id ASC`
 	rows, err := r.db.Query(ctx, query, vrfID)
 	if err != nil {
 		return nil, err
@@ -1124,7 +1124,7 @@ func (r *Repository) ListVLANsByVRF(ctx context.Context, vrfID int64) ([]*models
 	vlans := make([]*models.VLAN, 0)
 	for rows.Next() {
 		vlan := &models.VLAN{}
-		err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt)
+		err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.GroupID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -1133,13 +1133,13 @@ func (r *Repository) ListVLANsByVRF(ctx context.Context, vrfID int64) ([]*models
 	return vlans, rows.Err()
 }
 
-func (r *Repository) UpdateVLAN(ctx context.Context, id int64, domainID *int64, name, description string) (*models.VLAN, error) {
-	query := `UPDATE vlans SET name = $1, description = $2, domain_id = $3, updated_at = CURRENT_TIMESTAMP
-	          WHERE id = $4
-	          RETURNING id, vrf_id, domain_id, vlan_id, name, description, created_at, updated_at`
+func (r *Repository) UpdateVLAN(ctx context.Context, id int64, domainID *int64, groupID *int64, name, description string) (*models.VLAN, error) {
+	query := `UPDATE vlans SET name = $1, description = $2, domain_id = $3, group_id = $4, updated_at = CURRENT_TIMESTAMP
+	          WHERE id = $5
+	          RETURNING id, vrf_id, domain_id, group_id, vlan_id, name, description, created_at, updated_at`
 	vlan := &models.VLAN{}
-	err := r.db.QueryRow(ctx, query, name, description, domainID, id).Scan(
-		&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
+	err := r.db.QueryRow(ctx, query, name, description, domainID, groupID, id).Scan(
+		&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.GroupID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt,
 	)
 	return vlan, err
 }
@@ -1203,6 +1203,63 @@ func (r *Repository) UpdateVLANDomain(ctx context.Context, id int64, name string
 
 func (r *Repository) DeleteVLANDomain(ctx context.Context, id int64) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM vlan_domains WHERE id = $1`, id)
+	return err
+}
+
+// VLANGroup operations
+
+func (r *Repository) CreateVLANGroup(ctx context.Context, name string, description *string, colour *string) (*models.VLANGroup, error) {
+	query := `INSERT INTO vlan_groups (name, description, colour)
+	          VALUES ($1, $2, $3)
+	          RETURNING id, name, description, colour, created_at, updated_at`
+	g := &models.VLANGroup{}
+	err := r.db.QueryRow(ctx, query, name, description, colour).Scan(
+		&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt,
+	)
+	return g, err
+}
+
+func (r *Repository) GetVLANGroupByID(ctx context.Context, id int64) (*models.VLANGroup, error) {
+	query := `SELECT id, name, description, colour, created_at, updated_at FROM vlan_groups WHERE id = $1`
+	g := &models.VLANGroup{}
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt,
+	)
+	return g, err
+}
+
+func (r *Repository) ListVLANGroups(ctx context.Context) ([]*models.VLANGroup, error) {
+	query := `SELECT id, name, description, colour, created_at, updated_at FROM vlan_groups ORDER BY name ASC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	groups := make([]*models.VLANGroup, 0)
+	for rows.Next() {
+		g := &models.VLANGroup{}
+		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt); err != nil {
+			return nil, err
+		}
+		groups = append(groups, g)
+	}
+	return groups, rows.Err()
+}
+
+func (r *Repository) UpdateVLANGroup(ctx context.Context, id int64, name string, description *string, colour *string) (*models.VLANGroup, error) {
+	query := `UPDATE vlan_groups SET name = $1, description = $2, colour = $3, updated_at = CURRENT_TIMESTAMP
+	          WHERE id = $4
+	          RETURNING id, name, description, colour, created_at, updated_at`
+	g := &models.VLANGroup{}
+	err := r.db.QueryRow(ctx, query, name, description, colour, id).Scan(
+		&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt,
+	)
+	return g, err
+}
+
+func (r *Repository) DeleteVLANGroup(ctx context.Context, id int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM vlan_groups WHERE id = $1`, id)
 	return err
 }
 
