@@ -213,6 +213,16 @@ export default function Sidebar() {
             >
               VLAN Usage
             </NavLink>
+            <NavLink
+              to="/admin/scan-jobs"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Scan Jobs
+            </NavLink>
           </>
         )}
       </nav>

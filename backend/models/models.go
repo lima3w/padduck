@@ -417,6 +417,8 @@ type ScanResult struct {
 	IPAddress      string    `json:"ip_address"`
 	IsAlive        bool      `json:"is_alive"`
 	ResponseTimeMs *int64    `json:"response_time_ms,omitempty"`
+	PTRRecord      *string   `json:"ptr_record,omitempty"`
+	FwdRevMismatch bool      `json:"fwd_rev_mismatch"`
 	ScannedAt      time.Time `json:"scanned_at"`
 }
 

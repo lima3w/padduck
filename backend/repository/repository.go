@@ -2449,14 +2449,14 @@ func (r *Repository) DeleteScanJob(ctx context.Context, id int64) error {
 }
 
 // CreateScanResult records the result of scanning a single IP
-func (r *Repository) CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64) (*models.ScanResult, error) {
-	query := `INSERT INTO scan_results (job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, scanned_at`
-	row := r.db.QueryRow(ctx, query, jobID, subnetID, ipAddressID, ipAddress, isAlive, responseTimeMs)
+func (r *Repository) CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64, ptrRecord *string, fwdRevMismatch bool) (*models.ScanResult, error) {
+	query := `INSERT INTO scan_results (job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at`
+	row := r.db.QueryRow(ctx, query, jobID, subnetID, ipAddressID, ipAddress, isAlive, responseTimeMs, ptrRecord, fwdRevMismatch)
 
 	sr := &models.ScanResult{}
-	err := row.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.ScannedAt)
+	err := row.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.PTRRecord, &sr.FwdRevMismatch, &sr.ScannedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -2465,7 +2465,7 @@ func (r *Repository) CreateScanResult(ctx context.Context, jobID, subnetID int64
 
 // ListScanResultsByJob returns recent scan results for a job
 func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error) {
-	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, scanned_at FROM scan_results WHERE job_id = $1 ORDER BY scanned_at DESC LIMIT $2`
+	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at FROM scan_results WHERE job_id = $1 ORDER BY scanned_at DESC LIMIT $2`
 	rows, err := r.db.Query(ctx, query, jobID, limit)
 	if err != nil {
 		return nil, err
@@ -2475,7 +2475,7 @@ func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limi
 	results := make([]*models.ScanResult, 0)
 	for rows.Next() {
 		sr := &models.ScanResult{}
-		if err := rows.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.ScannedAt); err != nil {
+		if err := rows.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.PTRRecord, &sr.FwdRevMismatch, &sr.ScannedAt); err != nil {
 			return nil, err
 		}
 		results = append(results, sr)
@@ -2483,9 +2483,21 @@ func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limi
 	return results, rows.Err()
 }
 
+// SetIPAddressPTRFromScan updates ptr_record on an IP address row from scan data.
+// It also sets dns_name if dns_name is currently empty, without overwriting existing values.
+func (r *Repository) SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE ip_addresses
+		SET ptr_record = $2,
+		    dns_name   = CASE WHEN (dns_name IS NULL OR dns_name = '') THEN $2 ELSE dns_name END,
+		    updated_at = now()
+		WHERE id = $1`, ipID, ptrRecord)
+	return err
+}
+
 // ListScanResultsBySubnet returns recent scan results for a subnet
 func (r *Repository) ListScanResultsBySubnet(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error) {
-	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, scanned_at FROM scan_results WHERE subnet_id = $1 ORDER BY scanned_at DESC LIMIT $2`
+	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at FROM scan_results WHERE subnet_id = $1 ORDER BY scanned_at DESC LIMIT $2`
 	rows, err := r.db.Query(ctx, query, subnetID, limit)
 	if err != nil {
 		return nil, err
@@ -2495,7 +2507,7 @@ func (r *Repository) ListScanResultsBySubnet(ctx context.Context, subnetID int64
 	results := make([]*models.ScanResult, 0)
 	for rows.Next() {
 		sr := &models.ScanResult{}
-		if err := rows.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.ScannedAt); err != nil {
+		if err := rows.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.PTRRecord, &sr.FwdRevMismatch, &sr.ScannedAt); err != nil {
 			return nil, err
 		}
 		results = append(results, sr)

@@ -11,12 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"ipam-next/internal/scanner"
 	"ipam-next/models"
 )
 
 // DiscoveryService handles network scanning and IP detection
 type DiscoveryService struct {
 	repository discoveryRepo
+	config     *ConfigService
 }
 
 type discoveryRepo interface {
@@ -29,13 +31,14 @@ type discoveryRepo interface {
 	UpdateScanJob(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool) (*models.ScanJob, error)
 	UpdateScanJobRunTime(ctx context.Context, id int64, nextRunAt *time.Time) error
 	DeleteScanJob(ctx context.Context, id int64) error
-	CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64) (*models.ScanResult, error)
+	CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64, ptrRecord *string, fwdRevMismatch bool) (*models.ScanResult, error)
 	ListScanResultsByJob(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error)
 	ListScanResultsBySubnet(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error)
+	SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string) error
 }
 
-func NewDiscoveryService(repo discoveryRepo) *DiscoveryService {
-	return &DiscoveryService{repository: repo}
+func NewDiscoveryService(repo discoveryRepo, configSvc *ConfigService) *DiscoveryService {
+	return &DiscoveryService{repository: repo, config: configSvc}
 }
 
 // PingHost checks if a host responds to ICMP ping, returning response time in ms
@@ -56,6 +59,13 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		concurrency = 20
 	}
 
+	resolveHostnames := true
+	if d.config != nil {
+		if v, _ := d.config.Get("scanner_resolve_hostnames"); v == "false" {
+			resolveHostnames = false
+		}
+	}
+
 	ips, err := enumerateCIDR(networkAddr, prefixLen)
 	if err != nil {
 		return nil, fmt.Errorf("enumerate CIDR: %w", err)
@@ -68,6 +78,8 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		ip             string
 		alive          bool
 		responseTimeMs int64
+		ptr            *string
+		fwdRevMismatch bool
 	}
 
 	workCh := make(chan work, len(ips))
@@ -85,7 +97,15 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 				default:
 				}
 				alive, ms := PingHost(w.ip, 2*time.Second)
-				resultCh <- result{ip: w.ip, alive: alive, responseTimeMs: ms}
+				r := result{ip: w.ip, alive: alive, responseTimeMs: ms}
+				if alive && resolveHostnames {
+					dns := scanner.ResolveHostname(w.ip, 2*time.Second)
+					if dns.PTR != "" {
+						r.ptr = &dns.PTR
+						r.fwdRevMismatch = dns.FwdRevMismatch
+					}
+				}
+				resultCh <- r
 			}
 		}()
 	}
@@ -110,9 +130,13 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		if r.responseTimeMs > 0 {
 			ms = &r.responseTimeMs
 		}
-		sr, err := d.repository.CreateScanResult(ctx, jobID, subnetID, ipAddressID, r.ip, r.alive, ms)
+		sr, err := d.repository.CreateScanResult(ctx, jobID, subnetID, ipAddressID, r.ip, r.alive, ms, r.ptr, r.fwdRevMismatch)
 		if err == nil {
 			scanResults = append(scanResults, sr)
+			// Propagate PTR to the ip_addresses row when it exists.
+			if r.ptr != nil && ipAddressID != nil {
+				_ = d.repository.SetIPAddressPTRFromScan(ctx, *ipAddressID, *r.ptr)
+			}
 		}
 	}
 	return scanResults, nil
