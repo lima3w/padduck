@@ -400,6 +400,20 @@ func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
 	return c.JSON(group)
 }
 
+func (h *Handler) GetVLANUsageReport(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+		return nil
+	}
+
+	report, err := h.service.GetVLANUsageReport(c.Context())
+	if err != nil {
+		log.Printf("Error generating VLAN usage report: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	return c.JSON(report)
+}
+
 func (h *Handler) DeleteVLANGroup(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {

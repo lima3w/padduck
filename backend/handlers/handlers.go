@@ -345,6 +345,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/requests/ips/:id/reject", h.RejectIPRequest)
 	admin.Get("/requests/pending-count", h.GetPendingRequestCount)
 
+	// VLAN usage report (v1.8.0 #209)
+	admin.Get("/vlans/usage-report", h.GetVLANUsageReport)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

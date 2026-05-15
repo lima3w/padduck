@@ -1303,6 +1303,52 @@ func (r *Repository) DeleteVLANGroup(ctx context.Context, id int64) error {
 	return err
 }
 
+// GetVLANUsageReport returns per-VLAN metrics by joining vlans → subnets → ip_addresses.
+func (r *Repository) GetVLANUsageReport(ctx context.Context) ([]*models.VLANUsageEntry, error) {
+	query := `
+SELECT
+    v.id                                          AS vlan_id,
+    v.name                                        AS vlan_name,
+    v.vlan_id                                     AS vlan_tag,
+    COUNT(DISTINCT s.id)                          AS subnet_count,
+    COUNT(ip.id)                                  AS ip_count,
+    COALESCE(SUM(CASE
+        WHEN s.prefix_length IS NOT NULL
+        THEN POWER(2, 32 - s.prefix_length)::BIGINT
+        ELSE 0 END), 0)                           AS total_ips,
+    CASE WHEN COALESCE(SUM(CASE
+        WHEN s.prefix_length IS NOT NULL
+        THEN POWER(2, 32 - s.prefix_length)::BIGINT
+        ELSE 0 END), 0) = 0
+        THEN 0.0
+        ELSE ROUND(
+            COUNT(ip.id)::NUMERIC /
+            SUM(POWER(2, 32 - s.prefix_length)::BIGINT)::NUMERIC * 100, 2
+        )
+    END                                           AS utilisation_pct
+FROM vlans v
+LEFT JOIN subnets s ON s.vlan_id = v.id
+LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+GROUP BY v.id, v.name, v.vlan_id
+ORDER BY v.vlan_id ASC
+`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	entries := make([]*models.VLANUsageEntry, 0)
+	for rows.Next() {
+		e := &models.VLANUsageEntry{}
+		if err := rows.Scan(&e.VLANID, &e.VLANName, &e.VLANTag, &e.SubnetCount, &e.IPCount, &e.TotalIPs, &e.UtilisationPct); err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}
+
 // Config operations
 
 func (r *Repository) GetConfig(ctx context.Context, key string) (*models.Config, error) {

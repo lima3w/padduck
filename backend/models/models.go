@@ -605,6 +605,23 @@ type RequestComment struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// VLANUsageEntry holds per-VLAN metrics for the usage report
+type VLANUsageEntry struct {
+	VLANID         int64   `json:"vlan_id"`
+	VLANName       string  `json:"vlan_name"`
+	VLANTag        int     `json:"vlan_tag"`
+	SubnetCount    int64   `json:"subnet_count"`
+	IPCount        int64   `json:"ip_count"`
+	TotalIPs       int64   `json:"total_ips"`
+	UtilisationPct float64 `json:"utilisation_pct"`
+}
+
+// VLANUsageReport is the top-level report returned by the usage-report endpoint
+type VLANUsageReport struct {
+	Entries   []*VLANUsageEntry `json:"entries"`
+	GeneratedAt string          `json:"generated_at"`
+}
+
 // DeviceInterface represents a network interface on a device
 type DeviceInterface struct {
 	ID                     int64   `json:"id"`

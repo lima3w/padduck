@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"ipam-next/models"
 )
 
 func TestCreateVLAN_InvalidVLANID(t *testing.T) {
@@ -147,6 +148,36 @@ func TestListVLANsByVRF_InvalidVRFID(t *testing.T) {
 			assert.Contains(t, err.Error(), "invalid VRF ID")
 		})
 	}
+}
+
+// VLANUsageReport model structure test
+
+func TestVLANUsageEntry_Fields(t *testing.T) {
+	entry := &models.VLANUsageEntry{
+		VLANID:         1,
+		VLANName:       "Management",
+		VLANTag:        10,
+		SubnetCount:    3,
+		IPCount:        42,
+		TotalIPs:       256,
+		UtilisationPct: 16.41,
+	}
+	assert.Equal(t, int64(1), entry.VLANID)
+	assert.Equal(t, "Management", entry.VLANName)
+	assert.Equal(t, 10, entry.VLANTag)
+	assert.Equal(t, int64(3), entry.SubnetCount)
+	assert.Equal(t, int64(42), entry.IPCount)
+	assert.Equal(t, int64(256), entry.TotalIPs)
+	assert.InDelta(t, 16.41, entry.UtilisationPct, 0.01)
+}
+
+func TestVLANUsageReport_Fields(t *testing.T) {
+	report := &models.VLANUsageReport{
+		Entries:     []*models.VLANUsageEntry{},
+		GeneratedAt: "2026-05-14T00:00:00Z",
+	}
+	assert.NotNil(t, report.Entries)
+	assert.Equal(t, "2026-05-14T00:00:00Z", report.GeneratedAt)
 }
 
 // GetVLANSubnets service unit tests

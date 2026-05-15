@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"ipam-next/models"
 )
@@ -124,4 +125,16 @@ func (s *Service) DeleteVLANGroup(ctx context.Context, id int64) error {
 		return fmt.Errorf("invalid VLAN group ID")
 	}
 	return s.repository.DeleteVLANGroup(ctx, id)
+}
+
+// GetVLANUsageReport returns per-VLAN metrics: subnet count, IP count, total IPs, utilisation.
+func (s *Service) GetVLANUsageReport(ctx context.Context) (*models.VLANUsageReport, error) {
+	entries, err := s.repository.GetVLANUsageReport(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &models.VLANUsageReport{
+		Entries:     entries,
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+	}, nil
 }

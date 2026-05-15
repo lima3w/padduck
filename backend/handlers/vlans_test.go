@@ -13,6 +13,33 @@ import (
 var unprivVLAN = &models.User{ID: 0, Role: "viewer"}
 
 // ---------------------------------------------------------------------------
+// GetVLANUsageReport — GET /admin/vlans/usage-report
+// ---------------------------------------------------------------------------
+
+func TestGetVLANUsageReport_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/admin/vlans/usage-report", h.GetVLANUsageReport)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/admin/vlans/usage-report", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGetVLANUsageReport_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/admin/vlans/usage-report", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.GetVLANUsageReport(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/admin/vlans/usage-report", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
 // GetVLANSubnets — GET /vlans/:id/subnets
 // ---------------------------------------------------------------------------
 
