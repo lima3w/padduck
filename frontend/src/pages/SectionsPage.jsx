@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { getSectionsPaginated, createSection, updateSection, deleteSection, searchSections } from '../api/client'
 import { submitSubnetRequest } from '../api/requests'
 import Modal from '../components/Modal'
@@ -228,6 +228,7 @@ export default function SectionsPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
+                  <Link to={`/sections/${s.id}/topology`} className="text-gray-400 hover:text-blue-600 text-xs">Topology</Link>
                   {!canCreateSubnet && (
                     <button onClick={() => openSubnetRequest(s)} className="text-green-600 hover:text-green-800 text-xs font-medium">Request Subnet</button>
                   )}
