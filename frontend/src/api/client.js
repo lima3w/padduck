@@ -204,3 +204,28 @@ export const getDnsZoneRecords = (zone, type) =>
 
 // DNS admin
 export const testDnsConnection = () => api.post('/admin/dns/test')
+
+// VLAN Domains (#206)
+export const getVlanDomains = () => api.get('/vlan-domains')
+export const getVlanDomain = (id) => api.get(`/vlan-domains/${id}`)
+export const createVlanDomain = (data) => api.post('/vlan-domains', data)
+export const updateVlanDomain = (id, data) => api.put(`/vlan-domains/${id}`, data)
+export const deleteVlanDomain = (id) => api.delete(`/vlan-domains/${id}`)
+
+// VLAN Groups (#207)
+export const getVlanGroups = () => api.get('/vlan-groups')
+export const getVlanGroup = (id) => api.get(`/vlan-groups/${id}`)
+export const createVlanGroup = (data) => api.post('/vlan-groups', data)
+export const updateVlanGroup = (id, data) => api.put(`/vlan-groups/${id}`, data)
+export const deleteVlanGroup = (id) => api.delete(`/vlan-groups/${id}`)
+
+// VLANs (#206 #207 #208)
+export const getVlans = () => api.get('/vlans')
+export const getVlan = (id) => api.get(`/vlans/${id}`)
+export const createVlan = (data) => api.post('/vlans', data)
+export const updateVlan = (id, data) => api.put(`/vlans/${id}`, data)
+export const deleteVlan = (id) => api.delete(`/vlans/${id}`)
+export const getVlanSubnets = (id) => api.get(`/vlans/${id}/subnets`)
+
+// VLAN usage report (#209)
+export const getVlanUsageReport = () => api.get('/admin/vlans/usage-report')
