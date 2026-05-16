@@ -4,6 +4,12 @@ import Modal from '../components/Modal'
 import CustomFieldForm from '../components/CustomFieldForm'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
+import {
+  getDevice, updateDevice, getDeviceTypes,
+  getDeviceIPs, associateDeviceIP, disassociateDeviceIP,
+  getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface,
+  getCustomFields,
+} from '../api/client'
 
 const MEDIA_TYPES = ['copper', 'fiber', 'SFP', 'SFP+', 'QSFP', 'other']
 
@@ -29,8 +35,6 @@ export default function DeviceDetailPage() {
   const [locations, setLocations] = useState([])
   const [racks, setRacks] = useState([])
 
-  const headers = { 'Content-Type': 'application/json' }
-
   useEffect(() => {
     loadAll()
     loadCfDefs()
@@ -54,8 +58,8 @@ export default function DeviceDetailPage() {
 
   async function loadCfDefs() {
     try {
-      const res = await fetch('/api/v1/admin/custom-fields?entity_type=device', { headers })
-      if (res.ok) setCfDefs(await res.json() || [])
+      const res = await getCustomFields('device')
+      setCfDefs(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
 
@@ -63,16 +67,14 @@ export default function DeviceDetailPage() {
     try {
       setLoading(true)
       const [devRes, typesRes] = await Promise.all([
-        fetch(`/api/v1/devices/${id}`, { headers }),
-        fetch('/api/v1/device-types', { headers }),
+        getDevice(id),
+        getDeviceTypes(),
       ])
-      if (!devRes.ok) throw new Error('Device not found')
-      const dev = await devRes.json()
-      setDevice(dev)
-      setDeviceTypes(typesRes.ok ? (await typesRes.json() || []) : [])
+      setDevice(devRes.data)
+      setDeviceTypes(Array.isArray(typesRes.data) ? typesRes.data : [])
       await Promise.all([loadIPs(), loadInterfaces()])
     } catch (err) {
-      setError(err.message || 'Failed to load device')
+      setError(err.response?.data?.error || err.message || 'Failed to load device')
     } finally {
       setLoading(false)
     }
@@ -80,33 +82,33 @@ export default function DeviceDetailPage() {
 
   async function loadIPs() {
     try {
-      const res = await fetch(`/api/v1/devices/${id}/ip-addresses`, { headers })
-      if (res.ok) setIpAddresses(await res.json() || [])
+      const res = await getDeviceIPs(id)
+      setIpAddresses(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
 
   async function loadInterfaces() {
     try {
-      const res = await fetch(`/api/v1/devices/${id}/interfaces`, { headers })
-      if (res.ok) setInterfaces(await res.json() || [])
+      const res = await getDeviceInterfaces(id)
+      setInterfaces(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
 
   function openEdit() {
-    const locId = device.location_id ? String(device.location_id) : ''
+    const locId = device.locationId ? String(device.locationId) : ''
     if (locId) loadRacksForLocation(locId)
     setEditForm({
       hostname: device.hostname || '',
-      type_id: device.type_id ? String(device.type_id) : '',
+      type_id: device.typeId ? String(device.typeId) : '',
       description: device.description || '',
       vendor: device.vendor || '',
       model: device.model || '',
-      os_version: device.os_version || '',
+      os_version: device.osVersion || '',
       location_id: locId,
-      rack_id: device.rack_id ? String(device.rack_id) : '',
-      rack_unit_start: device.rack_unit_start != null ? String(device.rack_unit_start) : '',
-      rack_unit_size: device.rack_unit_size != null ? String(device.rack_unit_size) : '',
-      custom_fields: device.custom_fields || {},
+      rack_id: device.rackId ? String(device.rackId) : '',
+      rack_unit_start: device.rackUnitStart != null ? String(device.rackUnitStart) : '',
+      rack_unit_size: device.rackUnitSize != null ? String(device.rackUnitSize) : '',
+      custom_fields: device.customFields || {},
     })
     setModal('edit')
   }
@@ -128,12 +130,11 @@ export default function DeviceDetailPage() {
         rack_unit_size: editForm.rack_unit_size ? parseInt(editForm.rack_unit_size) : null,
         custom_fields: editForm.custom_fields || {},
       }
-      const res = await fetch(`/api/v1/devices/${id}`, { method: 'PUT', headers, body: JSON.stringify(body) })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
-      setDevice(await res.json())
+      const res = await updateDevice(id, body)
+      setDevice(res.data)
       setModal(null)
     } catch (err) {
-      setError(err.message || 'Failed to update device')
+      setError(err.response?.data?.error || err.message || 'Failed to update device')
     } finally {
       setSaving(false)
     }
@@ -148,19 +149,14 @@ export default function DeviceDetailPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch(`/api/v1/devices/${id}/ip-addresses/${assocForm.ip_id}/associate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          interface_name: assocForm.interface_name || null,
-          is_primary: assocForm.is_primary,
-        }),
+      await associateDeviceIP(id, assocForm.ip_id, {
+        interface_name: assocForm.interface_name || null,
+        is_primary: assocForm.is_primary,
       })
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
       setModal(null)
       await loadIPs()
     } catch (err) {
-      setError(err.message || 'Failed to associate IP')
+      setError(err.response?.data?.error || err.message || 'Failed to associate IP')
     } finally {
       setSaving(false)
     }
@@ -168,8 +164,7 @@ export default function DeviceDetailPage() {
 
   async function handleDisassociateIP(ipId) {
     try {
-      const res = await fetch(`/api/v1/devices/${id}/ip-addresses/${ipId}`, { method: 'DELETE', headers })
-      if (!res.ok) throw new Error()
+      await disassociateDeviceIP(id, ipId)
       setDeleteIpConfirm(null)
       await loadIPs()
     } catch {
@@ -186,9 +181,9 @@ export default function DeviceDetailPage() {
     setIfaceForm({
       name: iface.name || '',
       description: iface.description || '',
-      speed_mbps: iface.speed_mbps ? String(iface.speed_mbps) : '',
-      media_type: iface.media_type || '',
-      vlan_id: iface.vlan_id ? String(iface.vlan_id) : '',
+      speed_mbps: iface.speedMbps ? String(iface.speedMbps) : '',
+      media_type: iface.mediaType || '',
+      vlan_id: iface.vlanId ? String(iface.vlanId) : '',
     })
     setModal({ ifaceEdit: iface })
   }
@@ -204,18 +199,15 @@ export default function DeviceDetailPage() {
         media_type: ifaceForm.media_type || null,
         vlan_id: ifaceForm.vlan_id ? parseInt(ifaceForm.vlan_id) : null,
       }
-      let res
       if (modal === 'iface-add') {
-        res = await fetch(`/api/v1/devices/${id}/interfaces`, { method: 'POST', headers, body: JSON.stringify(body) })
+        await createDeviceInterface(id, body)
       } else {
-        const ifId = modal.ifaceEdit.id
-        res = await fetch(`/api/v1/devices/${id}/interfaces/${ifId}`, { method: 'PUT', headers, body: JSON.stringify(body) })
+        await updateDeviceInterface(id, modal.ifaceEdit.id, body)
       }
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
       setModal(null)
       await loadInterfaces()
     } catch (err) {
-      setError(err.message || 'Failed to save interface')
+      setError(err.response?.data?.error || err.message || 'Failed to save interface')
     } finally {
       setSaving(false)
     }
@@ -223,8 +215,7 @@ export default function DeviceDetailPage() {
 
   async function handleDeleteInterface(ifId) {
     try {
-      const res = await fetch(`/api/v1/devices/${id}/interfaces/${ifId}`, { method: 'DELETE', headers })
-      if (!res.ok) throw new Error()
+      await deleteDeviceInterface(id, ifId)
       setDeleteIfaceConfirm(null)
       await loadInterfaces()
     } catch {
@@ -235,7 +226,7 @@ export default function DeviceDetailPage() {
   if (loading) return <p className="text-gray-500">Loading device...</p>
   if (error && !device) return <p className="text-red-600">{error}</p>
 
-  const typeObj = deviceTypes.find(t => t.id === device?.type_id)
+  const typeObj = deviceTypes.find(t => t.id === device?.typeId)
 
   return (
     <div>
@@ -271,9 +262,9 @@ export default function DeviceDetailPage() {
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Status</dt>
             <dd className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${device?.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-              <span className={`font-medium ${device?.is_online ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                {device?.is_online ? 'Online' : 'Offline'}
+              <span className={`w-2 h-2 rounded-full ${device?.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+              <span className={`font-medium ${device?.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                {device?.isOnline ? 'Online' : 'Offline'}
               </span>
             </dd>
           </div>
@@ -287,52 +278,52 @@ export default function DeviceDetailPage() {
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">OS Version</dt>
-            <dd className="text-gray-800 dark:text-gray-200">{device?.os_version || '—'}</dd>
+            <dd className="text-gray-800 dark:text-gray-200">{device?.osVersion || '—'}</dd>
           </div>
           <div>
             <dt className="text-gray-500 dark:text-gray-400">Last Ping</dt>
             <dd className="text-gray-800 dark:text-gray-200">
-              {device?.last_ping_at ? new Date(device.last_ping_at).toLocaleString() : '—'}
+              {device?.lastPingAt ? new Date(device.lastPingAt).toLocaleString() : '—'}
             </dd>
           </div>
-          {device?.location_id && (
+          {device?.locationId && (
             <div>
               <dt className="text-gray-500 dark:text-gray-400">Location</dt>
               <dd className="text-gray-800 dark:text-gray-200">
-                <Link to={`/locations/${device.location_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                  {locations.find(l => l.id === device.location_id)?.name || `#${device.location_id}`}
+                <Link to={`/locations/${device.locationId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                  {locations.find(l => l.id === device.locationId)?.name || `#${device.locationId}`}
                 </Link>
               </dd>
             </div>
           )}
-          {device?.rack_id && (
+          {device?.rackId && (
             <div>
               <dt className="text-gray-500 dark:text-gray-400">Rack</dt>
               <dd className="text-gray-800 dark:text-gray-200">
-                <Link to={`/racks/${device.rack_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                  Rack #{device.rack_id}
-                  {device.rack_unit_start != null && ` (U${device.rack_unit_start}–U${device.rack_unit_start + (device.rack_unit_size ?? 1) - 1})`}
+                <Link to={`/racks/${device.rackId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                  Rack #{device.rackId}
+                  {device.rackUnitStart != null && ` (U${device.rackUnitStart}–U${device.rackUnitStart + (device.rackUnitSize ?? 1) - 1})`}
                 </Link>
               </dd>
             </div>
           )}
         </dl>
-        {cfDefs.length > 0 && device?.custom_fields && Object.keys(device.custom_fields).length > 0 && (
+        {cfDefs.length > 0 && device?.customFields && Object.keys(device.customFields).length > 0 && (
           <div className="mt-4 border-t dark:border-gray-700 pt-4">
             <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
             <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
               {cfDefs.map(def => {
-                const val = device.custom_fields[def.name]
+                const val = device.customFields[def.name]
                 if (val == null) return null
                 const today = new Date().toISOString().split('T')[0]
-                const isPast = def.field_type === 'date' && val && val < today
+                const isPast = def.fieldType === 'date' && val && val < today
                 return (
                   <div key={def.id}>
                     <dt className="text-gray-500 dark:text-gray-400">{def.label}</dt>
                     <dd className={`font-medium ${isPast ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                      {def.field_type === 'url' && val ? (
+                      {def.fieldType === 'url' && val ? (
                         <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">{val}</a>
-                      ) : def.field_type === 'checkbox' ? (
+                      ) : def.fieldType === 'checkbox' ? (
                         val === 'true' ? 'Yes' : 'No'
                       ) : val || '—'}
                     </dd>
@@ -392,13 +383,13 @@ export default function DeviceDetailPage() {
                 {ipAddresses.map(ip => (
                   <tr key={ip.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.address}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.interface_name || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.interfaceName || '—'}</td>
                     <td className="px-4 py-3">
-                      {ip.is_primary && (
+                      {ip.isPrimary && (
                         <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">Primary</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.subnet_id ? `#${ip.subnet_id}` : '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.subnetId ? `#${ip.subnetId}` : '—'}</td>
                     <td className="px-4 py-3 text-right">
                       {deleteIpConfirm === ip.id ? (
                         <span className="space-x-2">
@@ -447,14 +438,14 @@ export default function DeviceDetailPage() {
                     <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{iface.name}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.description || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                      {iface.speed_mbps ? `${iface.speed_mbps} Mbps` : '—'}
+                      {iface.speedMbps ? `${iface.speedMbps} Mbps` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.media_type || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.vlan_id || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.mediaType || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.vlanId || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                      {iface.connected_to_device_id ? (
-                        <Link to={`/devices/${iface.connected_to_device_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                          Device #{iface.connected_to_device_id}
+                      {iface.connectedToDeviceId ? (
+                        <Link to={`/devices/${iface.connectedToDeviceId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                          Device #{iface.connectedToDeviceId}
                         </Link>
                       ) : '—'}
                     </td>

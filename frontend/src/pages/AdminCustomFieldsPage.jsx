@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
+import {
+  getCustomFields, createCustomField, updateCustomField,
+  deleteCustomField, reorderCustomFields,
+} from '../api/client'
 
 const ENTITY_TYPES = ['subnet', 'ip_address', 'device']
 const ENTITY_LABELS = { subnet: 'Subnets', ip_address: 'IP Addresses', device: 'Devices' }
@@ -28,8 +32,6 @@ export default function AdminCustomFieldsPage() {
   const [saving, setSaving] = useState(false)
   const [newOption, setNewOption] = useState({ value: '', label: '' })
 
-  const headers = { 'Content-Type': 'application/json' }
-
   useEffect(() => {
     load()
   }, [])
@@ -37,9 +39,8 @@ export default function AdminCustomFieldsPage() {
   async function load() {
     try {
       setLoading(true)
-      const res = await fetch('/api/v1/admin/custom-fields', { headers })
-      if (!res.ok) throw new Error()
-      setFields(await res.json() || [])
+      const res = await getCustomFields()
+      setFields(Array.isArray(res.data) ? res.data : [])
     } catch {
       setError('Failed to load custom fields')
     } finally {
@@ -48,7 +49,7 @@ export default function AdminCustomFieldsPage() {
   }
 
   function fieldsForTab(entityType) {
-    return fields.filter(f => f.entity_type === entityType).sort((a, b) => a.sort_order - b.sort_order)
+    return fields.filter(f => f.entityType === entityType).sort((a, b) => a.sortOrder - b.sortOrder)
   }
 
   function openCreate() {
@@ -59,15 +60,15 @@ export default function AdminCustomFieldsPage() {
 
   function openEdit(field) {
     setForm({
-      entity_type: field.entity_type,
+      entity_type: field.entityType,
       name: field.name || '',
       label: field.label || '',
-      field_type: field.field_type || 'text',
+      field_type: field.fieldType || 'text',
       options: field.options ? JSON.parse(JSON.stringify(field.options)) : [],
-      is_required: field.is_required || false,
-      default_value: field.default_value || '',
+      is_required: field.isRequired || false,
+      default_value: field.defaultValue || '',
       placeholder: field.placeholder || '',
-      is_searchable: field.is_searchable || false,
+      is_searchable: field.isSearchable || false,
     })
     setNewOption({ value: '', label: '' })
     setModal({ edit: field })
@@ -89,17 +90,14 @@ export default function AdminCustomFieldsPage() {
         is_searchable: form.is_searchable,
       }
       if (modal === 'create') {
-        const res = await fetch('/api/v1/admin/custom-fields', { method: 'POST', headers, body: JSON.stringify(body) })
-        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+        await createCustomField(body)
       } else {
-        const id = modal.edit.id
-        const res = await fetch(`/api/v1/admin/custom-fields/${id}`, { method: 'PUT', headers, body: JSON.stringify(body) })
-        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+        await updateCustomField(modal.edit.id, body)
       }
       setModal(null)
       load()
     } catch (err) {
-      setError(err.message || 'Failed to save custom field')
+      setError(err.response?.data?.error || err.message || 'Failed to save custom field')
     } finally {
       setSaving(false)
     }
@@ -107,8 +105,7 @@ export default function AdminCustomFieldsPage() {
 
   async function handleDelete(id) {
     try {
-      const res = await fetch(`/api/v1/admin/custom-fields/${id}`, { method: 'DELETE', headers })
-      if (!res.ok) throw new Error()
+      await deleteCustomField(id)
       setDeleteConfirm(null)
       load()
     } catch {
@@ -118,11 +115,7 @@ export default function AdminCustomFieldsPage() {
 
   async function handleReorder(entityType, ids) {
     try {
-      await fetch('/api/v1/admin/custom-fields/reorder', {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ ids }),
-      })
+      await reorderCustomFields(ids)
       load()
     } catch {
       setError('Failed to reorder fields')
@@ -218,16 +211,16 @@ export default function AdminCustomFieldsPage() {
                   </td>
                   <td className="px-4 py-3 font-mono text-gray-700 dark:text-gray-300">{field.name}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{field.label}</td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{field.field_type}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{field.fieldType}</td>
                   <td className="px-4 py-3">
-                    {field.is_required ? (
+                    {field.isRequired ? (
                       <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs rounded">Yes</span>
                     ) : (
                       <span className="text-gray-400 text-xs">No</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {field.is_searchable ? (
+                    {field.isSearchable ? (
                       <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded">Yes</span>
                     ) : (
                       <span className="text-gray-400 text-xs">No</span>

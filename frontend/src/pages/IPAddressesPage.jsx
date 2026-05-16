@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, api } from '../api/client'
+import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api } from '../api/client'
 import { submitIPRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -331,8 +331,6 @@ export default function IPAddressesPage() {
   const [activeTab, setActiveTab] = useState('ips') // 'ips' | 'delegations'
   const [downloading, setDownloading] = useState(false)
 
-  const cfHeaders = { 'Content-Type': 'application/json' }
-
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
@@ -342,8 +340,8 @@ export default function IPAddressesPage() {
 
   async function loadCfDefs() {
     try {
-      const res = await fetch('/api/v1/admin/custom-fields?entity_type=ip_address', { headers: cfHeaders })
-      if (res.ok) setCfDefs(await res.json() || [])
+      const res = await getCustomFields('ip_address')
+      setCfDefs(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
 
@@ -385,7 +383,7 @@ export default function IPAddressesPage() {
     localStorage.setItem(LS_KEY, JSON.stringify(final))
   }
 
-  const searchableFields = cfDefs.filter(d => d.is_searchable)
+  const searchableFields = cfDefs.filter(d => d.isSearchable)
 
   function addCfFilterRow() {
     if (searchableFields.length === 0) return
@@ -466,7 +464,7 @@ export default function IPAddressesPage() {
       mac_address: ip.MACAddress || '',
       ptr_record: ip.PTRRecord || ip.ptrRecord || '',
       dns_name: ip.dnsName || '',
-      custom_fields: ip.custom_fields || {},
+      custom_fields: ip.customFields || {},
     })
     setModal({ meta: ip })
   }
@@ -891,7 +889,7 @@ export default function IPAddressesPage() {
                   </td>
                 )}
                 {searchableFields.map(d => {
-                  const val = ip.custom_fields?.[d.name]
+                  const val = ip.customFields?.[d.name]
                   return (
                     <td key={d.name} className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {val ? (

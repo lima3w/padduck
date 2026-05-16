@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
+import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser } from '../api/client'
 
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
 const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
@@ -21,8 +22,6 @@ export default function AdminUsersPage() {
   const [createForm, setCreateForm] = useState(CREATE_EMPTY_FORM)
   const [createError, setCreateError] = useState('')
 
-  const headers = { 'Content-Type': 'application/json' }
-
   useEffect(() => {
     loadAll()
   }, [])
@@ -32,20 +31,17 @@ export default function AdminUsersPage() {
       setLoading(true)
       setError(null)
       const [usersRes, rolesRes] = await Promise.all([
-        fetch('/api/v1/admin/users', { headers }),
-        fetch('/api/v1/admin/roles', { headers }),
+        getAdminUsers(),
+        getAdminRoles(),
       ])
-      if (!usersRes.ok) throw new Error('Failed to load users')
-      const usersData = await usersRes.json()
+      const usersData = usersRes.data
       setUsers(Array.isArray(usersData) ? usersData : (usersData?.users ?? []))
-      if (rolesRes.ok) {
-        const rolesData = await rolesRes.json()
-        setRoles(Array.isArray(rolesData) ? rolesData : [])
-      }
+      const rolesData = rolesRes.data
+      setRoles(Array.isArray(rolesData) ? rolesData : [])
       const locsData = await getLocations().catch(() => [])
       setLocations(Array.isArray(locsData) ? locsData : (locsData?.locations ?? []))
     } catch (err) {
-      setError(err.message || 'Failed to load data')
+      setError(err.response?.data?.error || err.message || 'Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -53,11 +49,8 @@ export default function AdminUsersPage() {
 
   async function loadUserRoles(userId) {
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/roles`, { headers })
-      if (res.ok) {
-        const data = await res.json()
-        setUserRoles(prev => ({ ...prev, [userId]: Array.isArray(data) ? data : [] }))
-      }
+      const res = await getUserRoles(userId)
+      setUserRoles(prev => ({ ...prev, [userId]: Array.isArray(res.data) ? res.data : [] }))
     } catch {}
   }
 
@@ -84,17 +77,11 @@ export default function AdminUsersPage() {
     try {
       const body = { role_id: parseInt(assignForm.role_id) }
       if (assignForm.location_id) body.location_id = parseInt(assignForm.location_id)
-      const res = await fetch(`/api/v1/admin/users/${assignModal}/roles`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed') }
+      await assignUserRole(assignModal, body)
       setAssignModal(null)
-      // Reload roles for this user
       await loadUserRoles(assignModal)
     } catch (err) {
-      setError(err.message || 'Failed to assign role')
+      setError(err.response?.data?.error || err.message || 'Failed to assign role')
     } finally {
       setSaving(false)
     }
@@ -102,11 +89,7 @@ export default function AdminUsersPage() {
 
   async function handleRemoveRole(userId, roleId) {
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/roles/${roleId}`, {
-        method: 'DELETE',
-        headers,
-      })
-      if (!res.ok) throw new Error()
+      await removeUserRole(userId, roleId)
       setRemoveConfirm(null)
       await loadUserRoles(userId)
     } catch {
@@ -119,17 +102,12 @@ export default function AdminUsersPage() {
     setSaving(true)
     setCreateError('')
     try {
-      const res = await fetch('/api/v1/users', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(createForm),
-      })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to create user') }
+      await createUser(createForm)
       setCreateModal(false)
       setCreateForm(CREATE_EMPTY_FORM)
       await loadAll()
     } catch (err) {
-      setCreateError(err.message || 'Failed to create user')
+      setCreateError(err.response?.data?.error || err.message || 'Failed to create user')
     } finally {
       setSaving(false)
     }
@@ -191,12 +169,12 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {user.is_suspended ? (
+                    {user.state === 'suspended' ? (
                       <span className="text-xs text-red-600 dark:text-red-400 font-medium">Suspended</span>
-                    ) : user.is_active !== false ? (
+                    ) : user.state === 'active' ? (
                       <span className="text-xs text-green-600 dark:text-green-400 font-medium">Active</span>
                     ) : (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Inactive</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{user.state || 'Inactive'}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
@@ -220,23 +198,14 @@ export default function AdminUsersPage() {
                         <p className="text-sm text-gray-400">No custom roles assigned.</p>
                       ) : (
                         <div className="space-y-1">
-                          {userRoles[user.id].map(ur => {
-                            const locName = ur.location_id
-                              ? (locations.find(l => l.id === ur.location_id)?.name || `Location #${ur.location_id}`)
-                              : null
-                            return (
-                              <div key={ur.id} className="flex items-center justify-between gap-3 py-1.5 px-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700">
-                                <div>
-                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{ur.role?.name || `Role #${ur.role_id}`}</span>
-                                  {locName && (
-                                    <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                                      scoped to: {locName}
-                                    </span>
-                                  )}
-                                  {ur.role?.description && (
-                                    <span className="ml-2 text-xs text-gray-400">{ur.role.description}</span>
-                                  )}
-                                </div>
+                          {userRoles[user.id].map(ur => (
+                            <div key={ur.id} className="flex items-center justify-between gap-3 py-1.5 px-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700">
+                              <div>
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{ur.name || `Role #${ur.id}`}</span>
+                                {ur.description && (
+                                  <span className="ml-2 text-xs text-gray-400">{ur.description}</span>
+                                )}
+                              </div>
                                 <div>
                                   {removeConfirm?.userId === user.id && removeConfirm?.roleId === ur.id ? (
                                     <span className="space-x-2">
@@ -258,8 +227,7 @@ export default function AdminUsersPage() {
                                   )}
                                 </div>
                               </div>
-                            )
-                          })}
+                            ))}
                         </div>
                       )}
                     </td>

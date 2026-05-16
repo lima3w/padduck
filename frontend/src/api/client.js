@@ -253,3 +253,34 @@ export const getAuthProviders = () => noAuthApi.get('/auth/providers')
 // LDAP login (public)
 export const ldapLogin = (username, password) =>
   noAuthApi.post('/auth/ldap/login', { username, password })
+
+// Custom fields
+export const getCustomFields = (entityType) =>
+  api.get('/admin/custom-fields', { params: entityType ? { entity_type: entityType } : {} })
+export const createCustomField = (data) => api.post('/admin/custom-fields', data)
+export const updateCustomField = (id, data) => api.put(`/admin/custom-fields/${id}`, data)
+export const deleteCustomField = (id) => api.delete(`/admin/custom-fields/${id}`)
+export const reorderCustomFields = (ids) => api.put('/admin/custom-fields/reorder', { ids })
+
+// Devices
+export const getDevice = (id) => api.get(`/devices/${id}`)
+export const updateDevice = (id, data) => api.put(`/devices/${id}`, data)
+export const getDeviceTypes = () => api.get('/device-types')
+export const getDeviceIPs = (id) => api.get(`/devices/${id}/ip-addresses`)
+export const associateDeviceIP = (deviceId, ipId, data) =>
+  api.post(`/devices/${deviceId}/ip-addresses/${ipId}/associate`, data)
+export const disassociateDeviceIP = (deviceId, ipId) =>
+  api.delete(`/devices/${deviceId}/ip-addresses/${ipId}`)
+export const getDeviceInterfaces = (id) => api.get(`/devices/${id}/interfaces`)
+export const createDeviceInterface = (id, data) => api.post(`/devices/${id}/interfaces`, data)
+export const updateDeviceInterface = (deviceId, ifaceId, data) =>
+  api.put(`/devices/${deviceId}/interfaces/${ifaceId}`, data)
+export const deleteDeviceInterface = (deviceId, ifaceId) =>
+  api.delete(`/devices/${deviceId}/interfaces/${ifaceId}`)
+
+// Admin users & roles
+export const getAdminUsers = () => api.get('/admin/users')
+export const createUser = (data) => api.post('/users', data)
+export const getUserRoles = (userId) => api.get(`/admin/users/${userId}/roles`)
+export const assignUserRole = (userId, data) => api.post(`/admin/users/${userId}/roles`, data)
+export const removeUserRole = (userId, roleId) => api.delete(`/admin/users/${userId}/roles/${roleId}`)

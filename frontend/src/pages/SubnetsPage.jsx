@@ -11,6 +11,7 @@ import {
   getSubnetTree,
   getNameservers,
   getVlans,
+  getCustomFields,
   api,
 } from '../api/client'
 import Modal from '../components/Modal'
@@ -95,8 +96,6 @@ export default function SubnetsPage() {
 
   const [downloading, setDownloading] = useState(false)
 
-  const cfHeaders = { 'Content-Type': 'application/json' }
-
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
@@ -133,8 +132,8 @@ export default function SubnetsPage() {
 
   async function loadCfDefs() {
     try {
-      const res = await fetch('/api/v1/admin/custom-fields?entity_type=subnet', { headers: cfHeaders })
-      if (res.ok) setCfDefs(await res.json() || [])
+      const res = await getCustomFields('subnet')
+      setCfDefs(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
 
@@ -175,7 +174,7 @@ export default function SubnetsPage() {
     }
   }
 
-  const searchableFields = cfDefs.filter(d => d.is_searchable)
+  const searchableFields = cfDefs.filter(d => d.isSearchable)
 
   function addCfFilterRow() {
     if (searchableFields.length === 0) return
