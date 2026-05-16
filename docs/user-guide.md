@@ -25,6 +25,12 @@ On first boot the admin password is auto-generated and printed to the server log
 
 Set `ADMIN_PASSWORD` in your environment to use a specific password, or `RESET_ADMIN_PASSWORD=true` to force-reset it.
 
+When deployed with Docker Compose, host or runner environment variables are
+used first. Compose can also interpolate values from a local `.env` file. The
+most common deployment variables are `POSTGRES_USER`, `POSTGRES_PASSWORD`,
+`POSTGRES_DB`, `DATABASE_URL`, `ADMIN_PASSWORD`, `RESET_ADMIN_PASSWORD`, and
+`MFA_ENCRYPTION_KEY`.
+
 ---
 
 ## Sections

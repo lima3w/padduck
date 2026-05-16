@@ -145,7 +145,7 @@ func main() {
 	// Setup application layers
 	repo := repository.NewRepository(database.Pool())
 	svc := services.NewService(repo, cfg.MFAEncryptionKey)
-	handler := handlers.NewHandler(svc)
+	handler := handlers.NewHandler(svc, cfg.Environment == "production")
 
 	// Initialize admin password on first boot
 	if err := initAdminPassword(ctx, svc); err != nil {

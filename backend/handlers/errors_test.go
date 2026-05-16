@@ -119,7 +119,7 @@ func TestRespondError_WithoutDetails(t *testing.T) {
 
 // TestRespondError_HandlerHelpers verifies that handler method wrappers call RespondError.
 func TestRespondError_HandlerHelpers(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(nil, false)
 
 	tests := []struct {
 		name       string

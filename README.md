@@ -17,6 +17,18 @@ Replace spreadsheet-based IP tracking with a structured, API-first system.
 ## Run
 docker compose up --build
 
+Configuration is read from environment variables first. Docker Compose will
+also read a local `.env` file for variable interpolation. Common deployment
+variables:
+
+- `POSTGRES_USER` (default `ipam`)
+- `POSTGRES_PASSWORD` (default `ipam`)
+- `POSTGRES_DB` (default `ipam`)
+- `DATABASE_URL` (default derived from the PostgreSQL variables)
+- `ADMIN_PASSWORD` (empty means generate on first boot)
+- `RESET_ADMIN_PASSWORD` (default `false`)
+- `MFA_ENCRYPTION_KEY` (required in production; 64 hex characters)
+
 ## Deployment
 Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/deploy.yml`.
 - Runs tests on all pushes to `main`
@@ -24,7 +36,5 @@ Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/d
 - Verifies health endpoint before marking deployment successful
 
 ## Docs
-- docs/architecture.md
-- docs/roadmap.md
-- docs/sprints.md
-- docs/api.md
+- docs/openapi.yaml
+- docs/user-guide.md

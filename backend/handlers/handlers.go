@@ -18,12 +18,14 @@ var errResponseWritten = errors.New("response written")
 type Handler struct {
 	service      *services.Service
 	tokenLimiter *tokenRateLimiter
+	isProduction bool
 }
 
-func NewHandler(service *services.Service) *Handler {
+func NewHandler(service *services.Service, isProduction bool) *Handler {
 	return &Handler{
 		service:      service,
 		tokenLimiter: newTokenRateLimiter(),
+		isProduction: isProduction,
 	}
 }
 

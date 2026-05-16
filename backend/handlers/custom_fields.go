@@ -6,10 +6,14 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/repository"
+	"ipam-next/services"
 )
 
 // ListCustomFieldDefinitions handles GET /api/v1/admin/custom-fields
 func (h *Handler) ListCustomFieldDefinitions(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+		return nil
+	}
 	entityType := c.Query("entity_type")
 	defs, err := h.service.ListCustomFieldDefinitions(c.Context(), entityType)
 	if err != nil {
@@ -20,6 +24,9 @@ func (h *Handler) ListCustomFieldDefinitions(c *fiber.Ctx) error {
 
 // CreateCustomFieldDefinition handles POST /api/v1/admin/custom-fields
 func (h *Handler) CreateCustomFieldDefinition(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
 	p := new(repository.CustomFieldDefinitionParams)
 	if err := c.BodyParser(p); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})

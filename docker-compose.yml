@@ -2,11 +2,11 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: ipam
-      POSTGRES_PASSWORD: ipam
-      POSTGRES_DB: ipam
+      POSTGRES_USER: "${POSTGRES_USER:-ipam}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-ipam}"
+      POSTGRES_DB: "${POSTGRES_DB:-ipam}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ipam"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ipam}"]
       interval: 2s
       timeout: 5s
       retries: 10
@@ -16,12 +16,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgres://ipam:ipam@db:5432/ipam
-      SERVER_PORT: 8080
-      ENVIRONMENT: production
-      MFA_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
-      ADMIN_PASSWORD: "demo123"
-      RESET_ADMIN_PASSWORD: "true"
+      DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER:-ipam}:${POSTGRES_PASSWORD:-ipam}@db:5432/${POSTGRES_DB:-ipam}}"
+      SERVER_PORT: "${SERVER_PORT:-8080}"
+      ENVIRONMENT: "${ENVIRONMENT:-production}"
+      MFA_ENCRYPTION_KEY: "${MFA_ENCRYPTION_KEY:-}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      RESET_ADMIN_PASSWORD: "${RESET_ADMIN_PASSWORD:-false}"
     depends_on:
       db:
         condition: service_healthy
