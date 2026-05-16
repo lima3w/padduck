@@ -31,6 +31,8 @@ dist/
 build/
 
 # ---> Project-specific files
+CLAUDE.md
+
 # Catalog and reference files (auto-generated documentation)
 .claude/
 
