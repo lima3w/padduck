@@ -22,10 +22,48 @@ type Zone struct {
 
 // Record represents a single DNS record in a Technitium zone.
 type Record struct {
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	TTL   int    `json:"ttl"`
-	RData string `json:"rData"`
+	Name  string          `json:"name"`
+	Type  string          `json:"type"`
+	TTL   int             `json:"ttl"`
+	RData json.RawMessage `json:"rData"`
+}
+
+// Content extracts a human-readable value from the RData object.
+// Technitium returns rData as a typed object; we pull the most relevant field per record type.
+func (r *Record) Content() string {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(r.RData, &m); err != nil {
+		return string(r.RData)
+	}
+	pick := func(keys ...string) string {
+		for _, k := range keys {
+			if v, ok := m[k]; ok {
+				var s string
+				if err := json.Unmarshal(v, &s); err == nil {
+					return s
+				}
+			}
+		}
+		return ""
+	}
+	switch r.Type {
+	case "A", "AAAA":
+		return pick("ipAddress")
+	case "PTR":
+		return pick("ptrdName")
+	case "CNAME":
+		return pick("cname")
+	case "MX":
+		return pick("exchange")
+	case "NS":
+		return pick("nsDomainName")
+	case "TXT":
+		return pick("text")
+	case "SOA":
+		return pick("primaryNameServer")
+	default:
+		return pick("ipAddress", "cname", "exchange", "nsDomainName", "ptrdName", "text")
+	}
 }
 
 // Client is a Technitium DNS Server API client.

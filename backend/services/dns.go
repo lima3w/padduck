@@ -313,7 +313,7 @@ func (d *DNSService) GetDNSZoneRecords(ctx context.Context, zone, typeFilter str
 				Name:    rec.Name,
 				Type:    rec.Type,
 				TTL:     rec.TTL,
-				Content: rec.RData,
+				Content: rec.Content(),
 			})
 		}
 		return out, nil
