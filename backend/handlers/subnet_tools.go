@@ -98,13 +98,12 @@ func (h *Handler) MergeSubnets(c *fiber.Ctx) error {
 
 // ResizeSubnet handles POST /api/v1/admin/subnets/:id/resize
 func (h *Handler) ResizeSubnet(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
-		return nil
-	}
-
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(id)}); err != nil {
+		return nil
 	}
 
 	req := new(ResizeSubnetRequest)

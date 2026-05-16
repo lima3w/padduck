@@ -135,8 +135,7 @@ func TestResizeSubnet_NonAdmin_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestResizeSubnet_AdminInvalidID_Returns403(t *testing.T) {
-	// permCheck with nil service and admin user (ID=0) returns 403 before ID parsing
+func TestResizeSubnet_InvalidID_Returns400(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/resize", func(c *fiber.Ctx) error {
@@ -148,7 +147,7 @@ func TestResizeSubnet_AdminInvalidID_Returns403(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
