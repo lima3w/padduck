@@ -106,7 +106,7 @@ export default function MyRequestsPage() {
               {allRequests.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                    You haven't made any requests yet.
+                    You haven&apos;t made any requests yet.
                   </td>
                 </tr>
               )}

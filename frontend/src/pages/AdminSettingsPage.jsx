@@ -469,7 +469,7 @@ export default function AdminSettingsPage() {
                 placeholder="80"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Send an alert when a subnet's utilisation exceeds this percentage. Individual subnets can override this value.
+                Send an alert when a subnet&apos;s utilisation exceeds this percentage. Individual subnets can override this value.
               </p>
             </div>
             <button

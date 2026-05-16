@@ -228,7 +228,7 @@ export default function ScheduledReportsPage() {
             <div>
               <label className={labelClass}>Schedule (cron expression)</label>
               <input className={inputClass} value={form.scheduleCron} onChange={e => setForm(f => ({ ...f, scheduleCron: e.target.value }))} required placeholder="0 8 * * 1" />
-              <p className="text-xs text-gray-400 mt-1">e.g. '0 8 * * 1' for weekly Monday 8am</p>
+              <p className="text-xs text-gray-400 mt-1">e.g. &apos;0 8 * * 1&apos; for weekly Monday 8am</p>
             </div>
             <div>
               <label className={labelClass}>Recipients (comma-separated emails)</label>

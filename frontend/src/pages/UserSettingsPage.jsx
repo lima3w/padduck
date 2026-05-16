@@ -156,7 +156,7 @@ function SecurityTab({ user }) {
 
             {status.backup_codes_left <= 2 && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                You're running low on backup codes. Consider regenerating them.
+                You&apos;re running low on backup codes. Consider regenerating them.
               </div>
             )}
 
@@ -271,7 +271,7 @@ function SecurityTab({ user }) {
                 <p className="text-sm text-gray-700">Scan this QR code with your authenticator app:</p>
                 <img src={setupData.qr_code} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded" />
                 <details className="text-sm">
-                  <summary className="text-gray-500 cursor-pointer">Can't scan? Enter the secret manually</summary>
+                  <summary className="text-gray-500 cursor-pointer">Can&apos;t scan? Enter the secret manually</summary>
                   <code className="block mt-2 p-2 bg-gray-100 rounded font-mono text-xs break-all">{setupData.secret}</code>
                 </details>
                 <form onSubmit={handleConfirmTOTP} className="space-y-3">
@@ -380,7 +380,7 @@ function TokensTab({ user }) {
 
         {newToken && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
-            <p className="text-sm font-medium text-green-800 mb-2">Token created — copy it now, it won't be shown again:</p>
+            <p className="text-sm font-medium text-green-800 mb-2">Token created — copy it now, it won&apos;t be shown again:</p>
             <code className="block p-2 bg-white border border-green-200 rounded font-mono text-xs break-all text-gray-700">{newToken}</code>
             <button
               type="button"
