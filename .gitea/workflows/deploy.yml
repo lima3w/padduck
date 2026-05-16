@@ -42,14 +42,40 @@ jobs:
           sudo firewall-cmd --permanent --add-port=3000/tcp || true
           sudo firewall-cmd --reload || true
 
+      - name: Validate deployment environment
+        run: |
+          if [ -f /etc/ipam-next/deploy.env ]; then
+            echo "Using /etc/ipam-next/deploy.env for Docker Compose interpolation"
+            echo "COMPOSE_ENV_ARGS=--env-file /etc/ipam-next/deploy.env" >> "$GITHUB_ENV"
+            set -a
+            . /etc/ipam-next/deploy.env
+            set +a
+          else
+            echo "No /etc/ipam-next/deploy.env found; using runner/job environment"
+            echo "COMPOSE_ENV_ARGS=" >> "$GITHUB_ENV"
+          fi
+
+          key_len=$(printf "%s" "${MFA_ENCRYPTION_KEY:-}" | wc -c)
+          if [ "$key_len" -ne 64 ]; then
+            echo "MFA_ENCRYPTION_KEY must be set to a 64-character hex string in the runner environment or /etc/ipam-next/deploy.env"
+            echo "Current MFA_ENCRYPTION_KEY length: $key_len"
+            exit 1
+          fi
+          case "$MFA_ENCRYPTION_KEY" in
+            *[!0-9a-fA-F]*)
+              echo "MFA_ENCRYPTION_KEY contains non-hex characters"
+              exit 1
+              ;;
+          esac
+
       - name: Build containers
-        run: docker compose build
+        run: docker compose $COMPOSE_ENV_ARGS build
 
       - name: Stop existing containers
-        run: docker compose down || true
+        run: docker compose $COMPOSE_ENV_ARGS down || true
 
       - name: Start new containers
-        run: docker compose up -d
+        run: docker compose $COMPOSE_ENV_ARGS up -d
 
       - name: Verify health endpoint
         run: |
@@ -61,10 +87,10 @@ jobs:
             fi
             echo "Attempt $i/12 failed, retrying..."
           done
-          docker compose logs backend
+          docker compose $COMPOSE_ENV_ARGS logs backend
           exit 1
 
       - name: Deployment summary
         run: |
           echo "✅ Deployment successful"
-          docker compose ps
+          docker compose $COMPOSE_ENV_ARGS ps
