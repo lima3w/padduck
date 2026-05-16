@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,6 +64,31 @@ func TestCreateIPAddress_Validation(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})
 	}
+}
+
+func TestNormalizeCreateIPAddressError_DuplicateAddress(t *testing.T) {
+	err := normalizeCreateIPAddressError(&pgconn.PgError{
+		Code:           "23505",
+		ConstraintName: "ip_addresses_subnet_id_address_key",
+	}, "192.168.0.10")
+
+	assert.EqualError(t, err, "IP address 192.168.0.10 already exists in this subnet")
+}
+
+func TestNormalizeCreateIPAddressError_WrappedDuplicateAddress(t *testing.T) {
+	err := normalizeCreateIPAddressError(fmt.Errorf("insert failed: %w", &pgconn.PgError{
+		Code:           "23505",
+		ConstraintName: "ip_addresses_subnet_id_address_key",
+	}), "192.168.0.10")
+
+	assert.EqualError(t, err, "IP address 192.168.0.10 already exists in this subnet")
+}
+
+func TestNormalizeCreateIPAddressError_PreservesOtherErrors(t *testing.T) {
+	original := fmt.Errorf("database unavailable")
+	err := normalizeCreateIPAddressError(original, "192.168.0.10")
+
+	assert.Same(t, original, err)
 }
 
 func TestAssignIPAddress_Validation(t *testing.T) {

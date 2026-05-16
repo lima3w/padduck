@@ -2,10 +2,12 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"ipam-next/models"
 )
 
@@ -26,7 +28,7 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 
 	ip, err := s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, tagID, macAddress, ptrRecord)
 	if err != nil {
-		return nil, err
+		return nil, normalizeCreateIPAddressError(err, address)
 	}
 
 	if len(customFields) > 0 && customFields[0] != nil {
@@ -35,6 +37,14 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 	}
 
 	return ip, nil
+}
+
+func normalizeCreateIPAddressError(err error, address string) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "ip_addresses_subnet_id_address_key" {
+		return fmt.Errorf("IP address %s already exists in this subnet", address)
+	}
+	return err
 }
 
 // UpdateIPAddressMeta updates tag, mac, and ptr_record fields of an IP address
@@ -141,10 +151,10 @@ func (s *Service) AllocateIPAddress(ctx context.Context, subnetID int64, assigne
 
 // SubnetUtilization represents utilization statistics for a subnet
 type SubnetUtilization struct {
-	Total      int64   `json:"total"`
-	Available  int64   `json:"available"`
-	Assigned   int64   `json:"assigned"`
-	Reserved   int64   `json:"reserved"`
+	Total       int64   `json:"total"`
+	Available   int64   `json:"available"`
+	Assigned    int64   `json:"assigned"`
+	Reserved    int64   `json:"reserved"`
 	Utilization float64 `json:"utilization_percent"`
 }
 
