@@ -28,7 +28,7 @@ export default function AdminCustomFieldsPage() {
   const [saving, setSaving] = useState(false)
   const [newOption, setNewOption] = useState({ value: '', label: '' })
 
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('auth_token')
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   useEffect(() => {

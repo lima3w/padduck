@@ -3,6 +3,7 @@ import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
 
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
+const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([])
@@ -16,6 +17,9 @@ export default function AdminUsersPage() {
   const [assignForm, setAssignForm] = useState(ASSIGN_EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [removeConfirm, setRemoveConfirm] = useState(null) // { userId, roleId }
+  const [createModal, setCreateModal] = useState(false)
+  const [createForm, setCreateForm] = useState(CREATE_EMPTY_FORM)
+  const [createError, setCreateError] = useState('')
 
   const headers = {
     'Content-Type': 'application/json',
@@ -113,12 +117,39 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleCreateSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setCreateError('')
+    try {
+      const res = await fetch('/api/v1/users', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(createForm),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to create user') }
+      setCreateModal(false)
+      setCreateForm(CREATE_EMPTY_FORM)
+      await loadAll()
+    } catch (err) {
+      setCreateError(err.message || 'Failed to create user')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading users...</p>
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Users &amp; Roles</h1>
+        <button
+          onClick={() => { setCreateForm(CREATE_EMPTY_FORM); setCreateError(''); setCreateModal(true) }}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+        >
+          + Create User
+        </button>
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
@@ -242,6 +273,63 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
+
+      {createModal && (
+        <Modal title="Create User" onClose={() => setCreateModal(false)}>
+          <form onSubmit={handleCreateSubmit} className="space-y-4">
+            {createError && <p className="text-red-600 text-sm">{createError}</p>}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username <span className="text-red-500">*</span></label>
+              <input
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={createForm.username}
+                onChange={e => setCreateForm(f => ({ ...f, username: e.target.value }))}
+                required
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span className="text-red-500">*</span></label>
+              <input
+                type="email"
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={createForm.email}
+                onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password <span className="text-red-500">*</span></label>
+              <input
+                type="password"
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={createForm.password}
+                onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
+                required
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={createForm.role}
+                onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}
+              >
+                <option value="user">User</option>
+                <option value="viewer">Viewer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+                {saving ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {assignModal && (
         <Modal title="Assign Role to User" onClose={() => setAssignModal(null)}>
