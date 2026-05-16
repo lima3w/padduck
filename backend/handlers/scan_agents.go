@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -118,6 +119,21 @@ func (h *Handler) AgentAuthMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// agentSubnetInfo is the per-subnet payload delivered to a scan agent.
+type agentSubnetInfo struct {
+	ID   int64  `json:"id"`
+	CIDR string `json:"cidr"`
+}
+
+// agentJobResponse enriches a ScanJob with the CIDRs the agent needs to scan.
+type agentJobResponse struct {
+	ID              int64             `json:"id"`
+	Name            string            `json:"name"`
+	Subnets         []agentSubnetInfo `json:"subnets"`
+	PingConcurrency int               `json:"ping_concurrency"`
+	ScanType        string            `json:"scan_type"`
+}
+
 // AgentGetJobs handles GET /api/v1/scan-agent/jobs
 func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 	agent, ok := agentFromContext(c)
@@ -128,7 +144,30 @@ func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
-	return c.JSON(jobs)
+
+	// Enrich each job with subnet CIDRs so the agent can scan without extra round-trips.
+	resp := make([]agentJobResponse, 0, len(jobs))
+	for _, job := range jobs {
+		r := agentJobResponse{
+			ID:              job.ID,
+			Name:            job.Name,
+			PingConcurrency: job.PingConcurrency,
+			ScanType:        job.ScanType,
+		}
+		for _, sid := range job.SubnetIDs {
+			subnet, err := h.service.GetSubnet(c.Context(), sid)
+			if err != nil {
+				log.Printf("AgentGetJobs: subnet %d not found for job %d: %v", sid, job.ID, err)
+				continue
+			}
+			r.Subnets = append(r.Subnets, agentSubnetInfo{
+				ID:   subnet.ID,
+				CIDR: fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength),
+			})
+		}
+		resp = append(resp, r)
+	}
+	return c.JSON(resp)
 }
 
 // AgentPostResults handles POST /api/v1/scan-agent/results

@@ -3,9 +3,10 @@
 // and posts results back.
 //
 // Configuration via environment variables:
-//   IPAM_SERVER_URL  — base URL of the IPAM server (e.g. https://ipam.example.com)
-//   IPAM_AGENT_TOKEN — raw bearer token issued when creating the agent
-//   POLL_INTERVAL    — polling interval in seconds (default: 30)
+//
+//	IPAM_SERVER_URL  — base URL of the IPAM server (e.g. https://ipam.example.com)
+//	IPAM_AGENT_TOKEN — raw bearer token issued when creating the agent
+//	POLL_INTERVAL    — polling interval in seconds (default: 30)
 package main
 
 import (
@@ -20,6 +21,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -33,11 +35,19 @@ type AgentScanResult struct {
 	ResponseTimeMs int64  `json:"response_time_ms,omitempty"`
 }
 
-// ScanJob is the minimal representation returned by /scan-agent/jobs.
+// subnetInfo is a single subnet entry in a job response.
+type subnetInfo struct {
+	ID   int64  `json:"id"`
+	CIDR string `json:"cidr"`
+}
+
+// ScanJob is the enriched job payload returned by /scan-agent/jobs.
 type ScanJob struct {
-	ID          int64   `json:"id"`
-	SubnetIDs   []int64 `json:"subnet_ids"`
-	Name        string  `json:"name"`
+	ID              int64        `json:"id"`
+	Name            string       `json:"name"`
+	Subnets         []subnetInfo `json:"subnets"`
+	PingConcurrency int          `json:"ping_concurrency"`
+	ScanType        string       `json:"scan_type"`
 }
 
 func main() {
@@ -61,7 +71,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Graceful shutdown
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -75,7 +84,6 @@ func main() {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
-	// Run once immediately, then on ticker.
 	runCycle(ctx, client, serverURL, agentToken)
 
 	for {
@@ -89,12 +97,10 @@ func main() {
 }
 
 func runCycle(ctx context.Context, client *http.Client, serverURL, token string) {
-	// Heartbeat
 	if err := doHeartbeat(ctx, client, serverURL, token); err != nil {
 		log.Printf("heartbeat error: %v", err)
 	}
 
-	// Fetch jobs
 	jobs, err := fetchJobs(ctx, client, serverURL, token)
 	if err != nil {
 		log.Printf("fetch jobs error: %v", err)
@@ -102,8 +108,9 @@ func runCycle(ctx context.Context, client *http.Client, serverURL, token string)
 	}
 
 	for _, job := range jobs {
-		log.Printf("running job %d (%s)", job.ID, job.Name)
+		log.Printf("running job %d (%s): %d subnet(s)", job.ID, job.Name, len(job.Subnets))
 		results := runJob(ctx, job)
+		log.Printf("job %d: %d results", job.ID, len(results))
 		if err := postResults(ctx, client, serverURL, token, job.ID, results); err != nil {
 			log.Printf("post results for job %d error: %v", job.ID, err)
 		}
@@ -148,16 +155,56 @@ func fetchJobs(ctx context.Context, client *http.Client, serverURL, token string
 	return jobs, nil
 }
 
+// runJob scans every subnet in the job and returns liveness results.
 func runJob(ctx context.Context, job ScanJob) []AgentScanResult {
-	results := make([]AgentScanResult, 0)
-	for _, subnetID := range job.SubnetIDs {
-		// We don't have subnet CIDR here — the server should send it.
-		// For now, just record that we processed the subnet.
-		_ = subnetID
+	concurrency := job.PingConcurrency
+	if concurrency <= 0 {
+		concurrency = 10
+	}
+
+	var results []AgentScanResult
+	var mu sync.Mutex
+
+	for _, sn := range job.Subnets {
+		ips, err := enumerateCIDR(sn.CIDR)
+		if err != nil {
+			log.Printf("job %d: enumerate %s: %v", job.ID, sn.CIDR, err)
+			continue
+		}
+
+		sem := make(chan struct{}, concurrency)
+		var wg sync.WaitGroup
+
+		for _, ip := range ips {
+			if ctx.Err() != nil {
+				break
+			}
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(ipStr string) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				alive, ms := pingHost(ipStr, 2*time.Second)
+				res := AgentScanResult{
+					SubnetID:  sn.ID,
+					IPAddress: ipStr,
+					IsAlive:   alive,
+				}
+				if alive {
+					res.ResponseTimeMs = ms
+				}
+				mu.Lock()
+				results = append(results, res)
+				mu.Unlock()
+			}(ip)
+		}
+		wg.Wait()
 	}
 	return results
 }
 
+// pingHost returns whether the host responded and the round-trip time in ms.
 func pingHost(host string, timeout time.Duration) (bool, int64) {
 	start := time.Now()
 	cmd := exec.Command("ping", "-c", "1", "-W", strconv.Itoa(int(timeout.Seconds())), host)
@@ -175,16 +222,21 @@ func enumerateCIDR(cidr string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	ip := ipNet.IP.To4()
-	if ip == nil {
+	base := ipNet.IP.To4()
+	if base == nil {
 		return nil, fmt.Errorf("only IPv4 supported")
 	}
+	// Compute broadcast address: base | ~mask
+	broadcast := make(net.IP, 4)
+	for i := 0; i < 4; i++ {
+		broadcast[i] = base[i] | ^ipNet.Mask[i]
+	}
 	var ips []string
-	for ip := cloneIP(ip); ipNet.Contains(ip); incrementIP(ip) {
-		if ip[3] == 0 || ip[3] == 255 {
+	for cur := cloneIP(base); ipNet.Contains(cur); incrementIP(cur) {
+		if cur.Equal(net.IP(ipNet.IP)) || cur.Equal(broadcast) {
 			continue
 		}
-		ips = append(ips, ip.String())
+		ips = append(ips, cur.String())
 	}
 	return ips, nil
 }
