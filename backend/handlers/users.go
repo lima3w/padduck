@@ -34,7 +34,10 @@ type UserDetailResponse struct {
 // ListUsers handles GET /api/v1/users (admin only)
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
+	if user.Role != "admin" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
 	}
 
@@ -99,7 +102,10 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 // CreateUser handles POST /api/v1/users (admin only)
 func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
+	if currentUser.Role != "admin" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
 	}
 
