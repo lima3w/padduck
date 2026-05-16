@@ -281,6 +281,26 @@ export default function Sidebar() {
             >
               Scheduled Reports
             </NavLink>
+            <NavLink
+              to="/admin/import"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Data Import
+            </NavLink>
+            <NavLink
+              to="/admin/export"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Data Export
+            </NavLink>
           </>
         )}
       </nav>
