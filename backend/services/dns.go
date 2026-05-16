@@ -200,7 +200,8 @@ func (d *DNSService) technitiumClient() *technitium.Client {
 	if apiURL == "" || token == "" {
 		return nil
 	}
-	return technitium.NewClient(apiURL, token)
+	skipTLS, _ := d.svc.Config.Get("technitium_skip_tls")
+	return technitium.NewClient(apiURL, token, skipTLS == "true")
 }
 
 // TestTechnitiumConnection tests connectivity to the configured Technitium DNS server.
@@ -210,6 +211,15 @@ func (d *DNSService) TestTechnitiumConnection(ctx context.Context) error {
 		return fmt.Errorf("Technitium DNS is not configured")
 	}
 	return client.TestConnection(ctx)
+}
+
+// TestTechnitiumConnectionWith tests a Technitium connection using the provided credentials,
+// bypassing saved config. Used by the admin settings test-before-save flow.
+func (d *DNSService) TestTechnitiumConnectionWith(ctx context.Context, apiURL, token string, skipTLS bool) error {
+	if apiURL == "" || token == "" {
+		return fmt.Errorf("URL and token are required")
+	}
+	return technitium.NewClient(apiURL, token, skipTLS).TestConnection(ctx)
 }
 
 // ListPDNSZones returns the list of zones from PowerDNS, or an empty list if not configured.

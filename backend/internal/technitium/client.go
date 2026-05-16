@@ -3,6 +3,7 @@ package technitium
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,12 +36,19 @@ type Client struct {
 }
 
 // NewClient returns a new Technitium API Client.
-func NewClient(baseURL, token string) *Client {
+func NewClient(baseURL, token string, skipTLS bool) *Client {
+	transport := http.DefaultTransport
+	if skipTLS {
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+		}
+	}
 	return &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		token:   token,
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout:   10 * time.Second,
+			Transport: transport,
 		},
 	}
 }

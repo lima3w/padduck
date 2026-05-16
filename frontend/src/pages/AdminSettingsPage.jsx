@@ -29,6 +29,7 @@ const CONFIG_KEYS_BY_TAB = {
     'technitium_url',
     'technitium_token',
     'technitium_default_zone',
+    'technitium_skip_tls',
   ],
   scanner: ['scanner_resolve_hostnames'],
 }
@@ -163,7 +164,11 @@ export default function AdminSettingsPage() {
   const handleTestTechnitium = async () => {
     setTechnitiumTestStatus('testing')
     try {
-      await testTechnitiumConnection()
+      await testTechnitiumConnection({
+        url: config?.technitium_url || '',
+        token: config?.technitium_token || '',
+        skip_tls: config?.technitium_skip_tls === 'true',
+      })
       setTechnitiumTestStatus({ ok: true, message: 'Connected' })
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Connection failed'
@@ -586,6 +591,20 @@ export default function AdminSettingsPage() {
                 placeholder="example.com"
               />
               <p className="text-xs text-gray-500 mt-1">Zone where A records are created when an IP is assigned a DNS name.</p>
+            </div>
+
+            <div className="mb-4 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="technitium_skip_tls"
+                checked={config.technitium_skip_tls === 'true'}
+                onChange={e => handleConfigChange('technitium_skip_tls', e.target.checked ? 'true' : 'false')}
+                className="h-4 w-4 text-blue-600 rounded border-gray-300"
+              />
+              <label htmlFor="technitium_skip_tls" className="text-sm font-medium text-gray-700">
+                Skip TLS certificate verification
+              </label>
+              <span className="text-xs text-yellow-600">(use only for self-signed certs)</span>
             </div>
 
             {technitiumTestStatus && technitiumTestStatus !== 'testing' && (

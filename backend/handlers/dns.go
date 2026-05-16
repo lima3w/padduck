@@ -34,12 +34,26 @@ func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
 }
 
 // TestTechnitiumConnection handles POST /api/v1/admin/dns/technitium/test
-// Tests connectivity to the configured Technitium DNS server.
+// Accepts optional JSON body {url, token, skip_tls} to test with unsaved values.
+// Falls back to saved config when body fields are empty.
 func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2AuditRead); err != nil {
 		return nil
 	}
-	if err := h.service.DNS.TestTechnitiumConnection(c.Context()); err != nil {
+	var body struct {
+		URL     string `json:"url"`
+		Token   string `json:"token"`
+		SkipTLS bool   `json:"skip_tls"`
+	}
+	_ = c.BodyParser(&body)
+
+	var err error
+	if body.URL != "" && body.Token != "" {
+		err = h.service.DNS.TestTechnitiumConnectionWith(c.Context(), body.URL, body.Token, body.SkipTLS)
+	} else {
+		err = h.service.DNS.TestTechnitiumConnection(c.Context())
+	}
+	if err != nil {
 		log.Printf("Technitium connection test failed: %v", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
 	}

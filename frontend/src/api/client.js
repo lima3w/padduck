@@ -204,7 +204,7 @@ export const getDnsZoneRecords = (zone, type) =>
 
 // DNS admin
 export const testDnsConnection = () => api.post('/admin/dns/test')
-export const testTechnitiumConnection = () => api.post('/admin/dns/technitium/test')
+export const testTechnitiumConnection = (params) => api.post('/admin/dns/technitium/test', params || {})
 
 // VLAN Domains (#206)
 export const getVlanDomains = () => api.get('/vlan-domains')
