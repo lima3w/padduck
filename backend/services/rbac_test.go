@@ -309,6 +309,8 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 		PermV2VLANDomainList, PermV2VLANDomainRead, PermV2VLANDomainWrite, PermV2VLANDomainDelete,
 		// v1.8.0 vlan group permissions
 		PermV2VLANGroupList, PermV2VLANGroupRead, PermV2VLANGroupWrite, PermV2VLANGroupDelete,
+		// admin-only operation permissions
+		PermV2AdminRead, PermV2AdminWrite,
 	}
 	assert.Equal(t, len(expected), len(AllPermissions))
 	for _, p := range expected {

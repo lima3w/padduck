@@ -175,7 +175,7 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 
 // GetLDAPConfig handles GET /api/v1/admin/auth/ldap.
 func (h *Handler) GetLDAPConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -209,7 +209,7 @@ func (h *Handler) GetLDAPConfig(c *fiber.Ctx) error {
 
 // UpdateLDAPConfig handles PUT /api/v1/admin/auth/ldap.
 func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -278,7 +278,7 @@ func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
 
 // TestLDAPConnection handles POST /api/v1/admin/auth/ldap/test.
 func (h *Handler) TestLDAPConnection(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -290,7 +290,7 @@ func (h *Handler) TestLDAPConnection(c *fiber.Ctx) error {
 
 // ListLDAPGroupMappings handles GET /api/v1/admin/auth/ldap/group-mappings.
 func (h *Handler) ListLDAPGroupMappings(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -306,7 +306,7 @@ func (h *Handler) ListLDAPGroupMappings(c *fiber.Ctx) error {
 
 // CreateLDAPGroupMapping handles POST /api/v1/admin/auth/ldap/group-mappings.
 func (h *Handler) CreateLDAPGroupMapping(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -339,7 +339,7 @@ func (h *Handler) CreateLDAPGroupMapping(c *fiber.Ctx) error {
 
 // DeleteLDAPGroupMapping handles DELETE /api/v1/admin/auth/ldap/group-mappings/:id.
 func (h *Handler) DeleteLDAPGroupMapping(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -366,7 +366,7 @@ func (h *Handler) DeleteLDAPGroupMapping(c *fiber.Ctx) error {
 
 // GetOAuth2Config handles GET /api/v1/admin/auth/oauth2.
 func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -397,7 +397,7 @@ func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
 
 // UpdateOAuth2Config handles PUT /api/v1/admin/auth/oauth2.
 func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -455,7 +455,7 @@ func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
 
 // GetSAMLConfig handles GET /api/v1/admin/auth/saml.
 func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -471,7 +471,7 @@ func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
 
 // UpdateSAMLConfig handles PUT /api/v1/admin/auth/saml.
 func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 

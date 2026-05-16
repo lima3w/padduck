@@ -26,7 +26,7 @@ type ResizeSubnetRequest struct {
 
 // SplitSubnet handles POST /api/v1/admin/subnets/:id/split
 func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -65,7 +65,7 @@ func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
 
 // MergeSubnets handles POST /api/v1/admin/subnets/merge
 func (h *Handler) MergeSubnets(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 

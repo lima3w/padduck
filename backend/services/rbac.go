@@ -101,6 +101,10 @@ const (
 	PermV2VLANGroupRead   = "ipam:vlan_group:read"
 	PermV2VLANGroupWrite  = "ipam:vlan_group:write"
 	PermV2VLANGroupDelete = "ipam:vlan_group:delete"
+
+	// Admin-only operation permissions
+	PermV2AdminRead  = "auth:admin:read"
+	PermV2AdminWrite = "auth:admin:write"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -117,6 +121,7 @@ var AllPermissions = []string{
 	PermV2SubnetRequestSubmit, PermV2SubnetRequestReview,
 	PermV2VLANDomainList, PermV2VLANDomainRead, PermV2VLANDomainWrite, PermV2VLANDomainDelete,
 	PermV2VLANGroupList, PermV2VLANGroupRead, PermV2VLANGroupWrite, PermV2VLANGroupDelete,
+	PermV2AdminRead, PermV2AdminWrite,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -154,31 +159,32 @@ func (s *Service) CheckPermission(ctx context.Context, userID int64, permission 
 		if err != nil {
 			return fmt.Errorf("permission denied")
 		}
-		if !permMatches(perms, permission, scopes) {
-			return fmt.Errorf("permission denied: %s", permission)
+		if permMatches(perms, permission, scopes) {
+			// Check location scope: if any scope has a LocationScope, validate it
+			for _, scope := range scopes {
+				if scope.LocationScope == nil {
+					continue
+				}
+				// Determine if user has a global (unscoped) role assignment
+				_, hasGlobal, err := s.repository.GetUserRoleLocationIDs(ctx, userID)
+				if err != nil || hasGlobal {
+					// Global role — no location restriction
+					return nil
+				}
+				// User has only location-scoped roles; check if the resource location is allowed
+				allowed, err := s.isLocationAllowed(ctx, userID, *scope.LocationScope)
+				if err != nil || !allowed {
+					return fmt.Errorf("permission denied: location not in scope")
+				}
+			}
+			return nil
 		}
-
-		// Check location scope: if any scope has a LocationScope, validate it
-		for _, scope := range scopes {
-			if scope.LocationScope == nil {
-				continue
-			}
-			// Determine if user has a global (unscoped) role assignment
-			_, hasGlobal, err := s.repository.GetUserRoleLocationIDs(ctx, userID)
-			if err != nil || hasGlobal {
-				// Global role — no location restriction
-				return nil
-			}
-			// User has only location-scoped roles; check if the resource location is allowed
-			allowed, err := s.isLocationAllowed(ctx, userID, *scope.LocationScope)
-			if err != nil || !allowed {
-				return fmt.Errorf("permission denied: location not in scope")
-			}
-		}
-		return nil
+		// Custom roles did not grant the permission; fall through to legacy role check.
 	}
 
-	// Legacy fallback: use the role column
+	// Legacy fallback: use the role column. This ensures that users whose legacy
+	// role (e.g. "admin") grants broader access than their custom role assignments
+	// are not inadvertently locked out.
 	user, err := s.repository.GetUserByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("permission denied")
@@ -239,7 +245,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 	case "user":
 		adminOnly := map[string]bool{
 			PermV2UserWrite: true, PermV2AuditRead: true, PermV2DeviceAdmin: true,
-			PermV2SubnetRequestReview: true,
+			PermV2SubnetRequestReview: true, PermV2AdminRead: true, PermV2AdminWrite: true,
 		}
 		return !adminOnly[permission]
 	case "viewer":

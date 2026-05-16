@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
+	"ipam-next/services"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
 
 // GetUtilisationTrends handles GET /api/v1/admin/reports/utilisation-trends
 func (h *Handler) GetUtilisationTrends(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -69,7 +70,7 @@ func (h *Handler) GetUtilisationTrends(c *fiber.Ctx) error {
 
 // GetSubnetsNearCapacity handles GET /api/v1/admin/reports/subnets-near-capacity
 func (h *Handler) GetSubnetsNearCapacity(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -119,7 +120,7 @@ type updateScheduledReportRequest struct {
 
 // ListScheduledReports handles GET /api/v1/admin/reports/scheduled
 func (h *Handler) ListScheduledReports(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -137,7 +138,7 @@ func (h *Handler) ListScheduledReports(c *fiber.Ctx) error {
 
 // CreateScheduledReport handles POST /api/v1/admin/reports/scheduled
 func (h *Handler) CreateScheduledReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -180,7 +181,7 @@ func (h *Handler) CreateScheduledReport(c *fiber.Ctx) error {
 
 // GetScheduledReport handles GET /api/v1/admin/reports/scheduled/:id
 func (h *Handler) GetScheduledReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -199,7 +200,7 @@ func (h *Handler) GetScheduledReport(c *fiber.Ctx) error {
 
 // UpdateScheduledReport handles PUT /api/v1/admin/reports/scheduled/:id
 func (h *Handler) UpdateScheduledReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -241,7 +242,7 @@ func (h *Handler) UpdateScheduledReport(c *fiber.Ctx) error {
 
 // DeleteScheduledReport handles DELETE /api/v1/admin/reports/scheduled/:id
 func (h *Handler) DeleteScheduledReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -259,7 +260,7 @@ func (h *Handler) DeleteScheduledReport(c *fiber.Ctx) error {
 
 // RunScheduledReportNow handles POST /api/v1/admin/reports/scheduled/:id/run
 func (h *Handler) RunScheduledReportNow(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -286,7 +287,7 @@ func (h *Handler) RunScheduledReportNow(c *fiber.Ctx) error {
 
 // ExportSubnets handles GET /api/v1/admin/reports/export/subnets
 func (h *Handler) ExportSubnets(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -304,7 +305,7 @@ func (h *Handler) ExportSubnets(c *fiber.Ctx) error {
 
 // ExportIPs handles GET /api/v1/admin/reports/export/ips
 func (h *Handler) ExportIPs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -332,7 +333,7 @@ func (h *Handler) ExportIPs(c *fiber.Ctx) error {
 
 // ExportInactiveIPs handles GET /api/v1/admin/reports/export/inactive-ips
 func (h *Handler) ExportInactiveIPs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -361,7 +362,7 @@ func (h *Handler) ExportInactiveIPs(c *fiber.Ctx) error {
 
 // GetInactiveIPs handles GET /api/v1/admin/reports/inactive-ips
 func (h *Handler) GetInactiveIPs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
@@ -402,7 +403,7 @@ type BulkReleaseIPsRequest struct {
 
 // BulkReleaseIPs handles POST /api/v1/admin/ip-addresses/bulk-release
 func (h *Handler) BulkReleaseIPs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 

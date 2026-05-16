@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/services"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -11,7 +12,7 @@ import (
 // ImportSubnetsCSV handles POST /api/v1/admin/import/subnets
 // Accepts multipart/form-data with a "file" field containing a CSV.
 func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -37,7 +38,7 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 // ImportIPsCSV handles POST /api/v1/admin/import/ips
 // Accepts multipart/form-data with a "file" field containing a CSV.
 func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -64,7 +65,7 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 // Query param: kind=subnets|ips
 // Accepts multipart/form-data with a "file" field.
 func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -99,7 +100,7 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 // ExportFullData handles GET /api/v1/admin/export/full
 // Query param: format=csv|json (default csv)
 func (h *Handler) ExportFullData(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 

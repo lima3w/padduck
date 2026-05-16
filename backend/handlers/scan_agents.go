@@ -11,7 +11,7 @@ import (
 
 // ListScanAgents handles GET /api/v1/admin/scan-agents
 func (h *Handler) ListScanAgents(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 	agents, err := h.service.Discovery.ListAgents(c.Context())
@@ -24,7 +24,7 @@ func (h *Handler) ListScanAgents(c *fiber.Ctx) error {
 
 // CreateScanAgent handles POST /api/v1/admin/scan-agents
 func (h *Handler) CreateScanAgent(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 	var req struct {
@@ -45,7 +45,7 @@ func (h *Handler) CreateScanAgent(c *fiber.Ctx) error {
 
 // GetScanAgent handles GET /api/v1/admin/scan-agents/:id
 func (h *Handler) GetScanAgent(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -61,7 +61,7 @@ func (h *Handler) GetScanAgent(c *fiber.Ctx) error {
 
 // RotateScanAgentToken handles POST /api/v1/admin/scan-agents/:id/rotate-token
 func (h *Handler) RotateScanAgentToken(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -80,7 +80,7 @@ func (h *Handler) RotateScanAgentToken(c *fiber.Ctx) error {
 
 // DeleteScanAgent handles DELETE /api/v1/admin/scan-agents/:id
 func (h *Handler) DeleteScanAgent(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

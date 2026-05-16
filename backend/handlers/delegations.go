@@ -53,7 +53,7 @@ func (h *Handler) ListDelegations(c *fiber.Ctx) error {
 
 // CreateDelegation handles POST /api/v1/subnets/:id/delegations
 func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -98,7 +98,7 @@ func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
 
 // UpdateDelegation handles PUT /api/v1/delegations/:id
 func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
@@ -142,7 +142,7 @@ func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
 
 // DeleteDelegation handles DELETE /api/v1/delegations/:id
 func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "admin:write"); err != nil {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
 	}
 
