@@ -45,6 +45,9 @@ func (h *Handler) GetCustomFieldDefinition(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid id"})
 	}
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+		return nil
+	}
 
 	def, err := h.service.GetCustomFieldDefinition(c.Context(), int64(id))
 	if err != nil {
@@ -62,6 +65,9 @@ func (h *Handler) UpdateCustomFieldDefinition(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid id"})
+	}
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
 	}
 
 	p := new(repository.CustomFieldDefinitionParams)
@@ -85,6 +91,9 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid id"})
 	}
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
 
 	if err := h.service.DeleteCustomFieldDefinition(c.Context(), int64(id)); err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -98,6 +107,9 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 
 // ReorderCustomFieldDefinitions handles PUT /api/v1/admin/custom-fields/reorder
 func (h *Handler) ReorderCustomFieldDefinitions(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
 	var body struct {
 		IDs []int64 `json:"ids"`
 	}
