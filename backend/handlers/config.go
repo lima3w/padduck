@@ -68,6 +68,8 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"pdns_api_key":                true,
 		"pdns_default_zone":           true,
 		"pdns_ptr_zones":              true,
+		"technitium_url":              true,
+		"technitium_token":            true,
 		"scanner_resolve_hostnames":   true,
 	}
 

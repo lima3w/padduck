@@ -33,6 +33,19 @@ func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "ok"})
 }
 
+// TestTechnitiumConnection handles POST /api/v1/admin/dns/technitium/test
+// Tests connectivity to the configured Technitium DNS server.
+func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AuditRead); err != nil {
+		return nil
+	}
+	if err := h.service.DNS.TestTechnitiumConnection(c.Context()); err != nil {
+		log.Printf("Technitium connection test failed: %v", err)
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"status": "ok"})
+}
+
 // ListDNSZones handles GET /api/v1/dns/zones
 // Returns the list of zones from PowerDNS, or {"configured": false} if not set up.
 func (h *Handler) ListDNSZones(c *fiber.Ctx) error {

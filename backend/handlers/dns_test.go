@@ -66,6 +66,33 @@ func TestTestPowerDNSConnection_NoPermission_Returns403(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// TestTechnitiumConnection — POST /admin/dns/technitium/test
+// ---------------------------------------------------------------------------
+
+func TestTestTechnitiumConnection_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/admin/dns/technitium/test", h.TestTechnitiumConnection)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/admin/dns/technitium/test", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestTestTechnitiumConnection_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/admin/dns/technitium/test", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivDNS)
+		return h.TestTechnitiumConnection(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/admin/dns/technitium/test", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
 // ListDNSZones — GET /dns/zones
 // ---------------------------------------------------------------------------
 

@@ -336,6 +336,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// DNS admin endpoints (v1.6.0 #199, #200)
 	admin.Post("/dns/check-all", h.CheckAllDNS)
 	admin.Post("/dns/test", h.TestPowerDNSConnection)
+	admin.Post("/dns/technitium/test", h.TestTechnitiumConnection)
 
 	// DNS zone browser (v1.6.0 #201)
 	dns := protected.Group("/dns")

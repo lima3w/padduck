@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import * as client from '../api/client'
 import { useNavigate, Link } from 'react-router-dom'
-import { testDnsConnection } from '../api/client'
+import { testDnsConnection, testTechnitiumConnection } from '../api/client'
 
 const CONFIG_KEYS_BY_TAB = {
   registration: [
@@ -26,6 +26,8 @@ const CONFIG_KEYS_BY_TAB = {
     'pdns_api_key',
     'pdns_default_zone',
     'pdns_ptr_zones',
+    'technitium_url',
+    'technitium_token',
   ],
   scanner: ['scanner_resolve_hostnames'],
 }
@@ -41,6 +43,7 @@ export default function AdminSettingsPage() {
   const [message, setMessage] = useState({ text: '', type: '' })
   const [activeTab, setActiveTab] = useState('registration')
   const [dnsTestStatus, setDnsTestStatus] = useState(null) // null | 'testing' | 'ok' | { error: string }
+  const [technitiumTestStatus, setTechnitiumTestStatus] = useState(null) // null | 'testing' | { ok, message }
 
   useEffect(() => {
     loadData()
@@ -153,6 +156,17 @@ export default function AdminSettingsPage() {
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Connection failed'
       setDnsTestStatus({ ok: false, message: msg })
+    }
+  }
+
+  const handleTestTechnitium = async () => {
+    setTechnitiumTestStatus('testing')
+    try {
+      await testTechnitiumConnection()
+      setTechnitiumTestStatus({ ok: true, message: 'Connected' })
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Connection failed'
+      setTechnitiumTestStatus({ ok: false, message: msg })
     }
   }
 
@@ -534,6 +548,48 @@ export default function AdminSettingsPage() {
             )}
           </div>
 
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">Technitium DNS Server</h2>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Server URL</label>
+              <input
+                type="url"
+                value={config.technitium_url || ''}
+                onChange={e => handleConfigChange('technitium_url', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="http://192.168.1.1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Base URL of the Technitium DNS web interface (no trailing slash).</p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+              <input
+                type="password"
+                value={config.technitium_token || ''}
+                onChange={e => handleConfigChange('technitium_token', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="••••••••"
+              />
+              <p className="text-xs text-gray-500 mt-1">API token from Technitium DNS administration panel.</p>
+            </div>
+
+            {technitiumTestStatus && technitiumTestStatus !== 'testing' && (
+              <div className={`mb-4 px-3 py-2 rounded text-sm ${technitiumTestStatus.ok ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                {technitiumTestStatus.ok ? `Connected: ${technitiumTestStatus.message}` : `Error: ${technitiumTestStatus.message}`}
+              </div>
+            )}
+
+            <button
+              onClick={handleTestTechnitium}
+              disabled={technitiumTestStatus === 'testing'}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
+            >
+              {technitiumTestStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+            </button>
+          </div>
+
           <div className="flex gap-3">
             <button
               onClick={handleSaveConfig}
@@ -547,7 +603,7 @@ export default function AdminSettingsPage() {
               disabled={dnsTestStatus === 'testing'}
               className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
             >
-              {dnsTestStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+              {dnsTestStatus === 'testing' ? 'Testing...' : 'Test PowerDNS Connection'}
             </button>
           </div>
         </div>

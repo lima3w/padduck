@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"ipam-next/internal/pdns"
+	"ipam-next/internal/technitium"
 	"ipam-next/models"
 )
 
@@ -174,6 +175,25 @@ func (d *DNSService) TestPDNSConnection(ctx context.Context) error {
 	client := d.pdnsClient()
 	if client == nil {
 		return fmt.Errorf("PowerDNS is not configured or disabled")
+	}
+	return client.TestConnection(ctx)
+}
+
+// technitiumClient builds a Technitium client from config, or returns nil if not configured.
+func (d *DNSService) technitiumClient() *technitium.Client {
+	apiURL, _ := d.svc.Config.Get("technitium_url")
+	token, _ := d.svc.Config.Get("technitium_token")
+	if apiURL == "" || token == "" {
+		return nil
+	}
+	return technitium.NewClient(apiURL, token)
+}
+
+// TestTechnitiumConnection tests connectivity to the configured Technitium DNS server.
+func (d *DNSService) TestTechnitiumConnection(ctx context.Context) error {
+	client := d.technitiumClient()
+	if client == nil {
+		return fmt.Errorf("Technitium DNS is not configured")
 	}
 	return client.TestConnection(ctx)
 }
