@@ -37,6 +37,8 @@ import TopologyPage from './pages/TopologyPage'
 import UtilisationTrendsPage from './pages/UtilisationTrendsPage'
 import ScheduledReportsPage from './pages/ScheduledReportsPage'
 import InactiveIPsPage from './pages/InactiveIPsPage'
+import ImportDataPage from './pages/ImportDataPage'
+import ExportDataPage from './pages/ExportDataPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -106,6 +108,8 @@ export default function App() {
           <Route path="reports/utilisation-trends" element={<UtilisationTrendsPage />} />
           <Route path="reports/inactive-ips" element={<InactiveIPsPage />} />
           <Route path="admin/reports/scheduled" element={<ScheduledReportsPage />} />
+          <Route path="admin/import" element={<ImportDataPage />} />
+          <Route path="admin/export" element={<ExportDataPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
