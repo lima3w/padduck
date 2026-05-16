@@ -25,6 +25,10 @@ type UpdateVLANRequest struct {
 	Description string `json:"description"`
 }
 
+type AssignSubnetToVLANRequest struct {
+	SubnetID int64 `json:"subnet_id"`
+}
+
 type CreateVLANDomainRequest struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
@@ -181,6 +185,73 @@ func (h *Handler) GetVLANSubnets(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(subnets)
+}
+
+func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+	}
+	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
+		return nil
+	}
+
+	req := new(AssignSubnetToVLANRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: req.SubnetID}); err != nil {
+		return nil
+	}
+
+	subnet, err := h.service.AssignSubnetToVLAN(c.Context(), int64(id), req.SubnetID)
+	if err != nil {
+		log.Printf("Error assigning subnet %d to VLAN %d: %v", req.SubnetID, id, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_subnet_assigned",
+		ResourceType: "subnet", ResourceID: &subnet.ID, ResourceName: cidr,
+		NewValues: map[string]interface{}{"vlan_id": id},
+	})
+
+	return c.JSON(subnet)
+}
+
+func (h *Handler) RemoveSubnetFromVLAN(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+	}
+	subnetID, err := c.ParamsInt("subnetID")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
+		return nil
+	}
+	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return nil
+	}
+
+	subnet, err := h.service.RemoveSubnetFromVLAN(c.Context(), int64(id), int64(subnetID))
+	if err != nil {
+		log.Printf("Error removing subnet %d from VLAN %d: %v", subnetID, id, err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "vlan_subnet_removed",
+		ResourceType: "subnet", ResourceID: &subnet.ID, ResourceName: cidr,
+		OldValues: map[string]interface{}{"vlan_id": id},
+	})
+
+	return c.JSON(subnet)
 }
 
 func (h *Handler) ListVLANsByVRF(c *fiber.Ctx) error {

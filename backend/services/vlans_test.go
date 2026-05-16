@@ -204,6 +204,52 @@ func TestGetVLANSubnets_InvalidID(t *testing.T) {
 	}
 }
 
+func TestAssignSubnetToVLAN_InvalidIDs(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		vlanID   int64
+		subnetID int64
+		want     string
+	}{
+		{"bad vlan", 0, 1, "invalid VLAN ID"},
+		{"bad subnet", 1, 0, "invalid subnet ID"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.AssignSubnetToVLAN(ctx, tt.vlanID, tt.subnetID)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.want)
+		})
+	}
+}
+
+func TestRemoveSubnetFromVLAN_InvalidIDs(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		vlanID   int64
+		subnetID int64
+		want     string
+	}{
+		{"bad vlan", 0, 1, "invalid VLAN ID"},
+		{"bad subnet", 1, 0, "invalid subnet ID"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := svc.RemoveSubnetFromVLAN(ctx, tt.vlanID, tt.subnetID)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.want)
+		})
+	}
+}
+
 // VLANDomain service unit tests
 
 func TestCreateVLANDomain_EmptyName(t *testing.T) {

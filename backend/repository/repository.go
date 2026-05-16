@@ -427,6 +427,15 @@ func (r *Repository) UpdateSubnetWithVLAN(ctx context.Context, id int64, descrip
 	return r.GetSubnetByID(ctx, id)
 }
 
+// AssignSubnetToVLAN updates only the VLAN association for a subnet.
+func (r *Repository) AssignSubnetToVLAN(ctx context.Context, subnetID int64, vlanID *int64) (*models.Subnet, error) {
+	query := `UPDATE subnets SET vlan_id=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`
+	if _, err := r.db.Exec(ctx, query, vlanID, subnetID); err != nil {
+		return nil, err
+	}
+	return r.GetSubnetByID(ctx, subnetID)
+}
+
 func (r *Repository) DeleteSubnet(ctx context.Context, id int64) error {
 	query := `DELETE FROM subnets WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, id)

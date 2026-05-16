@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getVlan, getVlanSubnets, getVlanDomains, getVlanGroups, updateVlan } from '../api/client'
+import {
+  assignSubnetToVlan,
+  getSections,
+  getSubnetsPaginated,
+  getVlan,
+  getVlanDomains,
+  getVlanGroups,
+  getVlanSubnets,
+  removeSubnetFromVlan,
+  updateVlan,
+} from '../api/client'
 import Modal from '../components/Modal'
 
 // VLAN model has no JSON tags — Go field names come through as PascalCase:
@@ -29,6 +39,7 @@ export default function VlanDetailPage() {
   const { id } = useParams()
   const [vlan, setVlan] = useState(null)
   const [subnets, setSubnets] = useState([])
+  const [sections, setSections] = useState([])
   const [domains, setDomains] = useState([])
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,6 +48,12 @@ export default function VlanDetailPage() {
   const [editModal, setEditModal] = useState(false)
   const [form, setForm] = useState({ vlanId: '', name: '', description: '', domainId: '', groupId: '' })
   const [saving, setSaving] = useState(false)
+  const [assignModal, setAssignModal] = useState(false)
+  const [assignSectionId, setAssignSectionId] = useState('')
+  const [assignSubnets, setAssignSubnets] = useState([])
+  const [assignSubnetId, setAssignSubnetId] = useState('')
+  const [assigning, setAssigning] = useState(false)
+  const [loadingAssignSubnets, setLoadingAssignSubnets] = useState(false)
 
   useEffect(() => { load() }, [id])
 
@@ -44,11 +61,12 @@ export default function VlanDetailPage() {
     try {
       setLoading(true)
       setError(null)
-      const [vlanRes, subnetsRes, domainsRes, groupsRes] = await Promise.allSettled([
+      const [vlanRes, subnetsRes, domainsRes, groupsRes, sectionsRes] = await Promise.allSettled([
         getVlan(id),
         getVlanSubnets(id),
         getVlanDomains(),
         getVlanGroups(),
+        getSections(),
       ])
       if (vlanRes.status === 'fulfilled') {
         setVlan(vlanRes.value.data)
@@ -66,6 +84,10 @@ export default function VlanDetailPage() {
       if (groupsRes.status === 'fulfilled') {
         const d = groupsRes.value.data
         setGroups(Array.isArray(d) ? d : (d?.groups ?? []))
+      }
+      if (sectionsRes.status === 'fulfilled') {
+        const d = sectionsRes.value.data
+        setSections(Array.isArray(d) ? d : (d?.sections ?? []))
       }
     } finally {
       setLoading(false)
@@ -111,6 +133,64 @@ export default function VlanDetailPage() {
       setError(err.response?.data?.error || 'Failed to update VLAN')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function loadAssignableSubnets(sectionId) {
+    if (!sectionId) {
+      setAssignSubnets([])
+      setAssignSubnetId('')
+      return
+    }
+    setLoadingAssignSubnets(true)
+    try {
+      const res = await getSubnetsPaginated(sectionId, 1, 1000)
+      const data = res.data
+      const rows = data.data ?? data
+      const assignedIds = new Set(subnets.map(s => s.id ?? s.ID))
+      const candidates = (Array.isArray(rows) ? rows : [])
+        .filter(s => !assignedIds.has(s.id ?? s.ID))
+      setAssignSubnets(candidates)
+      setAssignSubnetId(candidates[0] ? String(candidates[0].id ?? candidates[0].ID) : '')
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to load section subnets')
+    } finally {
+      setLoadingAssignSubnets(false)
+    }
+  }
+
+  async function openAssignSubnet() {
+    const firstSectionId = sections[0]?.id ?? sections[0]?.ID ?? ''
+    setAssignSectionId(firstSectionId ? String(firstSectionId) : '')
+    setAssignSubnetId('')
+    setAssignSubnets([])
+    setAssignModal(true)
+    if (firstSectionId) await loadAssignableSubnets(String(firstSectionId))
+  }
+
+  async function handleAssignSubnet(e) {
+    e.preventDefault()
+    if (!assignSubnetId) return
+    setAssigning(true)
+    try {
+      await assignSubnetToVlan(id, parseInt(assignSubnetId))
+      showMsg('Subnet assigned to VLAN')
+      setAssignModal(false)
+      load()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to assign subnet')
+    } finally {
+      setAssigning(false)
+    }
+  }
+
+  async function handleRemoveSubnet(subnetId) {
+    try {
+      await removeSubnetFromVlan(id, subnetId)
+      showMsg('Subnet removed from VLAN')
+      load()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to remove subnet')
     }
   }
 
@@ -187,11 +267,19 @@ export default function VlanDetailPage() {
 
       {/* Subnets in this VLAN */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Subnets in this VLAN</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {subnets.length} subnet{subnets.length !== 1 ? 's' : ''} assigned to VLAN {vlan.VlanID}
-          </p>
+        <div className="px-6 py-4 border-b dark:border-gray-700 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Subnets in this VLAN</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {subnets.length} subnet{subnets.length !== 1 ? 's' : ''} assigned to VLAN {vlan.VlanID}
+            </p>
+          </div>
+          <button
+            onClick={openAssignSubnet}
+            className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded"
+          >
+            Add Subnet
+          </button>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
@@ -199,12 +287,13 @@ export default function VlanDetailPage() {
               <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">CIDR</th>
               <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
               <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Section</th>
+              <th className="px-6 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {subnets.length === 0 && (
               <tr>
-                <td colSpan={3} className="px-6 py-6 text-center text-gray-400">
+                <td colSpan={4} className="px-6 py-6 text-center text-gray-400">
                   No subnets are assigned to this VLAN.
                 </td>
               </tr>
@@ -238,6 +327,14 @@ export default function VlanDetailPage() {
                         Section #{secId}
                       </Link>
                     ) : '—'}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    <button
+                      onClick={() => handleRemoveSubnet(subnetId)}
+                      className="text-xs text-gray-400 hover:text-red-600"
+                    >
+                      Remove
+                    </button>
                   </td>
                 </tr>
               )
@@ -327,6 +424,70 @@ export default function VlanDetailPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {assignModal && (
+        <Modal title="Add Subnet to VLAN" onClose={() => setAssignModal(false)}>
+          <form onSubmit={handleAssignSubnet} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Section</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={assignSectionId}
+                onChange={e => {
+                  setAssignSectionId(e.target.value)
+                  loadAssignableSubnets(e.target.value)
+                }}
+              >
+                {sections.length === 0 && <option value="">No sections available</option>}
+                {sections.map(section => (
+                  <option key={section.id ?? section.ID} value={section.id ?? section.ID}>
+                    {section.name ?? section.Name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subnet</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={assignSubnetId}
+                onChange={e => setAssignSubnetId(e.target.value)}
+                disabled={loadingAssignSubnets || assignSubnets.length === 0}
+              >
+                {loadingAssignSubnets && <option value="">Loading subnets...</option>}
+                {!loadingAssignSubnets && assignSubnets.length === 0 && <option value="">No available subnets</option>}
+                {!loadingAssignSubnets && assignSubnets.map(subnet => {
+                  const subnetId = subnet.id ?? subnet.ID
+                  const cidr = subnet.networkAddress || subnet.network_address || subnet.NetworkAddress || ''
+                  const prefix = subnet.prefixLength ?? subnet.prefix_length ?? subnet.PrefixLength ?? ''
+                  const desc = subnet.description || subnet.Description || ''
+                  return (
+                    <option key={subnetId} value={subnetId}>
+                      {cidr}/{prefix}{desc ? ` — ${desc}` : ''}
+                    </option>
+                  )
+                })}
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setAssignModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={assigning || !assignSubnetId}
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {assigning ? 'Adding...' : 'Add Subnet'}
               </button>
             </div>
           </form>

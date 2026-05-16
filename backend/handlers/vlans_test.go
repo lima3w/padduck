@@ -77,6 +77,90 @@ func TestGetVLANSubnets_BadID_Returns400(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// AssignSubnetToVLAN — POST /vlans/:id/subnets
+// ---------------------------------------------------------------------------
+
+func TestAssignSubnetToVLAN_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/vlans/:id/subnets", h.AssignSubnetToVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/vlans/1/subnets", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestAssignSubnetToVLAN_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/vlans/:id/subnets", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.AssignSubnetToVLAN(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/vlans/1/subnets", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestAssignSubnetToVLAN_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/vlans/:id/subnets", h.AssignSubnetToVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/vlans/abc/subnets", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// RemoveSubnetFromVLAN — DELETE /vlans/:id/subnets/:subnetID
+// ---------------------------------------------------------------------------
+
+func TestRemoveSubnetFromVLAN_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/1/subnets/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestRemoveSubnetFromVLAN_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id/subnets/:subnetID", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.RemoveSubnetFromVLAN(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/1/subnets/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestRemoveSubnetFromVLAN_BadVLANID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/abc/subnets/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+func TestRemoveSubnetFromVLAN_BadSubnetID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/1/subnets/abc", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
 // ListVLANDomains — GET /vlan-domains
 // ---------------------------------------------------------------------------
 

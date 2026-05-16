@@ -157,6 +157,39 @@ func (s *Service) GetVLANSubnets(ctx context.Context, vlanID int64) ([]*models.S
 	return s.repository.GetVLANSubnets(ctx, vlanID)
 }
 
+func (s *Service) AssignSubnetToVLAN(ctx context.Context, vlanID, subnetID int64) (*models.Subnet, error) {
+	if vlanID <= 0 {
+		return nil, fmt.Errorf("invalid VLAN ID")
+	}
+	if subnetID <= 0 {
+		return nil, fmt.Errorf("invalid subnet ID")
+	}
+	if _, err := s.repository.GetVLANByID(ctx, vlanID); err != nil {
+		return nil, fmt.Errorf("VLAN not found")
+	}
+	if err := s.validateVLANVRFConsistency(ctx, vlanID, nil); err != nil {
+		return nil, err
+	}
+	return s.repository.AssignSubnetToVLAN(ctx, subnetID, &vlanID)
+}
+
+func (s *Service) RemoveSubnetFromVLAN(ctx context.Context, vlanID, subnetID int64) (*models.Subnet, error) {
+	if vlanID <= 0 {
+		return nil, fmt.Errorf("invalid VLAN ID")
+	}
+	if subnetID <= 0 {
+		return nil, fmt.Errorf("invalid subnet ID")
+	}
+	subnet, err := s.repository.GetSubnetByID(ctx, subnetID)
+	if err != nil {
+		return nil, err
+	}
+	if subnet.VLANID == nil || *subnet.VLANID != vlanID {
+		return nil, fmt.Errorf("subnet is not assigned to this VLAN")
+	}
+	return s.repository.AssignSubnetToVLAN(ctx, subnetID, nil)
+}
+
 // CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
 func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
 	if sectionID <= 0 {

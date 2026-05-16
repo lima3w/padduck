@@ -10,6 +10,7 @@ import {
   searchSubnets,
   getSubnetTree,
   getNameservers,
+  getVlans,
   api,
 } from '../api/client'
 import Modal from '../components/Modal'
@@ -21,7 +22,7 @@ import { downloadFile } from '../utils/download'
 
 const DEFAULT_LIMIT = 25
 
-const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
+const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
 
 function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
   if (!networkAddress || isNaN(newPrefix) || newPrefix <= currentPrefix || newPrefix > 32) return []
@@ -66,6 +67,7 @@ export default function SubnetsPage() {
   const [locations, setLocations] = useState([])
   const [filterLocationId, setFilterLocationId] = useState('')
   const [nameservers, setNameservers] = useState([])
+  const [vlans, setVlans] = useState([])
 
   const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
   const isAdmin = user?.role === 'admin'
@@ -104,6 +106,7 @@ export default function SubnetsPage() {
     loadCfDefs()
     loadLocations()
     loadNameservers()
+    loadVlans()
   }, [sectionID])
 
   async function loadLocations() {
@@ -118,6 +121,14 @@ export default function SubnetsPage() {
       const res = await getNameservers()
       const data = res.data
       setNameservers(Array.isArray(data) ? data : (data?.nameservers ?? []))
+    } catch {}
+  }
+
+  async function loadVlans() {
+    try {
+      const res = await getVlans()
+      const data = res.data
+      setVlans(Array.isArray(data) ? data : (data?.vlans ?? []))
     } catch {}
   }
 
@@ -252,6 +263,7 @@ export default function SubnetsPage() {
         auto_reserve_last: full.autoReserveLast || false,
         location_id: full.locationId ? String(full.locationId) : '',
         nameserver_id: full.nameserverId ? String(full.nameserverId) : '',
+        vlan_id: full.vlanId ? String(full.vlanId) : '',
         custom_fields: full.customFields || {},
         alert_threshold_pct: full.alertThresholdPct != null ? String(full.alertThresholdPct) : '',
         alert_email_override: full.alertEmailOverride || '',
@@ -278,6 +290,7 @@ export default function SubnetsPage() {
           auto_reserve_last: form.auto_reserve_last,
           location_id: form.location_id ? parseInt(form.location_id) : null,
           nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
+          vlan_id: form.vlan_id ? parseInt(form.vlan_id) : null,
           custom_fields: form.custom_fields || {},
         })
       } else {
@@ -289,6 +302,7 @@ export default function SubnetsPage() {
           auto_reserve_last: form.auto_reserve_last,
           location_id: form.location_id ? parseInt(form.location_id) : null,
           nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
+          vlan_id: form.vlan_id ? parseInt(form.vlan_id) : null,
           custom_fields: form.custom_fields || {},
           alert_threshold_pct: form.alert_threshold_pct ? parseInt(form.alert_threshold_pct) : null,
           alert_email_override: form.alert_email_override || null,
@@ -576,6 +590,7 @@ export default function SubnetsPage() {
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Gateway</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Nameserver</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">VLAN</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
                   {searchableFields.map(d => (
                     <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
@@ -585,7 +600,7 @@ export default function SubnetsPage() {
               </thead>
               <tbody>
                 {subnets.length === 0 && (
-                  <tr><td colSpan={7 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
+                  <tr><td colSpan={8 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
                 )}
                 {subnets.map(s => (
                   <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -606,6 +621,13 @@ export default function SubnetsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                       {s.nameserverId ? (nameservers.find(ns => ns.id === s.nameserverId)?.name || `#${s.nameserverId}`) : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                      {s.vlanId ? (
+                        <Link to={`/vlans/${s.vlanId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                          VLAN {vlans.find(v => v.ID === s.vlanId)?.VlanID || `#${s.vlanId}`}
+                        </Link>
+                      ) : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {s.isContainer ? <span className="text-gray-400 italic text-xs">Container subnet</span> : s.description}
@@ -910,6 +932,19 @@ export default function SubnetsPage() {
                 <option value="">No nameserver</option>
                 {nameservers.map(ns => (
                   <option key={ns.id} value={ns.id}>{ns.name} ({ns.server1})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">VLAN (optional)</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={form.vlan_id}
+                onChange={e => setForm(f => ({ ...f, vlan_id: e.target.value }))}
+              >
+                <option value="">No VLAN</option>
+                {vlans.map(vlan => (
+                  <option key={vlan.ID} value={vlan.ID}>VLAN {vlan.VlanID} — {vlan.Name}</option>
                 ))}
               </select>
             </div>

@@ -226,6 +226,8 @@ export const createVlan = (data) => api.post('/vlans', data)
 export const updateVlan = (id, data) => api.put(`/vlans/${id}`, data)
 export const deleteVlan = (id) => api.delete(`/vlans/${id}`)
 export const getVlanSubnets = (id) => api.get(`/vlans/${id}/subnets`)
+export const assignSubnetToVlan = (id, subnetId) => api.post(`/vlans/${id}/subnets`, { subnet_id: subnetId })
+export const removeSubnetFromVlan = (id, subnetId) => api.delete(`/vlans/${id}/subnets/${subnetId}`)
 
 // VLAN usage report (#209)
 export const getVlanUsageReport = () => api.get('/admin/vlans/usage-report')

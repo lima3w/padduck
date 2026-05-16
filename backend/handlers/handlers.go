@@ -166,6 +166,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vlans.Put("/:id", h.UpdateVLAN)
 	vlans.Delete("/:id", h.DeleteVLAN)
 	vlans.Get("/:id/subnets", h.GetVLANSubnets)
+	vlans.Post("/:id/subnets", h.AssignSubnetToVLAN)
+	vlans.Delete("/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
 
 	// VLAN Domains routes (v1.8.0 #206)
 	vlanDomains := protected.Group("/vlan-domains")
