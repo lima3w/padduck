@@ -624,7 +624,7 @@ export default function SubnetsPage() {
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
                       {s.vlanId ? (
                         <Link to={`/vlans/${s.vlanId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                          VLAN {vlans.find(v => v.ID === s.vlanId)?.VlanID || `#${s.vlanId}`}
+                          VLAN {vlans.find(v => v.id === s.vlanId)?.vlanId || `#${s.vlanId}`}
                         </Link>
                       ) : '—'}
                     </td>
@@ -943,7 +943,7 @@ export default function SubnetsPage() {
               >
                 <option value="">No VLAN</option>
                 {vlans.map(vlan => (
-                  <option key={vlan.ID} value={vlan.ID}>VLAN {vlan.VlanID} — {vlan.Name}</option>
+                  <option key={vlan.id} value={vlan.id}>VLAN {vlan.vlanId} — {vlan.name}</option>
                 ))}
               </select>
             </div>

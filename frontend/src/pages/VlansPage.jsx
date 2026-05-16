@@ -93,13 +93,12 @@ export default function VlansPage() {
   }
 
   function openEdit(vlan) {
-    // VLAN model fields are PascalCase: VlanID, DomainID, GroupID, Name, Description
     setForm({
-      vlanId: vlan.VlanID != null ? String(vlan.VlanID) : '',
-      name: vlan.Name || '',
-      description: vlan.Description || '',
-      domainId: vlan.DomainID != null ? String(vlan.DomainID) : '',
-      groupId: vlan.GroupID != null ? String(vlan.GroupID) : '',
+      vlanId: vlan.vlanId != null ? String(vlan.vlanId) : '',
+      name: vlan.name || '',
+      description: vlan.description || '',
+      domainId: vlan.domainId != null ? String(vlan.domainId) : '',
+      groupId: vlan.groupId != null ? String(vlan.groupId) : '',
     })
     setModal({ edit: vlan })
   }
@@ -119,7 +118,7 @@ export default function VlansPage() {
         await createVlan(payload)
         showMsg('VLAN created')
       } else {
-        await updateVlan(modal.edit.ID, payload)
+        await updateVlan(modal.edit.id, payload)
         showMsg('VLAN updated')
       }
       setModal(null)
@@ -190,17 +189,16 @@ export default function VlansPage() {
               </tr>
             )}
             {vlans.map(vlan => {
-              // VLAN model fields are PascalCase (no json tags in Go model)
-              const domain = getDomain(vlan.DomainID)
-              const group = getGroup(vlan.GroupID)
+              const domain = getDomain(vlan.domainId)
+              const group = getGroup(vlan.groupId)
               return (
-                <tr key={vlan.ID} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <tr key={vlan.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                   <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">
-                    <Link to={`/vlans/${vlan.ID}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                      {vlan.VlanID}
+                    <Link to={`/vlans/${vlan.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                      {vlan.vlanId}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{vlan.Name}</td>
+                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{vlan.name}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                     {domain ? (
                       <span className="text-xs text-gray-700 dark:text-gray-300">{domain.name}</span>
@@ -209,7 +207,7 @@ export default function VlansPage() {
                   <td className="px-4 py-3">
                     <GroupBadge group={group} />
                   </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{vlan.Description || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{vlan.description || '—'}</td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button
                       onClick={() => openEdit(vlan)}
@@ -217,11 +215,11 @@ export default function VlansPage() {
                     >
                       Edit
                     </button>
-                    {deleteConfirm === vlan.ID ? (
+                    {deleteConfirm === vlan.id ? (
                       <>
                         <span className="text-red-600 text-xs">Confirm?</span>
                         <button
-                          onClick={() => handleDelete(vlan.ID)}
+                          onClick={() => handleDelete(vlan.id)}
                           className="text-red-600 hover:text-red-800 text-xs font-medium"
                         >
                           Yes
@@ -235,7 +233,7 @@ export default function VlansPage() {
                       </>
                     ) : (
                       <button
-                        onClick={() => setDeleteConfirm(vlan.ID)}
+                        onClick={() => setDeleteConfirm(vlan.id)}
                         className="text-gray-400 hover:text-red-600 text-xs"
                       >
                         Delete
