@@ -469,7 +469,7 @@ function LoginHistoryTab() {
     return d.toLocaleString()
   }
 
-  const knownIPs = history.filter((a) => a.success).map((a) => a.ip_address).filter(Boolean)
+  const knownIPs = history.filter((a) => a.success).map((a) => a.ipAddress).filter(Boolean)
   const knownIPSet = new Set(knownIPs)
 
   return (
@@ -488,7 +488,7 @@ function LoginHistoryTab() {
       ) : (
         <div className="divide-y divide-gray-200 border border-gray-200 rounded">
           {history.map((attempt) => {
-            const isNew = attempt.ip_address && !knownIPSet.has(attempt.ip_address) && !attempt.success
+            const isNew = attempt.ipAddress && !knownIPSet.has(attempt.ipAddress) && !attempt.success
             return (
               <div key={attempt.id} className={`px-4 py-3 flex items-start gap-3 ${!attempt.success ? 'bg-red-50' : ''}`}>
                 <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${attempt.success ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -502,14 +502,14 @@ function LoginHistoryTab() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {formatDate(attempt.created_at)}
-                    {attempt.ip_address ? ` · ${attempt.ip_address}` : ''}
+                    {formatDate(attempt.createdAt)}
+                    {attempt.ipAddress ? ` · ${attempt.ipAddress}` : ''}
                   </p>
-                  {attempt.failure_reason && (
-                    <p className="text-xs text-red-600 mt-0.5">{attempt.failure_reason}</p>
+                  {attempt.failureReason && (
+                    <p className="text-xs text-red-600 mt-0.5">{attempt.failureReason}</p>
                   )}
-                  {attempt.user_agent && (
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{attempt.user_agent}</p>
+                  {attempt.userAgent && (
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{attempt.userAgent}</p>
                   )}
                 </div>
               </div>

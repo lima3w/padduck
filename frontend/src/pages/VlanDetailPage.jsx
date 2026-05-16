@@ -147,11 +147,11 @@ export default function VlanDetailPage() {
       const res = await getSubnetsPaginated(sectionId, 1, 1000)
       const data = res.data
       const rows = data.data ?? data
-      const assignedIds = new Set(subnets.map(s => s.id ?? s.ID))
+      const assignedIds = new Set(subnets.map(s => s.id))
       const candidates = (Array.isArray(rows) ? rows : [])
-        .filter(s => !assignedIds.has(s.id ?? s.ID))
+        .filter(s => !assignedIds.has(s.id))
       setAssignSubnets(candidates)
-      setAssignSubnetId(candidates[0] ? String(candidates[0].id ?? candidates[0].ID) : '')
+      setAssignSubnetId(candidates[0] ? String(candidates[0].id) : '')
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load section subnets')
     } finally {
@@ -160,7 +160,7 @@ export default function VlanDetailPage() {
   }
 
   async function openAssignSubnet() {
-    const firstSectionId = sections[0]?.id ?? sections[0]?.ID ?? ''
+    const firstSectionId = sections[0]?.id ?? ''
     setAssignSectionId(firstSectionId ? String(firstSectionId) : '')
     setAssignSubnetId('')
     setAssignSubnets([])
@@ -299,12 +299,11 @@ export default function VlanDetailPage() {
               </tr>
             )}
             {subnets.map(subnet => {
-              // Subnet model may or may not have json tags — handle both
-              const cidr = subnet.networkAddress || subnet.network_address || subnet.NetworkAddress || ''
-              const prefix = subnet.prefixLength ?? subnet.prefix_length ?? subnet.PrefixLength ?? ''
-              const desc = subnet.description || subnet.Description || ''
-              const secId = subnet.sectionId ?? subnet.section_id ?? subnet.SectionID
-              const subnetId = subnet.id ?? subnet.ID
+              const cidr = subnet.networkAddress || ''
+              const prefix = subnet.prefixLength ?? ''
+              const desc = subnet.description || ''
+              const secId = subnet.sectionId
+              const subnetId = subnet.id
               return (
                 <tr key={subnetId} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                   <td className="px-6 py-3">
@@ -445,8 +444,8 @@ export default function VlanDetailPage() {
               >
                 {sections.length === 0 && <option value="">No sections available</option>}
                 {sections.map(section => (
-                  <option key={section.id ?? section.ID} value={section.id ?? section.ID}>
-                    {section.name ?? section.Name}
+                  <option key={section.id} value={section.id}>
+                    {section.name}
                   </option>
                 ))}
               </select>
@@ -462,10 +461,10 @@ export default function VlanDetailPage() {
                 {loadingAssignSubnets && <option value="">Loading subnets...</option>}
                 {!loadingAssignSubnets && assignSubnets.length === 0 && <option value="">No available subnets</option>}
                 {!loadingAssignSubnets && assignSubnets.map(subnet => {
-                  const subnetId = subnet.id ?? subnet.ID
-                  const cidr = subnet.networkAddress || subnet.network_address || subnet.NetworkAddress || ''
-                  const prefix = subnet.prefixLength ?? subnet.prefix_length ?? subnet.PrefixLength ?? ''
-                  const desc = subnet.description || subnet.Description || ''
+                  const subnetId = subnet.id
+                  const cidr = subnet.networkAddress || ''
+                  const prefix = subnet.prefixLength ?? ''
+                  const desc = subnet.description || ''
                   return (
                     <option key={subnetId} value={subnetId}>
                       {cidr}/{prefix}{desc ? ` — ${desc}` : ''}
