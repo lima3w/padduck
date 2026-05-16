@@ -192,6 +192,8 @@ func (c *Client) ListZones(ctx context.Context) ([]Zone, error) {
 func (c *Client) GetZoneRecords(ctx context.Context, zone string) ([]Record, error) {
 	params := url.Values{}
 	params.Set("zone", zone)
+	params.Set("domain", zone)  // required; listZone=true returns all records, not just the apex
+	params.Set("listZone", "true")
 	resp, err := c.get(ctx, "/api/zones/records/get", params)
 	if err != nil {
 		return nil, err
