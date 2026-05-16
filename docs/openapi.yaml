@@ -1,23 +1,148 @@
 openapi: 3.0.3
 info:
   title: IPAM Next API
-  description: IP Address Management system — full REST API
-  version: 0.9.0
+  description: Route-complete REST API specification for the current backend.
+  version: 1.13.0
   contact:
     name: IPAM Next
+
 servers:
-  - url: /api/v1
-    description: API v1
+  - url: /
+    description: Same-origin API
+
+security:
+  - sessionCookie: []
+  - bearerToken: []
+
+tags:
+  - name: System
+  - name: Auth
+  - name: Security
+  - name: Users
+  - name: Sections
+  - name: Subnets
+  - name: IP Addresses
+  - name: VRFs
+  - name: VLANs
+  - name: VLAN Domains
+  - name: VLAN Groups
+  - name: Tags
+  - name: Devices
+  - name: Racks
+  - name: Locations
+  - name: Nameservers
+  - name: DNS
+  - name: Requests
+  - name: Dashboard
+  - name: Reports
+  - name: Import Export
+  - name: Discovery
+  - name: Scan Agents
+  - name: Admin
+  - name: RBAC
+  - name: External Auth
+  - name: GDPR
 
 components:
   securitySchemes:
-    sessionToken:
+    sessionCookie:
       type: apiKey
-      in: header
-      name: X-Session-Token
+      in: cookie
+      name: session
     bearerToken:
       type: http
       scheme: bearer
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    sectionID:
+      name: sectionID
+      in: path
+      required: true
+      schema:
+        type: integer
+    subnetID:
+      name: subnetID
+      in: path
+      required: true
+      schema:
+        type: integer
+    vrfID:
+      name: vrfID
+      in: path
+      required: true
+      schema:
+        type: integer
+    sessionID:
+      name: sessionID
+      in: path
+      required: true
+      schema:
+        type: integer
+    roleID:
+      name: role_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    permID:
+      name: perm_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    runID:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    ipID:
+      name: ip_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    interfaceID:
+      name: if_id
+      in: path
+      required: true
+      schema:
+        type: integer
+    requestType:
+      name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [subnet, ip, subnets, ips]
+    zone:
+      name: zone
+      in: path
+      required: true
+      schema:
+        type: string
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 100
+    offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
 
   schemas:
     Error:
@@ -29,279 +154,211 @@ components:
           type: string
         details:
           type: string
-
+    GenericObject:
+      type: object
+      additionalProperties: true
+    GenericArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/GenericObject"
     User:
+      allOf:
+        - $ref: "#/components/schemas/GenericObject"
+        - type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+            email:
+              type: string
+            role:
+              type: string
+            state:
+              type: string
+    LoginResponse:
       type: object
       properties:
-        id:
-          type: integer
-        username:
+        token:
           type: string
-        email:
-          type: string
-        role:
-          type: string
-          enum: [admin, user, viewer]
-        state:
-          type: string
-          enum: [active, pending_email_verification, pending_admin_approval, rejected, disabled, suspended]
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-
-    Section:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        description:
-          type: string
-        created_by:
-          type: integer
-        created_at:
-          type: string
-          format: date-time
-
-    Subnet:
-      type: object
-      properties:
-        id:
-          type: integer
-        section_id:
-          type: integer
-        network_address:
-          type: string
-        prefix_length:
-          type: integer
-        description:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-
-    IPAddress:
-      type: object
-      properties:
-        id:
-          type: integer
-        subnet_id:
-          type: integer
-        address:
-          type: string
-        hostname:
-          type: string
-        status:
-          type: string
-          enum: [available, assigned, reserved]
-        assigned_to:
-          type: string
-          nullable: true
-        assigned_at:
-          type: string
-          format: date-time
-          nullable: true
-        expires_at:
-          type: string
-          format: date-time
-          nullable: true
-
-    VRF:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        route_distinguisher:
-          type: string
-        description:
-          type: string
-
-    VLAN:
-      type: object
-      properties:
-        id:
-          type: integer
-        vrf_id:
-          type: integer
-          nullable: true
-        vlan_id:
-          type: integer
-        name:
-          type: string
-        description:
-          type: string
-
-    APIToken:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        scope:
-          type: string
-          enum: [read, write, admin]
-        usage_count:
-          type: integer
-        last_used_at:
-          type: string
-          format: date-time
-          nullable: true
-        expires_at:
-          type: string
-          format: date-time
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-
-    ScanJob:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        subnet_ids:
-          type: array
-          items:
-            type: integer
-        schedule_cron:
-          type: string
-          nullable: true
-        is_active:
+        user:
+          $ref: "#/components/schemas/User"
+        mfa_required:
           type: boolean
-        last_run_at:
+        mfa_token:
           type: string
-          format: date-time
-          nullable: true
-        next_run_at:
-          type: string
-          format: date-time
-          nullable: true
-
-    ScanResult:
+    CSRFToken:
       type: object
       properties:
-        id:
-          type: integer
-        job_id:
-          type: integer
-        subnet_id:
-          type: integer
-        ip_address:
+        csrf_token:
           type: string
-        is_alive:
-          type: boolean
-        response_time_ms:
-          type: integer
-          nullable: true
-        scanned_at:
-          type: string
-          format: date-time
 
-    AuditLog:
-      type: object
-      properties:
-        id:
-          type: integer
-        user_id:
-          type: integer
-          nullable: true
-        username:
-          type: string
-        action:
-          type: string
-        resource_type:
-          type: string
-        resource_id:
-          type: integer
-          nullable: true
-        resource_name:
-          type: string
-        ip_address:
-          type: string
-        status:
-          type: string
-          enum: [success, failure]
-        created_at:
-          type: string
-          format: date-time
+  requestBodies:
+    JSON:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericObject"
+    CSVUpload:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
 
-security:
-  - sessionToken: []
-  - bearerToken: []
+  responses:
+    OK:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericObject"
+    OKArray:
+      description: Successful list response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericArray"
+    Created:
+      description: Resource created
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericObject"
+    NoContent:
+      description: No content
+    CSV:
+      description: CSV download
+      content:
+        text/csv:
+          schema:
+            type: string
+    JSONDownload:
+      description: JSON download
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/GenericObject"
+    Redirect:
+      description: Browser redirect
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Permission denied
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
 paths:
-  # ── Authentication ───────────────────────────────────────────────────────────
-  /auth/login:
-    post:
-      summary: Log in
+  /api/openapi.yaml:
+    get:
+      tags: [System]
+      summary: Get OpenAPI specification
       security: []
-      tags: [Auth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [username, password]
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
       responses:
         "200":
-          description: Login successful
+          description: OpenAPI YAML document
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "503":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/csrf-token:
+    get:
+      tags: [Security]
+      summary: Get CSRF token
+      security: []
+      responses:
+        "200":
+          description: CSRF token
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                  mfa_required:
-                    type: boolean
-        "401":
-          description: Invalid credentials
+                $ref: "#/components/schemas/CSRFToken"
 
-  /auth/register:
-    post:
-      summary: Self-register
-      security: []
+  /api/v1/privacy-policy/version:
+    get:
       tags: [Auth]
+      summary: Get current privacy policy version
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in with username and password
+      security: []
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [username, email, password]
-              properties:
-                username:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          description: Login response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a local user account
+      security: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          description: User registered
+          $ref: "#/components/responses/Created"
         "400":
-          description: Validation error
+          $ref: "#/components/responses/ValidationError"
 
-  /auth/verify-email:
+  /api/v1/auth/verify-email:
     get:
-      summary: Verify email address
-      security: []
       tags: [Auth]
+      summary: Verify an email address
+      security: []
       parameters:
         - name: token
           in: query
@@ -310,832 +367,1647 @@ paths:
             type: string
       responses:
         "200":
-          description: Email verified
+          $ref: "#/components/responses/OK"
         "400":
-          description: Invalid token
+          $ref: "#/components/responses/BadRequest"
 
-  /auth/request-password-reset:
+  /api/v1/auth/resend-verification:
     post:
-      summary: Request password reset email
-      security: []
       tags: [Auth]
+      summary: Resend verification email
+      security: []
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email]
-              properties:
-                email:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Reset email sent
+          $ref: "#/components/responses/OK"
 
-  /auth/reset-password:
+  /api/v1/auth/request-password-reset:
     post:
-      summary: Reset password using token
-      security: []
       tags: [Auth]
+      summary: Request password reset
+      security: []
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [token, new_password]
-              properties:
-                token:
-                  type: string
-                new_password:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Password reset
-        "400":
-          description: Invalid or expired token
+          $ref: "#/components/responses/OK"
 
-  /auth/me:
+  /api/v1/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password
+      security: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/auth/unlock:
     get:
+      tags: [Security]
+      summary: Verify account unlock token
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    post:
+      tags: [Security]
+      summary: Request account unlock
+      security: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/verify-mfa:
+    post:
+      tags: [Auth]
+      summary: Complete MFA verification
+      security: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/ldap/login:
+    get:
+      tags: [External Auth]
+      summary: Check whether LDAP login is enabled
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [External Auth]
+      summary: Log in with LDAP credentials
+      security: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/oauth2/login:
+    get:
+      tags: [External Auth]
+      summary: Start OAuth2 login
+      security: []
+      parameters:
+        - name: redirect
+          in: query
+          schema:
+            type: string
+            default: /
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+
+  /api/v1/auth/oauth2/callback:
+    get:
+      tags: [External Auth]
+      summary: Complete OAuth2 login callback
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+
+  /api/v1/auth/saml/metadata:
+    get:
+      tags: [External Auth]
+      summary: Get SAML service provider metadata
+      security: []
+      responses:
+        "200":
+          description: SAML metadata XML
+          content:
+            application/xml:
+              schema:
+                type: string
+
+  /api/v1/auth/saml/login:
+    get:
+      tags: [External Auth]
+      summary: Start SAML login
+      security: []
+      parameters:
+        - name: relay_state
+          in: query
+          schema:
+            type: string
+            default: /
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+
+  /api/v1/auth/saml/acs:
+    post:
+      tags: [External Auth]
+      summary: Complete SAML assertion consumer callback
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [SAMLResponse]
+              properties:
+                SAMLResponse:
+                  type: string
+      responses:
+        "302":
+          $ref: "#/components/responses/Redirect"
+
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
       summary: Get current user
-      tags: [Auth]
       responses:
         "200":
-          description: Current user
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/User"
+          $ref: "#/components/responses/OK"
 
-  /auth/me/logout:
+  /api/v1/auth/me/logout:
     post:
-      summary: Log out (revoke current session)
       tags: [Auth]
+      summary: Log out current session
       responses:
         "200":
-          description: Logged out
+          $ref: "#/components/responses/OK"
 
-  /auth/me/sessions:
+  /api/v1/auth/me/tokens:
     get:
+      tags: [Auth]
+      summary: List personal API tokens
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Auth]
+      summary: Create personal API token
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/auth/me/tokens/{id}/rotate:
+    post:
+      tags: [Auth]
+      summary: Rotate personal API token
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/me/tokens/{id}/extend:
+    post:
+      tags: [Auth]
+      summary: Extend personal API token expiration
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/me/sessions:
+    get:
+      tags: [Auth]
       summary: List active sessions
-      tags: [Auth]
       responses:
         "200":
-          description: Session list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-
-  /auth/me/sessions:
+          $ref: "#/components/responses/OKArray"
     delete:
-      summary: Revoke all sessions (logout all devices)
       tags: [Auth]
+      summary: Revoke all other sessions
       responses:
         "200":
-          description: All sessions revoked
+          $ref: "#/components/responses/OK"
 
-  /auth/me/export:
+  /api/v1/auth/me/sessions/{sessionID}:
+    delete:
+      tags: [Auth]
+      summary: Revoke one session
+      parameters:
+        - $ref: "#/components/parameters/sessionID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/me/mfa:
     get:
-      summary: Export all personal data (GDPR)
-      tags: [Auth, GDPR]
+      tags: [Auth]
+      summary: Get MFA status
       responses:
         "200":
-          description: JSON data export download
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Auth]
+      summary: Disable TOTP MFA
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
 
-  /auth/me/deletion-request:
+  /api/v1/auth/me/mfa/setup:
     post:
-      summary: Request account deletion (GDPR right to erasure)
-      tags: [Auth, GDPR]
+      tags: [Auth]
+      summary: Begin TOTP MFA setup
       responses:
         "200":
-          description: Deletion request submitted
+          $ref: "#/components/responses/OK"
 
-  /auth/me/accept-privacy:
+  /api/v1/auth/me/mfa/confirm:
     post:
-      summary: Accept the current privacy policy
       tags: [Auth]
+      summary: Confirm TOTP MFA setup
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Consent recorded
+          $ref: "#/components/responses/OK"
 
-  /privacy-policy/version:
-    get:
-      summary: Get current privacy policy version
-      security: []
+  /api/v1/auth/me/mfa/backup-codes:
+    post:
       tags: [Auth]
+      summary: Regenerate MFA backup codes
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Current version
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  version:
-                    type: string
+          $ref: "#/components/responses/OK"
 
-  # ── Sections ──────────────────────────────────────────────────────────────
-  /sections:
+  /api/v1/auth/me/export:
     get:
+      tags: [Auth, GDPR]
+      summary: Export current user's personal data
+      responses:
+        "200":
+          $ref: "#/components/responses/JSONDownload"
+
+  /api/v1/auth/me/deletion-request:
+    post:
+      tags: [Auth, GDPR]
+      summary: Request account deletion
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/auth/me/accept-privacy:
+    post:
+      tags: [Auth]
+      summary: Accept privacy policy
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/user/login-history:
+    get:
+      tags: [Security]
+      summary: Get current user's login history
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/user/notification-preferences:
+    get:
+      tags: [Users]
+      summary: Get notification preferences
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Users]
+      summary: Update notification preferences
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/users:
+    get:
+      tags: [Users]
+      summary: List users
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Users]
+      summary: Delete user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/users/{id}/role:
+    put:
+      tags: [Users]
+      summary: Update user role
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/sections:
+    get:
+      tags: [Sections]
       summary: List sections
-      tags: [Sections]
       responses:
         "200":
-          description: Section list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Section"
+          $ref: "#/components/responses/OKArray"
     post:
+      tags: [Sections]
       summary: Create section
-      tags: [Sections]
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          description: Section created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Section"
+          $ref: "#/components/responses/Created"
 
-  /sections/{id}:
+  /api/v1/sections/search:
+    post:
+      tags: [Sections]
+      summary: Search sections
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/sections/{id}:
     get:
+      tags: [Sections]
       summary: Get section
-      tags: [Sections]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: Section
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Section"
+          $ref: "#/components/responses/OK"
     put:
+      tags: [Sections]
       summary: Update section
-      tags: [Sections]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Updated section
+          $ref: "#/components/responses/OK"
     delete:
+      tags: [Sections]
       summary: Delete section
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/sections/{id}/subnets/tree:
+    get:
+      tags: [Sections, Subnets]
+      summary: Get subnet tree for a section
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/sections/{id}/topology:
+    get:
       tags: [Sections]
+      summary: Get section topology
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "204":
-          description: Deleted
-
-  # ── Subnets ────────────────────────────────────────────────────────────────
-  /sections/{sectionID}/subnets:
-    get:
-      summary: List subnets in a section
-      tags: [Subnets]
-      parameters:
-        - name: sectionID
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: Subnet list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Subnet"
+          $ref: "#/components/responses/OK"
+
+  /api/v1/sections/{sectionID}/subnets:
+    get:
+      tags: [Subnets]
+      summary: List section subnets
+      parameters:
+        - $ref: "#/components/parameters/sectionID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
     post:
+      tags: [Subnets]
       summary: Create subnet
-      tags: [Subnets]
       parameters:
-        - name: sectionID
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/sectionID"
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [network_address, prefix_length]
-              properties:
-                network_address:
-                  type: string
-                prefix_length:
-                  type: integer
-                description:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          description: Subnet created
+          $ref: "#/components/responses/Created"
 
-  /subnets/{id}:
+  /api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses:
     get:
+      tags: [IP Addresses]
+      summary: List IP addresses using legacy nested route
+      parameters:
+        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/subnetID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [IP Addresses]
+      summary: Create IP address using legacy nested route
+      parameters:
+        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/subnetID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses/allocate:
+    post:
+      tags: [IP Addresses]
+      summary: Allocate IP address using legacy nested route
+      parameters:
+        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/subnetID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/subnets/{id}:
+    get:
+      tags: [Subnets]
       summary: Get subnet
-      tags: [Subnets]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: Subnet
+          $ref: "#/components/responses/OK"
     put:
+      tags: [Subnets]
       summary: Update subnet
-      tags: [Subnets]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Updated
+          $ref: "#/components/responses/OK"
     delete:
+      tags: [Subnets]
       summary: Delete subnet
-      tags: [Subnets]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "204":
-          description: Deleted
+          $ref: "#/components/responses/NoContent"
 
-  /subnets/{id}/utilization:
+  /api/v1/subnets/{subnetID}/utilization:
     get:
-      summary: Get subnet utilization stats
       tags: [Subnets]
+      summary: Get subnet utilization
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/subnetID"
       responses:
         "200":
-          description: Utilization stats
+          $ref: "#/components/responses/OK"
 
-  /subnets/{id}/scan-results:
-    get:
-      summary: Get discovery scan results for a subnet
-      tags: [Subnets, Discovery]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 100
-      responses:
-        "200":
-          description: Scan results
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ScanResult"
-
-  # ── IP Addresses ───────────────────────────────────────────────────────────
-  /subnets/{subnetID}/ip-addresses:
-    get:
-      summary: List IP addresses in a subnet
-      tags: [IP Addresses]
-      parameters:
-        - name: subnetID
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: IP address list
+  /api/v1/subnets/search/{sectionID}:
     post:
+      tags: [Subnets]
+      summary: Search subnets in a section
+      parameters:
+        - $ref: "#/components/parameters/sectionID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/subnets/{subnetID}/ip-addresses:
+    get:
+      tags: [IP Addresses]
+      summary: List IP addresses
+      parameters:
+        - $ref: "#/components/parameters/subnetID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [IP Addresses]
       summary: Create IP address
-      tags: [IP Addresses]
       parameters:
-        - name: subnetID
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "201":
-          description: IP address created
-
-  /subnets/{subnetID}/ip-addresses/allocate:
-    post:
-      summary: Auto-allocate next available IP
-      tags: [IP Addresses]
-      parameters:
-        - name: subnetID
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/subnetID"
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [assigned_to]
-              properties:
-                assigned_to:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          description: IP allocated
+          $ref: "#/components/responses/Created"
 
-  /ip-addresses/{id}:
+  /api/v1/subnets/{subnetID}/ip-addresses/allocate:
+    post:
+      tags: [IP Addresses]
+      summary: Allocate next available IP address
+      parameters:
+        - $ref: "#/components/parameters/subnetID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/subnets/{id}/scan-results:
     get:
+      tags: [Subnets, Discovery]
+      summary: Get subnet scan results
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/subnets/{id}/delegations:
+    get:
+      tags: [Subnets]
+      summary: List IPv6 delegations
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Subnets]
+      summary: Create IPv6 delegation
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/subnets/{id}/utilisation/history:
+    get:
+      tags: [Subnets, Reports]
+      summary: Get subnet utilisation history
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/delegations/{id}:
+    put:
+      tags: [Subnets]
+      summary: Update IPv6 delegation
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Subnets]
+      summary: Delete IPv6 delegation
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/ip-addresses/{id}:
+    get:
+      tags: [IP Addresses]
       summary: Get IP address
-      tags: [IP Addresses]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: IP address
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [IP Addresses]
+      summary: Update IP metadata
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
     delete:
+      tags: [IP Addresses]
       summary: Delete IP address
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/ip-addresses/{id}/assign:
+    post:
       tags: [IP Addresses]
+      summary: Assign IP address
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
-        "204":
-          description: Deleted
+        "200":
+          $ref: "#/components/responses/OK"
 
-  # ── VRFs ───────────────────────────────────────────────────────────────────
-  /vrfs:
+  /api/v1/ip-addresses/{id}/release:
+    post:
+      tags: [IP Addresses]
+      summary: Release IP address
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/ip-addresses/{id}/assign-with-lease:
+    post:
+      tags: [IP Addresses]
+      summary: Assign IP address with lease
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/ip-addresses/{id}/lease-status:
     get:
+      tags: [IP Addresses]
+      summary: Get IP lease status
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/ip-addresses/{id}/release-expired:
+    post:
+      tags: [IP Addresses]
+      summary: Release expired IP lease
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/ip-addresses/search/{subnetID}:
+    post:
+      tags: [IP Addresses]
+      summary: Search IP addresses
+      parameters:
+        - $ref: "#/components/parameters/subnetID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/vrfs:
+    get:
+      tags: [VRFs]
       summary: List VRFs
-      tags: [VRFs]
       responses:
         "200":
-          description: VRF list
+          $ref: "#/components/responses/OKArray"
     post:
+      tags: [VRFs]
       summary: Create VRF
-      tags: [VRFs]
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          description: VRF created
+          $ref: "#/components/responses/Created"
 
-  /vrfs/{id}:
+  /api/v1/vrfs/{id}:
     get:
+      tags: [VRFs]
       summary: Get VRF
-      tags: [VRFs]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: VRF
+          $ref: "#/components/responses/OK"
     put:
+      tags: [VRFs]
       summary: Update VRF
-      tags: [VRFs]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Updated
+          $ref: "#/components/responses/OK"
     delete:
+      tags: [VRFs]
       summary: Delete VRF
-      tags: [VRFs]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "204":
-          description: Deleted
+          $ref: "#/components/responses/NoContent"
 
-  # ── VLANs ──────────────────────────────────────────────────────────────────
-  /vlans:
+  /api/v1/vrfs/{vrfID}/vlans:
     get:
+      tags: [VRFs, VLANs]
+      summary: List VLANs by VRF
+      parameters:
+        - $ref: "#/components/parameters/vrfID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/vlans:
+    get:
+      tags: [VLANs]
       summary: List VLANs
-      tags: [VLANs]
       responses:
         "200":
-          description: VLAN list
+          $ref: "#/components/responses/OKArray"
     post:
+      tags: [VLANs]
       summary: Create VLAN
-      tags: [VLANs]
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          description: VLAN created
+          $ref: "#/components/responses/Created"
 
-  /vlans/{id}:
+  /api/v1/vlans/{id}:
     get:
+      tags: [VLANs]
       summary: Get VLAN
-      tags: [VLANs]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: VLAN
+          $ref: "#/components/responses/OK"
     put:
+      tags: [VLANs]
       summary: Update VLAN
-      tags: [VLANs]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Updated
+          $ref: "#/components/responses/OK"
     delete:
+      tags: [VLANs]
       summary: Delete VLAN
-      tags: [VLANs]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "204":
-          description: Deleted
+          $ref: "#/components/responses/NoContent"
 
-  # ── Admin ──────────────────────────────────────────────────────────────────
-  /admin/users:
+  /api/v1/vlans/{id}/subnets:
     get:
-      summary: List all users (admin)
-      tags: [Admin]
-      responses:
-        "200":
-          description: User list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
-    post:
-      summary: Create user (admin)
-      tags: [Admin]
-      responses:
-        "201":
-          description: User created
-
-  /admin/users/{id}/email:
-    put:
-      summary: Update user email (admin)
-      tags: [Admin]
+      tags: [VLANs, Subnets]
+      summary: List subnets assigned to VLAN
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email]
-              properties:
-                email:
-                  type: string
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: Email updated
-
-  /admin/users/{id}/suspend:
+          $ref: "#/components/responses/OKArray"
     post:
-      summary: Suspend a user (admin)
-      tags: [Admin]
+      tags: [VLANs, Subnets]
+      summary: Assign subnet to VLAN
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [reason]
-              properties:
-                reason:
-                  type: string
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: User suspended
+          $ref: "#/components/responses/OK"
 
-  /admin/users/{id}/unsuspend:
-    post:
-      summary: Unsuspend a user (admin)
-      tags: [Admin]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: User unsuspended
-
-  /admin/users/{id}/impersonate:
-    post:
-      summary: Start impersonation session (admin)
-      tags: [Admin]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Impersonation token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-
-  /admin/users/{id}/gdpr-delete:
-    post:
-      summary: Anonymize user data (GDPR, admin)
-      tags: [Admin, GDPR]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: User anonymized
-
-  /admin/users/bulk-import:
-    post:
-      summary: Bulk import users from CSV (admin)
-      tags: [Admin]
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                default_password:
-                  type: string
-      responses:
-        "200":
-          description: Import results
-
-  /admin/users/bulk-suspend:
-    post:
-      summary: Bulk suspend users (admin)
-      tags: [Admin]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_ids]
-              properties:
-                user_ids:
-                  type: array
-                  items:
-                    type: integer
-                reason:
-                  type: string
-      responses:
-        "200":
-          description: Suspended count
-
-  /admin/users/bulk-activate:
-    post:
-      summary: Bulk activate users (admin)
-      tags: [Admin]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_ids]
-              properties:
-                user_ids:
-                  type: array
-                  items:
-                    type: integer
-      responses:
-        "200":
-          description: Activated count
-
-  /admin/users/bulk-delete:
-    post:
-      summary: Bulk delete users (admin)
-      tags: [Admin]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user_ids]
-              properties:
-                user_ids:
-                  type: array
-                  items:
-                    type: integer
-      responses:
-        "200":
-          description: Deleted count
-
-  /admin/scan-jobs:
-    get:
-      summary: List scan jobs
-      tags: [Discovery]
-      responses:
-        "200":
-          description: Scan job list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ScanJob"
-    post:
-      summary: Create scan job
-      tags: [Discovery]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, subnet_ids]
-              properties:
-                name:
-                  type: string
-                subnet_ids:
-                  type: array
-                  items:
-                    type: integer
-                schedule_cron:
-                  type: string
-                  nullable: true
-      responses:
-        "201":
-          description: Scan job created
-
-  /admin/scan-jobs/{id}:
-    get:
-      summary: Get scan job
-      tags: [Discovery]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Scan job
-    put:
-      summary: Update scan job
-      tags: [Discovery]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Updated
+  /api/v1/vlans/{id}/subnets/{subnetID}:
     delete:
-      summary: Delete scan job
-      tags: [Discovery]
+      tags: [VLANs, Subnets]
+      summary: Remove subnet from VLAN
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/subnetID"
       responses:
         "204":
-          description: Deleted
+          $ref: "#/components/responses/NoContent"
 
-  /admin/scan-jobs/{id}/run:
+  /api/v1/vlan-domains:
+    get:
+      tags: [VLAN Domains]
+      summary: List VLAN domains
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
     post:
-      summary: Run scan job immediately
-      tags: [Discovery]
+      tags: [VLAN Domains]
+      summary: Create VLAN domain
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/vlan-domains/{id}:
+    get:
+      tags: [VLAN Domains]
+      summary: Get VLAN domain
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: Job started
-
-  /admin/scan-jobs/{id}/results:
-    get:
-      summary: Get scan results for a job
-      tags: [Discovery]
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [VLAN Domains]
+      summary: Update VLAN domain
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 100
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
-          description: Scan results
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [VLAN Domains]
+      summary: Delete VLAN domain
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
 
-  /admin/audit-logs:
+  /api/v1/vlan-groups:
     get:
-      summary: List audit logs (admin)
-      tags: [Admin, Audit]
+      tags: [VLAN Groups]
+      summary: List VLAN groups
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [VLAN Groups]
+      summary: Create VLAN group
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/vlan-groups/{id}:
+    get:
+      tags: [VLAN Groups]
+      summary: Get VLAN group
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [VLAN Groups]
+      summary: Update VLAN group
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [VLAN Groups]
+      summary: Delete VLAN group
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/tags:
+    get:
+      tags: [Tags]
+      summary: List tags
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Tags]
+      summary: Create tag
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/tags/{id}:
+    put:
+      tags: [Tags]
+      summary: Update tag
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Tags]
+      summary: Delete tag
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/device-types:
+    get:
+      tags: [Devices]
+      summary: List device types
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/devices:
+    get:
+      tags: [Devices]
+      summary: List devices
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Devices]
+      summary: Create device
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/devices/search:
+    post:
+      tags: [Devices]
+      summary: Search devices
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/devices/{id}:
+    get:
+      tags: [Devices]
+      summary: Get device
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Devices]
+      summary: Update device
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Devices]
+      summary: Delete device
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/devices/{id}/ip-addresses:
+    get:
+      tags: [Devices, IP Addresses]
+      summary: List device IP addresses
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/devices/{id}/ip-addresses/{ip_id}/associate:
+    post:
+      tags: [Devices, IP Addresses]
+      summary: Associate IP address to device
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/ipID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/devices/{id}/ip-addresses/{ip_id}:
+    delete:
+      tags: [Devices, IP Addresses]
+      summary: Unlink IP address from device
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/ipID"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/devices/{id}/interfaces:
+    get:
+      tags: [Devices]
+      summary: List device interfaces
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Devices]
+      summary: Create device interface
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/devices/{id}/interfaces/{if_id}:
+    put:
+      tags: [Devices]
+      summary: Update device interface
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/interfaceID"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Devices]
+      summary: Delete device interface
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/interfaceID"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/devices/{id}/snmp-credentials:
+    get:
+      tags: [Devices]
+      summary: Get device SNMP credentials
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/racks:
+    get:
+      tags: [Racks]
+      summary: List racks
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Racks]
+      summary: Create rack
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/racks/{id}:
+    get:
+      tags: [Racks]
+      summary: Get rack
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Racks]
+      summary: Update rack
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Racks]
+      summary: Delete rack
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/racks/{id}/devices:
+    get:
+      tags: [Racks, Devices]
+      summary: List devices in rack
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/locations:
+    get:
+      tags: [Locations]
+      summary: List locations
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Locations]
+      summary: Create location
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/locations/tree:
+    get:
+      tags: [Locations]
+      summary: Get location tree
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/locations/{id}:
+    get:
+      tags: [Locations]
+      summary: Get location
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Locations]
+      summary: Update location
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Locations]
+      summary: Delete location
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/nameservers:
+    get:
+      tags: [Nameservers]
+      summary: List nameservers
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Nameservers]
+      summary: Create nameserver
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/nameservers/{id}:
+    get:
+      tags: [Nameservers]
+      summary: Get nameserver
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Nameservers]
+      summary: Update nameserver
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Nameservers]
+      summary: Delete nameserver
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/dns/zones:
+    get:
+      tags: [DNS]
+      summary: List DNS zones
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/dns/zones/{zone}/records:
+    get:
+      tags: [DNS]
+      summary: Get DNS zone records
+      parameters:
+        - $ref: "#/components/parameters/zone"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/requests/subnets:
+    get:
+      tags: [Requests]
+      summary: List current user's subnet requests
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Requests]
+      summary: Submit subnet request
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/requests/subnets/{id}:
+    delete:
+      tags: [Requests]
+      summary: Cancel subnet request
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/requests/ips:
+    get:
+      tags: [Requests]
+      summary: List current user's IP requests
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Requests]
+      summary: Submit IP request
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/requests/ips/{id}:
+    delete:
+      tags: [Requests]
+      summary: Cancel IP request
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/requests/{type}/{id}/comments:
+    get:
+      tags: [Requests]
+      summary: List request comments
+      parameters:
+        - $ref: "#/components/parameters/requestType"
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Requests]
+      summary: Add request comment
+      parameters:
+        - $ref: "#/components/parameters/requestType"
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/dashboard/summary:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/dashboard/recent-activity:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard recent activity
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/scan-agent/jobs:
+    get:
+      tags: [Scan Agents]
+      summary: Get jobs assigned to authenticated scan agent
+      security:
+        - bearerToken: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/scan-agent/results:
+    post:
+      tags: [Scan Agents]
+      summary: Submit scan agent results
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/scan-agent/heartbeat:
+    post:
+      tags: [Scan Agents]
+      summary: Submit scan agent heartbeat
+      security:
+        - bearerToken: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/config:
+    get:
+      tags: [Admin]
+      summary: Get application configuration
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Update application configuration
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/config/test-email:
+    post:
+      tags: [Admin]
+      summary: Send SMTP test email
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/approvals:
+    get:
+      tags: [Admin]
+      summary: List pending user approvals
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/approvals/{id}/approve:
+    post:
+      tags: [Admin]
+      summary: Approve user registration
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/approvals/{id}/reject:
+    post:
+      tags: [Admin]
+      summary: Reject user registration
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users:
+    get:
+      tags: [Admin, Users]
+      summary: List users as admin
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/users/{id}/unlock:
+    post:
+      tags: [Admin, Security]
+      summary: Unlock user account
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/send-password-reset:
+    post:
+      tags: [Admin, Users]
+      summary: Send password reset email to user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/email:
+    put:
+      tags: [Admin, Users]
+      summary: Update user email
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/suspend:
+    post:
+      tags: [Admin, Users]
+      summary: Suspend user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/unsuspend:
+    post:
+      tags: [Admin, Users]
+      summary: Unsuspend user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/impersonate:
+    post:
+      tags: [Admin, Users]
+      summary: Start impersonation session
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/gdpr-delete:
+    post:
+      tags: [Admin, GDPR]
+      summary: Anonymize user data
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/bulk-suspend:
+    post:
+      tags: [Admin, Users]
+      summary: Bulk suspend users
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/bulk-activate:
+    post:
+      tags: [Admin, Users]
+      summary: Bulk activate users
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/bulk-delete:
+    post:
+      tags: [Admin, Users]
+      summary: Bulk delete users
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/bulk-import:
+    post:
+      tags: [Admin, Users]
+      summary: Bulk import users
+      requestBody:
+        $ref: "#/components/requestBodies/CSVUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/notification-stats:
+    get:
+      tags: [Admin]
+      summary: Get notification stats
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/audit-logs:
+    get:
+      tags: [Admin, Security]
+      summary: List audit logs
       parameters:
         - name: user_id
           in: query
@@ -1155,48 +2027,701 @@ paths:
           schema:
             type: string
             format: date-time
-        - name: limit
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/audit-logs/export:
+    get:
+      tags: [Admin, Security]
+      summary: Export audit logs
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/audit-logs/purge:
+    post:
+      tags: [Admin, Security]
+      summary: Purge audit logs
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/roles:
+    get:
+      tags: [Admin, RBAC]
+      summary: List roles
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, RBAC]
+      summary: Create role
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/roles/{id}:
+    get:
+      tags: [Admin, RBAC]
+      summary: Get role
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, RBAC]
+      summary: Update role
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin, RBAC]
+      summary: Delete role
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/roles/{id}/permissions:
+    post:
+      tags: [Admin, RBAC]
+      summary: Add permission to role
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/roles/{id}/permissions/{perm_id}:
+    delete:
+      tags: [Admin, RBAC]
+      summary: Remove permission from role
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/permID"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/permissions:
+    get:
+      tags: [Admin, RBAC]
+      summary: List available permissions
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/users/{id}/roles:
+    get:
+      tags: [Admin, RBAC, Users]
+      summary: List roles assigned to user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, RBAC, Users]
+      summary: Assign role to user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/users/{id}/roles/{role_id}:
+    delete:
+      tags: [Admin, RBAC, Users]
+      summary: Remove role from user
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/roleID"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/scan-jobs:
+    get:
+      tags: [Admin, Discovery]
+      summary: List scan jobs
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, Discovery]
+      summary: Create scan job
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/scan-jobs/{id}:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get scan job
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, Discovery]
+      summary: Update scan job
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin, Discovery]
+      summary: Delete scan job
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/scan-jobs/{id}/run:
+    post:
+      tags: [Admin, Discovery]
+      summary: Run scan job now
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/scan-jobs/{id}/results:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get scan job results
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/scan-jobs/{id}/history:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get scan job history
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/scan-jobs/{id}/history/{run_id}:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get scan run detail
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/runID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/scan-agents:
+    get:
+      tags: [Admin, Scan Agents]
+      summary: List scan agents
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, Scan Agents]
+      summary: Create scan agent
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/scan-agents/{id}:
+    get:
+      tags: [Admin, Scan Agents]
+      summary: Get scan agent
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin, Scan Agents]
+      summary: Delete scan agent
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/scan-agents/{id}/rotate-token:
+    post:
+      tags: [Admin, Scan Agents]
+      summary: Rotate scan agent token
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/custom-fields:
+    get:
+      tags: [Admin]
+      summary: List custom field definitions
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin]
+      summary: Create custom field definition
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/custom-fields/reorder:
+    put:
+      tags: [Admin]
+      summary: Reorder custom field definitions
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/custom-fields/{id}:
+    get:
+      tags: [Admin]
+      summary: Get custom field definition
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Update custom field definition
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin]
+      summary: Delete custom field definition
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/subnets/overlap-report:
+    get:
+      tags: [Admin, Subnets]
+      summary: Get subnet overlap report
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/subnets/{id}/split:
+    post:
+      tags: [Admin, Subnets]
+      summary: Split subnet
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/subnets/merge:
+    post:
+      tags: [Admin, Subnets]
+      summary: Merge subnets
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/subnets/{id}/resize:
+    post:
+      tags: [Admin, Subnets]
+      summary: Resize subnet
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/dns/check-all:
+    post:
+      tags: [Admin, DNS]
+      summary: Check all DNS records
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/dns/test:
+    post:
+      tags: [Admin, DNS]
+      summary: Test PowerDNS connection
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/dns/technitium/test:
+    post:
+      tags: [Admin, DNS]
+      summary: Test Technitium connection
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/requests/subnets:
+    get:
+      tags: [Admin, Requests]
+      summary: List all subnet requests
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/requests/subnets/{id}/approve:
+    post:
+      tags: [Admin, Requests]
+      summary: Approve subnet request
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/requests/subnets/{id}/reject:
+    post:
+      tags: [Admin, Requests]
+      summary: Reject subnet request
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/requests/ips:
+    get:
+      tags: [Admin, Requests]
+      summary: List all IP requests
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/requests/ips/{id}/approve:
+    post:
+      tags: [Admin, Requests]
+      summary: Approve IP request
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/requests/ips/{id}/reject:
+    post:
+      tags: [Admin, Requests]
+      summary: Reject IP request
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/requests/pending-count:
+    get:
+      tags: [Admin, Requests]
+      summary: Get pending request count
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/vlans/usage-report:
+    get:
+      tags: [Admin, VLANs, Reports]
+      summary: Get VLAN usage report
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/reports/utilization-trends:
+    get:
+      tags: [Admin, Reports]
+      summary: Get utilization trends
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/reports/subnets-near-capacity:
+    get:
+      tags: [Admin, Reports]
+      summary: Get subnets near capacity
+      parameters:
+        - name: threshold
           in: query
           schema:
-            type: integer
-            default: 100
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
+            type: number
       responses:
         "200":
-          description: Audit log entries
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AuditLog"
+          $ref: "#/components/responses/OKArray"
 
-  /admin/audit-logs/export:
+  /api/v1/admin/reports/scheduled:
     get:
-      summary: Export audit logs as CSV (admin)
-      tags: [Admin, Audit]
+      tags: [Admin, Reports]
+      summary: List scheduled reports
       responses:
         "200":
-          description: CSV download
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, Reports]
+      summary: Create scheduled report
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
 
-  /health:
+  /api/v1/admin/reports/scheduled/{id}:
     get:
-      summary: Health check
-      security: []
-      tags: [System]
+      tags: [Admin, Reports]
+      summary: Get scheduled report
+      parameters:
+        - $ref: "#/components/parameters/id"
       responses:
         "200":
-          description: Healthy
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  database:
-                    type: string
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, Reports]
+      summary: Update scheduled report
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin, Reports]
+      summary: Delete scheduled report
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/reports/scheduled/{id}/run:
+    post:
+      tags: [Admin, Reports]
+      summary: Run scheduled report now
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/reports/export/subnets:
+    get:
+      tags: [Admin, Reports]
+      summary: Export subnets report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/export/ips:
+    get:
+      tags: [Admin, Reports]
+      summary: Export IP addresses report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/export/inactive-ips:
+    get:
+      tags: [Admin, Reports]
+      summary: Export inactive IPs report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/inactive-ips:
+    get:
+      tags: [Admin, Reports]
+      summary: Get inactive IPs
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/ip-addresses/bulk-release:
+    post:
+      tags: [Admin, IP Addresses]
+      summary: Bulk release IP addresses
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/import/subnets:
+    post:
+      tags: [Admin, Import Export]
+      summary: Import subnets from CSV
+      requestBody:
+        $ref: "#/components/requestBodies/CSVUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/import/ips:
+    post:
+      tags: [Admin, Import Export]
+      summary: Import IP addresses from CSV
+      requestBody:
+        $ref: "#/components/requestBodies/CSVUpload"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/import/phpipam:
+    post:
+      tags: [Admin, Import Export]
+      summary: Import data from phpIPAM
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/export/full:
+    get:
+      tags: [Admin, Import Export]
+      summary: Export full data set
+      responses:
+        "200":
+          $ref: "#/components/responses/JSONDownload"
+
+  /api/v1/admin/auth/ldap:
+    get:
+      tags: [Admin, External Auth]
+      summary: Get LDAP configuration
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, External Auth]
+      summary: Update LDAP configuration
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/auth/ldap/test:
+    post:
+      tags: [Admin, External Auth]
+      summary: Test LDAP connection
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "502":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/auth/ldap/group-mappings:
+    get:
+      tags: [Admin, External Auth, RBAC]
+      summary: List LDAP group role mappings
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, External Auth, RBAC]
+      summary: Create LDAP group role mapping
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/auth/ldap/group-mappings/{id}:
+    delete:
+      tags: [Admin, External Auth, RBAC]
+      summary: Delete LDAP group role mapping
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/auth/oauth2:
+    get:
+      tags: [Admin, External Auth]
+      summary: Get OAuth2 configuration
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, External Auth]
+      summary: Update OAuth2 configuration
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/auth/saml:
+    get:
+      tags: [Admin, External Auth]
+      summary: Get SAML configuration
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, External Auth]
+      summary: Update SAML configuration
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
