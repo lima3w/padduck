@@ -40,9 +40,9 @@ export default function DnsZonesPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">DNS Zones</h1>
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">PowerDNS is not configured.</p>
+          <p className="text-yellow-800 dark:text-yellow-200 font-medium mb-2">No DNS provider is configured.</p>
           <p className="text-yellow-700 dark:text-yellow-300 text-sm mb-4">
-            Set it up in{' '}
+            Set up PowerDNS or Technitium in{' '}
             <Link to="/admin/settings" className="underline hover:text-yellow-900 dark:hover:text-yellow-100">
               Admin Settings &rarr; DNS
             </Link>

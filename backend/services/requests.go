@@ -236,9 +236,12 @@ func (s *Service) ApproveIPRequest(ctx context.Context, requestID, reviewerID in
 		}
 	}
 
-	// Update DNS name on the IP if provided
+	// Update DNS name on the IP if provided, then sync to DNS provider
 	if ir.DNSName != "" {
 		_ = s.repository.UpdateIPDNSName(ctx, ipAddr.ID, ir.DNSName)
+		if updated, err := s.repository.GetIPAddressByID(ctx, ipAddr.ID); err == nil {
+			go s.DNS.SyncIPToDNS(ctx, updated)
+		}
 	}
 
 	// Approve the request

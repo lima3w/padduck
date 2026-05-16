@@ -47,12 +47,12 @@ func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 }
 
 // ListDNSZones handles GET /api/v1/dns/zones
-// Returns the list of zones from PowerDNS, or {"configured": false} if not set up.
+// Returns the list of zones from the configured DNS provider, or {"configured": false} if none is set up.
 func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2NameserverList); err != nil {
 		return nil
 	}
-	zones, configured, err := h.service.DNS.ListPDNSZones(c.Context())
+	zones, configured, err := h.service.DNS.ListDNSZones(c.Context())
 	if err != nil {
 		log.Printf("Error listing DNS zones: %v", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
@@ -64,7 +64,7 @@ func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 }
 
 // GetDNSZoneRecords handles GET /api/v1/dns/zones/:zone/records
-// Returns the rrsets for a zone. Accepts optional ?type=A filter.
+// Returns normalized records for a zone. Accepts optional ?type=A filter.
 func (h *Handler) GetDNSZoneRecords(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2NameserverRead); err != nil {
 		return nil
@@ -73,22 +73,11 @@ func (h *Handler) GetDNSZoneRecords(c *fiber.Ctx) error {
 	if zone == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "zone name is required"})
 	}
-	detail, err := h.service.DNS.GetPDNSZone(c.Context(), zone)
+	typeFilter := c.Query("type")
+	records, err := h.service.DNS.GetDNSZoneRecords(c.Context(), zone, typeFilter)
 	if err != nil {
 		log.Printf("Error getting DNS zone %s: %v", zone, err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
 	}
-
-	records := detail.RRSets
-	if typeFilter := c.Query("type"); typeFilter != "" {
-		filtered := detail.RRSets[:0]
-		for _, rr := range detail.RRSets {
-			if rr.Type == typeFilter {
-				filtered = append(filtered, rr)
-			}
-		}
-		records = filtered
-	}
-
-	return c.JSON(fiber.Map{"zone": detail.Zone, "records": records})
+	return c.JSON(fiber.Map{"zone": zone, "records": records})
 }

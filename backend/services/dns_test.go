@@ -1,9 +1,11 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"ipam-next/models"
 )
 
 // ---------------------------------------------------------------------------
@@ -77,3 +79,59 @@ type testError struct{ msg string }
 func (e *testError) Error() string { return e.msg }
 
 var errTestSentinel = &testError{msg: "boom"}
+
+// ---------------------------------------------------------------------------
+// ListDNSZones / GetDNSZoneRecords — no provider configured
+// ---------------------------------------------------------------------------
+
+func TestListDNSZones_NoneConfigured_ReturnsNotConfigured(t *testing.T) {
+	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	zones, configured, err := dns.ListDNSZones(context.Background())
+	assert.NoError(t, err)
+	assert.False(t, configured)
+	assert.Nil(t, zones)
+}
+
+func TestGetDNSZoneRecords_NoneConfigured_ReturnsError(t *testing.T) {
+	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	_, err := dns.GetDNSZoneRecords(context.Background(), "example.com", "")
+	assert.Error(t, err)
+}
+
+// ---------------------------------------------------------------------------
+// SyncIPToDNS / RemoveIPFromDNS — no-op when no provider configured
+// ---------------------------------------------------------------------------
+
+func TestSyncIPToDNS_NoneConfigured_NoOp(t *testing.T) {
+	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dnsName := "host.example.com"
+	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: &dnsName}
+	assert.NotPanics(t, func() {
+		dns.SyncIPToDNS(context.Background(), ip)
+	})
+}
+
+func TestRemoveIPFromDNS_NoneConfigured_NoOp(t *testing.T) {
+	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dnsName := "host.example.com"
+	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: &dnsName}
+	assert.NotPanics(t, func() {
+		dns.RemoveIPFromDNS(context.Background(), ip)
+	})
+}
+
+func TestSyncIPToTechnitium_NilDNSName_NoOp(t *testing.T) {
+	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: nil}
+	assert.NotPanics(t, func() {
+		dns.SyncIPToTechnitium(context.Background(), ip)
+	})
+}
+
+func TestRemoveIPFromTechnitium_NilDNSName_NoOp(t *testing.T) {
+	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: nil}
+	assert.NotPanics(t, func() {
+		dns.RemoveIPFromTechnitium(context.Background(), ip)
+	})
+}

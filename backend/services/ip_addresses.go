@@ -105,8 +105,12 @@ func (s *Service) ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAdd
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
-
-	return s.repository.UpdateIPAddressStatus(ctx, id, "available", nil)
+	ip, _ := s.repository.GetIPAddressByID(ctx, id)
+	result, err := s.repository.UpdateIPAddressStatus(ctx, id, "available", nil)
+	if err == nil && ip != nil {
+		go s.DNS.RemoveIPFromDNS(ctx, ip)
+	}
+	return result, err
 }
 
 // DeleteIPAddress deletes an IP address record
@@ -114,8 +118,14 @@ func (s *Service) DeleteIPAddress(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid IP address ID")
 	}
-
-	return s.repository.DeleteIPAddress(ctx, id)
+	ip, _ := s.repository.GetIPAddressByID(ctx, id)
+	if err := s.repository.DeleteIPAddress(ctx, id); err != nil {
+		return err
+	}
+	if ip != nil {
+		go s.DNS.RemoveIPFromDNS(ctx, ip)
+	}
+	return nil
 }
 
 // FindNextAvailableIP returns the next available IP in a subnet

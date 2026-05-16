@@ -14,6 +14,20 @@ import (
 	"ipam-next/models"
 )
 
+// ZoneInfo is a provider-agnostic zone summary used by the DNS zones UI.
+type ZoneInfo struct {
+	Name string `json:"name"`
+	Kind string `json:"kind"`
+}
+
+// RecordInfo is a provider-agnostic DNS record used by the DNS zones UI.
+type RecordInfo struct {
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	TTL     int    `json:"ttl"`
+	Content string `json:"content"`
+}
+
 // DNSService handles DNS lookups, record tracking, and PowerDNS sync.
 type DNSService struct {
 	svc *Service
@@ -215,6 +229,143 @@ func (d *DNSService) GetPDNSZone(ctx context.Context, zone string) (*pdns.ZoneDe
 		return nil, fmt.Errorf("PowerDNS is not configured or disabled")
 	}
 	return client.GetZone(ctx, zone)
+}
+
+// ListDNSZones returns a normalized zone list from whichever DNS provider is configured.
+// Returns (zones, configured, err). If neither provider is configured, configured is false.
+func (d *DNSService) ListDNSZones(ctx context.Context) ([]ZoneInfo, bool, error) {
+	// Try PowerDNS first
+	if pdnsC := d.pdnsClient(); pdnsC != nil {
+		raw, err := pdnsC.ListZones(ctx)
+		if err != nil {
+			return nil, true, err
+		}
+		out := make([]ZoneInfo, len(raw))
+		for i, z := range raw {
+			out[i] = ZoneInfo{Name: z.Name, Kind: z.Kind}
+		}
+		return out, true, nil
+	}
+	// Fall back to Technitium
+	if techC := d.technitiumClient(); techC != nil {
+		raw, err := techC.ListZones(ctx)
+		if err != nil {
+			return nil, true, err
+		}
+		out := make([]ZoneInfo, len(raw))
+		for i, z := range raw {
+			out[i] = ZoneInfo{Name: z.Name, Kind: z.Type}
+		}
+		return out, true, nil
+	}
+	return nil, false, nil
+}
+
+// GetDNSZoneRecords returns normalized DNS records for a zone from whichever provider is configured.
+func (d *DNSService) GetDNSZoneRecords(ctx context.Context, zone, typeFilter string) ([]RecordInfo, error) {
+	// Try PowerDNS first
+	if pdnsC := d.pdnsClient(); pdnsC != nil {
+		detail, err := pdnsC.GetZone(ctx, zone)
+		if err != nil {
+			return nil, err
+		}
+		var out []RecordInfo
+		for _, rr := range detail.RRSets {
+			if typeFilter != "" && rr.Type != typeFilter {
+				continue
+			}
+			for _, rec := range rr.Records {
+				if rec.Disabled {
+					continue
+				}
+				out = append(out, RecordInfo{
+					Name:    rr.Name,
+					Type:    rr.Type,
+					TTL:     rr.TTL,
+					Content: rec.Content,
+				})
+			}
+		}
+		return out, nil
+	}
+	// Fall back to Technitium
+	if techC := d.technitiumClient(); techC != nil {
+		raw, err := techC.GetZoneRecords(ctx, zone)
+		if err != nil {
+			return nil, err
+		}
+		var out []RecordInfo
+		for _, rec := range raw {
+			if typeFilter != "" && rec.Type != typeFilter {
+				continue
+			}
+			out = append(out, RecordInfo{
+				Name:    rec.Name,
+				Type:    rec.Type,
+				TTL:     rec.TTL,
+				Content: rec.RData,
+			})
+		}
+		return out, nil
+	}
+	return nil, fmt.Errorf("no DNS provider configured")
+}
+
+// SyncIPToTechnitium creates an A record in Technitium for the IP's dns_name.
+// Requires technitium_default_zone to be configured. DNS failures are logged but do not block the caller.
+func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddress) {
+	client := d.technitiumClient()
+	if client == nil {
+		return
+	}
+	if ip.DNSName == nil || *ip.DNSName == "" {
+		return
+	}
+	zone, _ := d.svc.Config.Get("technitium_default_zone")
+	if zone == "" {
+		log.Printf("[technitium] SyncIPToTechnitium: technitium_default_zone not configured")
+		return
+	}
+	if err := client.AddRecord(ctx, zone, *ip.DNSName, ip.Address); err != nil {
+		log.Printf("[technitium] SyncIPToTechnitium AddRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+	}
+}
+
+// RemoveIPFromTechnitium deletes the A record for an IP's dns_name from Technitium.
+// DNS failures are logged but do not block the caller.
+func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAddress) {
+	client := d.technitiumClient()
+	if client == nil {
+		return
+	}
+	if ip.DNSName == nil || *ip.DNSName == "" {
+		return
+	}
+	zone, _ := d.svc.Config.Get("technitium_default_zone")
+	if zone == "" {
+		return
+	}
+	if err := client.DeleteRecord(ctx, zone, *ip.DNSName); err != nil {
+		log.Printf("[technitium] RemoveIPFromTechnitium DeleteRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+	}
+}
+
+// SyncIPToDNS syncs an IP's dns_name to whichever DNS provider is configured.
+func (d *DNSService) SyncIPToDNS(ctx context.Context, ip *models.IPAddress) {
+	if d.pdnsClient() != nil {
+		d.SyncIPToPDNS(ctx, ip)
+		return
+	}
+	d.SyncIPToTechnitium(ctx, ip)
+}
+
+// RemoveIPFromDNS removes an IP's dns_name from whichever DNS provider is configured.
+func (d *DNSService) RemoveIPFromDNS(ctx context.Context, ip *models.IPAddress) {
+	if d.pdnsClient() != nil {
+		d.RemoveIPFromPDNS(ctx, ip)
+		return
+	}
+	d.RemoveIPFromTechnitium(ctx, ip)
 }
 
 // ---------------------------------------------------------------------------

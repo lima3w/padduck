@@ -28,6 +28,7 @@ const CONFIG_KEYS_BY_TAB = {
     'pdns_ptr_zones',
     'technitium_url',
     'technitium_token',
+    'technitium_default_zone',
   ],
   scanner: ['scanner_resolve_hostnames'],
 }
@@ -573,6 +574,18 @@ export default function AdminSettingsPage() {
                 placeholder="••••••••"
               />
               <p className="text-xs text-gray-500 mt-1">API token from Technitium DNS administration panel.</p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Default Zone (for DNS sync)</label>
+              <input
+                type="text"
+                value={config.technitium_default_zone || ''}
+                onChange={e => handleConfigChange('technitium_default_zone', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="example.com"
+              />
+              <p className="text-xs text-gray-500 mt-1">Zone where A records are created when an IP is assigned a DNS name.</p>
             </div>
 
             {technitiumTestStatus && technitiumTestStatus !== 'testing' && (

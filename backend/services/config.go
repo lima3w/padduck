@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"ipam-next/models"
 	"ipam-next/repository"
@@ -16,6 +17,9 @@ func NewConfigService(repo *repository.Repository) *ConfigService {
 }
 
 func (s *ConfigService) Get(key string) (string, error) {
+	if s.repository == nil {
+		return "", fmt.Errorf("config: no repository")
+	}
 	cfg, err := s.repository.GetConfig(context.Background(), key)
 	if err != nil {
 		return "", err
@@ -24,10 +28,16 @@ func (s *ConfigService) Get(key string) (string, error) {
 }
 
 func (s *ConfigService) Set(key, value string) error {
+	if s.repository == nil {
+		return fmt.Errorf("config: no repository")
+	}
 	return s.repository.SetConfig(context.Background(), key, value)
 }
 
 func (s *ConfigService) List() ([]*models.Config, error) {
+	if s.repository == nil {
+		return nil, fmt.Errorf("config: no repository")
+	}
 	return s.repository.ListConfigs(context.Background())
 }
 
