@@ -95,8 +95,7 @@ export default function SubnetsPage() {
 
   const [downloading, setDownloading] = useState(false)
 
-  const token = localStorage.getItem('token')
-  const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  const cfHeaders = { 'Content-Type': 'application/json' }
 
   useEffect(() => {
     setPage(1)

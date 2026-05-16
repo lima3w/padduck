@@ -28,12 +28,8 @@ function deepCamelKeys(obj, opaque = false) {
   return obj
 }
 
-// Add auth token and CSRF token to every request
+// Add CSRF token to every mutating request (session cookie is sent automatically by the browser).
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
   const csrfToken = getCookie('csrf-token')
   if (csrfToken) {
     config.headers['X-CSRF-Token'] = csrfToken
@@ -51,7 +47,6 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
       localStorage.removeItem('current_user')
       window.location.href = '/login'
     }

@@ -10,7 +10,6 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
     const errorMsg = params.get('error')
 
     if (errorMsg) {
@@ -18,25 +17,16 @@ export default function AuthCallbackPage() {
       return
     }
 
-    if (token) {
-      // Store token first so the API call is authenticated
-      localStorage.setItem('auth_token', token)
-      // Fetch the user record, then fully login
-      client.getCurrentUser()
-        .then((res) => {
-          login(token, res.data)
-          navigate('/', { replace: true })
-        })
-        .catch(() => {
-          // Partial login without user object — app will fetch on next load
-          login(token, null)
-          navigate('/', { replace: true })
-        })
-      return
-    }
-
-    // No token and no error — unexpected state
-    setError('No authentication token received. Please try signing in again.')
+    // The backend has already set the session cookie via the redirect.
+    // Fetch the current user to populate auth state.
+    client.getCurrentUser()
+      .then((res) => {
+        login(res.data)
+        navigate('/', { replace: true })
+      })
+      .catch(() => {
+        setError('Sign in failed. Please try again.')
+      })
   }, [])
 
   if (error) {

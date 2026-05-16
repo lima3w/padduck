@@ -8,11 +8,23 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// AuthMiddleware validates session tokens (or legacy API tokens) on protected routes.
+// AuthMiddleware validates session cookies (web) or Bearer API tokens (scripts).
 func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
+	// Try session cookie first (web browser requests)
+	if cookieToken := c.Cookies(sessionCookieName); cookieToken != "" {
+		user, session, err := h.service.ValidateSession(c.Context(), cookieToken)
+		if err == nil {
+			c.Locals("user", user)
+			c.Locals("userID", user.ID)
+			c.Locals("sessionID", session.ID)
+			return c.Next()
+		}
+	}
+
+	// Fall back to Bearer token (API clients)
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
-		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Missing authorization header")
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Missing credentials")
 	}
 
 	parts := strings.SplitN(authHeader, " ", 2)
@@ -22,16 +34,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 
 	token := parts[1]
 
-	// Try session-based auth first
-	user, session, err := h.service.ValidateSession(c.Context(), token)
-	if err == nil {
-		c.Locals("user", user)
-		c.Locals("userID", user.ID)
-		c.Locals("sessionID", session.ID)
-		return c.Next()
-	}
-
-	// Fall back to API token auth
+	// Bearer tokens are API tokens only
 	user, apiToken, err := h.service.ValidateAPIToken(c.Context(), token, c.IP())
 	if err != nil {
 		log.Printf("Auth error: %v", err)
@@ -77,8 +80,20 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-// OptionalAuthMiddleware validates tokens if present but does not require them.
+// OptionalAuthMiddleware validates credentials if present but does not require them.
 func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
+	// Try session cookie first
+	if cookieToken := c.Cookies(sessionCookieName); cookieToken != "" {
+		user, session, err := h.service.ValidateSession(c.Context(), cookieToken)
+		if err == nil {
+			c.Locals("user", user)
+			c.Locals("userID", user.ID)
+			c.Locals("sessionID", session.ID)
+			return c.Next()
+		}
+	}
+
+	// Try Bearer API token
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
 		return c.Next()
@@ -89,17 +104,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	token := parts[1]
-
-	user, session, err := h.service.ValidateSession(c.Context(), token)
-	if err == nil {
-		c.Locals("user", user)
-		c.Locals("userID", user.ID)
-		c.Locals("sessionID", session.ID)
-		return c.Next()
-	}
-
-	user, _, err = h.service.ValidateAPIToken(c.Context(), token, c.IP())
+	user, _, err := h.service.ValidateAPIToken(c.Context(), parts[1], c.IP())
 	if err == nil {
 		c.Locals("user", user)
 		c.Locals("userID", user.ID)

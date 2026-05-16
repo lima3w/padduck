@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Avatar from './Avatar'
-import * as client from '../api/client'
 
 const STORAGE_KEY = 'ipam-color-scheme'
 
@@ -36,12 +35,7 @@ export default function UserMenu({ darkMode }) {
 
   async function handleLogout() {
     setOpen(false)
-    try {
-      await client.logout()
-    } catch {
-      // ignore errors — we log out client-side regardless
-    }
-    logout()
+    await logout()
     navigate('/login')
   }
 

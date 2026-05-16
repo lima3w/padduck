@@ -100,7 +100,8 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 		ResourceName: "oauth2",
 	})
 
-	return c.Redirect("/?token="+token, fiber.StatusFound)
+	h.setSessionCookie(c, token)
+	return c.Redirect("/", fiber.StatusFound)
 }
 
 // ============================================================
@@ -166,7 +167,8 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 		ResourceName: "saml",
 	})
 
-	return c.Redirect("/?token="+token, fiber.StatusFound)
+	h.setSessionCookie(c, token)
+	return c.Redirect("/", fiber.StatusFound)
 }
 
 // ============================================================
@@ -518,8 +520,8 @@ func (h *Handler) issueSessionResponse(c *fiber.Ctx, user *models.User) error {
 		ResourceType: "session", Status: "success",
 	})
 
+	h.setSessionCookie(c, token)
 	return c.JSON(LoginResponse{
-		Token: token,
 		User: UserResponse{
 			ID:          user.ID,
 			Username:    user.Username,

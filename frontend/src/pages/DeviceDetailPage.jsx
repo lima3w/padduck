@@ -29,8 +29,7 @@ export default function DeviceDetailPage() {
   const [locations, setLocations] = useState([])
   const [racks, setRacks] = useState([])
 
-  const token = localStorage.getItem('token')
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  const headers = { 'Content-Type': 'application/json' }
 
   useEffect(() => {
     loadAll()

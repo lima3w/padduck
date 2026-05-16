@@ -331,8 +331,7 @@ export default function IPAddressesPage() {
   const [activeTab, setActiveTab] = useState('ips') // 'ips' | 'delegations'
   const [downloading, setDownloading] = useState(false)
 
-  const token = localStorage.getItem('token')
-  const cfHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+  const cfHeaders = { 'Content-Type': 'application/json' }
 
   useEffect(() => {
     setPage(1)

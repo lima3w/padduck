@@ -50,7 +50,7 @@ export default function LoginPage() {
         return
       }
 
-      login(data.token, data.user)
+      login(data.user)
       navigate('/')
     } catch (err) {
       const msg = err.response?.data?.error || 'Login failed'
@@ -70,8 +70,7 @@ export default function LoginPage() {
 
     try {
       const response = await client.verifyMFA(mfaChallenge, mfaCode)
-      const { token, user } = response.data
-      login(token, user)
+      login(response.data.user)
       navigate('/')
     } catch (err) {
       const msg = err.response?.data?.error || 'MFA verification failed'

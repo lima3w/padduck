@@ -21,10 +21,7 @@ export default function AdminUsersPage() {
   const [createForm, setCreateForm] = useState(CREATE_EMPTY_FORM)
   const [createError, setCreateError] = useState('')
 
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-  }
+  const headers = { 'Content-Type': 'application/json' }
 
   useEffect(() => {
     loadAll()

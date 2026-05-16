@@ -3,49 +3,38 @@ import * as client from '../api/client'
 
 export function useAuth() {
   const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Load token and user from localStorage on mount
+  // On mount, verify the session cookie is still valid by calling /auth/me.
+  // Use the cached current_user for an optimistic initial render, then confirm with the server.
   useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token')
-    const storedUser = localStorage.getItem('current_user')
-
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-      // Try to fetch fresh user data in background, but don't block on it
-      fetchCurrentUser(storedToken).catch(() => {
-        // If fetch fails, user will be redirected by axios interceptor
-      })
+    const cached = localStorage.getItem('current_user')
+    if (cached) {
+      try { setUser(JSON.parse(cached)) } catch {}
     }
-    setLoading(false)
+    client.getCurrentUser()
+      .then((res) => {
+        setUser(res.data)
+        localStorage.setItem('current_user', JSON.stringify(res.data))
+      })
+      .catch(() => {
+        setUser(null)
+        localStorage.removeItem('current_user')
+      })
+      .finally(() => setLoading(false))
   }, [])
 
-  const fetchCurrentUser = async (authToken) => {
+  const login = (userData) => {
+    setUser(userData)
+    if (userData) localStorage.setItem('current_user', JSON.stringify(userData))
+  }
+
+  const logout = async () => {
     try {
-      const response = await client.getCurrentUser()
-      const userData = response.data
-      setUser(userData)
-      localStorage.setItem('current_user', JSON.stringify(userData))
-    } catch (err) {
-      console.error('Failed to fetch current user:', err)
-      logout()
-    }
-  }
-
-  const login = (token, user) => {
-    setToken(token)
-    setUser(user)
-    localStorage.setItem('auth_token', token)
-    localStorage.setItem('current_user', JSON.stringify(user))
-  }
-
-  const logout = () => {
-    setToken(null)
+      await client.logout()
+    } catch {}
     setUser(null)
-    localStorage.removeItem('auth_token')
     localStorage.removeItem('current_user')
   }
 
@@ -86,7 +75,6 @@ export function useAuth() {
 
   return {
     user,
-    token,
     loading,
     error,
     login,
@@ -94,6 +82,6 @@ export function useAuth() {
     generateToken,
     listTokens,
     revokeToken,
-    isAuthenticated: !!token,
+    isAuthenticated: !!user,
   }
 }

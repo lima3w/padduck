@@ -75,9 +75,22 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+const sessionCookieName = "session"
+
 type LoginResponse struct {
-	Token string       `json:"token"`
-	User  UserResponse `json:"user"`
+	User UserResponse `json:"user"`
+}
+
+func (h *Handler) setSessionCookie(c *fiber.Ctx, token string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     sessionCookieName,
+		Value:    token,
+		Path:     "/",
+		MaxAge:   7 * 24 * 3600,
+		Secure:   h.isProduction,
+		HTTPOnly: true,
+		SameSite: "Strict",
+	})
 }
 
 // GetCurrentUser handles GET /api/v1/auth/me
@@ -238,8 +251,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		"Device": c.Get("User-Agent"),
 	})
 
+	h.setSessionCookie(c, token)
 	return c.JSON(LoginResponse{
-		Token: token,
 		User: UserResponse{
 			ID:          user.ID,
 			Username:    user.Username,
@@ -260,20 +273,24 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
 	}
 
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing authorization header"})
-	}
-
-	var token string
-	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-		token = authHeader[7:]
+	token := c.Cookies(sessionCookieName)
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing session cookie"})
 	}
 
 	if err := h.service.RevokeSession(c.Context(), userID, token); err != nil {
 		log.Printf("Error revoking session for user %d: %v", userID, err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to logout"})
 	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     sessionCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HTTPOnly: true,
+		SameSite: "Strict",
+	})
 
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{

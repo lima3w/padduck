@@ -54,8 +54,8 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 		ResourceType: "session", Status: "success",
 	})
 
+	h.setSessionCookie(c, token)
 	return c.JSON(LoginResponse{
-		Token: token,
 		User: UserResponse{
 			ID:        user.ID,
 			Username:  user.Username,

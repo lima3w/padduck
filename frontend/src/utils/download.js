@@ -4,11 +4,7 @@
  * saves the response rather than navigating to it.
  */
 export async function downloadFile(url, filename) {
-  const token = localStorage.getItem('auth_token')
-  const headers = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
-
-  const response = await fetch(url, { headers })
+  const response = await fetch(url, { credentials: 'include' })
   if (!response.ok) {
     throw new Error(`Download failed: ${response.status} ${response.statusText}`)
   }
