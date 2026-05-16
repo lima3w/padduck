@@ -126,9 +126,9 @@ func checkResponseDecode(resp *http.Response, dst interface{}) error {
 }
 
 // TestConnection checks that the Technitium API is reachable and the token is valid.
-// It calls /api/user/getInfo and verifies the response is ok.
+// It calls /api/zones/list which is available on all supported Technitium versions.
 func (c *Client) TestConnection(ctx context.Context) error {
-	resp, err := c.get(ctx, "/api/user/getInfo", nil)
+	resp, err := c.get(ctx, "/api/zones/list", nil)
 	if err != nil {
 		return err
 	}
