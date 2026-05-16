@@ -72,6 +72,21 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 	if err := a.svc.repository.CreateAuditLog(ctx, entry); err != nil {
 		log.Printf("audit: failed to write log (action=%s): %v", e.Action, err)
 	}
+	if a.svc.Webhooks != nil {
+		a.svc.Webhooks.Queue(ctx, WebhookEvent{
+			EventType:    e.ResourceType + "." + e.Action,
+			Action:       e.Action,
+			ResourceType: e.ResourceType,
+			ResourceID:   e.ResourceID,
+			ResourceName: e.ResourceName,
+			UserID:       e.UserID,
+			Username:     e.Username,
+			Status:       e.Status,
+			OldValues:    e.OldValues,
+			NewValues:    e.NewValues,
+			OccurredAt:   time.Now().UTC(),
+		})
+	}
 }
 
 // ListAuditLogs returns audit log entries matching the filter.

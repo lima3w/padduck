@@ -288,6 +288,16 @@ export default function Sidebar() {
               Scan Agents
             </NavLink>
             <NavLink
+              to="/admin/webhooks"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Webhooks
+            </NavLink>
+            <NavLink
               to="/admin/reports/scheduled"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${

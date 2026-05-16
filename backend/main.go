@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -154,6 +153,7 @@ func main() {
 
 	// Start notification queue worker
 	svc.Notification.StartWorker(ctx)
+	svc.Webhooks.StartWorker(ctx)
 
 	// Start discovery scheduler
 	svc.Discovery.StartScheduler(ctx)
