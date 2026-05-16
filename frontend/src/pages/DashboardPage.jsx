@@ -180,18 +180,23 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-3">
             {nearCapacity.map(s => (
-              <div key={s.id}>
+              <div key={s.subnetId}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="font-mono text-gray-800 dark:text-gray-200 truncate">{s.cidr}</span>
+                  <Link
+                    to={`/subnets/${s.subnetId}/ip-addresses`}
+                    className="font-mono text-blue-600 dark:text-blue-400 hover:underline truncate"
+                  >
+                    {s.cidr}
+                  </Link>
                   <span className="text-gray-500 dark:text-gray-400 ml-2 whitespace-nowrap text-xs">
-                    {(s.utilisationPct ?? 0).toFixed(1)}%
+                    {(s.currentPct ?? 0).toFixed(1)}%
                   </span>
                 </div>
                 {s.description && <p className="text-xs text-gray-400 mb-1">{s.description}</p>}
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
-                    className={`${s.utilisationPct >= 90 ? 'bg-red-500' : 'bg-yellow-500'} h-2 rounded-full transition-all`}
-                    style={{ width: `${Math.min(s.utilisationPct ?? 0, 100)}%` }}
+                    className={`${s.currentPct >= 90 ? 'bg-red-500' : 'bg-yellow-500'} h-2 rounded-full transition-all`}
+                    style={{ width: `${Math.min(s.currentPct ?? 0, 100)}%` }}
                   />
                 </div>
               </div>
@@ -213,7 +218,12 @@ export default function DashboardPage() {
               {summary?.top_subnets?.map((s) => (
                 <div key={s.id}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-mono text-gray-800 dark:text-gray-200 truncate">{s.cidr}</span>
+                    <Link
+                      to={`/subnets/${s.id}/ip-addresses`}
+                      className="font-mono text-blue-600 dark:text-blue-400 hover:underline truncate"
+                    >
+                      {s.cidr}
+                    </Link>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 whitespace-nowrap">
                       {s.used}/{s.total}
                     </span>
@@ -221,7 +231,7 @@ export default function DashboardPage() {
                   {s.description && (
                     <p className="text-xs text-gray-400 mb-1">{s.description}</p>
                   )}
-                  <UtilisationBar pct={s.utilisation_pct} />
+                  <UtilisationBar pct={s.utilisationPct} />
                 </div>
               ))}
             </div>
@@ -247,14 +257,18 @@ export default function DashboardPage() {
                       {actionLabel(a.action)}
                     </span>
                     {a.description && (
-                      <span className="text-gray-500 dark:text-gray-400"> — {a.description}</span>
+                      <span className="text-gray-500 dark:text-gray-400"> — {
+                        a.entityType === 'subnet' && a.entityId
+                          ? <Link to={`/subnets/${a.entityId}/ip-addresses`} className="font-mono text-blue-600 dark:text-blue-400 hover:underline">{a.description}</Link>
+                          : a.description
+                      }</span>
                     )}
                     {a.username && (
                       <span className="text-gray-400 dark:text-gray-500"> by {a.username}</span>
                     )}
                   </div>
                   <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
-                    {formatRelativeTime(a.created_at)}
+                    {formatRelativeTime(a.createdAt)}
                   </span>
                 </div>
               ))}
