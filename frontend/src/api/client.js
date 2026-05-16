@@ -229,3 +229,29 @@ export const getVlanSubnets = (id) => api.get(`/vlans/${id}/subnets`)
 
 // VLAN usage report (#209)
 export const getVlanUsageReport = () => api.get('/admin/vlans/usage-report')
+
+// Admin roles (for LDAP group mappings)
+export const getAdminRoles = () => api.get('/admin/roles')
+
+// LDAP (#229 #232)
+export const getLdapConfig = () => api.get('/admin/auth/ldap')
+export const updateLdapConfig = (config) => api.put('/admin/auth/ldap', config)
+export const testLdapConnection = () => api.post('/admin/auth/ldap/test')
+export const getLdapGroupMappings = () => api.get('/admin/auth/ldap/group-mappings')
+export const createLdapGroupMapping = (data) => api.post('/admin/auth/ldap/group-mappings', data)
+export const deleteLdapGroupMapping = (id) => api.delete(`/admin/auth/ldap/group-mappings/${id}`)
+
+// OAuth2 / OIDC (#231)
+export const getOAuth2Config = () => api.get('/admin/auth/oauth2')
+export const updateOAuth2Config = (config) => api.put('/admin/auth/oauth2', config)
+
+// SAML 2.0 (#230)
+export const getSamlConfig = () => api.get('/admin/auth/saml')
+export const updateSamlConfig = (config) => api.put('/admin/auth/saml', config)
+
+// Public auth providers info
+export const getAuthProviders = () => noAuthApi.get('/auth/providers')
+
+// LDAP login (public)
+export const ldapLogin = (username, password) =>
+  noAuthApi.post('/auth/ldap/login', { username, password })

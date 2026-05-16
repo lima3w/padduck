@@ -406,6 +406,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/import/phpipam", h.ImportFromPHPIpam)
 	admin.Get("/export/full", h.ExportFullData)
 
+	// LDAP & SSO (v1.13.0 #229 #230 #231 #232)
+	h.RegisterExternalAuthRoutes(auth, admin)
+
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)
 	me.Post("/deletion-request", h.RequestDeletion)

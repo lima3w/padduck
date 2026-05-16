@@ -301,6 +301,37 @@ export default function Sidebar() {
             >
               Data Export
             </NavLink>
+            <p className="px-3 mt-3 mb-1 text-xs text-gray-400 uppercase tracking-wider">Authentication</p>
+            <NavLink
+              to="/admin/auth/ldap"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              LDAP / AD
+            </NavLink>
+            <NavLink
+              to="/admin/auth/oauth2"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              OAuth2 / OIDC
+            </NavLink>
+            <NavLink
+              to="/admin/auth/saml"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              SAML SSO
+            </NavLink>
           </>
         )}
       </nav>

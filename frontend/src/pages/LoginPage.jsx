@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import * as client from '../api/client'
@@ -21,6 +21,16 @@ export default function LoginPage() {
   const [resendEmail, setResendEmail] = useState('')
   const [resendStatus, setResendStatus] = useState('')
 
+  // External auth providers
+  const [providers, setProviders] = useState({ ldap: false, oauth2: false, saml: false })
+  const [useLdap, setUseLdap] = useState(false)
+
+  useEffect(() => {
+    client.getAuthProviders()
+      .then((res) => setProviders(res.data || {}))
+      .catch(() => {}) // 404 or network error — silently ignore
+  }, [])
+
   const handlePasswordLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -29,7 +39,9 @@ export default function LoginPage() {
     setResendStatus('')
 
     try {
-      const response = await client.login(username, password)
+      const response = useLdap
+        ? await client.ldapLogin(username, password)
+        : await client.login(username, password)
       const data = response.data
 
       if (data.mfa_required) {
@@ -178,6 +190,20 @@ export default function LoginPage() {
           </div>
         )}
 
+        {providers.ldap && (
+          <div className="mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={useLdap}
+                onChange={(e) => setUseLdap(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded"
+              />
+              Sign in with LDAP / Active Directory
+            </label>
+          </div>
+        )}
+
         <form onSubmit={handlePasswordLogin}>
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
@@ -226,11 +252,39 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500">
-            Your password is securely hashed and never transmitted in plain text.
-          </p>
-        </div>
+        {(providers.oauth2 || providers.saml) && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center mb-3">Or continue with</p>
+            <div className="flex flex-col gap-2">
+              {providers.oauth2 && (
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/api/v1/auth/oauth2/login' }}
+                  className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                >
+                  Sign in with SSO
+                </button>
+              )}
+              {providers.saml && (
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = '/api/v1/auth/saml/login' }}
+                  className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                >
+                  Sign in with SAML
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!providers.oauth2 && !providers.saml && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              Your password is securely hashed and never transmitted in plain text.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -39,6 +39,10 @@ import ScheduledReportsPage from './pages/ScheduledReportsPage'
 import InactiveIPsPage from './pages/InactiveIPsPage'
 import ImportDataPage from './pages/ImportDataPage'
 import ExportDataPage from './pages/ExportDataPage'
+import AdminLdapPage from './pages/AdminLdapPage'
+import AdminOAuth2Page from './pages/AdminOAuth2Page'
+import AdminSamlPage from './pages/AdminSamlPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
@@ -66,6 +70,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route
           path="/"
           element={
@@ -110,6 +115,9 @@ export default function App() {
           <Route path="admin/reports/scheduled" element={<ScheduledReportsPage />} />
           <Route path="admin/import" element={<ImportDataPage />} />
           <Route path="admin/export" element={<ExportDataPage />} />
+          <Route path="admin/auth/ldap" element={<AdminLdapPage />} />
+          <Route path="admin/auth/oauth2" element={<AdminOAuth2Page />} />
+          <Route path="admin/auth/saml" element={<AdminSamlPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
