@@ -126,7 +126,7 @@ func (h *Handler) UpdateSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
 	if err := h.permCheck(c, services.PermV2SectionWrite, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(UpdateSectionRequest)
@@ -157,7 +157,7 @@ func (h *Handler) DeleteSection(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
 	if err := h.permCheck(c, services.PermV2SectionDelete, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
-		return err
+		return nil
 	}
 
 	if err := h.service.DeleteSection(c.Context(), int64(id)); err != nil {

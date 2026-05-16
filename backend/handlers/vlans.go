@@ -117,7 +117,7 @@ func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
 	}
 	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(UpdateVLANRequest)
@@ -147,7 +147,7 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
 	}
 	if err := h.permCheck(c, services.PermV2VLANDelete, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
-		return err
+		return nil
 	}
 
 	if err := h.service.DeleteVLAN(c.Context(), int64(id)); err != nil {

@@ -13,6 +13,171 @@ import (
 var unprivVLAN = &models.User{ID: 0, Role: "viewer"}
 
 // ---------------------------------------------------------------------------
+// ListVLANs — GET /vlans
+// ---------------------------------------------------------------------------
+
+func TestListVLANs_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans", h.ListVLANs)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestListVLANs_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.ListVLANs(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// GetVLAN — GET /vlans/:id
+// ---------------------------------------------------------------------------
+
+func TestGetVLAN_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans/:id", h.GetVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGetVLAN_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans/:id", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.GetVLAN(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGetVLAN_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/vlans/:id", h.GetVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/abc", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// CreateVLAN — POST /vlans
+// ---------------------------------------------------------------------------
+
+func TestCreateVLAN_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/vlans", h.CreateVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/vlans", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestCreateVLAN_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/vlans", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.CreateVLAN(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/vlans", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// UpdateVLAN — PUT /vlans/:id
+// ---------------------------------------------------------------------------
+
+func TestUpdateVLAN_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Put("/vlans/:id", h.UpdateVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("PUT", "/vlans/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestUpdateVLAN_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Put("/vlans/:id", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.UpdateVLAN(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("PUT", "/vlans/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestUpdateVLAN_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Put("/vlans/:id", h.UpdateVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("PUT", "/vlans/abc", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// DeleteVLAN — DELETE /vlans/:id
+// ---------------------------------------------------------------------------
+
+func TestDeleteVLAN_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id", h.DeleteVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestDeleteVLAN_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivVLAN)
+		return h.DeleteVLAN(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestDeleteVLAN_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Delete("/vlans/:id", h.DeleteVLAN)
+
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlans/abc", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
 // GetVLANUsageReport — GET /admin/vlans/usage-report
 // ---------------------------------------------------------------------------
 

@@ -39,7 +39,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(CreateIPAddressRequest)
@@ -90,7 +90,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
-		return err
+		return nil
 	}
 
 	page := c.QueryInt("page", 0)
@@ -242,7 +242,7 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
-		return err
+		return nil
 	}
 
 	type AllocateRequest struct {
@@ -277,7 +277,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
 	}
 	if err := h.permCheck(c, services.PermV2SubnetRead, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
-		return err
+		return nil
 	}
 
 	utilization, err := h.service.GetSubnetUtilization(c.Context(), int64(subnetID))

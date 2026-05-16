@@ -1,76 +1,197 @@
 package handlers
 
 import (
+	"net/http/httptest"
 	"testing"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"ipam-next/models"
 )
 
-func TestCreateIPAddressRequest_Validation(t *testing.T) {
-	req := &CreateIPAddressRequest{
-		Address:  "192.168.1.10",
-		Hostname: "server1.example.com",
-		Status:   "available",
-	}
+var unprivIP = &models.User{ID: 0, Role: "viewer"}
 
-	assert.NotEmpty(t, req.Address)
-	assert.Equal(t, "192.168.1.10", req.Address)
-	assert.Equal(t, "server1.example.com", req.Hostname)
-	assert.Equal(t, "available", req.Status)
+// ---------------------------------------------------------------------------
+// CreateIPAddress — POST /subnets/:subnetID/ip-addresses
+// ---------------------------------------------------------------------------
+
+func TestCreateIPAddress_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/subnets/:subnetID/ip-addresses", h.CreateIPAddress)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/subnets/1/ip-addresses", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
-func TestAssignIPAddressRequest_Validation(t *testing.T) {
-	req := &AssignIPAddressRequest{
-		AssignedTo: "server1",
-	}
+func TestCreateIPAddress_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/subnets/:subnetID/ip-addresses", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivIP)
+		return h.CreateIPAddress(c)
+	})
 
-	assert.NotEmpty(t, req.AssignedTo)
-	assert.Equal(t, "server1", req.AssignedTo)
+	resp, err := app.Test(httptest.NewRequest("POST", "/subnets/1/ip-addresses", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestAllocateIPAddressRequest_Validation(t *testing.T) {
-	req := &struct {
-		AssignedTo string `json:"assigned_to"`
-	}{
-		AssignedTo: "server1",
-	}
+func TestCreateIPAddress_BadSubnetID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/subnets/:subnetID/ip-addresses", h.CreateIPAddress)
 
-	assert.NotEmpty(t, req.AssignedTo)
-	assert.Equal(t, "server1", req.AssignedTo)
+	resp, err := app.Test(httptest.NewRequest("POST", "/subnets/abc/ip-addresses", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
 
-func TestSubnetUtilization_Validation(t *testing.T) {
-	util := &struct {
-		Total       int64   `json:"total"`
-		Available   int64   `json:"available"`
-		Assigned    int64   `json:"assigned"`
-		Reserved    int64   `json:"reserved"`
-		Utilization float64 `json:"utilization_percent"`
-	}{
-		Total:       100,
-		Available:   75,
-		Assigned:    20,
-		Reserved:    5,
-		Utilization: 25.0,
-	}
+// ---------------------------------------------------------------------------
+// ListIPAddresses — GET /subnets/:subnetID/ip-addresses
+// ---------------------------------------------------------------------------
 
-	assert.Equal(t, int64(100), util.Total)
-	assert.Equal(t, int64(75), util.Available)
-	assert.Equal(t, int64(20), util.Assigned)
-	assert.Equal(t, int64(5), util.Reserved)
-	assert.Equal(t, 25.0, util.Utilization)
+func TestListIPAddresses_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/subnets/:subnetID/ip-addresses", h.ListIPAddresses)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/1/ip-addresses", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
-func TestAssignWithLeaseRequest_Validation(t *testing.T) {
-	req := &struct {
-		AssignedTo        string `json:"assigned_to"`
-		LeaseDurationDays int    `json:"lease_duration_days"`
-	}{
-		AssignedTo:        "server1",
-		LeaseDurationDays: 30,
-	}
+func TestListIPAddresses_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/subnets/:subnetID/ip-addresses", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivIP)
+		return h.ListIPAddresses(c)
+	})
 
-	assert.NotEmpty(t, req.AssignedTo)
-	assert.Equal(t, "server1", req.AssignedTo)
-	assert.Equal(t, 30, req.LeaseDurationDays)
+	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/1/ip-addresses", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestListIPAddresses_BadSubnetID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/subnets/:subnetID/ip-addresses", h.ListIPAddresses)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/abc/ip-addresses", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// GetIPAddress — GET /ip-addresses/:id
+// ---------------------------------------------------------------------------
+
+func TestGetIPAddress_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/ip-addresses/:id", h.GetIPAddress)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/ip-addresses/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGetIPAddress_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/ip-addresses/:id", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivIP)
+		return h.GetIPAddress(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/ip-addresses/1", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGetIPAddress_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/ip-addresses/:id", h.GetIPAddress)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/ip-addresses/abc", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// AllocateIPAddress — POST /subnets/:subnetID/ip-addresses/allocate
+// ---------------------------------------------------------------------------
+
+func TestAllocateIPAddress_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/subnets/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/subnets/1/ip-addresses/allocate", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestAllocateIPAddress_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/subnets/:subnetID/ip-addresses/allocate", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivIP)
+		return h.AllocateIPAddress(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/subnets/1/ip-addresses/allocate", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestAllocateIPAddress_BadSubnetID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/subnets/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
+
+	resp, err := app.Test(httptest.NewRequest("POST", "/subnets/abc/ip-addresses/allocate", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// GetSubnetUtilization — GET /subnets/:subnetID/utilization
+// ---------------------------------------------------------------------------
+
+func TestGetSubnetUtilization_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/subnets/:subnetID/utilization", h.GetSubnetUtilization)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/1/utilization", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGetSubnetUtilization_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/subnets/:subnetID/utilization", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivIP)
+		return h.GetSubnetUtilization(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/1/utilization", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGetSubnetUtilization_BadID_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/subnets/:subnetID/utilization", h.GetSubnetUtilization)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/abc/utilization", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
