@@ -621,6 +621,35 @@ type NotificationQueue struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
+// WebhookEndpoint configures an outbound webhook receiver.
+type WebhookEndpoint struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	URL       string    `json:"url"`
+	Secret    string    `json:"-"`
+	Events    []string  `json:"events"`
+	IsActive  bool      `json:"is_active"`
+	CreatedBy *int64    `json:"created_by,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// WebhookDelivery is one queued outbound webhook delivery attempt.
+type WebhookDelivery struct {
+	ID             int64      `json:"id"`
+	EndpointID     int64      `json:"endpoint_id"`
+	EventType      string     `json:"event_type"`
+	Payload        string     `json:"payload"`
+	Status         string     `json:"status"`
+	RetryCount     int        `json:"retry_count"`
+	NextRetryAt    *time.Time `json:"next_retry_at,omitempty"`
+	DeliveredAt    *time.Time `json:"delivered_at,omitempty"`
+	ResponseStatus *int       `json:"response_status,omitempty"`
+	ErrorMsg       *string    `json:"error_msg,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+}
+
 // DeviceType represents a category of network device
 type DeviceType struct {
 	ID          int64     `json:"id"`

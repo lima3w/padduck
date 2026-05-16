@@ -19,6 +19,7 @@ type Service struct {
 	DNS             *DNSService
 	Reports         *ReportsService
 	Import          *ImportService
+	Webhooks        *WebhookService
 	LDAP            *LDAPService
 	OAuth2          *OAuth2Service
 	SAML            *SAMLService
@@ -51,6 +52,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	svc.DNS = NewDNSService(svc)
 	svc.Reports = NewReportsService(repo, configSvc, emailSvc, svc.Audit)
 	svc.Import = NewImportService(repo)
+	svc.Webhooks = NewWebhookService(repo)
 	return svc
 }
 

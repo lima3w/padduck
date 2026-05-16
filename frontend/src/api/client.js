@@ -160,6 +160,13 @@ export const exportAuditLogs = (params = {}) =>
   api.get('/admin/audit-logs/export', { params, responseType: 'blob' })
 export const purgeAuditLogs = () => api.post('/admin/audit-logs/purge')
 
+// Webhooks
+export const getWebhookEndpoints = () => api.get('/admin/webhooks')
+export const createWebhookEndpoint = (data) => api.post('/admin/webhooks', data)
+export const updateWebhookEndpoint = (id, data) => api.put(`/admin/webhooks/${id}`, data)
+export const deleteWebhookEndpoint = (id) => api.delete(`/admin/webhooks/${id}`)
+export const getWebhookDeliveries = (limit = 50) => api.get('/admin/webhooks/deliveries', { params: { limit } })
+
 // Admin user management
 export const adminUnlockUser = (id) => api.post(`/admin/users/${id}/unlock`)
 

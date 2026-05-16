@@ -2004,6 +2004,52 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api/v1/admin/webhooks:
+    get:
+      tags: [Admin]
+      summary: List outbound webhook endpoints
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin]
+      summary: Create outbound webhook endpoint
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/webhooks/{id}:
+    put:
+      tags: [Admin]
+      summary: Update outbound webhook endpoint
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin]
+      summary: Delete outbound webhook endpoint
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/webhooks/deliveries:
+    get:
+      tags: [Admin]
+      summary: List recent outbound webhook deliveries
+      parameters:
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
   /api/v1/admin/audit-logs:
     get:
       tags: [Admin, Security]
