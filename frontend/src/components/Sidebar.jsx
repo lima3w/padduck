@@ -127,14 +127,14 @@ export default function Sidebar() {
           Reports
         </div>
         <NavLink
-          to="/reports/utilisation-trends"
+          to="/reports/utilization-trends"
           className={({ isActive }) =>
             `px-3 py-2 rounded text-sm font-medium transition-colors ${
               isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
             }`
           }
         >
-          Utilisation Trends
+          Utilization Trends
         </NavLink>
         <NavLink
           to="/reports/inactive-ips"

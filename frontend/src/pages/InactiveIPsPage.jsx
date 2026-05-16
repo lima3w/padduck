@@ -56,7 +56,7 @@ export default function InactiveIPsPage() {
       const params = { days }
       if (sectionId) params.section_id = sectionId
       const { data } = await api.get('/admin/reports/inactive-ips', { params })
-      setRows(Array.isArray(data) ? data : [])
+      setRows(Array.isArray(data) ? data : (data?.inactive ?? []))
     } catch {
       setError('Failed to load inactive IPs')
     } finally {
@@ -94,7 +94,7 @@ export default function InactiveIPsPage() {
     setReleasing(true)
     setReleaseMsg('')
     try {
-      await api.post('/admin/ip-addresses/bulk-release', { ipIds: selected })
+      await api.post('/admin/ip-addresses/bulk-release', { ip_ids: selected })
       setReleaseMsg(`Successfully released ${selected.length} IP address(es).`)
       setConfirmRelease(false)
       setSelected([])

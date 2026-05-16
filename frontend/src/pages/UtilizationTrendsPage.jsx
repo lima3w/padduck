@@ -24,7 +24,7 @@ function PctBar({ pct }) {
   )
 }
 
-export default function UtilisationTrendsPage() {
+export default function UtilizationTrendsPage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -37,10 +37,10 @@ export default function UtilisationTrendsPage() {
     try {
       setLoading(true)
       setError('')
-      const { data } = await api.get('/admin/reports/utilisation-trends')
-      setRows(Array.isArray(data) ? data : [])
+      const { data } = await api.get('/admin/reports/utilization-trends')
+      setRows(Array.isArray(data) ? data : (data?.trends ?? []))
     } catch {
-      setError('Failed to load utilisation trends')
+      setError('Failed to load utilization trends')
     } finally {
       setLoading(false)
     }
@@ -73,14 +73,14 @@ export default function UtilisationTrendsPage() {
     )
   }
 
-  if (loading) return <p className="text-gray-500">Loading utilisation trends...</p>
+  if (loading) return <p className="text-gray-500">Loading utilization trends...</p>
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Utilisation Trends</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Subnet utilisation compared to 7 days ago</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Utilization Trends</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Subnet utilization compared to 7 days ago</p>
         </div>
         <button onClick={load} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
           Refresh
