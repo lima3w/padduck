@@ -44,7 +44,7 @@ func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
 	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
-		return err
+		return nil
 	}
 
 	tree, err := h.service.GetSubnetTree(c.Context(), int64(sectionID))

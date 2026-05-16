@@ -12,7 +12,8 @@ import (
 func requireAdmin(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok || user.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		_ = c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return errResponseWritten
 	}
 	return nil
 }
@@ -51,7 +52,7 @@ func (h *Handler) ListTags(c *fiber.Ctx) error {
 // CreateTag handles POST /api/v1/tags
 func (h *Handler) CreateTag(c *fiber.Ctx) error {
 	if err := requireAdmin(c); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(CreateTagRequest)
@@ -80,7 +81,7 @@ func (h *Handler) UpdateTag(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid tag ID"})
 	}
 	if err := requireAdmin(c); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(UpdateTagRequest)
@@ -104,7 +105,7 @@ func (h *Handler) DeleteTag(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid tag ID"})
 	}
 	if err := requireAdmin(c); err != nil {
-		return err
+		return nil
 	}
 
 	if err := h.service.DeleteIPTag(c.Context(), int64(id)); err != nil {

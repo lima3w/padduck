@@ -86,7 +86,7 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
 	}
 	if err := h.permCheck(c, services.PermV2VRFWrite, services.ResourceScope{Type: "vrf", ID: int64(id)}); err != nil {
-		return err
+		return nil
 	}
 
 	req := new(UpdateVRFRequest)
@@ -116,7 +116,7 @@ func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
 	}
 	if err := h.permCheck(c, services.PermV2VRFDelete, services.ResourceScope{Type: "vrf", ID: int64(id)}); err != nil {
-		return err
+		return nil
 	}
 
 	if err := h.service.DeleteVRF(c.Context(), int64(id)); err != nil {
