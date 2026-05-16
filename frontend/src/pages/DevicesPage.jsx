@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import CustomFieldForm from '../components/CustomFieldForm'
+import { api } from '../api/client'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
 
@@ -31,9 +32,6 @@ export default function DevicesPage() {
   const [racks, setRacks] = useState([])
   const [filterLocationId, setFilterLocationId] = useState('')
 
-  const token = localStorage.getItem('token')
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
-
   useEffect(() => {
     loadDeviceTypes()
     load(1)
@@ -58,25 +56,24 @@ export default function DevicesPage() {
 
   async function loadCfDefs() {
     try {
-      const res = await fetch('/api/v1/admin/custom-fields?entity_type=device', { headers })
-      if (res.ok) setCfDefs(await res.json() || [])
+      const res = await api.get('/admin/custom-fields', { params: { entity_type: 'device' } })
+      setCfDefs(normalizeCustomFieldDefs(res.data || []))
     } catch {}
   }
 
   async function loadDeviceTypes() {
     try {
-      const res = await fetch('/api/v1/device-types', { headers })
-      if (res.ok) setDeviceTypes(await res.json() || [])
+      const res = await api.get('/device-types')
+      setDeviceTypes(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
 
   async function load(p = page) {
     try {
       setLoading(true)
-      const res = await fetch(`/api/v1/devices?page=${p}&limit=${DEFAULT_LIMIT}`, { headers })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setDevices(data.devices ?? [])
+      const res = await api.get('/devices', { params: { page: p, limit: DEFAULT_LIMIT } })
+      const data = res.data
+      setDevices(getDeviceRows(data))
       setTotal(data.total ?? 0)
       setPage(p)
     } catch {
@@ -114,7 +111,7 @@ export default function DevicesPage() {
   async function handleSearch(e) {
     e.preventDefault()
     const body = {}
-    if (filterHostname.trim()) body.hostname = filterHostname.trim()
+    if (filterHostname.trim()) body.query = filterHostname.trim()
     if (filterTypeId) body.type_id = parseInt(filterTypeId)
     if (filterOnline !== '') body.is_online = filterOnline === 'true'
     if (filterLocationId) body.location_id = parseInt(filterLocationId)
@@ -131,15 +128,10 @@ export default function DevicesPage() {
     try {
       setLoading(true)
       setIsFiltered(true)
-      const res = await fetch('/api/v1/devices/search', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setDevices(data.devices ?? [])
-      setTotal(data.total ?? 0)
+      const res = await api.post('/devices/search', body)
+      const rows = getDeviceRows(res.data)
+      setDevices(rows)
+      setTotal(rows.length)
       setPage(1)
     } catch {
       setError('Failed to search devices')
@@ -169,20 +161,20 @@ export default function DevicesPage() {
   }
 
   function openEdit(device) {
-    const locId = device.location_id ? String(device.location_id) : ''
+    const locId = device.locationId ? String(device.locationId) : ''
     if (locId) loadRacksForLocation(locId)
     setForm({
       hostname: device.hostname || '',
-      type_id: device.type_id ? String(device.type_id) : '',
+      type_id: device.typeId ? String(device.typeId) : '',
       description: device.description || '',
       vendor: device.vendor || '',
       model: device.model || '',
-      os_version: device.os_version || '',
+      os_version: device.osVersion || '',
       location_id: locId,
-      rack_id: device.rack_id ? String(device.rack_id) : '',
-      rack_unit_start: device.rack_unit_start != null ? String(device.rack_unit_start) : '',
-      rack_unit_size: device.rack_unit_size != null ? String(device.rack_unit_size) : '',
-      custom_fields: device.custom_fields || {},
+      rack_id: device.rackId ? String(device.rackId) : '',
+      rack_unit_start: device.rackUnitStart != null ? String(device.rackUnitStart) : '',
+      rack_unit_size: device.rackUnitSize != null ? String(device.rackUnitSize) : '',
+      custom_fields: device.customFields || {},
     })
     setModal({ edit: device })
   }
@@ -205,17 +197,15 @@ export default function DevicesPage() {
         custom_fields: form.custom_fields || {},
       }
       if (modal === 'create') {
-        const res = await fetch('/api/v1/devices', { method: 'POST', headers, body: JSON.stringify(body) })
-        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+        await api.post('/devices', body)
       } else {
         const id = modal.edit.id
-        const res = await fetch(`/api/v1/devices/${id}`, { method: 'PUT', headers, body: JSON.stringify(body) })
-        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed') }
+        await api.put(`/devices/${id}`, body)
       }
       setModal(null)
       load(page)
     } catch (err) {
-      setError(err.message || 'Failed to save device')
+      setError(err.response?.data?.error || err.message || 'Failed to save device')
     } finally {
       setSaving(false)
     }
@@ -223,8 +213,7 @@ export default function DevicesPage() {
 
   async function handleDelete(id) {
     try {
-      const res = await fetch(`/api/v1/devices/${id}`, { method: 'DELETE', headers })
-      if (!res.ok) throw new Error()
+      await api.delete(`/devices/${id}`)
       setDeleteConfirm(null)
       load(page)
     } catch {
@@ -390,25 +379,25 @@ export default function DevicesPage() {
                   {[d.vendor, d.model].filter(Boolean).join(' / ') || '—'}
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                  {d.location_id ? (
-                    <Link to={`/locations/${d.location_id}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
-                      {locations.find(l => l.id === d.location_id)?.name || `#${d.location_id}`}
+                  {d.locationId ? (
+                    <Link to={`/locations/${d.locationId}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
+                      {locations.find(l => l.id === d.locationId)?.name || `#${d.locationId}`}
                     </Link>
                   ) : '—'}
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                  {d.ip_count ?? 0}
+                  {d.ipCount ?? 0}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex items-center gap-1.5 text-xs font-medium`}>
-                    <span className={`w-2 h-2 rounded-full ${d.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                    <span className={d.is_online ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                      {d.is_online ? 'Online' : 'Offline'}
+                    <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                    <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
+                      {d.isOnline ? 'Online' : 'Offline'}
                     </span>
                   </span>
                 </td>
                 {searchableFields.map(f => {
-                  const val = d.custom_fields?.[f.name]
+                  const val = d.customFields?.[f.name]
                   return (
                     <td key={f.name} className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {val ? (
@@ -598,4 +587,21 @@ export default function DevicesPage() {
       )}
     </div>
   )
+}
+
+function getDeviceRows(data) {
+  if (Array.isArray(data)) return data
+  return data?.data ?? data?.devices ?? []
+}
+
+function normalizeCustomFieldDefs(defs) {
+  const rows = Array.isArray(defs) ? defs : []
+  return rows.map(def => ({
+    ...def,
+    field_type: def.field_type ?? def.fieldType,
+    is_required: def.is_required ?? def.isRequired,
+    default_value: def.default_value ?? def.defaultValue,
+    display_order: def.display_order ?? def.displayOrder,
+    is_searchable: def.is_searchable ?? def.isSearchable,
+  }))
 }
