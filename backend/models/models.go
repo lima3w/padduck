@@ -43,8 +43,68 @@ type User struct {
 	PrivacyAcceptedVersion *string
 	DeletionRequestedAt    *time.Time
 	AnonymizedAt           *time.Time
+	ExternalAuthProvider   *string
+	ExternalAuthID         *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
+}
+
+// LDAPConfig holds the LDAP / Active Directory authentication configuration.
+type LDAPConfig struct {
+	ID              int64
+	Enabled         bool
+	Host            string
+	Port            int
+	BindDN          string
+	BindPasswordEnc []byte // AES-GCM encrypted bytes; empty slice means no bind password
+	BaseDN          string
+	UserFilter      string
+	UsernameAttr    string
+	EmailAttr       string
+	TLSMode         string // "none", "starttls", "tls"
+	TLSSkipVerify   bool
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// LDAPGroupRoleMapping maps an LDAP group DN to a local RBAC role.
+type LDAPGroupRoleMapping struct {
+	ID          int64
+	LDAPGroupDN string
+	RoleID      int64
+	CreatedAt   time.Time
+}
+
+// OAuth2Config holds the OAuth2 / OIDC authentication configuration.
+type OAuth2Config struct {
+	ID               int64
+	Enabled          bool
+	ProviderName     string
+	ClientID         string
+	ClientSecretEnc  []byte // AES-GCM encrypted bytes
+	DiscoveryURL     string // OIDC auto-discovery endpoint
+	AuthorizationURL string
+	TokenURL         string
+	UserinfoURL      string
+	Scopes           string
+	RedirectURI      string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+// SAMLConfig holds the SAML 2.0 Service Provider configuration.
+type SAMLConfig struct {
+	ID             int64
+	Enabled        bool
+	IDPMetadataURL string
+	IDPMetadataXML string
+	SPCertPEM      string
+	SPKeyPEM       string
+	EntityID       string
+	ACSURL         string
+	NameIDFormat   string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // Config represents an application configuration key-value pair

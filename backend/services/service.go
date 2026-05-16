@@ -19,6 +19,9 @@ type Service struct {
 	DNS             *DNSService
 	Reports         *ReportsService
 	Import          *ImportService
+	LDAP            *LDAPService
+	OAuth2          *OAuth2Service
+	SAML            *SAMLService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -40,6 +43,9 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		MFA:           mfaSvc,
 		Notification:  NewNotificationService(repo, emailSvc),
 		Discovery:     NewDiscoveryService(repo, configSvc),
+		LDAP:          NewLDAPService(repo, mfaEncryptionKey),
+		OAuth2:        NewOAuth2Service(repo, mfaEncryptionKey),
+		SAML:          NewSAMLService(repo, mfaEncryptionKey),
 	}
 	svc.Audit = NewAuditService(svc)
 	svc.DNS = NewDNSService(svc)
