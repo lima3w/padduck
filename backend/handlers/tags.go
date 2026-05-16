@@ -15,6 +15,11 @@ func requireAdmin(c *fiber.Ctx) error {
 		_ = c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
 		return errResponseWritten
 	}
+	// API tokens with non-admin scope must not reach admin-only handlers.
+	if scope, ok := c.Locals("tokenScope").(string); ok && scope != "admin" {
+		_ = c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "token scope does not allow admin operations"})
+		return errResponseWritten
+	}
 	return nil
 }
 

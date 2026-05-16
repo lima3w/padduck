@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	ldap "github.com/go-ldap/ldap/v3"
@@ -55,6 +56,9 @@ func (s *LDAPService) bindPassword(cfg *models.LDAPConfig) (string, error) {
 // dial opens an LDAP connection according to the TLS mode in cfg.
 func (s *LDAPService) dial(cfg *models.LDAPConfig) (*ldap.Conn, error) {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	if cfg.TLSSkipVerify {
+		slog.Warn("LDAP TLS certificate verification is disabled — do not use in production", "host", cfg.Host)
+	}
 	tlsCfg := &tls.Config{InsecureSkipVerify: cfg.TLSSkipVerify} //nolint:gosec
 
 	switch cfg.TLSMode {

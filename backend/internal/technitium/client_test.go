@@ -43,23 +43,30 @@ func errEnvelope(t *testing.T, msg string) string {
 	return string(b)
 }
 
+// reqCapture holds the query params and Authorization header from the last request.
+type reqCapture struct {
+	params url.Values
+	auth   string
+}
+
 // fakeServer starts an httptest.Server that records the last request and
-// responds with body. Returns the server, client, and a pointer to captured params.
-func fakeServer(t *testing.T, path, body string) (*httptest.Server, *Client, *url.Values) {
+// responds with body. Returns the server, client, and a pointer to captured request data.
+func fakeServer(t *testing.T, path, body string) (*httptest.Server, *Client, *reqCapture) {
 	t.Helper()
-	var captured url.Values
+	cap := &reqCapture{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != path {
 			http.NotFound(w, r)
 			return
 		}
-		captured = r.URL.Query()
+		cap.params = r.URL.Query()
+		cap.auth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(body))
 	}))
 	t.Cleanup(srv.Close)
 	c := NewClient(srv.URL, "test-token", false)
-	return srv, c, &captured
+	return srv, c, cap
 }
 
 // ---------------------------------------------------------------------------
@@ -67,10 +74,11 @@ func fakeServer(t *testing.T, path, body string) (*httptest.Server, *Client, *ur
 // ---------------------------------------------------------------------------
 
 func TestConnection_Success(t *testing.T) {
-	_, c, params := fakeServer(t, "/api/zones/list", okBare(t))
+	_, c, cap := fakeServer(t, "/api/zones/list", okBare(t))
 	err := c.TestConnection(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, "test-token", (*params).Get("token"))
+	assert.Equal(t, "Bearer test-token", cap.auth)
+	assert.Empty(t, cap.params.Get("token"), "token must not appear in query string")
 }
 
 func TestConnection_APIError(t *testing.T) {
@@ -98,13 +106,14 @@ func TestListZones_ReturnsZones(t *testing.T) {
 			{"name": "internal.local", "type": "Primary", "disabled": true},
 		},
 	})
-	_, c, params := fakeServer(t, "/api/zones/list", body)
+	_, c, cap := fakeServer(t, "/api/zones/list", body)
 	zones, err := c.ListZones(context.Background())
 	require.NoError(t, err)
 	require.Len(t, zones, 2)
 	assert.Equal(t, "example.com", zones[0].Name)
 	assert.Equal(t, "Primary", zones[0].Type)
-	assert.Equal(t, "test-token", (*params).Get("token"))
+	assert.Equal(t, "Bearer test-token", cap.auth)
+	assert.Empty(t, cap.params.Get("token"), "token must not appear in query string")
 }
 
 func TestListZones_Empty(t *testing.T) {
@@ -121,12 +130,12 @@ func TestListZones_Empty(t *testing.T) {
 
 func TestGetZoneRecords_SendsRequiredParams(t *testing.T) {
 	body := okEnvelope(t, map[string]any{"records": []any{}})
-	_, c, params := fakeServer(t, "/api/zones/records/get", body)
+	_, c, cap := fakeServer(t, "/api/zones/records/get", body)
 	_, err := c.GetZoneRecords(context.Background(), "example.com")
 	require.NoError(t, err)
-	assert.Equal(t, "example.com", (*params).Get("zone"))
-	assert.Equal(t, "example.com", (*params).Get("domain"), "domain param is required by Technitium API")
-	assert.Equal(t, "true", (*params).Get("listZone"), "listZone=true is required to get all records")
+	assert.Equal(t, "example.com", cap.params.Get("zone"))
+	assert.Equal(t, "example.com", cap.params.Get("domain"), "domain param is required by Technitium API")
+	assert.Equal(t, "true", cap.params.Get("listZone"), "listZone=true is required to get all records")
 }
 
 func TestGetZoneRecords_ParsesARecord(t *testing.T) {
@@ -151,13 +160,13 @@ func TestGetZoneRecords_ParsesARecord(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddRecord_SendsCorrectParams(t *testing.T) {
-	_, c, params := fakeServer(t, "/api/zones/records/add", okBare(t))
+	_, c, cap := fakeServer(t, "/api/zones/records/add", okBare(t))
 	err := c.AddRecord(context.Background(), "example.com", "host.example.com", "10.0.0.1")
 	require.NoError(t, err)
-	assert.Equal(t, "example.com", (*params).Get("zone"))
-	assert.Equal(t, "host.example.com", (*params).Get("domain"))
-	assert.Equal(t, "A", (*params).Get("type"))
-	assert.Equal(t, "10.0.0.1", (*params).Get("ipAddress"))
+	assert.Equal(t, "example.com", cap.params.Get("zone"))
+	assert.Equal(t, "host.example.com", cap.params.Get("domain"))
+	assert.Equal(t, "A", cap.params.Get("type"))
+	assert.Equal(t, "10.0.0.1", cap.params.Get("ipAddress"))
 }
 
 func TestAddRecord_APIError(t *testing.T) {
@@ -171,12 +180,12 @@ func TestAddRecord_APIError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteRecord_SendsCorrectParams(t *testing.T) {
-	_, c, params := fakeServer(t, "/api/zones/records/delete", okBare(t))
+	_, c, cap := fakeServer(t, "/api/zones/records/delete", okBare(t))
 	err := c.DeleteRecord(context.Background(), "example.com", "host.example.com")
 	require.NoError(t, err)
-	assert.Equal(t, "example.com", (*params).Get("zone"))
-	assert.Equal(t, "host.example.com", (*params).Get("domain"))
-	assert.Equal(t, "A", (*params).Get("type"))
+	assert.Equal(t, "example.com", cap.params.Get("zone"))
+	assert.Equal(t, "host.example.com", cap.params.Get("domain"))
+	assert.Equal(t, "A", cap.params.Get("type"))
 }
 
 // ---------------------------------------------------------------------------

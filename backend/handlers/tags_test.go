@@ -65,6 +65,22 @@ func TestCreateTag_NonAdmin_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
+func TestCreateTag_WriteScope_Returns403(t *testing.T) {
+	h := &Handler{}
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("user", adminUser)
+		c.Locals("tokenScope", "write")
+		return c.Next()
+	})
+	app.Post("/tags", h.CreateTag)
+	req := httptest.NewRequest("POST", "/tags", strings.NewReader(`{"name":"critical","colour":"#f00"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
 func TestCreateTag_MissingName_Returns400(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()

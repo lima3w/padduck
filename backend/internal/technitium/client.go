@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -77,6 +78,7 @@ type Client struct {
 func NewClient(baseURL, token string, skipTLS bool) *Client {
 	transport := http.DefaultTransport
 	if skipTLS {
+		slog.Warn("Technitium TLS certificate verification is disabled — do not use in production", "url", baseURL)
 		transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
 		}
@@ -91,17 +93,17 @@ func NewClient(baseURL, token string, skipTLS bool) *Client {
 	}
 }
 
-// get performs a GET request to the given path with the token appended.
+// get performs a GET request to the given path, authenticating via Authorization header.
 func (c *Client) get(ctx context.Context, path string, params url.Values) (*http.Response, error) {
-	if params == nil {
-		params = url.Values{}
+	var rawQuery string
+	if len(params) > 0 {
+		rawQuery = "?" + params.Encode()
 	}
-	params.Set("token", c.token)
-	fullURL := c.baseURL + path + "?" + params.Encode()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path+rawQuery, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Authorization", "Bearer "+c.token)
 	return c.httpClient.Do(req)
 }
 
