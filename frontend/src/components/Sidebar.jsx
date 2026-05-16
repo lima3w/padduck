@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getPendingRequestCount } from '../api/requests'
+import { getDnsZones } from '../api/client'
 
 export default function Sidebar() {
   const user = (() => {
@@ -9,6 +10,7 @@ export default function Sidebar() {
   const isAdmin = user?.role === 'admin'
 
   const [pendingCount, setPendingCount] = useState(0)
+  const [dnsConfigured, setDnsConfigured] = useState(true)
 
   useEffect(() => {
     if (!isAdmin) return
@@ -23,6 +25,18 @@ export default function Sidebar() {
     const interval = setInterval(fetchCount, 30000)
     return () => { cancelled = true; clearInterval(interval) }
   }, [isAdmin])
+
+  useEffect(() => {
+    let cancelled = false
+    async function checkDns() {
+      try {
+        const res = await getDnsZones()
+        if (!cancelled) setDnsConfigured(res.data?.configured !== false)
+      } catch {}
+    }
+    checkDns()
+    return () => { cancelled = true }
+  }, [])
 
   return (
     <aside className="w-48 bg-gray-800 dark:bg-gray-900 text-gray-200 dark:text-gray-300 min-h-full flex flex-col border-r border-gray-700 dark:border-gray-700">
@@ -112,16 +126,18 @@ export default function Sidebar() {
         >
           Nameservers
         </NavLink>
-        <NavLink
-          to="/dns/zones"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          DNS Zones
-        </NavLink>
+        {dnsConfigured && (
+          <NavLink
+            to="/dns/zones"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            DNS Zones
+          </NavLink>
+        )}
 
         <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Reports
