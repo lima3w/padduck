@@ -11,7 +11,7 @@ export const api = axios.create({
 })
 
 // Keys whose values contain user-defined data and must not have their keys transformed.
-const OPAQUE_FIELDS = new Set(['custom_fields'])
+const OPAQUE_FIELDS = new Set(['config', 'custom_fields'])
 
 function snakeToCamel(str) {
   return str.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase())

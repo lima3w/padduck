@@ -3,6 +3,33 @@ import * as client from '../api/client'
 import { useNavigate, Link } from 'react-router-dom'
 import { testDnsConnection } from '../api/client'
 
+const CONFIG_KEYS_BY_TAB = {
+  registration: [
+    'app_url',
+    'registration_enabled',
+    'require_email_verification',
+    'require_admin_approval',
+  ],
+  smtp: [
+    'smtp_host',
+    'smtp_port',
+    'smtp_username',
+    'smtp_password',
+    'smtp_from',
+    'smtp_tls',
+  ],
+  audit: ['audit_log_retention_days'],
+  alerts: ['default_alert_threshold_pct'],
+  dns: [
+    'pdns_enabled',
+    'pdns_api_url',
+    'pdns_api_key',
+    'pdns_default_zone',
+    'pdns_ptr_zones',
+  ],
+  scanner: ['scanner_resolve_hostnames'],
+}
+
 export default function AdminSettingsPage() {
   const navigate = useNavigate()
   const [config, setConfig] = useState(null)
@@ -47,7 +74,13 @@ export default function AdminSettingsPage() {
   const handleSaveConfig = async () => {
     setSaving(true)
     try {
-      await client.updateAdminConfig(config)
+      const keys = CONFIG_KEYS_BY_TAB[activeTab] || []
+      const updates = Object.fromEntries(
+        keys
+          .filter((key) => Object.prototype.hasOwnProperty.call(config, key))
+          .map((key) => [key, config[key]])
+      )
+      await client.updateAdminConfig(updates)
       showMessage('Settings saved successfully')
     } catch (err) {
       showMessage('Failed to save: ' + (err.response?.data?.error || err.message), 'error')
