@@ -45,11 +45,12 @@ jobs:
       - name: Validate deployment environment
         run: |
           if [ -f /etc/ipam-next/deploy.env ]; then
-            echo "Using /etc/ipam-next/deploy.env for Docker Compose interpolation"
-            echo "COMPOSE_ENV_ARGS=--env-file /etc/ipam-next/deploy.env" >> "$GITHUB_ENV"
+            echo "Using /etc/ipam-next/deploy.env for deployment"
+            # Source file so variables are available for validation below.
             set -a
             . /etc/ipam-next/deploy.env
             set +a
+            echo "COMPOSE_ENV_ARGS=--env-file /etc/ipam-next/deploy.env" >> "$GITHUB_ENV"
           else
             echo "No /etc/ipam-next/deploy.env found; using runner/job environment"
             echo "COMPOSE_ENV_ARGS=" >> "$GITHUB_ENV"
@@ -57,7 +58,7 @@ jobs:
 
           key_len=$(printf "%s" "${MFA_ENCRYPTION_KEY:-}" | wc -c)
           if [ "$key_len" -ne 64 ]; then
-            echo "MFA_ENCRYPTION_KEY must be set to a 64-character hex string in the runner environment or /etc/ipam-next/deploy.env"
+            echo "MFA_ENCRYPTION_KEY must be set to a 64-character hex string in /etc/ipam-next/deploy.env"
             echo "Current MFA_ENCRYPTION_KEY length: $key_len"
             exit 1
           fi
@@ -67,6 +68,13 @@ jobs:
               exit 1
               ;;
           esac
+
+          # Export the validated key into the step environment so Docker Compose
+          # uses the file value in all subsequent steps. Docker Compose gives shell
+          # environment higher precedence than --env-file, so any stale or wrong
+          # value already set in the runner's ambient environment would otherwise
+          # override the file value and cause the backend to fatal on startup.
+          echo "MFA_ENCRYPTION_KEY=${MFA_ENCRYPTION_KEY}" >> "$GITHUB_ENV"
 
       - name: Build containers
         run: docker compose $COMPOSE_ENV_ARGS build
