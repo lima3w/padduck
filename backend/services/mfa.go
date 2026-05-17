@@ -23,13 +23,13 @@ import (
 )
 
 var (
-	ErrMFAAlreadyEnabled   = errors.New("MFA is already enabled")
-	ErrMFANotEnabled       = errors.New("MFA is not enabled")
-	ErrMFANotSetup         = errors.New("MFA setup not started")
-	ErrInvalidTOTPCode     = errors.New("invalid MFA code")
-	ErrInvalidChallenge    = errors.New("invalid or expired MFA challenge")
-	ErrChallengeExpired    = errors.New("MFA challenge expired")
-	ErrChallengeCompleted  = errors.New("MFA challenge already completed")
+	ErrMFAAlreadyEnabled  = errors.New("MFA is already enabled")
+	ErrMFANotEnabled      = errors.New("MFA is not enabled")
+	ErrMFANotSetup        = errors.New("MFA setup not started")
+	ErrInvalidTOTPCode    = errors.New("invalid MFA code")
+	ErrInvalidChallenge   = errors.New("invalid or expired MFA challenge")
+	ErrChallengeExpired   = errors.New("MFA challenge expired")
+	ErrChallengeCompleted = errors.New("MFA challenge already completed")
 )
 
 const (
@@ -152,7 +152,9 @@ func (s *MFAService) regenerateBackupCodes(ctx context.Context, userID int64, ts
 		return nil, err
 	}
 	if ts != nil {
-		s.repository.UpsertMFASettings(ctx, userID, true, ts)
+		if err := s.repository.UpsertMFASettings(ctx, userID, true, ts); err != nil {
+			return nil, err
+		}
 	}
 	return codes, nil
 }

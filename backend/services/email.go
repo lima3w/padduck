@@ -120,7 +120,9 @@ func (e *EmailService) TestConnection() error {
 	if err != nil {
 		return fmt.Errorf("cannot reach SMTP server: %w", err)
 	}
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		return fmt.Errorf("closing SMTP test connection: %w", err)
+	}
 	return nil
 }
 

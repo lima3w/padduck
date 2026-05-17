@@ -59,7 +59,7 @@ func (s *LDAPService) dial(cfg *models.LDAPConfig) (*ldap.Conn, error) {
 	if cfg.TLSSkipVerify {
 		slog.Warn("LDAP TLS certificate verification is disabled — do not use in production", "host", cfg.Host)
 	}
-	tlsCfg := &tls.Config{InsecureSkipVerify: cfg.TLSSkipVerify} //nolint:gosec
+	tlsCfg := &tls.Config{InsecureSkipVerify: cfg.TLSSkipVerify} // #nosec G402 -- explicit admin LDAP setting.
 
 	switch cfg.TLSMode {
 	case "tls":
@@ -71,7 +71,7 @@ func (s *LDAPService) dial(cfg *models.LDAPConfig) (*ldap.Conn, error) {
 		}
 		if cfg.TLSMode == "starttls" {
 			if err := conn.StartTLS(tlsCfg); err != nil {
-				conn.Close()
+				_ = conn.Close()
 				return nil, err
 			}
 		}

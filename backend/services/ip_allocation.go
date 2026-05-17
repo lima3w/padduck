@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 )
@@ -43,7 +44,9 @@ func IPToInt(ip net.IP) (uint32, error) {
 
 // IntToIP converts a 32-bit integer back to an IP address (IPv4 only)
 func IntToIP(num uint32) net.IP {
-	return net.IPv4(byte(num>>24), byte(num>>16), byte(num>>8), byte(num))
+	ip := make(net.IP, net.IPv4len)
+	binary.BigEndian.PutUint32(ip, num)
+	return ip
 }
 
 // NextIP returns the next IP address after the given IP

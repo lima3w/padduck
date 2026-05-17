@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"net"
@@ -74,12 +75,9 @@ func cloneIP(ip net.IP) net.IP {
 func incrementIP(ip net.IP, hostBits int) {
 	inc := uint32(1) << uint(hostBits)
 	b := ip.To4()
-	val := uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
+	val := binary.BigEndian.Uint32(b)
 	val += inc
-	b[0] = byte(val >> 24)
-	b[1] = byte(val >> 16)
-	b[2] = byte(val >> 8)
-	b[3] = byte(val)
+	binary.BigEndian.PutUint32(b, val)
 }
 
 // MergeSubnets merges multiple subnets into a common supernet.

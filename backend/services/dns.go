@@ -208,7 +208,7 @@ func (d *DNSService) technitiumClient() *technitium.Client {
 func (d *DNSService) TestTechnitiumConnection(ctx context.Context) error {
 	client := d.technitiumClient()
 	if client == nil {
-		return fmt.Errorf("Technitium DNS is not configured")
+		return fmt.Errorf("technitium DNS is not configured")
 	}
 	return client.TestConnection(ctx)
 }

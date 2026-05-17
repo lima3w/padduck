@@ -72,9 +72,7 @@ func GeneratePDF(title string, headers []string, rows [][]string) ([]byte, error
 	writeObj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
 
 	// Object 3: Page
-	writeObj(3, fmt.Sprintf(
-		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
-	))
+	writeObj(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>")
 
 	// Object 4: Content stream
 	writeObj(4, fmt.Sprintf(
