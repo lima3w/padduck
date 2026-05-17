@@ -9,5 +9,7 @@ FROM alpine:3.21
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
 COPY --from=builder /app/app .
+COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/docs ./docs
 USER app
 CMD ["./app"]
