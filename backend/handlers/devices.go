@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,7 +16,7 @@ func (h *Handler) ListDeviceTypes(c *fiber.Ctx) error {
 
 	types, err := h.service.ListDeviceTypes(c.Context())
 	if err != nil {
-		log.Printf("Error listing device types: %v", err)
+		reqLogger(c).Error("error listing device types", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(types)
@@ -41,7 +40,7 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 
 	devices, total, err := h.service.ListDevices(c.Context(), limit, offset)
 	if err != nil {
-		log.Printf("Error listing devices: %v", err)
+		reqLogger(c).Error("error listing devices", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -71,7 +70,7 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 
 	device, err := h.service.CreateDevice(c.Context(), req)
 	if err != nil {
-		log.Printf("Error creating device: %v", err)
+		reqLogger(c).Error("error creating device", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -94,7 +93,7 @@ func (h *Handler) GetDevice(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
 		}
-		log.Printf("Error getting device %d: %v", id, err)
+		reqLogger(c).Error("error getting device", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -127,7 +126,7 @@ func (h *Handler) UpdateDevice(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
 		}
-		log.Printf("Error updating device %d: %v", id, err)
+		reqLogger(c).Error("error updating device", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -149,7 +148,7 @@ func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
 		}
-		log.Printf("Error deleting device %d: %v", id, err)
+		reqLogger(c).Error("error deleting device", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -172,7 +171,7 @@ func (h *Handler) GetDeviceSNMPCredentials(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
 		}
-		log.Printf("Error getting SNMP credentials for device %d: %v", id, err)
+		reqLogger(c).Error("error getting SNMP credentials", "device_id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -192,7 +191,7 @@ func (h *Handler) ListDeviceIPAddresses(c *fiber.Ctx) error {
 
 	ips, err := h.service.ListDeviceIPAddresses(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error listing IP addresses for device %d: %v", id, err)
+		reqLogger(c).Error("error listing IP addresses for device", "device_id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -226,7 +225,7 @@ func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.AssociateIPToDevice(c.Context(), int64(id), int64(ipID), req.InterfaceName, req.IsPrimary); err != nil {
-		log.Printf("Error associating IP %d to device %d: %v", ipID, id, err)
+		reqLogger(c).Error("error associating IP to device", "device_id", id, "ip_id", ipID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -253,7 +252,7 @@ func (h *Handler) UnlinkIPFromDevice(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not associated") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
-		log.Printf("Error unlinking IP %d from device %d: %v", ipID, id, err)
+		reqLogger(c).Error("error unlinking IP from device", "device_id", id, "ip_id", ipID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -273,7 +272,7 @@ func (h *Handler) ListDeviceInterfaces(c *fiber.Ctx) error {
 
 	ifaces, err := h.service.ListDeviceInterfaces(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error listing interfaces for device %d: %v", id, err)
+		reqLogger(c).Error("error listing interfaces for device", "device_id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -303,7 +302,7 @@ func (h *Handler) CreateDeviceInterface(c *fiber.Ctx) error {
 
 	iface, err := h.service.CreateDeviceInterface(c.Context(), int64(id), req)
 	if err != nil {
-		log.Printf("Error creating interface for device %d: %v", id, err)
+		reqLogger(c).Error("error creating interface for device", "device_id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -341,7 +340,7 @@ func (h *Handler) UpdateDeviceInterface(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "interface not found"})
 		}
-		log.Printf("Error updating interface %d on device %d: %v", ifID, id, err)
+		reqLogger(c).Error("error updating interface on device", "device_id", id, "if_id", ifID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -368,7 +367,7 @@ func (h *Handler) DeleteDeviceInterface(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "interface not found"})
 		}
-		log.Printf("Error deleting interface %d on device %d: %v", ifID, id, err)
+		reqLogger(c).Error("error deleting interface on device", "device_id", id, "if_id", ifID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -407,7 +406,7 @@ func (h *Handler) SearchDevices(c *fiber.Ctx) error {
 
 	devices, err := h.service.SearchDevices(c.Context(), filter, req.CustomFields)
 	if err != nil {
-		log.Printf("Error searching devices: %v", err)
+		reqLogger(c).Error("error searching devices", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
@@ -31,7 +30,7 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 	}
 	items, err := h.service.ListAutonomousSystems(c.Context())
 	if err != nil {
-		log.Printf("Error listing autonomous systems: %v", err)
+		reqLogger(c).Error("error listing autonomous systems", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if items == nil {
@@ -50,7 +49,7 @@ func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
 	}
 	item, err := h.service.GetAutonomousSystem(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error getting autonomous system %d: %v", id, err)
+		reqLogger(c).Error("error getting autonomous system", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(item)
@@ -66,7 +65,7 @@ func (h *Handler) CreateAutonomousSystem(c *fiber.Ctx) error {
 	}
 	item, err := h.service.CreateAutonomousSystem(c.Context(), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
-		log.Printf("Error creating autonomous system: %v", err)
+		reqLogger(c).Error("error creating autonomous system", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
@@ -92,7 +91,7 @@ func (h *Handler) UpdateAutonomousSystem(c *fiber.Ctx) error {
 	}
 	item, err := h.service.UpdateAutonomousSystem(c.Context(), int64(id), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
-		log.Printf("Error updating autonomous system %d: %v", id, err)
+		reqLogger(c).Error("error updating autonomous system", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
@@ -113,7 +112,7 @@ func (h *Handler) DeleteAutonomousSystem(c *fiber.Ctx) error {
 		return nil
 	}
 	if err := h.service.DeleteAutonomousSystem(c.Context(), int64(id)); err != nil {
-		log.Printf("Error deleting autonomous system %d: %v", id, err)
+		reqLogger(c).Error("error deleting autonomous system", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)

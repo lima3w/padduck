@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"log"
+	"context"
+	"log/slog"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
@@ -32,7 +33,7 @@ func (h *Handler) ListScanJobs(c *fiber.Ctx) error {
 	}
 	jobs, err := h.service.Discovery.ListJobs(c.Context())
 	if err != nil {
-		log.Printf("Error listing scan jobs: %v", err)
+		reqLogger(c).Error("error listing scan jobs", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(jobs)
@@ -122,8 +123,8 @@ func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan job not found"})
 	}
 	go func() {
-		if err := h.service.Discovery.RunJob(c.Context(), job); err != nil {
-			log.Printf("Scan job %d run error: %v", id, err)
+		if err := h.service.Discovery.RunJob(context.Background(), job); err != nil {
+			slog.Error("scan job run error", "job_id", id, "error", err)
 		}
 	}()
 	return c.JSON(fiber.Map{"message": "scan job started"})

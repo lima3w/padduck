@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
@@ -43,7 +41,7 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 
 	users, err := h.service.ListAllUsers(c.Context())
 	if err != nil {
-		log.Printf("Error listing users: %v", err)
+		reqLogger(c).Error("error listing users", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -128,13 +126,13 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 
 	hash, err := utils.HashPassword(req.Password)
 	if err != nil {
-		log.Printf("Error hashing password: %v", err)
+		reqLogger(c).Error("error hashing password", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create user"})
 	}
 
 	user, err := h.service.CreateUserWithPassword(c.Context(), req.Username, req.Email, hash, role)
 	if err != nil {
-		log.Printf("Error creating user: %v", err)
+		reqLogger(c).Error("error creating user", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create user"})
 	}
 
@@ -180,7 +178,7 @@ func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 
 	user, err := h.service.UpdateUserRole(c.Context(), int64(userID), req.Role)
 	if err != nil {
-		log.Printf("Error updating user role: %v", err)
+		reqLogger(c).Error("error updating user role", "user_id", userID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update user"})
 	}
 
@@ -220,7 +218,7 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteUser(c.Context(), int64(userID)); err != nil {
-		log.Printf("Error deleting user: %v", err)
+		reqLogger(c).Error("error deleting user", "user_id", userID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete user"})
 	}
 
@@ -280,7 +278,7 @@ func (h *Handler) SendPasswordResetEmail(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.SendPasswordResetEmailByID(c.Context(), int64(id)); err != nil {
-		log.Printf("Error sending password reset email for user %d: %v", id, err)
+		reqLogger(c).Error("error sending password reset email", "user_id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to send password reset email")
 	}
 

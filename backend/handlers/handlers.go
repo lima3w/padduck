@@ -49,6 +49,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Add rate limiting middleware (100 requests per minute per IP)
 	app.Use(h.RateLimitMiddleware(100, 1*time.Minute))
 
+	// Attach a unique request ID to every request
+	app.Use(RequestIDMiddleware)
+
 	// Add logging middleware
 	app.Use(loggingMiddleware)
 

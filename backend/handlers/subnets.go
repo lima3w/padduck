@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
@@ -55,7 +54,7 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		if errors.As(err, &overlapErr) {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": overlapErr.Error(), "conflicting_cidr": overlapErr.ConflictingCIDR})
 		}
-		log.Printf("Error creating subnet: %v", err)
+		reqLogger(c).Error("error creating subnet", "section_id", sectionID, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -82,7 +81,7 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 
 	subnet, err := h.service.GetSubnet(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error getting subnet %d: %v", id, err)
+		reqLogger(c).Error("error getting subnet", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -112,7 +111,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 		}
 		subnets, total, err := h.service.ListSubnetsPaginated(c.Context(), int64(sectionID), page, limit)
 		if err != nil {
-			log.Printf("Error listing subnets for section %d: %v", sectionID, err)
+			reqLogger(c).Error("error listing subnets", "section_id", sectionID, "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 		}
 		if subnets == nil {
@@ -128,7 +127,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 
 	subnets, err := h.service.ListSubnets(c.Context(), int64(sectionID))
 	if err != nil {
-		log.Printf("Error listing subnets for section %d: %v", sectionID, err)
+		reqLogger(c).Error("error listing subnets", "section_id", sectionID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if subnets == nil {
@@ -154,7 +153,7 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 
 	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
 	if err != nil {
-		log.Printf("Error updating subnet %d: %v", id, err)
+		reqLogger(c).Error("error updating subnet", "id", id, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -178,7 +177,7 @@ func (h *Handler) GetOverlapReport(c *fiber.Ctx) error {
 
 	pairs, err := h.service.OverlapReport(c.Context())
 	if err != nil {
-		log.Printf("Error generating overlap report: %v", err)
+		reqLogger(c).Error("error generating overlap report", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -200,7 +199,7 @@ func (h *Handler) DeleteSubnet(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteSubnet(c.Context(), int64(id)); err != nil {
-		log.Printf("Error deleting subnet %d: %v", id, err)
+		reqLogger(c).Error("error deleting subnet", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

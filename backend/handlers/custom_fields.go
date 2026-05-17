@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -54,7 +53,7 @@ func (h *Handler) GetCustomFieldDefinition(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
-		log.Printf("Error getting custom field definition %d: %v", id, err)
+		reqLogger(c).Error("error getting custom field definition", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(def)
@@ -99,7 +98,7 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
-		log.Printf("Error deleting custom field definition %d: %v", id, err)
+		reqLogger(c).Error("error deleting custom field definition", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.SendStatus(fiber.StatusNoContent)

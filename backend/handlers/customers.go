@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
@@ -30,7 +28,7 @@ func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 	}
 	customers, err := h.service.ListCustomers(c.Context())
 	if err != nil {
-		log.Printf("Error listing customers: %v", err)
+		reqLogger(c).Error("error listing customers", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if customers == nil {
@@ -49,7 +47,7 @@ func (h *Handler) GetCustomer(c *fiber.Ctx) error {
 	}
 	customer, err := h.service.GetCustomer(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error getting customer %d: %v", id, err)
+		reqLogger(c).Error("error getting customer", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(customer)
@@ -65,7 +63,7 @@ func (h *Handler) CreateCustomer(c *fiber.Ctx) error {
 	}
 	customer, err := h.service.CreateCustomer(c.Context(), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
-		log.Printf("Error creating customer: %v", err)
+		reqLogger(c).Error("error creating customer", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
@@ -91,7 +89,7 @@ func (h *Handler) UpdateCustomer(c *fiber.Ctx) error {
 	}
 	customer, err := h.service.UpdateCustomer(c.Context(), int64(id), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
-		log.Printf("Error updating customer %d: %v", id, err)
+		reqLogger(c).Error("error updating customer", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
@@ -112,7 +110,7 @@ func (h *Handler) DeleteCustomer(c *fiber.Ctx) error {
 		return nil
 	}
 	if err := h.service.DeleteCustomer(c.Context(), int64(id)); err != nil {
-		log.Printf("Error deleting customer %d: %v", id, err)
+		reqLogger(c).Error("error deleting customer", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)

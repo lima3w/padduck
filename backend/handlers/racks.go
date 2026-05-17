@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,7 +22,7 @@ func (h *Handler) ListRacks(c *fiber.Ctx) error {
 
 	racks, err := h.service.ListRacks(c.Context(), locationID)
 	if err != nil {
-		log.Printf("Error listing racks: %v", err)
+		reqLogger(c).Error("error listing racks", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(racks)
@@ -47,7 +46,7 @@ func (h *Handler) CreateRack(c *fiber.Ctx) error {
 
 	rack, err := h.service.CreateRack(c.Context(), req)
 	if err != nil {
-		log.Printf("Error creating rack: %v", err)
+		reqLogger(c).Error("error creating rack", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(fiber.StatusCreated).JSON(rack)
@@ -69,7 +68,7 @@ func (h *Handler) GetRack(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
-		log.Printf("Error getting rack %d: %v", id, err)
+		reqLogger(c).Error("error getting rack", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(rack)
@@ -101,7 +100,7 @@ func (h *Handler) UpdateRack(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
-		log.Printf("Error updating rack %d: %v", id, err)
+		reqLogger(c).Error("error updating rack", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(rack)
@@ -122,7 +121,7 @@ func (h *Handler) DeleteRack(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
-		log.Printf("Error deleting rack %d: %v", id, err)
+		reqLogger(c).Error("error deleting rack", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -141,7 +140,7 @@ func (h *Handler) ListDevicesInRack(c *fiber.Ctx) error {
 
 	devices, err := h.service.ListDevicesInRack(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error listing devices in rack %d: %v", id, err)
+		reqLogger(c).Error("error listing devices in rack", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(devices)

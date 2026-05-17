@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log"
+	"context"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
@@ -15,7 +15,7 @@ func (h *Handler) CheckAllDNS(c *fiber.Ctx) error {
 		return nil
 	}
 	go func() {
-		h.service.DNS.CheckAllDNS(c.Context())
+		h.service.DNS.CheckAllDNS(context.Background())
 	}()
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"message": "DNS check started"})
 }
@@ -27,7 +27,7 @@ func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
 		return nil
 	}
 	if err := h.service.DNS.TestPDNSConnection(c.Context()); err != nil {
-		log.Printf("PowerDNS connection test failed: %v", err)
+		reqLogger(c).Error("PowerDNS connection test failed", "error", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"status": "ok"})
@@ -54,7 +54,7 @@ func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 		err = h.service.DNS.TestTechnitiumConnection(c.Context())
 	}
 	if err != nil {
-		log.Printf("Technitium connection test failed: %v", err)
+		reqLogger(c).Error("Technitium connection test failed", "error", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"status": "ok"})
@@ -68,7 +68,7 @@ func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 	}
 	zones, configured, err := h.service.DNS.ListDNSZones(c.Context())
 	if err != nil {
-		log.Printf("Error listing DNS zones: %v", err)
+		reqLogger(c).Error("error listing DNS zones", "error", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
 	}
 	if !configured {
@@ -90,7 +90,7 @@ func (h *Handler) GetDNSZoneRecords(c *fiber.Ctx) error {
 	typeFilter := c.Query("type")
 	records, err := h.service.DNS.GetDNSZoneRecords(c.Context(), zone, typeFilter)
 	if err != nil {
-		log.Printf("Error getting DNS zone %s: %v", zone, err)
+		reqLogger(c).Error("error getting DNS zone records", "zone", zone, "error", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"zone": zone, "records": records})

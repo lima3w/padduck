@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -128,7 +127,7 @@ func (h *Handler) BulkSuspendUsers(c *fiber.Ctx) error {
 
 	count, err := h.service.BulkSuspendUsers(c.Context(), req.UserIDs, admin.ID, req.Reason)
 	if err != nil {
-		log.Printf("Bulk suspend error: %v", err)
+		reqLogger(c).Error("bulk suspend error", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(fiber.Map{"suspended": count})

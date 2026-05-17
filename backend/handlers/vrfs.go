@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
@@ -26,7 +24,7 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 	}
 	vrfs, err := h.service.ListVRFs(c.Context())
 	if err != nil {
-		log.Printf("Error listing VRFs: %v", err)
+		reqLogger(c).Error("error listing VRFs", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -48,7 +46,7 @@ func (h *Handler) GetVRF(c *fiber.Ctx) error {
 
 	vrf, err := h.service.GetVRF(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error getting VRF %d: %v", id, err)
+		reqLogger(c).Error("error getting VRF", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -66,7 +64,7 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 
 	vrf, err := h.service.CreateVRF(c.Context(), req.Name, req.RouteDistinguisher, req.Description)
 	if err != nil {
-		log.Printf("Error creating VRF: %v", err)
+		reqLogger(c).Error("error creating VRF", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -96,7 +94,7 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 
 	vrf, err := h.service.UpdateVRF(c.Context(), int64(id), req.Name, req.RouteDistinguisher, req.Description)
 	if err != nil {
-		log.Printf("Error updating VRF %d: %v", id, err)
+		reqLogger(c).Error("error updating VRF", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -120,7 +118,7 @@ func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteVRF(c.Context(), int64(id)); err != nil {
-		log.Printf("Error deleting VRF %d: %v", id, err)
+		reqLogger(c).Error("error deleting VRF", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
