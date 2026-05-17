@@ -140,7 +140,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 			name:           "invalid prefix length too large",
 			sectionID:      1,
 			networkAddress: "192.168.0.0",
-			prefixLength:   33,
+			prefixLength:   129,
 			wantErr:        true,
 			errorContains:  "invalid prefix length",
 		},
