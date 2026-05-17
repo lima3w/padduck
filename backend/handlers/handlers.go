@@ -132,6 +132,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	subnet.Get("/:subnetID/ip-addresses", h.ListIPAddresses)
 	subnet.Post("/:subnetID/ip-addresses", h.CreateIPAddress)
 	subnet.Post("/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
+	subnet.Get("/:subnetID/next-available", h.GetNextAvailableIP)
 
 	// IP Addresses collection routes (nested under subnets, kept for compatibility)
 	ipAddresses := subnets.Group("/:subnetID/ip-addresses")

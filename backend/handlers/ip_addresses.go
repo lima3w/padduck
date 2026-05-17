@@ -346,3 +346,22 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 
 	return c.JSON(ip)
 }
+
+// GetNextAvailableIP handles GET /api/v1/subnets/:subnetID/next-available
+// Returns the next free IP address in a subnet without allocating it.
+// Useful for automation (n8n, Zapier, Make) to preview before acting.
+func (h *Handler) GetNextAvailableIP(c *fiber.Ctx) error {
+	subnetID, err := c.ParamsInt("subnetID")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return nil
+	}
+	ip, err := h.service.FindNextAvailableIP(c.Context(), int64(subnetID))
+	if err != nil {
+		log.Printf("Error finding next available IP in subnet %d: %v", subnetID, err)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "no available IP addresses in subnet"})
+	}
+	return c.JSON(ip)
+}
