@@ -31,7 +31,7 @@ func TestGetCSRFToken_Returns200WithToken(t *testing.T) {
 	assert.NotEmpty(t, result["csrf_token"], "response must contain a non-empty csrf_token")
 }
 
-func TestGetCSRFToken_TokenIsHex64Chars(t *testing.T) {
+func TestGetCSRFToken_TokenHasSignedFormat(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
 	app.Get("/csrf-token", h.GetCSRFToken)
@@ -41,7 +41,10 @@ func TestGetCSRFToken_TokenIsHex64Chars(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	var result map[string]string
 	require.NoError(t, json.Unmarshal(body, &result))
-	assert.Len(t, result["csrf_token"], 64, "token should be 32 random bytes hex-encoded (64 chars)")
+	token := result["csrf_token"]
+	// Signed format: "<64-hex-random>.<32-hex-MAC>" = 97 chars with one dot separator.
+	assert.Len(t, token, 97, "token should be 64-char random hex + '.' + 32-char HMAC hex")
+	assert.Contains(t, token, ".", "token must contain the signed-double-submit separator")
 }
 
 // ---------------------------------------------------------------------------
@@ -59,6 +62,48 @@ func TestCSRFMiddleware_GET_Passes(t *testing.T) {
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 }
 
+func TestCSRFMiddleware_GET_IssuesCookieWhenAbsent(t *testing.T) {
+	h := &Handler{}
+	app := fiber.New()
+	app.Use(h.CSRFMiddleware)
+	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/test", nil))
+	require.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+	var csrfCookie *http.Cookie
+	for _, ck := range resp.Cookies() {
+		if ck.Name == CSRFCookieName {
+			csrfCookie = ck
+		}
+	}
+	require.NotNil(t, csrfCookie, "GET should issue a CSRF cookie when none is present")
+	assert.Len(t, csrfCookie.Value, 97)
+}
+
+func TestCSRFMiddleware_GET_DoesNotRotateCookieWhenPresent(t *testing.T) {
+	h := &Handler{}
+	app := fiber.New()
+	app.Use(h.CSRFMiddleware)
+	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
+
+	existing, err := h.newCSRFToken()
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.AddCookie(&http.Cookie{Name: CSRFCookieName, Value: existing})
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+
+	// No Set-Cookie header should rotate the token.
+	for _, ck := range resp.Cookies() {
+		if ck.Name == CSRFCookieName {
+			assert.Equal(t, existing, ck.Value, "existing CSRF cookie must not be rotated on GET")
+		}
+	}
+}
+
 func TestCSRFMiddleware_POST_WithoutToken_Returns403(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
@@ -72,13 +117,15 @@ func TestCSRFMiddleware_POST_WithoutToken_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestCSRFMiddleware_POST_WithMatchingToken_Passes(t *testing.T) {
+func TestCSRFMiddleware_POST_WithMatchingSignedToken_Passes(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Post("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
 
-	token := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	token, err := h.newCSRFToken()
+	require.NoError(t, err)
+
 	req := httptest.NewRequest("POST", "/test", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(CSRFHeaderName, token)
@@ -86,6 +133,23 @@ func TestCSRFMiddleware_POST_WithMatchingToken_Passes(t *testing.T) {
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+}
+
+func TestCSRFMiddleware_POST_UnsignedToken_Returns403(t *testing.T) {
+	h := &Handler{}
+	app := fiber.New()
+	app.Use(h.CSRFMiddleware)
+	app.Post("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
+
+	// A plain random token with no HMAC (old format) must be rejected.
+	unsignedToken := "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+	req := httptest.NewRequest("POST", "/test", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(CSRFHeaderName, unsignedToken)
+	req.AddCookie(&http.Cookie{Name: CSRFCookieName, Value: unsignedToken})
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
 func TestCSRFMiddleware_POST_TokenMismatch_Returns403(t *testing.T) {
@@ -104,13 +168,30 @@ func TestCSRFMiddleware_POST_TokenMismatch_Returns403(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GenerateCSRFToken — pure function
+// newCSRFToken — signed token generation
 // ---------------------------------------------------------------------------
 
-func TestGenerateCSRFToken_ReturnsDifferentTokensEachCall(t *testing.T) {
-	t1, err1 := GenerateCSRFToken()
-	t2, err2 := GenerateCSRFToken()
+func TestNewCSRFToken_ReturnsDifferentTokensEachCall(t *testing.T) {
+	h := &Handler{}
+	t1, err1 := h.newCSRFToken()
+	t2, err2 := h.newCSRFToken()
 	assert.NoError(t, err1)
 	assert.NoError(t, err2)
 	assert.NotEqual(t, t1, t2, "two consecutive tokens must differ")
+}
+
+func TestNewCSRFToken_ValidatesCorrectly(t *testing.T) {
+	h := &Handler{}
+	token, err := h.newCSRFToken()
+	require.NoError(t, err)
+	assert.True(t, h.validCSRFToken(token, token), "a freshly generated token must pass its own validation")
+}
+
+func TestNewCSRFToken_TamperedMACFails(t *testing.T) {
+	h := &Handler{}
+	token, err := h.newCSRFToken()
+	require.NoError(t, err)
+	// Flip the last character of the MAC to simulate tampering.
+	tampered := token[:len(token)-1] + "x"
+	assert.False(t, h.validCSRFToken(tampered, tampered), "a token with a tampered MAC must fail validation")
 }
