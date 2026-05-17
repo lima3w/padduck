@@ -29,6 +29,7 @@ go.work.sum
 node_modules/
 dist/
 build/
+sbom/
 
 # ---> Project-specific files
 CLAUDE.md
