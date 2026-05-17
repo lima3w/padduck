@@ -92,7 +92,9 @@ func (h *Handler) RejectUser(c *fiber.Ctx) error {
 	var req struct {
 		Reason string `json:"reason"`
 	}
-	c.BodyParser(&req)
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
 
 	reviewerID := currentUser.ID
 

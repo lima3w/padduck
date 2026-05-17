@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"crypto/md5"
+	"crypto/md5" // #nosec G501 -- Gravatar uses an MD5 email hash identifier.
 	"errors"
 	"fmt"
 	"strings"
@@ -15,7 +15,7 @@ import (
 // gravatarURL computes the Gravatar URL for the given email.
 func gravatarURL(email string, size int) string {
 	normalized := strings.TrimSpace(strings.ToLower(email))
-	hash := md5.Sum([]byte(normalized))
+	hash := md5.Sum([]byte(normalized)) // #nosec G401 -- Gravatar requires MD5; this is not used for security.
 	return fmt.Sprintf("https://www.gravatar.com/avatar/%x?s=%d&d=identicon", hash, size)
 }
 
@@ -160,32 +160,30 @@ func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 	}
 
 	response := make([]ListTokensResponse, 0)
-	if tokens != nil {
-		for _, token := range tokens {
-			lastUsed := ""
-			if token.LastUsedAt != nil {
-				lastUsed = token.LastUsedAt.String()
-			}
-			var expiresAt *string
-			if token.ExpiresAt != nil {
-				s := token.ExpiresAt.Format(time.RFC3339)
-				expiresAt = &s
-			}
-			isExpiringSoon := token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now().Add(7*24*time.Hour))
-			isRotated := token.RotationGraceExpiresAt != nil
-			response = append(response, ListTokensResponse{
-				ID:             token.ID,
-				Name:           token.Name,
-				Scope:          token.Scope,
-				UsageCount:     token.UsageCount,
-				LastUsedAt:     lastUsed,
-				LastUsedIP:     token.LastUsedIP,
-				ExpiresAt:      expiresAt,
-				IsExpiringSoon: isExpiringSoon,
-				IsRotated:      isRotated,
-				CreatedAt:      token.CreatedAt.String(),
-			})
+	for _, token := range tokens {
+		lastUsed := ""
+		if token.LastUsedAt != nil {
+			lastUsed = token.LastUsedAt.String()
 		}
+		var expiresAt *string
+		if token.ExpiresAt != nil {
+			s := token.ExpiresAt.Format(time.RFC3339)
+			expiresAt = &s
+		}
+		isExpiringSoon := token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now().Add(7*24*time.Hour))
+		isRotated := token.RotationGraceExpiresAt != nil
+		response = append(response, ListTokensResponse{
+			ID:             token.ID,
+			Name:           token.Name,
+			Scope:          token.Scope,
+			UsageCount:     token.UsageCount,
+			LastUsedAt:     lastUsed,
+			LastUsedIP:     token.LastUsedIP,
+			ExpiresAt:      expiresAt,
+			IsExpiringSoon: isExpiringSoon,
+			IsRotated:      isRotated,
+			CreatedAt:      token.CreatedAt.String(),
+		})
 	}
 
 	return c.JSON(response)

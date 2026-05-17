@@ -99,7 +99,7 @@ const (
 	// VLAN group permissions (v1.8.0 #207)
 	PermV2VLANGroupList   = "ipam:vlan_group:list"
 	PermV2VLANGroupRead   = "ipam:vlan_group:read"
-	PermV2VLANGroupWrite  = "ipam:vlan_group:write"
+	PermV2VLANGroupWrite  = "ipam:vlan_group:write" // #nosec G101 -- permission string, not a credential.
 	PermV2VLANGroupDelete = "ipam:vlan_group:delete"
 
 	// Admin-only operation permissions

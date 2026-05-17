@@ -94,7 +94,7 @@ func writePasswordFile(password string) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("creating directory %s: %w", dir, err)
 	}
-	if err := os.WriteFile(path, []byte(password), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(password), 0600); err != nil { // #nosec G703 -- fixed path under /run/ipam.
 		return fmt.Errorf("writing password file %s: %w", path, err)
 	}
 	return nil
@@ -177,8 +177,8 @@ func main() {
 				msg = e.Message
 			}
 			rid, _ := c.Locals("requestID").(string)
-				uid := c.Locals("userID")
-				slog.Error("request error", "method", c.Method(), "path", c.Path(), "status", code, "error", err.Error(), "request_id", rid, "user_id", uid)
+			uid := c.Locals("userID")
+			slog.Error("request error", "method", c.Method(), "path", c.Path(), "status", code, "error", err.Error(), "request_id", rid, "user_id", uid)
 			return c.Status(code).JSON(fiber.Map{"error": msg, "code": "REQUEST_ERROR"})
 		},
 	})
@@ -223,7 +223,9 @@ func main() {
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
 		log.Println("Shutting down gracefully...")
-		app.Shutdown()
+		if err := app.Shutdown(); err != nil {
+			log.Printf("Shutdown error: %v", err)
+		}
 	}()
 
 	// Start server

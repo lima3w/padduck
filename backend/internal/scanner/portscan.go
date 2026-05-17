@@ -43,7 +43,7 @@ func ScanPorts(ctx context.Context, ip string, ports []string, concurrency int, 
 				conn, err := net.DialTimeout("tcp", addr, timeout)
 				open := err == nil
 				if open {
-					conn.Close()
+					_ = conn.Close()
 				}
 				resultCh <- result{port: w.port, open: open}
 			}

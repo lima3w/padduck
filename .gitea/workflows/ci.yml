@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.26.2'
+          go-version: '1.26.3'
           cache: true
 
       - name: Set up Node.js
@@ -41,6 +41,18 @@ jobs:
       - name: Vet backend
         working-directory: ./backend
         run: go vet -mod=vendor ./...
+
+      - name: Install Go analysis tools
+        run: make go-analysis-tools
+
+      - name: Staticcheck Go modules
+        run: make staticcheck
+
+      - name: Gosec Go modules
+        run: make gosec
+
+      - name: Govulncheck Go modules
+        run: make govulncheck
 
       - name: Test backend
         working-directory: ./backend

@@ -46,19 +46,17 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	}
 
 	response := make([]UserDetailResponse, 0)
-	if users != nil {
-		for _, u := range users {
-			response = append(response, UserDetailResponse{
-				ID:          u.ID,
-				Username:    u.Username,
-				Email:       u.Email,
-				Role:        u.Role,
-				State:       u.State,
-				GravatarURL: gravatarURL(u.Email, 80),
-				CreatedAt:   u.CreatedAt.String(),
-				UpdatedAt:   u.UpdatedAt.String(),
-			})
-		}
+	for _, u := range users {
+		response = append(response, UserDetailResponse{
+			ID:          u.ID,
+			Username:    u.Username,
+			Email:       u.Email,
+			Role:        u.Role,
+			State:       u.State,
+			GravatarURL: gravatarURL(u.Email, 80),
+			CreatedAt:   u.CreatedAt.String(),
+			UpdatedAt:   u.UpdatedAt.String(),
+		})
 	}
 
 	return c.JSON(response)
