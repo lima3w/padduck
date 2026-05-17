@@ -33,7 +33,7 @@ func ValidateCIDR(address string, prefixLength int) error {
 
 // checkOverlap checks whether the given CIDR overlaps any existing subnet in the section (excluding excludeID)
 func (s *Service) checkOverlap(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, excludeID int64) error {
-	allowed, _ := s.Config.Get("allow_subnet_overlaps")
+	allowed, _ := s.Config.GetCtx(ctx, "allow_subnet_overlaps")
 	if allowed == "true" {
 		return nil
 	}
@@ -218,12 +218,12 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 
 	// Apply global defaults
 	if !autoFirst {
-		if v, _ := s.Config.Get("default_auto_reserve_first"); v == "true" {
+		if v, _ := s.Config.GetCtx(ctx, "default_auto_reserve_first"); v == "true" {
 			autoFirst = true
 		}
 	}
 	if !autoLast {
-		if v, _ := s.Config.Get("default_auto_reserve_last"); v == "true" {
+		if v, _ := s.Config.GetCtx(ctx, "default_auto_reserve_last"); v == "true" {
 			autoLast = true
 		}
 	}

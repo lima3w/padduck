@@ -13,7 +13,7 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
 	}
 
-	configs, err := h.service.Config.List()
+	configs, err := h.service.Config.ListCtx(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to load config"})
 	}

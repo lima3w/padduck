@@ -90,7 +90,7 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 	}
 
 	// Queue lockout notification (best-effort)
-	appURL, _ := s.Config.Get("app_url")
+	appURL, _ := s.Config.GetCtx(ctx, "app_url")
 	if appURL == "" {
 		appURL = "http://localhost:3000"
 	}
@@ -181,7 +181,7 @@ func (s *Service) RequestUnlockEmail(ctx context.Context, username string) error
 		return err
 	}
 
-	appURL, _ := s.Config.Get("app_url")
+	appURL, _ := s.Config.GetCtx(ctx, "app_url")
 	if appURL == "" {
 		appURL = "http://localhost:3000"
 	}

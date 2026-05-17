@@ -39,7 +39,7 @@ func (s *Service) GenerateAPIToken(ctx context.Context, userID int64, tokenName,
 	// Determine expiry
 	var expiresAt *time.Time
 	if expiresInDays == 0 {
-		defaultDaysStr, _ := s.Config.Get("api_token_default_expiration_days")
+		defaultDaysStr, _ := s.Config.GetCtx(ctx, "api_token_default_expiration_days")
 		if n, err := strconv.Atoi(defaultDaysStr); err == nil && n > 0 {
 			t := time.Now().Add(time.Duration(n) * 24 * time.Hour)
 			expiresAt = &t
@@ -122,7 +122,7 @@ func (s *Service) RotateAPIToken(ctx context.Context, tokenID, userID int64) (ne
 
 	// Read grace period from config (default 24h)
 	gracePeriod := 24 * time.Hour
-	if graceHoursStr, err2 := s.Config.Get("api_token_rotation_grace_period_hours"); err2 == nil {
+	if graceHoursStr, err2 := s.Config.GetCtx(ctx, "api_token_rotation_grace_period_hours"); err2 == nil {
 		if n, err3 := strconv.Atoi(graceHoursStr); err3 == nil && n > 0 {
 			gracePeriod = time.Duration(n) * time.Hour
 		}
@@ -167,7 +167,7 @@ func (s *Service) ExtendAPIToken(ctx context.Context, tokenID, userID int64, day
 	}
 
 	if days == 0 {
-		defaultDaysStr, _ := s.Config.Get("api_token_default_expiration_days")
+		defaultDaysStr, _ := s.Config.GetCtx(ctx, "api_token_default_expiration_days")
 		if n, err2 := strconv.Atoi(defaultDaysStr); err2 == nil && n > 0 {
 			days = n
 		} else {

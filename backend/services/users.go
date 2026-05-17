@@ -211,7 +211,7 @@ type BulkImportResult struct {
 
 // AcceptPrivacyPolicy records user's consent to the current privacy policy
 func (s *Service) AcceptPrivacyPolicy(ctx context.Context, userID int64) error {
-	version, err := s.Config.Get("privacy_policy_version")
+	version, err := s.Config.GetCtx(ctx, "privacy_policy_version")
 	if err != nil || version == "" {
 		version = "1.0"
 	}
@@ -220,7 +220,7 @@ func (s *Service) AcceptPrivacyPolicy(ctx context.Context, userID int64) error {
 
 // GetPrivacyPolicyVersion returns the current privacy policy version
 func (s *Service) GetPrivacyPolicyVersion(ctx context.Context) string {
-	v, err := s.Config.Get("privacy_policy_version")
+	v, err := s.Config.GetCtx(ctx, "privacy_policy_version")
 	if err != nil || v == "" {
 		return "1.0"
 	}

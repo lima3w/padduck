@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"ipam-next/models"
 	"ipam-next/repository"
 	"ipam-next/utils"
@@ -102,6 +103,16 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 
 	user, err := s.repository.CreateUserWithState(ctx, req.Username, req.Email, passwordHash, "user", state)
 	if err != nil {
+		// Handle unique constraint violations from concurrent registrations (TOCTOU race).
+		// PostgreSQL returns error code 23505 for unique_violation.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if strings.Contains(pgErr.ConstraintName, "email") {
+				return nil, ErrEmailTaken
+			}
+			// Default to username conflict (covers username constraint and unknown constraint names).
+			return nil, ErrUsernameTaken
+		}
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
