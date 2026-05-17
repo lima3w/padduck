@@ -143,10 +143,9 @@ func (s *ImportService) ImportSubnetsCSV(ctx context.Context, r io.Reader) (*Imp
 
 // validIPStatuses is the set of allowed status strings for IP addresses.
 var validIPStatuses = map[string]bool{
-	"active":   true,
-	"reserved": true,
-	"dhcp":     true,
-	"inactive": true,
+	"available": true,
+	"assigned":  true,
+	"reserved":  true,
 }
 
 // ImportIPsCSV parses a CSV with headers:
@@ -189,7 +188,7 @@ func (s *ImportService) ImportIPsCSV(ctx context.Context, r io.Reader) (*ImportR
 
 		status := strings.TrimSpace(rec["status"])
 		if status == "" {
-			status = "active"
+			status = "available"
 		}
 		if !validIPStatuses[status] {
 			result.Failed++
