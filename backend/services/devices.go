@@ -28,6 +28,11 @@ func (s *Service) ListDevices(ctx context.Context, limit, offset int) ([]*models
 	return s.repository.ListDevices(ctx, limit, offset)
 }
 
+// ListAllDevices returns all devices without pagination.
+func (s *Service) ListAllDevices(ctx context.Context) ([]*models.Device, error) {
+	return s.repository.ListAllDevices(ctx)
+}
+
 // CreateDevice creates a new device, encrypting SNMP credentials before storage.
 func (s *Service) CreateDevice(ctx context.Context, req *DeviceCreateRequest) (*models.Device, error) {
 	if req.Hostname == "" {

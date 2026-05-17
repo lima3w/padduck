@@ -156,3 +156,75 @@ func (s *Service) ListIPAddressesPaginated(ctx context.Context, subnetID int64, 
 	offset := (page - 1) * limit
 	return s.repository.ListIPAddressesBySubnetPaginated(ctx, subnetID, limit, offset)
 }
+
+// ListUsersPaginated returns a paginated list of users.
+func (s *Service) ListUsersPaginated(ctx context.Context, page, limit int) ([]*models.User, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListUsersPaginated(ctx, limit, offset)
+}
+
+// ListVLANsPaginated returns a paginated list of VLANs.
+func (s *Service) ListVLANsPaginated(ctx context.Context, page, limit int) ([]*models.VLAN, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListVLANsPaginated(ctx, limit, offset)
+}
+
+// ListVRFsPaginated returns a paginated list of VRFs.
+func (s *Service) ListVRFsPaginated(ctx context.Context, page, limit int) ([]*models.VRF, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListVRFsPaginated(ctx, limit, offset)
+}
+
+// ListLocationsPaginated returns a paginated list of locations.
+func (s *Service) ListLocationsPaginated(ctx context.Context, page, limit int) ([]*models.Location, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListLocationsPaginated(ctx, limit, offset)
+}
+
+// ListCustomersPaginated returns a paginated list of customers.
+func (s *Service) ListCustomersPaginated(ctx context.Context, page, limit int) ([]*models.Customer, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListCustomersPaginated(ctx, limit, offset)
+}
+
+// ListAutonomousSystemsPaginated returns a paginated list of autonomous systems.
+func (s *Service) ListAutonomousSystemsPaginated(ctx context.Context, page, limit int) ([]*models.AutonomousSystem, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListAutonomousSystemsPaginated(ctx, limit, offset)
+}

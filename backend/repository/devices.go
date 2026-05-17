@@ -142,6 +142,49 @@ func (r *Repository) ListDevices(ctx context.Context, limit, offset int) ([]*mod
 	return devices, total, rows.Err()
 }
 
+// ListAllDevices returns all devices with their type and IP count (no pagination).
+func (r *Repository) ListAllDevices(ctx context.Context) ([]*models.Device, error) {
+	query := `
+		SELECT ` + deviceSelectCols + `,
+		       ` + deviceTypeSelectCols + `,
+		       COUNT(ip.id) AS ip_count
+		FROM devices d
+		LEFT JOIN device_types dt ON dt.id = d.type_id
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
+		GROUP BY d.id, dt.id
+		ORDER BY d.hostname`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	devices := make([]*models.Device, 0)
+	for rows.Next() {
+		d := &models.Device{}
+		dt := &models.DeviceType{}
+		var dtID *int64
+		err := rows.Scan(
+			&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.SectionID,
+			&d.Vendor, &d.Model, &d.OSVersion, &d.IsOnline, &d.LastPingAt,
+			&d.LocationID, &d.RackID, &d.RackUnitStart, &d.RackUnitSize,
+			&d.CreatedAt, &d.UpdatedAt,
+			&dtID, &dt.Name, &dt.Icon, &dt.Description, &dt.CreatedAt, &dt.UpdatedAt,
+			&d.IPCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if dtID != nil {
+			dt.ID = *dtID
+			d.Type = dt
+		}
+		devices = append(devices, d)
+	}
+	return devices, rows.Err()
+}
+
 // CreateDevice inserts a new device and returns the created device.
 func (r *Repository) CreateDevice(ctx context.Context, p *DeviceParams) (*models.Device, error) {
 	if p.SNMPVersion == "" {

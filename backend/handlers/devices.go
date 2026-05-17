@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/models"
 	"ipam-next/repository"
 	"ipam-next/services"
 )
@@ -24,33 +25,48 @@ func (h *Handler) ListDeviceTypes(c *fiber.Ctx) error {
 }
 
 // ListDevices handles GET /api/v1/devices
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListDevices(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
 		return nil
 	}
 
-	page := c.QueryInt("page", 1)
-	limit := c.QueryInt("limit", 50)
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 200 {
-		limit = 50
-	}
-	offset := (page - 1) * limit
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
 
-	devices, total, err := h.service.ListDevices(c.Context(), limit, offset)
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		offset := (page - 1) * limit
+		devices, total, err := h.service.ListDevices(c.Context(), limit, offset)
+		if err != nil {
+			reqLogger(c).Error("error listing devices", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if devices == nil {
+			devices = make([]*models.Device, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  devices,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
+	devices, err := h.service.ListAllDevices(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing devices", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
-
-	return c.JSON(fiber.Map{
-		"data":  devices,
-		"total": total,
-		"page":  page,
-		"limit": limit,
-	})
+	if devices == nil {
+		devices = make([]*models.Device, 0)
+	}
+	return c.JSON(devices)
 }
 
 // CreateDevice handles POST /api/v1/devices

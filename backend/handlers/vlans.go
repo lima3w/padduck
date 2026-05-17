@@ -50,10 +50,39 @@ type UpdateVLANGroupRequest struct {
 	Colour      *string `json:"colour"`
 }
 
+// ListVLANs handles GET /api/v1/vlans
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2VLANList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		vlans, total, err := h.service.ListVLANsPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing VLANs", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if vlans == nil {
+			vlans = make([]*models.VLAN, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  vlans,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	vlans, err := h.service.ListVLANs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VLANs", "error", err)

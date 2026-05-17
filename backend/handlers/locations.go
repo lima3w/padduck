@@ -5,19 +5,51 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/models"
 	"ipam-next/repository"
 	"ipam-next/services"
 )
 
 // ListLocations handles GET /api/v1/locations
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListLocations(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		locs, total, err := h.service.ListLocationsPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing locations", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if locs == nil {
+			locs = make([]*models.Location, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  locs,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	locs, err := h.service.ListLocations(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing locations", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	if locs == nil {
+		locs = make([]*models.Location, 0)
 	}
 	return c.JSON(locs)
 }
