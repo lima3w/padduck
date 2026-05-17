@@ -136,6 +136,11 @@ func (s *Service) ValidateSession(ctx context.Context, rawToken string) (*models
 		return nil, nil, fmt.Errorf("user not found")
 	}
 
+	if user.State == "suspended" || user.State == "deleted" {
+		_ = s.repository.DeleteSession(ctx, session.ID)
+		return nil, nil, fmt.Errorf("account is %s", user.State)
+	}
+
 	return user, session, nil
 }
 
