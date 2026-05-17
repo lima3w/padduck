@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"ipam-next/models"
@@ -142,9 +143,11 @@ func (s *Service) validateVLANVRFConsistency(ctx context.Context, vlanID int64, 
 	if vlan.DomainID == nil {
 		return nil
 	}
-	// Get the VLAN's own VRF
-	if vlan.VRFID != nil && subnetVRFID != nil && *vlan.VRFID != *subnetVRFID {
-		return fmt.Errorf("subnet VRF does not match VLAN VRF (VLAN is in domain %d)", *vlan.DomainID)
+	// If the VLAN requires a specific VRF, the subnet must specify that same VRF.
+	if vlan.VRFID != nil {
+		if subnetVRFID == nil || *vlan.VRFID != *subnetVRFID {
+			return fmt.Errorf("subnet VRF does not match VLAN VRF (domain %d requires VRF %d)", *vlan.DomainID, *vlan.VRFID)
+		}
 	}
 	return nil
 }
@@ -242,11 +245,15 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 	_, ipNet, _ := net.ParseCIDR(cidr)
 	if autoFirst && ipNet != nil {
 		networkIP := ipNet.IP.String()
-		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil)
+		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil); err != nil {
+			slog.Warn("auto-reserve first IP failed", "subnet_id", subnet.ID, "ip", networkIP, "error", err)
+		}
 	}
 	if autoLast && ipNet != nil {
 		bcastIP := broadcastAddr(ipNet)
-		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil)
+		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil); err != nil {
+			slog.Warn("auto-reserve last IP failed", "subnet_id", subnet.ID, "ip", bcastIP, "error", err)
+		}
 	}
 
 	if len(customFields) > 0 && customFields[0] != nil {

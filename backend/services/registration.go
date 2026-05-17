@@ -120,7 +120,10 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 }
 
 func (s *RegistrationService) sendVerificationEmail(ctx context.Context, user *models.User) error {
-	token, tokenHash := generateToken()
+	token, tokenHash, err := generateToken()
+	if err != nil {
+		return err
+	}
 	expiresAt := time.Now().Add(24 * time.Hour)
 
 	if _, err := s.repository.CreateEmailVerification(ctx, user.ID, tokenHash, expiresAt); err != nil {
@@ -261,12 +264,14 @@ func (s *RegistrationService) notifyAdminsOfPendingApproval(ctx context.Context,
 	}
 }
 
-func generateToken() (rawToken, tokenHash string) {
+func generateToken() (rawToken, tokenHash string, err error) {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err = rand.Read(b); err != nil {
+		return "", "", fmt.Errorf("rand.Read: %w", err)
+	}
 	rawToken = hex.EncodeToString(b)
 	tokenHash = hashToken(rawToken)
-	return
+	return rawToken, tokenHash, nil
 }
 
 func hashToken(token string) string {
