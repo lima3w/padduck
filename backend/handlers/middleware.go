@@ -79,6 +79,18 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// RequireBearerAuth rejects requests that authenticated via session cookie instead of a Bearer token.
+// Use on endpoints designed for server-to-server API calls (e.g., Grafana datasource) to prevent CSRF.
+func (h *Handler) RequireBearerAuth(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if !strings.HasPrefix(auth, "Bearer ") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Bearer token required for this endpoint",
+		})
+	}
+	return c.Next()
+}
+
 // OptionalAuthMiddleware validates credentials if present but does not require them.
 func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 	// Try session cookie first

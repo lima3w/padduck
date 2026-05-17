@@ -139,7 +139,8 @@ func (h *Handler) TestSMTP(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.Email.Send(req.To, "IPAM SMTP Test", "This is a test email from IPAM."); err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "SMTP test failed: " + err.Error()})
+		reqLogger(c).Error("SMTP test failed", "error", err)
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "SMTP test failed"})
 	}
 
 	return c.JSON(fiber.Map{"message": "Test email sent successfully"})

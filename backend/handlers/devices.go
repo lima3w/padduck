@@ -71,7 +71,7 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 	device, err := h.service.CreateDevice(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating device", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(device)
@@ -127,7 +127,7 @@ func (h *Handler) UpdateDevice(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "device not found"})
 		}
 		reqLogger(c).Error("error updating device", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.JSON(device)
@@ -226,7 +226,7 @@ func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
 
 	if err := h.service.AssociateIPToDevice(c.Context(), int64(id), int64(ipID), req.InterfaceName, req.IsPrimary); err != nil {
 		reqLogger(c).Error("error associating IP to device", "device_id", id, "ip_id", ipID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -303,7 +303,7 @@ func (h *Handler) CreateDeviceInterface(c *fiber.Ctx) error {
 	iface, err := h.service.CreateDeviceInterface(c.Context(), int64(id), req)
 	if err != nil {
 		reqLogger(c).Error("error creating interface for device", "device_id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(iface)
@@ -341,7 +341,7 @@ func (h *Handler) UpdateDeviceInterface(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "interface not found"})
 		}
 		reqLogger(c).Error("error updating interface on device", "device_id", id, "if_id", ifID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.JSON(iface)

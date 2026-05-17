@@ -54,32 +54,45 @@ func TestLockoutDuration(t *testing.T) {
 			lockoutCount: 1,
 			want:         5 * time.Minute,
 		},
-		// lockoutCount == 2 → 10 minutes
+		// lockoutCount == 2 → 15 minutes
 		{
-			name:         "count 2 returns 10 minutes",
+			name:         "count 2 returns 15 minutes",
 			lockoutCount: 2,
-			want:         10 * time.Minute,
+			want:         15 * time.Minute,
 		},
-		// lockoutCount >= 3 → 30 minutes
+		// lockoutCount == 3 → 1 hour
 		{
-			name:         "count 3 returns 30 minutes",
+			name:         "count 3 returns 1 hour",
 			lockoutCount: 3,
-			want:         30 * time.Minute,
+			want:         1 * time.Hour,
 		},
+		// lockoutCount == 4 → 4 hours
 		{
-			name:         "count 5 returns 30 minutes",
+			name:         "count 4 returns 4 hours",
+			lockoutCount: 4,
+			want:         4 * time.Hour,
+		},
+		// lockoutCount == 5 → 24 hours
+		{
+			name:         "count 5 returns 24 hours",
 			lockoutCount: 5,
-			want:         30 * time.Minute,
+			want:         24 * time.Hour,
+		},
+		// lockoutCount >= 6 → 7 days
+		{
+			name:         "count 6 returns 7 days",
+			lockoutCount: 6,
+			want:         7 * 24 * time.Hour,
 		},
 		{
-			name:         "count 10 returns 30 minutes",
+			name:         "count 10 returns 7 days",
 			lockoutCount: 10,
-			want:         30 * time.Minute,
+			want:         7 * 24 * time.Hour,
 		},
 		{
-			name:         "large count returns 30 minutes",
+			name:         "large count returns 7 days",
 			lockoutCount: 100,
-			want:         30 * time.Minute,
+			want:         7 * 24 * time.Hour,
 		},
 	}
 
@@ -126,18 +139,29 @@ func TestUnexportedConstants_Values(t *testing.T) {
 
 // ---------------------------------------------------------------------------
 // lockoutDuration as an escalating-severity proxy for the threshold constants.
-// Ensures the progression 5m → 10m → 30m is maintained.
+// Ensures the progression 5m → 15m → 1h → 4h → 24h → 7d is maintained.
 // ---------------------------------------------------------------------------
 
 func TestLockoutDuration_Escalation(t *testing.T) {
 	first := lockoutDuration(1)
 	second := lockoutDuration(2)
 	third := lockoutDuration(3)
+	fourth := lockoutDuration(4)
+	fifth := lockoutDuration(5)
+	sixth := lockoutDuration(6)
 
 	assert.Less(t, int64(first), int64(second),
 		"second lockout should be longer than the first")
 	assert.Less(t, int64(second), int64(third),
 		"third lockout should be longer than the second")
-	assert.Equal(t, lockoutDuration(3), lockoutDuration(10),
-		"all lockout counts >= 3 should return the same maximum duration")
+	assert.Less(t, int64(third), int64(fourth),
+		"fourth lockout should be longer than the third")
+	assert.Less(t, int64(fourth), int64(fifth),
+		"fifth lockout should be longer than the fourth")
+	assert.Less(t, int64(fifth), int64(sixth),
+		"sixth lockout should be longer than the fifth")
+	assert.Equal(t, lockoutDuration(6), lockoutDuration(10),
+		"all lockout counts >= 6 should return the same maximum duration (7 days)")
+	assert.Equal(t, lockoutDuration(6), lockoutDuration(100),
+		"very large lockout counts should still return the 7-day maximum")
 }

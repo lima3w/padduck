@@ -47,7 +47,7 @@ func (h *Handler) CreateRack(c *fiber.Ctx) error {
 	rack, err := h.service.CreateRack(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating rack", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.Status(fiber.StatusCreated).JSON(rack)
 }
@@ -101,7 +101,7 @@ func (h *Handler) UpdateRack(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
 		reqLogger(c).Error("error updating rack", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(rack)
 }

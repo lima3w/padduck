@@ -61,7 +61,7 @@ func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
 	ns, err := h.service.CreateNameserver(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating nameserver", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -98,7 +98,7 @@ func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
 		reqLogger(c).Error("error updating nameserver", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{

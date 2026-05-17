@@ -200,6 +200,12 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username and password required"})
 	}
 
+	if throttled, err := h.service.IsIPThrottled(c.Context(), c.IP()); err == nil && throttled {
+		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+			"error": "too many failed login attempts from this IP, please try again later",
+		})
+	}
+
 	ipAddress := c.IP()
 	userAgent := c.Get("User-Agent")
 
