@@ -9,7 +9,6 @@ import (
 type CreateSectionRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	CreatedBy   int64  `json:"created_by"`
 }
 
 type UpdateSectionRequest struct {
@@ -27,14 +26,12 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 		return nil
 	}
 
-	// Use authenticated user ID if available, otherwise default to admin (1)
-	createdBy := req.CreatedBy
-	if createdBy == 0 {
-		if userID, ok := c.Locals("userID").(int64); ok {
-			createdBy = userID
-		} else {
-			createdBy = 1
-		}
+	// Always derive createdBy from the authenticated user — never trust caller-supplied values.
+	var createdBy int64
+	if u, ok := c.Locals("user").(*models.User); ok && u != nil {
+		createdBy = u.ID
+	} else if userID, ok := c.Locals("userID").(int64); ok {
+		createdBy = userID
 	}
 
 	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, createdBy)
