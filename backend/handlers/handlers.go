@@ -436,6 +436,14 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	customers.Put("/:id", h.UpdateCustomer)
 	customers.Delete("/:id", h.DeleteCustomer)
 
+	// BGP Autonomous Systems (v1.14.0 #235)
+	asSystems := protected.Group("/autonomous-systems")
+	asSystems.Get("", h.ListAutonomousSystems)
+	asSystems.Post("", h.CreateAutonomousSystem)
+	asSystems.Get("/:id", h.GetAutonomousSystem)
+	asSystems.Put("/:id", h.UpdateAutonomousSystem)
+	asSystems.Delete("/:id", h.DeleteAutonomousSystem)
+
 	log.Println("Routes registered successfully")
 }
 

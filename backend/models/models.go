@@ -871,3 +871,15 @@ type Customer struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+// AutonomousSystem represents a BGP Autonomous System entry.
+type AutonomousSystem struct {
+	ID          int64     `json:"id"`
+	ASN         int64     `json:"asn"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Type        string    `json:"type"`
+	RIR         string    `json:"rir"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}

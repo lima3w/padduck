@@ -99,6 +99,17 @@ export default function Sidebar() {
           Locations
         </NavLink>
 
+        <NavLink
+          to="/autonomous-systems"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          BGP / AS Numbers
+        </NavLink>
+
         <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Customers
         </div>

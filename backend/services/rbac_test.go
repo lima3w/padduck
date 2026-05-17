@@ -313,6 +313,8 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 		PermV2AdminRead, PermV2AdminWrite,
 		// v1.14.0 customer / tenant management permissions
 		PermV2CustomerList, PermV2CustomerRead, PermV2CustomerWrite, PermV2CustomerDelete,
+		// v1.14.0 BGP autonomous system permissions
+		PermV2ASList, PermV2ASRead, PermV2ASWrite, PermV2ASDelete,
 	}
 	assert.Equal(t, len(expected), len(AllPermissions))
 	for _, p := range expected {
