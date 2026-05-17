@@ -435,6 +435,22 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	me.Post("/accept-privacy", h.AcceptPrivacyPolicy)
 	api.Get("/privacy-policy/version", h.GetPrivacyPolicyVersion)
 
+	// Customers (v1.14.0 #234)
+	customers := protected.Group("/customers")
+	customers.Get("", h.ListCustomers)
+	customers.Post("", h.CreateCustomer)
+	customers.Get("/:id", h.GetCustomer)
+	customers.Put("/:id", h.UpdateCustomer)
+	customers.Delete("/:id", h.DeleteCustomer)
+
+	// BGP Autonomous Systems (v1.14.0 #235)
+	asSystems := protected.Group("/autonomous-systems")
+	asSystems.Get("", h.ListAutonomousSystems)
+	asSystems.Post("", h.CreateAutonomousSystem)
+	asSystems.Get("/:id", h.GetAutonomousSystem)
+	asSystems.Put("/:id", h.UpdateAutonomousSystem)
+	asSystems.Delete("/:id", h.DeleteAutonomousSystem)
+
 	log.Println("Routes registered successfully")
 }
 

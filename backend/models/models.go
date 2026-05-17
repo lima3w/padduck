@@ -859,3 +859,27 @@ type InactiveIPReport struct {
 	LastSeen     *time.Time `json:"last_seen,omitempty"`
 	DaysInactive int        `json:"days_inactive"`
 }
+
+// Customer represents an organisation that owns or uses IP space.
+type Customer struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Email       string    `json:"email"`
+	Phone       string    `json:"phone"`
+	Notes       string    `json:"notes"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// AutonomousSystem represents a BGP Autonomous System entry.
+type AutonomousSystem struct {
+	ID          int64     `json:"id"`
+	ASN         int64     `json:"asn"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Type        string    `json:"type"`
+	RIR         string    `json:"rir"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
