@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -40,11 +39,10 @@ func (h *Handler) SearchSections(c *fiber.Ctx) error {
 
 	sections, err := h.service.SearchSections(c.Context(), req.Query, req.Limit, req.Offset)
 	if err != nil {
-		log.Printf("Error searching sections: %v", err)
+		reqLogger(c).Error("error searching sections", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Return empty array if nil
 	if sections == nil {
 		sections = make([]*models.Section, 0)
 	}
@@ -66,11 +64,10 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 
 	subnets, err := h.service.SearchSubnets(c.Context(), int64(sectionID), req.Query, req.Limit, req.Offset, req.CustomFields)
 	if err != nil {
-		log.Printf("Error searching subnets: %v", err)
+		reqLogger(c).Error("error searching subnets", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Return empty array if nil
 	if subnets == nil {
 		subnets = make([]*models.Subnet, 0)
 	}
@@ -102,11 +99,10 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 
 	ips, err := h.service.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset, opts)
 	if err != nil {
-		log.Printf("Error searching IP addresses: %v", err)
+		reqLogger(c).Error("error searching IP addresses", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Return empty array if nil
 	if ips == nil {
 		ips = make([]*models.IPAddress, 0)
 	}

@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
 	"ipam-next/utils"
@@ -33,7 +31,7 @@ func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.SendPasswordResetEmail(c.Context(), req.Email); err != nil {
-		log.Printf("Error sending password reset email to %s: %v", req.Email, err)
+		reqLogger(c).Error("error sending password reset email", "error", err)
 	}
 
 	// Always return success to prevent email enumeration
@@ -59,13 +57,13 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 
 	passwordHash, err := utils.HashPassword(req.Password)
 	if err != nil {
-		log.Printf("Error hashing password: %v", err)
+		reqLogger(c).Error("error hashing password", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to reset password"})
 	}
 
 	userID, err := h.service.ResetPasswordWithToken(c.Context(), req.Token, passwordHash)
 	if err != nil {
-		log.Printf("Error resetting password: %v", err)
+		reqLogger(c).Warn("password reset failed", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid or expired reset token"})
 	}
 

@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
 )
-
 
 type RequestUnlockRequest struct {
 	Username string `json:"username"`
@@ -32,7 +29,7 @@ func (h *Handler) RequestUnlock(c *fiber.Ctx) error {
 	// Always return success to prevent username enumeration
 	if req.Username != "" {
 		if err := h.service.RequestUnlockEmail(c.Context(), req.Username); err != nil {
-			log.Printf("Error sending unlock email for %s: %v", req.Username, err)
+			reqLogger(c).Error("error sending unlock email", "error", err)
 		}
 	}
 
@@ -51,7 +48,7 @@ func (h *Handler) VerifyUnlock(c *fiber.Ctx) error {
 		if err == services.ErrInvalidUnlockToken {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid or expired unlock token"})
 		}
-		log.Printf("Error unlocking account: %v", err)
+		reqLogger(c).Error("error unlocking account", "error", err)
 		return h.StatusInternalServerError(c, "Failed to unlock account", err.Error())
 	}
 
@@ -67,7 +64,7 @@ func (h *Handler) GetLoginHistory(c *fiber.Ctx) error {
 
 	attempts, err := h.service.GetLoginHistory(c.Context(), userID, 20)
 	if err != nil {
-		log.Printf("Error fetching login history for user %d: %v", userID, err)
+		reqLogger(c).Error("error fetching login history", "error", err)
 		return h.StatusInternalServerError(c, "Failed to fetch login history", err.Error())
 	}
 
@@ -99,7 +96,7 @@ func (h *Handler) AdminUnlockUser(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.UnlockAccountByAdmin(c.Context(), int64(targetID), adminID); err != nil {
-		log.Printf("Error admin-unlocking user %d: %v", targetID, err)
+		reqLogger(c).Error("error admin-unlocking user", "target_id", targetID, "error", err)
 		return h.StatusInternalServerError(c, "Failed to unlock account", err.Error())
 	}
 

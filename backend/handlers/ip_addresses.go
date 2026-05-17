@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
@@ -49,7 +47,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 
 	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.CustomFields)
 	if err != nil {
-		log.Printf("Error creating IP address: %v", err)
+		reqLogger(c).Error("error creating IP address", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -75,7 +73,7 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 
 	ip, err := h.service.GetIPAddress(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error getting IP address %d: %v", id, err)
+		reqLogger(c).Error("error getting IP address", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -105,7 +103,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		}
 		ips, total, err := h.service.ListIPAddressesPaginated(c.Context(), int64(subnetID), page, limit)
 		if err != nil {
-			log.Printf("Error listing IP addresses for subnet %d: %v", subnetID, err)
+			reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 		}
 		if ips == nil {
@@ -121,7 +119,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 
 	ips, err := h.service.ListIPAddresses(c.Context(), int64(subnetID))
 	if err != nil {
-		log.Printf("Error listing IP addresses for subnet %d: %v", subnetID, err)
+		reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if ips == nil {
@@ -147,7 +145,7 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 
 	ip, err := h.service.AssignIPAddress(c.Context(), int64(id), req.AssignedTo)
 	if err != nil {
-		log.Printf("Error assigning IP address %d: %v", id, err)
+		reqLogger(c).Error("error assigning IP address", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -173,7 +171,7 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 
 	ip, err := h.service.ReleaseIPAddress(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error releasing IP address %d: %v", id, err)
+		reqLogger(c).Error("error releasing IP address", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -197,7 +195,7 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteIPAddress(c.Context(), int64(id)); err != nil {
-		log.Printf("Error deleting IP address %d: %v", id, err)
+		reqLogger(c).Error("error deleting IP address", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -228,7 +226,7 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 
 	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.TagID, req.MACAddress, req.PTRRecord, req.CustomFields)
 	if err != nil {
-		log.Printf("Error updating IP meta %d: %v", id, err)
+		reqLogger(c).Error("error updating IP meta", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -256,7 +254,7 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 
 	ip, err := h.service.AllocateIPAddress(c.Context(), int64(subnetID), req.AssignedTo)
 	if err != nil {
-		log.Printf("Error allocating IP address: %v", err)
+		reqLogger(c).Error("error allocating IP address", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -282,7 +280,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 
 	utilization, err := h.service.GetSubnetUtilization(c.Context(), int64(subnetID))
 	if err != nil {
-		log.Printf("Error getting subnet utilization %d: %v", subnetID, err)
+		reqLogger(c).Error("error getting subnet utilization", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -290,7 +288,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 }
 
 type AssignWithLeaseRequest struct {
-	AssignedTo       string `json:"assigned_to"`
+	AssignedTo        string `json:"assigned_to"`
 	LeaseDurationDays int    `json:"lease_duration_days"`
 }
 
@@ -308,7 +306,7 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 
 	ip, err := h.service.AssignIPAddressWithLease(c.Context(), int64(id), req.AssignedTo, req.LeaseDurationDays)
 	if err != nil {
-		log.Printf("Error assigning IP address with lease %d: %v", id, err)
+		reqLogger(c).Error("error assigning IP address with lease", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -324,7 +322,7 @@ func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 
 	expired, err := h.service.IsIPLeaseExpired(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error checking IP lease status %d: %v", id, err)
+		reqLogger(c).Error("error checking IP lease status", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -340,7 +338,7 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 
 	ip, err := h.service.ReleaseExpiredLease(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error releasing expired lease %d: %v", id, err)
+		reqLogger(c).Error("error releasing expired lease", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -360,7 +358,7 @@ func (h *Handler) GetNextAvailableIP(c *fiber.Ctx) error {
 	}
 	ip, err := h.service.FindNextAvailableIP(c.Context(), int64(subnetID))
 	if err != nil {
-		log.Printf("Error finding next available IP in subnet %d: %v", subnetID, err)
+		reqLogger(c).Error("error finding next available IP", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "no available IP addresses in subnet"})
 	}
 	return c.JSON(ip)

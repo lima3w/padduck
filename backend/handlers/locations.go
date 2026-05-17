@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,7 +15,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 	}
 	locs, err := h.service.ListLocations(c.Context())
 	if err != nil {
-		log.Printf("Error listing locations: %v", err)
+		reqLogger(c).Error("error listing locations", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(locs)
@@ -29,7 +28,7 @@ func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 	}
 	tree, err := h.service.GetLocationTree(c.Context())
 	if err != nil {
-		log.Printf("Error getting location tree: %v", err)
+		reqLogger(c).Error("error getting location tree", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(tree)
@@ -50,7 +49,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	}
 	loc, err := h.service.CreateLocation(c.Context(), req)
 	if err != nil {
-		log.Printf("Error creating location: %v", err)
+		reqLogger(c).Error("error creating location", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.Status(fiber.StatusCreated).JSON(loc)
@@ -70,7 +69,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
-		log.Printf("Error getting location %d: %v", id, err)
+		reqLogger(c).Error("error getting location", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(loc)
@@ -98,7 +97,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
-		log.Printf("Error updating location %d: %v", id, err)
+		reqLogger(c).Error("error updating location", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(loc)
@@ -117,7 +116,7 @@ func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
-		log.Printf("Error deleting location %d: %v", id, err)
+		reqLogger(c).Error("error deleting location", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.SendStatus(fiber.StatusNoContent)

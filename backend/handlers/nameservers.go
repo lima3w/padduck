@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,7 +15,7 @@ func (h *Handler) ListNameservers(c *fiber.Ctx) error {
 	}
 	ns, err := h.service.ListNameservers(c.Context())
 	if err != nil {
-		log.Printf("Error listing nameservers: %v", err)
+		reqLogger(c).Error("error listing nameservers", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(ns)
@@ -36,7 +35,7 @@ func (h *Handler) GetNameserver(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
-		log.Printf("Error getting nameserver %d: %v", id, err)
+		reqLogger(c).Error("error getting nameserver", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(ns)
@@ -61,7 +60,7 @@ func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
 	}
 	ns, err := h.service.CreateNameserver(c.Context(), req)
 	if err != nil {
-		log.Printf("Error creating nameserver: %v", err)
+		reqLogger(c).Error("error creating nameserver", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	uid, uname := auditUserFromCtx(c)
@@ -98,7 +97,7 @@ func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
-		log.Printf("Error updating nameserver %d: %v", id, err)
+		reqLogger(c).Error("error updating nameserver", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	uid, uname := auditUserFromCtx(c)
@@ -122,7 +121,7 @@ func (h *Handler) DeleteNameserver(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
-		log.Printf("Error deleting nameserver %d: %v", id, err)
+		reqLogger(c).Error("error deleting nameserver", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)

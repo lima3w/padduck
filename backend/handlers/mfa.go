@@ -2,13 +2,11 @@ package handlers
 
 import (
 	"errors"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
 )
-
 
 // VerifyMFA handles POST /api/v1/auth/verify-mfa
 // Completes an MFA challenge and returns a full session token.
@@ -40,7 +38,7 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
-		log.Printf("Error updating last login for user %d: %v", user.ID, err)
+		reqLogger(c).Warn("error updating last login", "user_id", user.ID, "error", err)
 	}
 
 	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
@@ -85,14 +83,14 @@ func (h *Handler) SetupTOTP(c *fiber.Ctx) error {
 
 	secret, qrDataURL, err := h.service.MFA.SetupTOTP(c.Context(), user.ID, user.Username, user.Email)
 	if err != nil {
-		log.Printf("TOTP setup error for user %d: %v", user.ID, err)
+		reqLogger(c).Error("TOTP setup error", "user_id", user.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to set up MFA"})
 	}
 
 	return c.JSON(fiber.Map{
-		"secret":   secret,
-		"qr_code":  qrDataURL,
-		"message":  "Scan the QR code with your authenticator app, then confirm with a 6-digit code.",
+		"secret":  secret,
+		"qr_code": qrDataURL,
+		"message": "Scan the QR code with your authenticator app, then confirm with a 6-digit code.",
 	})
 }
 

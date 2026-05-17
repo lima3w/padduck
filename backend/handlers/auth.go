@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -126,7 +125,7 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 
 	token, err := h.service.GenerateAPIToken(c.Context(), userID, req.TokenName, req.Scope, req.ExpiresInDays)
 	if err != nil {
-		log.Printf("Error generating token: %v", err)
+		reqLogger(c).Error("error generating token", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -156,7 +155,7 @@ func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 
 	tokens, err := h.service.ListUserTokens(c.Context(), userID)
 	if err != nil {
-		log.Printf("Error listing tokens: %v", err)
+		reqLogger(c).Error("error listing tokens", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -208,7 +207,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	result, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password, ipAddress, userAgent)
 	if err != nil {
-		log.Printf("Authentication error for user %s: %v", req.Username, err)
+		reqLogger(c).Warn("authentication failed", "username", req.Username, "error", err)
 		switch {
 		case err == services.ErrEmailNotVerified, err == services.ErrPendingApproval,
 			err == services.ErrAccountRejected, err == services.ErrAccountDisabled:
@@ -231,12 +230,12 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	// Update last login time
 	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
-		log.Printf("Error updating last login: %v", err)
+		reqLogger(c).Warn("error updating last login", "user_id", user.ID, "error", err)
 	}
 
 	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
-		log.Printf("Error creating session for user %d: %v", user.ID, err)
+		reqLogger(c).Error("error creating session", "user_id", user.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
 	}
 
@@ -279,7 +278,7 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.RevokeSession(c.Context(), userID, token); err != nil {
-		log.Printf("Error revoking session for user %d: %v", userID, err)
+		reqLogger(c).Error("error revoking session", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to logout"})
 	}
 
@@ -309,7 +308,7 @@ func (h *Handler) ListMySessions(c *fiber.Ctx) error {
 
 	sessions, err := h.service.ListUserSessions(c.Context(), userID)
 	if err != nil {
-		log.Printf("Error listing sessions for user %d: %v", userID, err)
+		reqLogger(c).Error("error listing sessions", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -341,7 +340,7 @@ func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.RevokeSessionByID(c.Context(), userID, int64(sessionID)); err != nil {
-		log.Printf("Error revoking session %d for user %d: %v", sessionID, userID, err)
+		reqLogger(c).Error("error revoking session by ID", "session_id", sessionID, "error", err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "session not found"})
 	}
 
@@ -368,7 +367,7 @@ func (h *Handler) LogoutAllDevices(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.RevokeAllSessions(c.Context(), userID); err != nil {
-		log.Printf("Error revoking all sessions for user %d: %v", userID, err)
+		reqLogger(c).Error("error revoking all sessions", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

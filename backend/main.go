@@ -176,7 +176,9 @@ func main() {
 				code = e.Code
 				msg = e.Message
 			}
-			slog.Error("request error", "method", c.Method(), "path", c.Path(), "status", code, "error", err.Error())
+			rid, _ := c.Locals("requestID").(string)
+				uid := c.Locals("userID")
+				slog.Error("request error", "method", c.Method(), "path", c.Path(), "status", code, "error", err.Error(), "request_id", rid, "user_id", uid)
 			return c.Status(code).JSON(fiber.Map{"error": msg, "code": "REQUEST_ERROR"})
 		},
 	})

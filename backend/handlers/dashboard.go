@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log/slog"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
 )
@@ -15,7 +13,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 
 	summary, err := h.service.GetDashboardSummary(c.Context())
 	if err != nil {
-		slog.Error("GetDashboardSummary failed", "error", err)
+		reqLogger(c).Error("GetDashboardSummary failed", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -30,7 +28,7 @@ func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
 
 	activities, err := h.service.GetDashboardRecentActivity(c.Context())
 	if err != nil {
-		slog.Error("GetDashboardRecentActivity failed", "error", err)
+		reqLogger(c).Error("GetDashboardRecentActivity failed", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -49,7 +47,7 @@ func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
 
 	tree, err := h.service.GetSubnetTree(c.Context(), int64(sectionID))
 	if err != nil {
-		slog.Error("GetSubnetTree failed", "error", err, "section_id", sectionID)
+		reqLogger(c).Error("GetSubnetTree failed", "error", err, "section_id", sectionID)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

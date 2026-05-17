@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strconv"
 	"strings"
 
@@ -37,7 +36,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	// Bearer tokens are API tokens only
 	user, apiToken, err := h.service.ValidateAPIToken(c.Context(), token, c.IP())
 	if err != nil {
-		log.Printf("Auth error: %v", err)
+		reqLogger(c).Error("auth error", "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Invalid or expired token")
 	}
 

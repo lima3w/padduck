@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -17,7 +16,7 @@ func (h *Handler) ListScanAgents(c *fiber.Ctx) error {
 	}
 	agents, err := h.service.Discovery.ListAgents(c.Context())
 	if err != nil {
-		log.Printf("Error listing scan agents: %v", err)
+		reqLogger(c).Error("error listing scan agents", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(agents)
@@ -157,7 +156,7 @@ func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 		for _, sid := range job.SubnetIDs {
 			subnet, err := h.service.GetSubnet(c.Context(), sid)
 			if err != nil {
-				log.Printf("AgentGetJobs: subnet %d not found for job %d: %v", sid, job.ID, err)
+				reqLogger(c).Warn("subnet not found for agent job", "subnet_id", sid, "job_id", job.ID, "error", err)
 				continue
 			}
 			r.Subnets = append(r.Subnets, agentSubnetInfo{
@@ -199,7 +198,7 @@ func (h *Handler) AgentHeartbeat(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
 	}
 	if err := h.service.Discovery.HeartbeatAgent(c.Context(), agent.ID); err != nil {
-		log.Printf("agent heartbeat error: %v", err)
+		reqLogger(c).Error("agent heartbeat error", "agent_id", agent.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(fiber.Map{"message": "ok"})

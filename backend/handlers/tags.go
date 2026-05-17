@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -43,7 +42,7 @@ func (h *Handler) ListTags(c *fiber.Ctx) error {
 
 	tags, err := h.service.ListIPTags(c.Context())
 	if err != nil {
-		log.Printf("Error listing tags: %v", err)
+		reqLogger(c).Error("error listing tags", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -72,7 +71,7 @@ func (h *Handler) CreateTag(c *fiber.Ctx) error {
 
 	tag, err := h.service.CreateIPTag(c.Context(), req.Name, req.Colour, req.Description)
 	if err != nil {
-		log.Printf("Error creating tag: %v", err)
+		reqLogger(c).Error("error creating tag", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -96,7 +95,7 @@ func (h *Handler) UpdateTag(c *fiber.Ctx) error {
 
 	tag, err := h.service.UpdateIPTag(c.Context(), int64(id), req.Name, req.Colour, req.Description)
 	if err != nil {
-		log.Printf("Error updating tag %d: %v", id, err)
+		reqLogger(c).Error("error updating tag", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -121,7 +120,7 @@ func (h *Handler) DeleteTag(c *fiber.Ctx) error {
 		if strings.Contains(errMsg, "not found") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": errMsg})
 		}
-		log.Printf("Error deleting tag %d: %v", id, err)
+		reqLogger(c).Error("error deleting tag", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

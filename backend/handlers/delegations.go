@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -42,7 +41,7 @@ func (h *Handler) ListDelegations(c *fiber.Ctx) error {
 
 	delegations, err := h.service.ListDelegations(c.Context(), int64(subnetID))
 	if err != nil {
-		log.Printf("ListDelegations error: %v", err)
+		reqLogger(c).Error("error listing delegations", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if delegations == nil {
@@ -82,7 +81,7 @@ func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
 
 	result, err := h.service.CreateDelegation(c.Context(), d)
 	if err != nil {
-		log.Printf("CreateDelegation error: %v", err)
+		reqLogger(c).Error("error creating delegation", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -126,7 +125,7 @@ func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
 
 	result, err := h.service.UpdateDelegation(c.Context(), int64(id), d)
 	if err != nil {
-		log.Printf("UpdateDelegation error: %v", err)
+		reqLogger(c).Error("error updating delegation", "id", id, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -152,7 +151,7 @@ func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteDelegation(c.Context(), int64(id)); err != nil {
-		log.Printf("DeleteDelegation error: %v", err)
+		reqLogger(c).Error("error deleting delegation", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -179,7 +178,7 @@ func (h *Handler) GetSectionTopology(c *fiber.Ctx) error {
 
 	topology, err := h.service.GetRepository().GetSectionTopology(c.Context(), int64(sectionID))
 	if err != nil {
-		log.Printf("GetSectionTopology error: %v", err)
+		reqLogger(c).Error("error getting section topology", "section_id", sectionID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

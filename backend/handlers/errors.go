@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log/slog"
-
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -33,7 +31,7 @@ func RespondError(c *fiber.Ctx, statusCode int, code ErrorCode, message string, 
 		logMessage = logMessage + ": " + details[0]
 	}
 
-	slog.Warn("api error", "status", statusCode, "code", code, "message", logMessage,
+	reqLogger(c).Warn("api error", "status", statusCode, "code", code, "message", logMessage,
 		"method", c.Method(), "path", c.Path())
 
 	detailStr := ""

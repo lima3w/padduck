@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -56,7 +55,7 @@ func (h *Handler) SubmitSubnetRequest(c *fiber.Ctx) error {
 
 	sr, err := h.service.SubmitSubnetRequest(c.Context(), currentUser.ID, req.SectionID, req.ParentSubnetID, req.RequestedPrefixLen, req.Purpose)
 	if err != nil {
-		log.Printf("Error submitting subnet request: %v", err)
+		reqLogger(c).Error("error submitting subnet request", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -79,7 +78,7 @@ func (h *Handler) ListMySubnetRequests(c *fiber.Ctx) error {
 
 	requests, err := h.service.ListMySubnetRequests(c.Context(), currentUser.ID)
 	if err != nil {
-		log.Printf("Error listing subnet requests for user %d: %v", currentUser.ID, err)
+		reqLogger(c).Error("error listing subnet requests", "user_id", currentUser.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(requests)
@@ -93,7 +92,7 @@ func (h *Handler) ListAllSubnetRequests(c *fiber.Ctx) error {
 
 	requests, err := h.service.ListAllSubnetRequests(c.Context())
 	if err != nil {
-		log.Printf("Error listing all subnet requests: %v", err)
+		reqLogger(c).Error("error listing all subnet requests", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(requests)
@@ -117,7 +116,7 @@ func (h *Handler) ApproveSubnetRequest(c *fiber.Ctx) error {
 
 	sr, err := h.service.ApproveSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
-		log.Printf("Error approving subnet request %d: %v", id, err)
+		reqLogger(c).Error("error approving subnet request", "id", id, "error", err)
 		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -156,7 +155,7 @@ func (h *Handler) RejectSubnetRequest(c *fiber.Ctx) error {
 
 	sr, err := h.service.RejectSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
-		log.Printf("Error rejecting subnet request %d: %v", id, err)
+		reqLogger(c).Error("error rejecting subnet request", "id", id, "error", err)
 		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -188,7 +187,7 @@ func (h *Handler) CancelSubnetRequest(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not cancellable") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
-		log.Printf("Error cancelling subnet request %d: %v", id, err)
+		reqLogger(c).Error("error cancelling subnet request", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -225,7 +224,7 @@ func (h *Handler) SubmitIPRequest(c *fiber.Ctx) error {
 
 	ir, err := h.service.SubmitIPRequest(c.Context(), currentUser.ID, req.SubnetID, req.RequestedIP, req.DNSName, req.Purpose)
 	if err != nil {
-		log.Printf("Error submitting IP request: %v", err)
+		reqLogger(c).Error("error submitting IP request", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -248,7 +247,7 @@ func (h *Handler) ListMyIPRequests(c *fiber.Ctx) error {
 
 	requests, err := h.service.ListMyIPRequests(c.Context(), currentUser.ID)
 	if err != nil {
-		log.Printf("Error listing IP requests for user %d: %v", currentUser.ID, err)
+		reqLogger(c).Error("error listing IP requests", "user_id", currentUser.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(requests)
@@ -262,7 +261,7 @@ func (h *Handler) ListAllIPRequests(c *fiber.Ctx) error {
 
 	requests, err := h.service.ListAllIPRequests(c.Context())
 	if err != nil {
-		log.Printf("Error listing all IP requests: %v", err)
+		reqLogger(c).Error("error listing all IP requests", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(requests)
@@ -286,7 +285,7 @@ func (h *Handler) ApproveIPRequest(c *fiber.Ctx) error {
 
 	ir, err := h.service.ApproveIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
-		log.Printf("Error approving IP request %d: %v", id, err)
+		reqLogger(c).Error("error approving IP request", "id", id, "error", err)
 		var takenErr *services.IPAlreadyTakenError
 		if errors.As(err, &takenErr) {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": takenErr.Error()})
@@ -329,7 +328,7 @@ func (h *Handler) RejectIPRequest(c *fiber.Ctx) error {
 
 	ir, err := h.service.RejectIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
-		log.Printf("Error rejecting IP request %d: %v", id, err)
+		reqLogger(c).Error("error rejecting IP request", "id", id, "error", err)
 		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -361,7 +360,7 @@ func (h *Handler) CancelIPRequest(c *fiber.Ctx) error {
 		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not cancellable") {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
-		log.Printf("Error cancelling IP request %d: %v", id, err)
+		reqLogger(c).Error("error cancelling IP request", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -396,7 +395,7 @@ func (h *Handler) ListRequestComments(c *fiber.Ctx) error {
 
 	comments, err := h.service.ListRequestComments(c.Context(), reqType, int64(id))
 	if err != nil {
-		log.Printf("Error listing comments for %s request %d: %v", reqType, id, err)
+		reqLogger(c).Error("error listing request comments", "type", reqType, "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(comments)
@@ -431,7 +430,7 @@ func (h *Handler) AddRequestComment(c *fiber.Ctx) error {
 
 	comment, err := h.service.AddRequestComment(c.Context(), reqType, int64(id), currentUser.ID, body.Body)
 	if err != nil {
-		log.Printf("Error adding comment to %s request %d: %v", reqType, id, err)
+		reqLogger(c).Error("error adding request comment", "type", reqType, "id", id, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -448,7 +447,7 @@ func (h *Handler) GetPendingRequestCount(c *fiber.Ctx) error {
 
 	subnetCount, ipCount, err := h.service.GetPendingRequestCounts(c.Context())
 	if err != nil {
-		log.Printf("Error getting pending request counts: %v", err)
+		reqLogger(c).Error("error getting pending request counts", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

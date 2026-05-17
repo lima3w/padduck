@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
@@ -45,7 +44,7 @@ func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
 
 	children, err := h.service.SplitSubnet(c.Context(), int64(id), req.NewPrefixLen)
 	if err != nil {
-		log.Printf("SplitSubnet error: %v", err)
+		reqLogger(c).Error("split subnet error", "id", id, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -79,7 +78,7 @@ func (h *Handler) MergeSubnets(c *fiber.Ctx) error {
 
 	parent, err := h.service.MergeSubnets(c.Context(), req.SubnetIDs)
 	if err != nil {
-		log.Printf("MergeSubnets error: %v", err)
+		reqLogger(c).Error("merge subnets error", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -127,7 +126,7 @@ func (h *Handler) ResizeSubnet(c *fiber.Ctx) error {
 			}
 			return c.Status(fiber.StatusConflict).JSON(resp)
 		}
-		log.Printf("ResizeSubnet error: %v", err)
+		reqLogger(c).Error("resize subnet error", "id", id, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 

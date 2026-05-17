@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
@@ -43,7 +41,7 @@ func (h *Handler) LDAPLogin(c *fiber.Ctx) error {
 
 	user, err := h.service.LDAP.Authenticate(c.Context(), req.Username, req.Password)
 	if err != nil {
-		log.Printf("LDAP authentication failed for %s: %v", req.Username, err)
+		reqLogger(c).Error("LDAP authentication failed", "username", req.Username, "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid credentials")
 	}
 
@@ -65,7 +63,7 @@ func (h *Handler) OAuth2Login(c *fiber.Ctx) error {
 	redirectBack := c.Query("redirect", "/")
 	authURL, _, err := h.service.OAuth2.GetAuthURL(c.Context(), redirectBack)
 	if err != nil {
-		log.Printf("OAuth2 GetAuthURL error: %v", err)
+		reqLogger(c).Error("OAuth2 GetAuthURL error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to build authorization URL")
 	}
 	return c.Redirect(authURL, fiber.StatusFound)
@@ -82,7 +80,7 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 
 	user, err := h.service.OAuth2.Exchange(c.Context(), code, state)
 	if err != nil {
-		log.Printf("OAuth2 exchange error: %v", err)
+		reqLogger(c).Error("OAuth2 exchange error", "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "OAuth2 authentication failed")
 	}
 
@@ -113,7 +111,7 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 func (h *Handler) SAMLMetadata(c *fiber.Ctx) error {
 	xml, err := h.service.SAML.GetSPMetadata(c.Context())
 	if err != nil {
-		log.Printf("SAML metadata error: %v", err)
+		reqLogger(c).Error("SAML metadata error", "error", err)
 		return RespondError(c, fiber.StatusServiceUnavailable, ErrServiceUnavailable, "SAML not configured")
 	}
 	c.Set("Content-Type", "application/xml")
@@ -131,7 +129,7 @@ func (h *Handler) SAMLLogin(c *fiber.Ctx) error {
 	relayState := c.Query("relay_state", "/")
 	loginURL, err := h.service.SAML.GetLoginURL(c.Context(), relayState)
 	if err != nil {
-		log.Printf("SAML GetLoginURL error: %v", err)
+		reqLogger(c).Error("SAML GetLoginURL error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to build SAML login URL")
 	}
 	return c.Redirect(loginURL, fiber.StatusFound)
@@ -149,7 +147,7 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 
 	user, err := h.service.SAML.ProcessAssertion(c.Context(), samlResponse, acsURL)
 	if err != nil {
-		log.Printf("SAML ACS error: %v", err)
+		reqLogger(c).Error("SAML ACS error", "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "SAML authentication failed")
 	}
 
@@ -266,7 +264,7 @@ func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.LDAP.SaveConfig(c.Context(), cfg); err != nil {
-		log.Printf("UpdateLDAPConfig error: %v", err)
+		reqLogger(c).Error("UpdateLDAPConfig error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to save LDAP config")
 	}
 
@@ -439,7 +437,7 @@ func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.OAuth2.SaveConfig(c.Context(), cfg); err != nil {
-		log.Printf("UpdateOAuth2Config error: %v", err)
+		reqLogger(c).Error("UpdateOAuth2Config error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to save OAuth2 config")
 	}
 
@@ -487,7 +485,7 @@ func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.SAML.SaveConfig(c.Context(), &req); err != nil {
-		log.Printf("UpdateSAMLConfig error: %v", err)
+		reqLogger(c).Error("UpdateSAMLConfig error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to save SAML config")
 	}
 
@@ -506,7 +504,7 @@ func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
 // issueSessionResponse creates a web session for user and returns the standard LoginResponse.
 func (h *Handler) issueSessionResponse(c *fiber.Ctx, user *models.User) error {
 	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
-		log.Printf("Error updating last login for user %d: %v", user.ID, err)
+		reqLogger(c).Error("error updating last login", "user_id", user.ID, "error", err)
 	}
 
 	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))

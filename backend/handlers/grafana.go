@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
 )
@@ -67,7 +65,7 @@ func (h *Handler) GrafanaQuery(c *fiber.Ctx) error {
 	for _, t := range req.Targets {
 		resp, err := h.buildGrafanaTable(c, t.Target)
 		if err != nil {
-			log.Printf("Grafana query error for target %q: %v", t.Target, err)
+			reqLogger(c).Error("Grafana query error", "target", t.Target, "error", err)
 			continue
 		}
 		responses = append(responses, resp)

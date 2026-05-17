@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"log"
-
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
 	"ipam-next/services"
@@ -41,7 +39,7 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 
 	section, err := h.service.CreateSection(c.Context(), req.Name, req.Description, createdBy)
 	if err != nil {
-		log.Printf("Error creating section: %v", err)
+		reqLogger(c).Error("error creating section", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -67,7 +65,7 @@ func (h *Handler) GetSection(c *fiber.Ctx) error {
 
 	section, err := h.service.GetSection(c.Context(), int64(id))
 	if err != nil {
-		log.Printf("Error getting section %d: %v", id, err)
+		reqLogger(c).Error("error getting section", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -94,7 +92,7 @@ func (h *Handler) ListSections(c *fiber.Ctx) error {
 		}
 		sections, total, err := h.service.ListSectionsPaginated(c.Context(), page, limit)
 		if err != nil {
-			log.Printf("Error listing sections: %v", err)
+			reqLogger(c).Error("error listing sections", "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 		}
 		if sections == nil {
@@ -110,7 +108,7 @@ func (h *Handler) ListSections(c *fiber.Ctx) error {
 
 	sections, err := h.service.ListSections(c.Context())
 	if err != nil {
-		log.Printf("Error listing sections: %v", err)
+		reqLogger(c).Error("error listing sections", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if sections == nil {
@@ -136,7 +134,7 @@ func (h *Handler) UpdateSection(c *fiber.Ctx) error {
 
 	section, err := h.service.UpdateSection(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
-		log.Printf("Error updating section %d: %v", id, err)
+		reqLogger(c).Error("error updating section", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -161,7 +159,7 @@ func (h *Handler) DeleteSection(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteSection(c.Context(), int64(id)); err != nil {
-		log.Printf("Error deleting section %d: %v", id, err)
+		reqLogger(c).Error("error deleting section", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
