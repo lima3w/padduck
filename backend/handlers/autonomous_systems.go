@@ -40,12 +40,12 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2ASRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid ID"})
-	}
-	if err := h.permCheck(c, services.PermV2ASRead); err != nil {
-		return nil
 	}
 	item, err := h.service.GetAutonomousSystem(c.Context(), int64(id))
 	if err != nil {

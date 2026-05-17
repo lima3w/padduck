@@ -81,12 +81,12 @@ func (h *Handler) CreateTag(c *fiber.Ctx) error {
 
 // UpdateTag handles PUT /api/v1/tags/:id
 func (h *Handler) UpdateTag(c *fiber.Ctx) error {
+	if err := requireAdmin(c); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid tag ID"})
-	}
-	if err := requireAdmin(c); err != nil {
-		return nil
 	}
 
 	req := new(UpdateTagRequest)
@@ -105,12 +105,12 @@ func (h *Handler) UpdateTag(c *fiber.Ctx) error {
 
 // DeleteTag handles DELETE /api/v1/tags/:id
 func (h *Handler) DeleteTag(c *fiber.Ctx) error {
+	if err := requireAdmin(c); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid tag ID"})
-	}
-	if err := requireAdmin(c); err != nil {
-		return nil
 	}
 
 	if err := h.service.DeleteIPTag(c.Context(), int64(id)); err != nil {

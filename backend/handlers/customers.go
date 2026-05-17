@@ -38,12 +38,12 @@ func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetCustomer(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2CustomerRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid customer ID"})
-	}
-	if err := h.permCheck(c, services.PermV2CustomerRead); err != nil {
-		return nil
 	}
 	customer, err := h.service.GetCustomer(c.Context(), int64(id))
 	if err != nil {

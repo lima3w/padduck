@@ -66,14 +66,15 @@ func TestGetVLAN_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetVLAN_BadID_Returns400(t *testing.T) {
+func TestGetVLAN_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/vlans/:id", h.GetVLAN)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -231,14 +232,15 @@ func TestGetVLANSubnets_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetVLANSubnets_BadID_Returns400(t *testing.T) {
+func TestGetVLANSubnets_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/vlans/:id/subnets", h.GetVLANSubnets)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/vlans/abc/subnets", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -379,14 +381,15 @@ func TestGetVLANDomain_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetVLANDomain_BadID_Returns400(t *testing.T) {
+func TestGetVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/vlan-domains/:id", h.GetVLANDomain)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/vlan-domains/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -443,14 +446,15 @@ func TestUpdateVLANDomain_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestUpdateVLANDomain_BadID_Returns400(t *testing.T) {
+func TestUpdateVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Put("/vlan-domains/:id", h.UpdateVLANDomain)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("PUT", "/vlan-domains/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -480,14 +484,15 @@ func TestDeleteVLANDomain_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestDeleteVLANDomain_BadID_Returns400(t *testing.T) {
+func TestDeleteVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Delete("/vlan-domains/:id", h.DeleteVLANDomain)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlan-domains/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -544,14 +549,15 @@ func TestGetVLANGroup_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetVLANGroup_BadID_Returns400(t *testing.T) {
+func TestGetVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/vlan-groups/:id", h.GetVLANGroup)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/vlan-groups/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -608,14 +614,15 @@ func TestUpdateVLANGroup_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestUpdateVLANGroup_BadID_Returns400(t *testing.T) {
+func TestUpdateVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Put("/vlan-groups/:id", h.UpdateVLANGroup)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("PUT", "/vlan-groups/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
@@ -645,12 +652,13 @@ func TestDeleteVLANGroup_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestDeleteVLANGroup_BadID_Returns400(t *testing.T) {
+func TestDeleteVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Delete("/vlan-groups/:id", h.DeleteVLANGroup)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/vlan-groups/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }

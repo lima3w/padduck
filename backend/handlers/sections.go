@@ -55,12 +55,12 @@ func (h *Handler) CreateSection(c *fiber.Ctx) error {
 
 // GetSection handles GET /api/v1/sections/:id
 func (h *Handler) GetSection(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2SectionRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
-	}
-	if err := h.permCheck(c, services.PermV2SectionRead); err != nil {
-		return nil
 	}
 
 	section, err := h.service.GetSection(c.Context(), int64(id))

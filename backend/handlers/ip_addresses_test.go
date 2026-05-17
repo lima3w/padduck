@@ -112,14 +112,15 @@ func TestGetIPAddress_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetIPAddress_BadID_Returns400(t *testing.T) {
+func TestGetIPAddress_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/ip-addresses/:id", h.GetIPAddress)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/ip-addresses/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------

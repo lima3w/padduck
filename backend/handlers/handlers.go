@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"log"
 	"time"
@@ -27,6 +28,13 @@ func NewHandler(service *services.Service, isProduction bool) *Handler {
 		tokenLimiter: newTokenRateLimiter(),
 		isProduction: isProduction,
 	}
+}
+
+// StartTokenLimiterCleanup starts the background cleanup goroutine for the
+// token rate limiter. It should be called once after NewHandler, passing the
+// application context so that the goroutine stops on shutdown.
+func (h *Handler) StartTokenLimiterCleanup(ctx context.Context) {
+	h.tokenLimiter.StartCleanup(ctx)
 }
 
 // permCheck verifies the authenticated user has the given permission.
