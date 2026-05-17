@@ -283,3 +283,91 @@ func TestCreateDeviceInterface_NoPermission_Returns403(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
+
+// ---------------------------------------------------------------------------
+// UpdateDeviceInterface — PUT /api/v1/devices/:id/interfaces/:if_id
+// ---------------------------------------------------------------------------
+
+func TestUpdateDeviceInterface_NoUser_Returns401(t *testing.T) {
+	h := &Handler{}
+	app := deviceApp(h, "PUT", "/devices/:id/interfaces/:if_id", h.UpdateDeviceInterface)
+	req := httptest.NewRequest("PUT", "/devices/1/interfaces/2", strings.NewReader(`{"name":"eth0"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestUpdateDeviceInterface_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{}
+	app := deviceAppAs(h, "PUT", "/devices/:id/interfaces/:if_id", h.UpdateDeviceInterface, permUser())
+	req := httptest.NewRequest("PUT", "/devices/1/interfaces/2", strings.NewReader(`{"name":"eth0"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// DeleteDeviceInterface — DELETE /api/v1/devices/:id/interfaces/:if_id
+// ---------------------------------------------------------------------------
+
+func TestDeleteDeviceInterface_NoUser_Returns401(t *testing.T) {
+	h := &Handler{}
+	app := deviceApp(h, "DELETE", "/devices/:id/interfaces/:if_id", h.DeleteDeviceInterface)
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/interfaces/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestDeleteDeviceInterface_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{}
+	app := deviceAppAs(h, "DELETE", "/devices/:id/interfaces/:if_id", h.DeleteDeviceInterface, permUser())
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/interfaces/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// AssociateIPToDevice — POST /api/v1/devices/:id/ip-addresses/:ip_id/associate
+// ---------------------------------------------------------------------------
+
+func TestAssociateIPToDevice_NoUser_Returns401(t *testing.T) {
+	h := &Handler{}
+	app := deviceApp(h, "POST", "/devices/:id/ip-addresses/:ip_id/associate", h.AssociateIPToDevice)
+	req := httptest.NewRequest("POST", "/devices/1/ip-addresses/2/associate", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestAssociateIPToDevice_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{}
+	app := deviceAppAs(h, "POST", "/devices/:id/ip-addresses/:ip_id/associate", h.AssociateIPToDevice, permUser())
+	req := httptest.NewRequest("POST", "/devices/1/ip-addresses/2/associate", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// UnlinkIPFromDevice — DELETE /api/v1/devices/:id/ip-addresses/:ip_id
+// ---------------------------------------------------------------------------
+
+func TestUnlinkIPFromDevice_NoUser_Returns401(t *testing.T) {
+	h := &Handler{}
+	app := deviceApp(h, "DELETE", "/devices/:id/ip-addresses/:ip_id", h.UnlinkIPFromDevice)
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/ip-addresses/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestUnlinkIPFromDevice_NoPermission_Returns403(t *testing.T) {
+	h := &Handler{}
+	app := deviceAppAs(h, "DELETE", "/devices/:id/ip-addresses/:ip_id", h.UnlinkIPFromDevice, permUser())
+	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/ip-addresses/2", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
