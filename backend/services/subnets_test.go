@@ -49,11 +49,23 @@ func TestValidateCIDR(t *testing.T) {
 			errorContains: "invalid prefix length",
 		},
 		{
-			name:          "invalid prefix length 33",
+			name:          "invalid prefix length 129",
 			address:       "192.168.0.0",
-			prefixLength:  33,
+			prefixLength:  129,
 			wantErr:       true,
 			errorContains: "invalid prefix length",
+		},
+		{
+			name:         "valid IPv6 prefix length 128",
+			address:      "2001:db8::",
+			prefixLength: 128,
+			wantErr:      false,
+		},
+		{
+			name:         "valid IPv6 prefix length 64",
+			address:      "2001:db8::",
+			prefixLength: 64,
+			wantErr:      false,
 		},
 		// Invalid IP address
 		{
