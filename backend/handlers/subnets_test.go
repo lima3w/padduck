@@ -195,3 +195,30 @@ func TestDeleteSubnet_BadID_Returns400(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
+
+// ---------------------------------------------------------------------------
+// GetOverlapReport — GET /api/v1/admin/subnets/overlap-report
+// ---------------------------------------------------------------------------
+
+func TestGetOverlapReport_NoUser_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/admin/subnets/overlap-report", h.GetOverlapReport)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/admin/subnets/overlap-report", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGetOverlapReport_NonAdmin_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/admin/subnets/overlap-report", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivSubnet)
+		return h.GetOverlapReport(c)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/admin/subnets/overlap-report", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}

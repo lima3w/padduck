@@ -180,3 +180,19 @@ func TestDeleteSection_BadID_Returns400(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
+
+// ---------------------------------------------------------------------------
+// CreateSection body validation — body parsing precedes permCheck
+// ---------------------------------------------------------------------------
+
+func TestCreateSection_BadBody_Returns400(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Post("/sections", h.CreateSection)
+
+	req := httptest.NewRequest("POST", "/sections", strings.NewReader(`not valid json`))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+}
