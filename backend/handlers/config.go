@@ -18,10 +18,15 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to load config"})
 	}
 
+	sensitiveKeys := map[string]bool{
+		"smtp_password":    true,
+		"pdns_api_key":     true,
+		"technitium_token": true,
+	}
+
 	result := make(map[string]string)
 	for _, cfg := range configs {
-		// Redact SMTP password in response
-		if cfg.Key == "smtp_password" {
+		if sensitiveKeys[cfg.Key] {
 			if cfg.Value != "" {
 				result[cfg.Key] = "********"
 			} else {
@@ -75,15 +80,28 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"scanner_resolve_hostnames":   true,
 	}
 
+	sensitiveConfigKeys := map[string]bool{
+		"smtp_password":    true,
+		"pdns_api_key":     true,
+		"technitium_token": true,
+	}
+
+	// Validate all keys first (before writing anything) to ensure atomicity.
+	toWrite := make(map[string]string, len(updates))
 	for key, value := range updates {
 		if !allowed[key] {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unknown config key: " + key})
 		}
-		// Don't overwrite password if placeholder sent
-		if key == "smtp_password" && value == "********" {
+		// Don't overwrite sensitive fields if the redaction placeholder was sent back
+		if sensitiveConfigKeys[key] && value == "********" {
 			continue
 		}
-		if err := h.service.Config.Set(key, value); err != nil {
+		toWrite[key] = value
+	}
+
+	// Apply all validated changes atomically.
+	if len(toWrite) > 0 {
+		if err := h.service.Config.SetMultiple(toWrite); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update config"})
 		}
 	}
@@ -91,7 +109,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	// Redact sensitive values before logging
 	loggableUpdates := make(map[string]string, len(updates))
 	for k, v := range updates {
-		if k == "smtp_password" {
+		if sensitiveConfigKeys[k] {
 			loggableUpdates[k] = "***"
 		} else {
 			loggableUpdates[k] = v

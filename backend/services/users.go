@@ -153,6 +153,14 @@ func (s *Service) BulkActivateUsers(ctx context.Context, userIDs []int64) (int64
 
 // BulkDeleteUsers deletes multiple users
 func (s *Service) BulkDeleteUsers(ctx context.Context, userIDs []int64) (int64, error) {
+	// Ensure at least one admin would remain after deletion
+	remainingAdmins, err := s.repository.CountAdminsExcluding(ctx, userIDs)
+	if err != nil {
+		return 0, fmt.Errorf("failed to check admin count: %w", err)
+	}
+	if remainingAdmins == 0 {
+		return 0, fmt.Errorf("cannot delete all admins")
+	}
 	return s.repository.BulkDeleteUsers(ctx, userIDs)
 }
 

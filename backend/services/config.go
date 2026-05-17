@@ -34,6 +34,14 @@ func (s *ConfigService) Set(key, value string) error {
 	return s.repository.SetConfig(context.Background(), key, value)
 }
 
+// SetMultiple applies all key-value pairs atomically. If any write fails, none are persisted.
+func (s *ConfigService) SetMultiple(pairs map[string]string) error {
+	if s.repository == nil {
+		return fmt.Errorf("config: no repository")
+	}
+	return s.repository.SetConfigMultiple(context.Background(), pairs)
+}
+
 func (s *ConfigService) List() ([]*models.Config, error) {
 	if s.repository == nil {
 		return nil, fmt.Errorf("config: no repository")

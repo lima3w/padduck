@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"ipam-next/models"
 )
@@ -42,4 +43,23 @@ func (r *Repository) SetConfig(ctx context.Context, key, value string) error {
 	          ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP`
 	_, err := r.db.Exec(ctx, query, key, value)
 	return err
+}
+
+// SetConfigMultiple applies all key-value pairs atomically within a single transaction.
+// If any write fails the entire update is rolled back.
+func (r *Repository) SetConfigMultiple(ctx context.Context, pairs map[string]string) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("config: begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	query := `INSERT INTO configs (key, value) VALUES ($1, $2)
+	          ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP`
+	for key, value := range pairs {
+		if _, err := tx.Exec(ctx, query, key, value); err != nil {
+			return fmt.Errorf("config: set %q: %w", key, err)
+		}
+	}
+	return tx.Commit(ctx)
 }

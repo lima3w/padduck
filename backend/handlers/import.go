@@ -9,6 +9,8 @@ import (
 // CSV import (#225 #226 #227)
 // ─────────────────────────────────────────────────────────────────────────────
 
+const maxImportFileSize = 5 * 1024 * 1024 // 5 MB
+
 // ImportSubnetsCSV handles POST /api/v1/admin/import/subnets
 // Accepts multipart/form-data with a "file" field containing a CSV.
 func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
@@ -19,6 +21,9 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 	fh, err := c.FormFile("file")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field is required"})
+	}
+	if fh.Size > maxImportFileSize {
+		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
 	}
 
 	f, err := fh.Open()
@@ -45,6 +50,9 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 	fh, err := c.FormFile("file")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field is required"})
+	}
+	if fh.Size > maxImportFileSize {
+		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
 	}
 
 	f, err := fh.Open()
@@ -77,6 +85,9 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 	fh, err := c.FormFile("file")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field is required"})
+	}
+	if fh.Size > maxImportFileSize {
+		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
 	}
 
 	f, err := fh.Open()
