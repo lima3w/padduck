@@ -105,6 +105,12 @@ const (
 	// Admin-only operation permissions
 	PermV2AdminRead  = "auth:admin:read"
 	PermV2AdminWrite = "auth:admin:write"
+
+	// Customer / tenant management permissions (v1.14.0 #234)
+	PermV2CustomerList   = "ipam:customer:list"
+	PermV2CustomerRead   = "ipam:customer:read"
+	PermV2CustomerWrite  = "ipam:customer:write"
+	PermV2CustomerDelete = "ipam:customer:delete"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -122,6 +128,7 @@ var AllPermissions = []string{
 	PermV2VLANDomainList, PermV2VLANDomainRead, PermV2VLANDomainWrite, PermV2VLANDomainDelete,
 	PermV2VLANGroupList, PermV2VLANGroupRead, PermV2VLANGroupWrite, PermV2VLANGroupDelete,
 	PermV2AdminRead, PermV2AdminWrite,
+	PermV2CustomerList, PermV2CustomerRead, PermV2CustomerWrite, PermV2CustomerDelete,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
