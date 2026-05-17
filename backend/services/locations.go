@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"ipam-next/models"
 	"ipam-next/repository"
@@ -30,7 +31,14 @@ func (s *Service) GetLocation(ctx context.Context, id int64) (*models.Location, 
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid location ID")
 	}
-	return s.repository.GetLocationByID(ctx, id)
+	loc, err := s.repository.GetLocationByID(ctx, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("location %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return loc, nil
 }
 
 // ListLocations returns all locations.
@@ -49,7 +57,14 @@ func (s *Service) UpdateLocation(ctx context.Context, id int64, req *LocationUpd
 	if req.Type == "" {
 		req.Type = "other"
 	}
-	return s.repository.UpdateLocation(ctx, id, req)
+	loc, err := s.repository.UpdateLocation(ctx, id, req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("location %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return loc, nil
 }
 
 // DeleteLocation deletes a location by ID.
@@ -57,7 +72,13 @@ func (s *Service) DeleteLocation(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid location ID")
 	}
-	return s.repository.DeleteLocation(ctx, id)
+	if err := s.repository.DeleteLocation(ctx, id); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("location %d: %w", id, ErrNotFound)
+		}
+		return err
+	}
+	return nil
 }
 
 // GetLocationTree returns all locations assembled into a nested tree.

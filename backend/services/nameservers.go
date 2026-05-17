@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"ipam-next/models"
 	"ipam-next/repository"
@@ -30,7 +31,14 @@ func (s *Service) GetNameserver(ctx context.Context, id int64) (*models.Nameserv
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid nameserver ID")
 	}
-	return s.repository.GetNameserverByID(ctx, id)
+	ns, err := s.repository.GetNameserverByID(ctx, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("nameserver %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return ns, nil
 }
 
 // ListNameservers returns all nameservers.
@@ -56,7 +64,14 @@ func (s *Service) UpdateNameserver(ctx context.Context, id int64, req *Nameserve
 	if req.Server1 == "" {
 		return nil, fmt.Errorf("server1 is required")
 	}
-	return s.repository.UpdateNameserver(ctx, id, req)
+	ns, err := s.repository.UpdateNameserver(ctx, id, req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("nameserver %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return ns, nil
 }
 
 // DeleteNameserver deletes a nameserver by ID.
@@ -64,5 +79,11 @@ func (s *Service) DeleteNameserver(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid nameserver ID")
 	}
-	return s.repository.DeleteNameserver(ctx, id)
+	if err := s.repository.DeleteNameserver(ctx, id); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("nameserver %d: %w", id, ErrNotFound)
+		}
+		return err
+	}
+	return nil
 }

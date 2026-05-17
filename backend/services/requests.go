@@ -2,11 +2,18 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
 
 	"ipam-next/models"
+)
+
+var (
+	ErrNotFound       = errors.New("not found")
+	ErrNotPending     = errors.New("request is not in pending state")
+	ErrNotCancellable = errors.New("request cannot be cancelled")
 )
 
 // ---- Subnet Requests ----
@@ -63,10 +70,10 @@ func (s *Service) ApproveSubnetRequest(ctx context.Context, requestID, reviewerI
 	// Fetch the request
 	sr, err := s.repository.GetSubnetRequestByID(ctx, requestID)
 	if err != nil {
-		return nil, fmt.Errorf("subnet request not found")
+		return nil, fmt.Errorf("subnet request %d: %w", requestID, ErrNotFound)
 	}
 	if sr.Status != "pending" {
-		return nil, fmt.Errorf("subnet request is not pending")
+		return nil, fmt.Errorf("subnet request %d: %w", requestID, ErrNotPending)
 	}
 
 	// Create the subnet — we need a network address; auto-allocate the first free block in the section
@@ -106,6 +113,13 @@ func (s *Service) RejectSubnetRequest(ctx context.Context, requestID, reviewerID
 
 	rejected, err := s.repository.RejectSubnetRequest(ctx, requestID, reviewerID, reviewerNote)
 	if err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "not found") {
+			return nil, fmt.Errorf("subnet request %d: %w", requestID, ErrNotFound)
+		}
+		if strings.Contains(msg, "not pending") {
+			return nil, fmt.Errorf("subnet request %d: %w", requestID, ErrNotPending)
+		}
 		return nil, err
 	}
 
@@ -123,7 +137,17 @@ func (s *Service) CancelSubnetRequest(ctx context.Context, requestID, requesterI
 	if requesterID <= 0 {
 		return fmt.Errorf("invalid requester ID")
 	}
-	return s.repository.CancelSubnetRequest(ctx, requestID, requesterID)
+	if err := s.repository.CancelSubnetRequest(ctx, requestID, requesterID); err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "not found") {
+			return fmt.Errorf("subnet request %d: %w", requestID, ErrNotFound)
+		}
+		if strings.Contains(msg, "not cancellable") {
+			return fmt.Errorf("subnet request %d: %w", requestID, ErrNotCancellable)
+		}
+		return err
+	}
+	return nil
 }
 
 // findFreeSubnetBlock finds the first network address that fits a /<prefixLen> block
@@ -139,7 +163,7 @@ func (s *Service) findFreeSubnetBlock(ctx context.Context, sectionID int64, pare
 	if parentSubnetID != nil {
 		parent, err := s.repository.GetSubnetByID(ctx, *parentSubnetID)
 		if err != nil {
-			return "", fmt.Errorf("parent subnet not found")
+			return "", fmt.Errorf("parent subnet %d: %w", *parentSubnetID, ErrNotFound)
 		}
 		return findFirstFreeBlock(parent.NetworkAddress, parent.PrefixLength, prefixLen, existing)
 	}
@@ -199,10 +223,10 @@ func (s *Service) ApproveIPRequest(ctx context.Context, requestID, reviewerID in
 	// Fetch the request
 	ir, err := s.repository.GetIPRequestByID(ctx, requestID)
 	if err != nil {
-		return nil, fmt.Errorf("ip request not found")
+		return nil, fmt.Errorf("ip request %d: %w", requestID, ErrNotFound)
 	}
 	if ir.Status != "pending" {
-		return nil, fmt.Errorf("ip request is not pending")
+		return nil, fmt.Errorf("ip request %d: %w", requestID, ErrNotPending)
 	}
 
 	var ipAddr *models.IPAddress
@@ -270,6 +294,13 @@ func (s *Service) RejectIPRequest(ctx context.Context, requestID, reviewerID int
 
 	rejected, err := s.repository.RejectIPRequest(ctx, requestID, reviewerID, reviewerNote)
 	if err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "not found") {
+			return nil, fmt.Errorf("ip request %d: %w", requestID, ErrNotFound)
+		}
+		if strings.Contains(msg, "not pending") {
+			return nil, fmt.Errorf("ip request %d: %w", requestID, ErrNotPending)
+		}
 		return nil, err
 	}
 
@@ -287,7 +318,17 @@ func (s *Service) CancelIPRequest(ctx context.Context, requestID, requesterID in
 	if requesterID <= 0 {
 		return fmt.Errorf("invalid requester ID")
 	}
-	return s.repository.CancelIPRequest(ctx, requestID, requesterID)
+	if err := s.repository.CancelIPRequest(ctx, requestID, requesterID); err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "not found") {
+			return fmt.Errorf("ip request %d: %w", requestID, ErrNotFound)
+		}
+		if strings.Contains(msg, "not cancellable") {
+			return fmt.Errorf("ip request %d: %w", requestID, ErrNotCancellable)
+		}
+		return err
+	}
+	return nil
 }
 
 // GetRequestOwner returns the user ID of the requester who owns the given request.

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -66,7 +67,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 	}
 	loc, err := h.service.GetLocation(c.Context(), int64(id))
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error getting location", "id", id, "error", err)
@@ -94,7 +95,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 	}
 	loc, err := h.service.UpdateLocation(c.Context(), int64(id), req)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error updating location", "id", id, "error", err)
@@ -113,7 +114,7 @@ func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid location ID"})
 	}
 	if err := h.service.DeleteLocation(c.Context(), int64(id)); err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error deleting location", "id", id, "error", err)

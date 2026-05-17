@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -113,12 +114,11 @@ func (h *Handler) DeleteTag(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteIPTag(c.Context(), int64(id)); err != nil {
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "system tag") || strings.Contains(errMsg, "in use") {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": errMsg})
+		if errors.Is(err, services.ErrSystemTag) || errors.Is(err, services.ErrTagInUse) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": err.Error()})
 		}
-		if strings.Contains(errMsg, "not found") {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": errMsg})
+		if errors.Is(err, services.ErrNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		reqLogger(c).Error("error deleting tag", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
