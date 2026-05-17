@@ -27,11 +27,11 @@ const (
 	NotifSessionRevoked  = "session-revoked"
 
 	// Request workflow notifications (#205)
-	NotifRequestSubmitted     = "request-submitted"
+	NotifRequestSubmitted      = "request-submitted"
 	NotifRequestApprovedSubnet = "request-approved-subnet"
-	NotifRequestApprovedIP    = "request-approved-ip"
-	NotifRequestRejected      = "request-rejected"
-	NotifRequestComment       = "request-comment"
+	NotifRequestApprovedIP     = "request-approved-ip"
+	NotifRequestRejected       = "request-rejected"
+	NotifRequestComment        = "request-comment"
 )
 
 // criticalNotifications lists templates that bypass preferences and rate limits.
@@ -291,8 +291,25 @@ IPAM System`,
 
 // NotificationService queues and delivers email notifications to users.
 type NotificationService struct {
-	repo  *repository.Repository
-	email *EmailService
+	repo  notificationRepository
+	email notificationEmail
+}
+
+type notificationRepository interface {
+	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+	GetNotificationPreferences(ctx context.Context, userID int64) (*models.NotificationPreferences, error)
+	CountRecentNotificationsSent(ctx context.Context, userID int64, since time.Time) (int64, error)
+	CreateNotificationQueueItem(ctx context.Context, userID int64, email, template, dataJSON string) (*models.NotificationQueue, error)
+	GetPendingNotifications(ctx context.Context, limit int) ([]*models.NotificationQueue, error)
+	MarkNotificationSent(ctx context.Context, id int64) error
+	MarkNotificationFailed(ctx context.Context, id int64, errMsg string, retryCount int, nextRetryAt *time.Time) error
+	CleanupOldNotifications(ctx context.Context) error
+}
+
+type notificationEmail interface {
+	IsSMTPConfigured() bool
+	AppURL() string
+	Send(to, subject, body string) error
 }
 
 // NewNotificationService creates a new NotificationService.
@@ -356,7 +373,7 @@ func preferenceEnabled(prefs *models.NotificationPreferences, tmplName string) b
 // Queue enqueues a notification for the given user. It respects notification
 // preferences and a per-hour rate limit unless the template is critical.
 func (n *NotificationService) Queue(ctx context.Context, userID int64, tmplName string, data map[string]interface{}) error {
-	if !n.email.configSvc.IsSMTPConfigured() {
+	if !n.email.IsSMTPConfigured() {
 		return nil
 	}
 	// 1. Fetch user for email and username.
@@ -369,12 +386,8 @@ func (n *NotificationService) Queue(ctx context.Context, userID int64, tmplName 
 	if _, ok := data["Username"]; !ok {
 		data["Username"] = user.Username
 	}
-	appURL, _ := n.email.configSvc.Get("app_url")
-	if appURL == "" {
-		appURL = "http://localhost:3000"
-	}
 	if _, ok := data["AppURL"]; !ok {
-		data["AppURL"] = appURL
+		data["AppURL"] = n.email.AppURL()
 	}
 
 	critical := criticalNotifications[tmplName]
@@ -431,7 +444,7 @@ func retryDelay(retryCount int) *time.Duration {
 
 // ProcessQueue fetches pending notifications and attempts to deliver them.
 func (n *NotificationService) ProcessQueue(ctx context.Context) {
-	if !n.email.configSvc.IsSMTPConfigured() {
+	if !n.email.IsSMTPConfigured() {
 		return
 	}
 	items, err := n.repo.GetPendingNotifications(ctx, 50)
@@ -494,7 +507,7 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 // StartWorker launches a background goroutine that calls ProcessQueue every 30
 // seconds until ctx is cancelled.
 func (n *NotificationService) StartWorker(ctx context.Context) {
-	if !n.email.configSvc.IsSMTPConfigured() {
+	if !n.email.IsSMTPConfigured() {
 		log.Printf("[notification] SMTP not configured — email delivery disabled")
 	}
 	go func() {
