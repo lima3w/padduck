@@ -1,0 +1,570 @@
+openapi: "3.0.3"
+info:
+  title: IPAM Next API
+  version: "1.14.0"
+  description: IP Address Management API
+
+servers:
+  - url: /api/v1
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  database:
+                    type: string
+
+  /api/openapi.yaml:
+    get:
+      summary: OpenAPI spec
+      security: []
+      responses:
+        "200":
+          description: OpenAPI YAML
+
+  /api/grafana/:
+    get:
+      summary: Grafana SimpleJSON health check
+      responses:
+        "200":
+          description: ok
+
+  /api/grafana/search:
+    post:
+      summary: Grafana metric search
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: string
+      responses:
+        "200":
+          description: List of available metric names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/grafana/query:
+    post:
+      summary: Grafana metric query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      target:
+                        type: string
+                      type:
+                        type: string
+      responses:
+        "200":
+          description: Table data for requested metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /auth/login:
+    post:
+      summary: Login
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+        "401":
+          description: Invalid credentials
+
+  /auth/register:
+    post:
+      summary: Register new user
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, email]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+      responses:
+        "201":
+          description: User created
+        "400":
+          description: Bad request
+
+  /auth/me:
+    get:
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user info
+
+  /sections:
+    get:
+      summary: List sections
+      responses:
+        "200":
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+    post:
+      summary: Create section
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Section created
+
+  /sections/{id}:
+    get:
+      summary: Get section
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Section
+    put:
+      summary: Update section
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated section
+    delete:
+      summary: Delete section
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /sections/{sectionID}/subnets:
+    get:
+      summary: List subnets in section
+      parameters:
+        - name: sectionID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of subnets
+    post:
+      summary: Create subnet in section
+      parameters:
+        - name: sectionID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cidr]
+              properties:
+                cidr:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Subnet created
+
+  /subnets/{id}:
+    get:
+      summary: Get subnet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subnet
+    put:
+      summary: Update subnet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated subnet
+    delete:
+      summary: Delete subnet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /subnets/{subnetID}/ip-addresses:
+    get:
+      summary: List IP addresses in subnet
+      parameters:
+        - name: subnetID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of IP addresses
+    post:
+      summary: Create IP address
+      parameters:
+        - name: subnetID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip_address]
+              properties:
+                ip_address:
+                  type: string
+                hostname:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+      responses:
+        "201":
+          description: IP address created
+
+  /subnets/{subnetID}/ip-addresses/allocate:
+    post:
+      summary: Auto-allocate next available IP
+      parameters:
+        - name: subnetID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: IP address allocated
+
+  /ip-addresses/{id}:
+    get:
+      summary: Get IP address
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: IP address
+    put:
+      summary: Update IP address metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete IP address
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /vrfs:
+    get:
+      summary: List VRFs
+      responses:
+        "200":
+          description: List of VRFs
+    post:
+      summary: Create VRF
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                rd:
+                  type: string
+      responses:
+        "201":
+          description: VRF created
+
+  /vlans:
+    get:
+      summary: List VLANs
+      responses:
+        "200":
+          description: List of VLANs
+    post:
+      summary: Create VLAN
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vlan_id, name]
+              properties:
+                vlan_id:
+                  type: integer
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: VLAN created
+
+  /customers:
+    get:
+      summary: List customers
+      responses:
+        "200":
+          description: List of customers
+    post:
+      summary: Create customer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Customer created
+
+  /customers/{id}:
+    get:
+      summary: Get customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Customer
+    put:
+      summary: Update customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated customer
+    delete:
+      summary: Delete customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /autonomous-systems:
+    get:
+      summary: List BGP autonomous systems
+      responses:
+        "200":
+          description: List of autonomous systems
+    post:
+      summary: Create autonomous system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [asn, name]
+              properties:
+                asn:
+                  type: integer
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Autonomous system created
+
+  /autonomous-systems/{id}:
+    get:
+      summary: Get autonomous system
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Autonomous system
+    put:
+      summary: Update autonomous system
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Updated
+    delete:
+      summary: Delete autonomous system
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
