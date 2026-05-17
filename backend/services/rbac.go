@@ -260,6 +260,8 @@ func legacyRoleHasPermission(role, permission string) bool {
 		adminOnly := map[string]bool{
 			PermV2UserWrite: true, PermV2AuditRead: true, PermV2DeviceAdmin: true,
 			PermV2SubnetRequestReview: true, PermV2AdminRead: true, PermV2AdminWrite: true,
+			PermV2CustomerWrite: true, PermV2CustomerDelete: true,
+			PermV2ASWrite: true, PermV2ASDelete: true,
 		}
 		return !adminOnly[permission]
 	case "viewer":
@@ -270,7 +272,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2VRFList: true, PermV2VRFRead: true,
 			PermV2VLANList: true, PermV2VLANRead: true,
 			PermV2UserList: true, PermV2UserRead: true,
-			PermV2DeviceRead: true,
+			PermV2DeviceRead:   true,
 			PermV2LocationList: true, PermV2LocationRead: true,
 			PermV2NameserverList: true, PermV2NameserverRead: true,
 			PermV2VLANDomainList: true, PermV2VLANDomainRead: true,

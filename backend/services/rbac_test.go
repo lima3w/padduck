@@ -245,8 +245,8 @@ func TestIsValidRole(t *testing.T) {
 		{RoleUser, true},
 		{RoleViewer, true},
 		{"superuser", false},
-		{"Admin", false},   // case-sensitive
-		{"USER", false},    // case-sensitive
+		{"Admin", false}, // case-sensitive
+		{"USER", false},  // case-sensitive
 		{"", false},
 		{"root", false},
 		{"moderator", false},
@@ -544,5 +544,33 @@ func TestV2PermissionConstants_Prefixed(t *testing.T) {
 			strings.HasPrefix(p, "ipam:") || strings.HasPrefix(p, "auth:") || strings.HasPrefix(p, "devices:"),
 			"permission %q should start with 'ipam:', 'auth:', or 'devices:'", p,
 		)
+	}
+}
+
+func TestLegacyUserRole_DoesNotGrantCustomerOrASMutation(t *testing.T) {
+	denied := []string{
+		PermV2CustomerWrite,
+		PermV2CustomerDelete,
+		PermV2ASWrite,
+		PermV2ASDelete,
+	}
+	for _, perm := range denied {
+		t.Run(perm, func(t *testing.T) {
+			assert.False(t, legacyRoleHasPermission(RoleUser, perm))
+		})
+	}
+}
+
+func TestLegacyUserRole_GrantsCustomerAndASRead(t *testing.T) {
+	granted := []string{
+		PermV2CustomerList,
+		PermV2CustomerRead,
+		PermV2ASList,
+		PermV2ASRead,
+	}
+	for _, perm := range granted {
+		t.Run(perm, func(t *testing.T) {
+			assert.True(t, legacyRoleHasPermission(RoleUser, perm))
+		})
 	}
 }
