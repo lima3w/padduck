@@ -52,6 +52,13 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Add logging middleware
 	app.Use(loggingMiddleware)
 
+	// Grafana SimpleJSON datasource routes (v1.14.0 #236) — Bearer token auth, no CSRF
+	grafana := app.Group("/api/grafana")
+	grafana.Use(h.AuthMiddleware)
+	grafana.Get("/", h.GrafanaHealth)
+	grafana.Post("/search", h.GrafanaSearch)
+	grafana.Post("/query", h.GrafanaQuery)
+
 	// API v1 routes
 	api := app.Group("/api/v1")
 

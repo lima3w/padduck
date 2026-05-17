@@ -333,6 +333,16 @@ export default function Sidebar() {
               Integrations
             </NavLink>
             <NavLink
+              to="/admin/grafana"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Grafana
+            </NavLink>
+            <NavLink
               to="/admin/reports/scheduled"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${

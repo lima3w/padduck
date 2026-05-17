@@ -47,6 +47,7 @@ const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
 const AdminSamlPage = lazy(() => import('./pages/AdminSamlPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const AdminIntegrationsPage = lazy(() => import('./pages/AdminIntegrationsPage'))
+const AdminGrafanaPage = lazy(() => import('./pages/AdminGrafanaPage'))
 const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const AutonomousSystemsPage = lazy(() => import('./pages/AutonomousSystemsPage'))
 
@@ -134,6 +135,7 @@ export default function App() {
             <Route path="admin/auth/oauth2" element={<AdminOAuth2Page />} />
             <Route path="admin/auth/saml" element={<AdminSamlPage />} />
             <Route path="admin/integrations" element={<AdminIntegrationsPage />} />
+            <Route path="admin/grafana" element={<AdminGrafanaPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="autonomous-systems" element={<AutonomousSystemsPage />} />
           </Route>
