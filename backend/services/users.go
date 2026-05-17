@@ -156,8 +156,10 @@ func (s *Service) BulkDeleteUsers(ctx context.Context, userIDs []int64) (int64, 
 	return s.repository.BulkDeleteUsers(ctx, userIDs)
 }
 
-// BulkImportUsers creates users from a slice of import records
-func (s *Service) BulkImportUsers(ctx context.Context, records []BulkUserImportRecord, defaultPassword string) ([]BulkImportResult, error) {
+// BulkImportUsers creates users from a slice of import records.
+// Each user receives a unique random temporary password returned in the result.
+// The caller is responsible for distributing these credentials.
+func (s *Service) BulkImportUsers(ctx context.Context, records []BulkUserImportRecord) ([]BulkImportResult, error) {
 	results := make([]BulkImportResult, 0, len(records))
 	for _, rec := range records {
 		role := rec.Role
@@ -172,7 +174,12 @@ func (s *Service) BulkImportUsers(ctx context.Context, records []BulkUserImportR
 			results = append(results, BulkImportResult{Username: rec.Username, Error: "username and email required"})
 			continue
 		}
-		hash, err := utils.HashPassword(defaultPassword)
+		tempPassword, err := generateTempPassword()
+		if err != nil {
+			results = append(results, BulkImportResult{Username: rec.Username, Error: "failed to generate password"})
+			continue
+		}
+		hash, err := utils.HashPassword(tempPassword)
 		if err != nil {
 			results = append(results, BulkImportResult{Username: rec.Username, Error: "password hash error"})
 			continue
@@ -182,9 +189,18 @@ func (s *Service) BulkImportUsers(ctx context.Context, records []BulkUserImportR
 			results = append(results, BulkImportResult{Username: rec.Username, Error: err.Error()})
 			continue
 		}
-		results = append(results, BulkImportResult{Username: rec.Username, UserID: user.ID})
+		results = append(results, BulkImportResult{Username: rec.Username, UserID: user.ID, TempPassword: tempPassword})
 	}
 	return results, nil
+}
+
+// generateTempPassword returns a 24-character hex-encoded random password (96 bits of entropy).
+func generateTempPassword() (string, error) {
+	b := make([]byte, 12)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // BulkUserImportRecord is a single row from CSV import
@@ -194,11 +210,13 @@ type BulkUserImportRecord struct {
 	Role     string
 }
 
-// BulkImportResult is the outcome of importing a single user
+// BulkImportResult is the outcome of importing a single user.
+// TempPassword is set on success and must be distributed to the user by the admin.
 type BulkImportResult struct {
-	Username string `json:"username"`
-	UserID   int64  `json:"user_id,omitempty"`
-	Error    string `json:"error,omitempty"`
+	Username     string `json:"username"`
+	UserID       int64  `json:"user_id,omitempty"`
+	TempPassword string `json:"temp_password,omitempty"`
+	Error        string `json:"error,omitempty"`
 }
 
 // AcceptPrivacyPolicy records user's consent to the current privacy policy

@@ -196,8 +196,6 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field required"})
 	}
 
-	defaultPassword := c.FormValue("default_password", "ChangeMe123!")
-
 	f, err := file.Open()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
@@ -246,7 +244,7 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 		records = append(records, rec)
 	}
 
-	results, err := h.service.BulkImportUsers(c.Context(), records, defaultPassword)
+	results, err := h.service.BulkImportUsers(c.Context(), records)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "import failed"})
 	}
