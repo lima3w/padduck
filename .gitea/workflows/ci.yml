@@ -40,11 +40,11 @@ jobs:
 
       - name: Vet backend
         working-directory: ./backend
-        run: go vet ./...
+        run: go vet -mod=vendor ./...
 
       - name: Test backend
         working-directory: ./backend
-        run: go test -race -count=1 ./...
+        run: go test -mod=vendor -race -count=1 ./...
 
       - name: Install frontend dependencies
         working-directory: ./frontend
@@ -69,3 +69,13 @@ jobs:
       - name: Test agent
         working-directory: ./agent
         run: go test -race -count=1 ./...
+
+      - name: Generate dependency SBOM
+        run: make sbom
+
+      - name: Publish dependency SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-sbom
+          path: sbom/dependency-sbom.cdx.json
+          if-no-files-found: error

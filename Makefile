@@ -1,4 +1,4 @@
-.PHONY: ci-local test vet build frontend-build frontend-install check-migrations help
+.PHONY: ci-local test vet build frontend-build frontend-install check-migrations sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -11,7 +11,7 @@ ci-local: check-migrations vet test frontend-build
 ## test: run backend unit tests with race detector
 test:
 	@echo "→ backend tests"
-	cd $(BACKEND_DIR) && go test -race -count=1 ./...
+	cd $(BACKEND_DIR) && go test -mod=vendor -race -count=1 ./...
 
 ## check-migrations: verify every migration file has the required sql-migrate annotation
 check-migrations:
@@ -27,12 +27,12 @@ check-migrations:
 ## vet: run go vet on the backend
 vet:
 	@echo "→ go vet"
-	cd $(BACKEND_DIR) && go vet ./...
+	cd $(BACKEND_DIR) && go vet -mod=vendor ./...
 
 ## build: compile the backend binary
 build:
 	@echo "→ backend build"
-	cd $(BACKEND_DIR) && go build -o /dev/null ./...
+	cd $(BACKEND_DIR) && go build -mod=vendor -o /dev/null ./...
 
 ## frontend-install: install frontend dependencies
 frontend-install:
@@ -42,6 +42,11 @@ frontend-install:
 frontend-build:
 	@echo "→ frontend build"
 	cd $(FRONTEND_DIR) && npm run build --silent
+
+## sbom: generate dependency SBOM from vendored Go modules and npm lockfile
+sbom:
+	@echo "→ dependency SBOM"
+	node tools/generate-sbom.mjs
 
 ## help: list available targets
 help:
