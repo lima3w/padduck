@@ -100,15 +100,16 @@ func TestCreateTag_MissingName_Returns400(t *testing.T) {
 // UpdateTag — PUT /api/v1/tags/:id  (requireAdmin after ID parse)
 // ---------------------------------------------------------------------------
 
-func TestUpdateTag_BadID_Returns400(t *testing.T) {
+func TestUpdateTag_BadID_NoAuth_Returns403(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
 	app.Put("/tags/:id", h.UpdateTag)
+	// requireAdmin runs before ParamsInt, so unauthenticated requests get 403.
 	req := httptest.NewRequest("PUT", "/tags/notanumber", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
 func TestUpdateTag_NonAdmin_Returns403(t *testing.T) {
@@ -130,13 +131,14 @@ func TestUpdateTag_NonAdmin_Returns403(t *testing.T) {
 // DeleteTag — DELETE /api/v1/tags/:id  (requireAdmin after ID parse)
 // ---------------------------------------------------------------------------
 
-func TestDeleteTag_BadID_Returns400(t *testing.T) {
+func TestDeleteTag_BadID_NoAuth_Returns403(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
 	app.Delete("/tags/:id", h.DeleteTag)
+	// requireAdmin runs before ParamsInt, so unauthenticated requests get 403.
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/tags/notanumber", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
 func TestDeleteTag_NonAdmin_Returns403(t *testing.T) {

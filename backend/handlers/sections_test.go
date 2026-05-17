@@ -97,14 +97,15 @@ func TestGetSection_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetSection_BadID_Returns400(t *testing.T) {
+func TestGetSection_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/sections/:id", h.GetSection)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/sections/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------

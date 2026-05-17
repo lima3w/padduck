@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"ipam-next/models"
 	"ipam-next/repository"
@@ -30,7 +31,14 @@ func (s *Service) GetRack(ctx context.Context, id int64) (*models.Rack, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid rack ID")
 	}
-	return s.repository.GetRackByID(ctx, id)
+	rack, err := s.repository.GetRackByID(ctx, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("rack %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return rack, nil
 }
 
 // ListRacks returns all racks, optionally filtered by location.
@@ -49,7 +57,14 @@ func (s *Service) UpdateRack(ctx context.Context, id int64, req *RackUpdateReque
 	if req.SizeU <= 0 {
 		req.SizeU = 42
 	}
-	return s.repository.UpdateRack(ctx, id, req)
+	rack, err := s.repository.UpdateRack(ctx, id, req)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("rack %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return rack, nil
 }
 
 // DeleteRack deletes a rack by ID.
@@ -57,7 +72,13 @@ func (s *Service) DeleteRack(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid rack ID")
 	}
-	return s.repository.DeleteRack(ctx, id)
+	if err := s.repository.DeleteRack(ctx, id); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("rack %d: %w", id, ErrNotFound)
+		}
+		return err
+	}
+	return nil
 }
 
 // ListDevicesInRack returns all devices assigned to a rack, ordered by rack_unit_start.

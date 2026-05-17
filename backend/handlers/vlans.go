@@ -50,10 +50,39 @@ type UpdateVLANGroupRequest struct {
 	Colour      *string `json:"colour"`
 }
 
+// ListVLANs handles GET /api/v1/vlans
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2VLANList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		vlans, total, err := h.service.ListVLANsPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing VLANs", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if vlans == nil {
+			vlans = make([]*models.VLAN, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  vlans,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	vlans, err := h.service.ListVLANs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VLANs", "error", err)
@@ -68,12 +97,12 @@ func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLAN(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
-		return nil
 	}
 
 	vlan, err := h.service.GetVLAN(c.Context(), int64(id))
@@ -165,12 +194,12 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANSubnets(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
-		return nil
 	}
 
 	subnets, err := h.service.GetVLANSubnets(c.Context(), int64(id))
@@ -290,12 +319,12 @@ func (h *Handler) ListVLANDomains(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANDomain(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANDomainRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN domain ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANDomainRead); err != nil {
-		return nil
 	}
 	domain, err := h.service.GetVLANDomain(c.Context(), int64(id))
 	if err != nil {
@@ -331,12 +360,12 @@ func (h *Handler) CreateVLANDomain(c *fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateVLANDomain(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANDomainWrite); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN domain ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANDomainWrite); err != nil {
-		return nil
 	}
 	req := new(UpdateVLANDomainRequest)
 	if err := c.BodyParser(req); err != nil {
@@ -360,12 +389,12 @@ func (h *Handler) UpdateVLANDomain(c *fiber.Ctx) error {
 }
 
 func (h *Handler) DeleteVLANDomain(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANDomainDelete); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN domain ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANDomainDelete); err != nil {
-		return nil
 	}
 
 	if err := h.service.DeleteVLANDomain(c.Context(), int64(id)); err != nil {
@@ -401,12 +430,12 @@ func (h *Handler) ListVLANGroups(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANGroup(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANGroupRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANGroupRead); err != nil {
-		return nil
 	}
 	group, err := h.service.GetVLANGroup(c.Context(), int64(id))
 	if err != nil {
@@ -442,12 +471,12 @@ func (h *Handler) CreateVLANGroup(c *fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANGroupWrite); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANGroupWrite); err != nil {
-		return nil
 	}
 	req := new(UpdateVLANGroupRequest)
 	if err := c.BodyParser(req); err != nil {
@@ -485,12 +514,12 @@ func (h *Handler) GetVLANUsageReport(c *fiber.Ctx) error {
 }
 
 func (h *Handler) DeleteVLANGroup(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VLANGroupDelete); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VLANGroupDelete); err != nil {
-		return nil
 	}
 
 	if err := h.service.DeleteVLANGroup(c.Context(), int64(id)); err != nil {

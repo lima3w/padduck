@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"ipam-next/models"
 	"ipam-next/repository"
@@ -47,7 +48,14 @@ func (s *Service) GetCustomFieldDefinition(ctx context.Context, id int64) (*mode
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid id")
 	}
-	return s.repository.GetCustomFieldDefinition(ctx, id)
+	def, err := s.repository.GetCustomFieldDefinition(ctx, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("custom field definition %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return def, nil
 }
 
 func (s *Service) UpdateCustomFieldDefinition(ctx context.Context, id int64, p *repository.CustomFieldDefinitionParams) (*models.CustomFieldDefinition, error) {
@@ -69,14 +77,27 @@ func (s *Service) UpdateCustomFieldDefinition(ctx context.Context, id int64, p *
 	if !validFieldTypes[p.FieldType] {
 		return nil, fmt.Errorf("invalid field_type: must be text, number, textarea, dropdown, checkbox, date, url, or email")
 	}
-	return s.repository.UpdateCustomFieldDefinition(ctx, id, p)
+	def, err := s.repository.UpdateCustomFieldDefinition(ctx, id, p)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("custom field definition %d: %w", id, ErrNotFound)
+		}
+		return nil, err
+	}
+	return def, nil
 }
 
 func (s *Service) DeleteCustomFieldDefinition(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid id")
 	}
-	return s.repository.DeleteCustomFieldDefinition(ctx, id)
+	if err := s.repository.DeleteCustomFieldDefinition(ctx, id); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("custom field definition %d: %w", id, ErrNotFound)
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *Service) ReorderCustomFieldDefinitions(ctx context.Context, ids []int64) error {

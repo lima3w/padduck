@@ -73,17 +73,19 @@ type OverlapPair struct {
 
 // OverlapReport returns all overlapping subnet pairs across all sections
 func (s *Service) OverlapReport(ctx context.Context) ([]*OverlapPair, error) {
-	sections, err := s.repository.ListAllSections(ctx)
+	all, err := s.repository.ListAllSubnets(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	// Group by section_id in Go to avoid one DB query per section
+	bySec := make(map[int64][]*models.Subnet)
+	for _, sub := range all {
+		bySec[sub.SectionID] = append(bySec[sub.SectionID], sub)
+	}
+
 	var pairs []*OverlapPair
-	for _, section := range sections {
-		subnets, err := s.repository.ListSubnetsBySection(ctx, section.ID)
-		if err != nil {
-			return nil, err
-		}
+	for _, subnets := range bySec {
 		for i, a := range subnets {
 			_, netA, err := net.ParseCIDR(fmt.Sprintf("%s/%d", a.NetworkAddress, a.PrefixLength))
 			if err != nil {

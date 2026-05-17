@@ -2,11 +2,17 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
 	"ipam-next/models"
 	"ipam-next/repository"
 	"ipam-next/utils"
+)
+
+var (
+	ErrNotAssociated = errors.New("not associated")
 )
 
 // ListDeviceTypes returns all device types.
@@ -20,6 +26,11 @@ func (s *Service) ListDevices(ctx context.Context, limit, offset int) ([]*models
 		limit = 50
 	}
 	return s.repository.ListDevices(ctx, limit, offset)
+}
+
+// ListAllDevices returns all devices without pagination.
+func (s *Service) ListAllDevices(ctx context.Context) ([]*models.Device, error) {
+	return s.repository.ListAllDevices(ctx)
 }
 
 // CreateDevice creates a new device, encrypting SNMP credentials before storage.
@@ -52,6 +63,9 @@ func (s *Service) GetDevice(ctx context.Context, id int64) (*models.Device, erro
 	}
 	device, err := s.repository.GetDeviceByID(ctx, id)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("device %d: %w", id, ErrNotFound)
+		}
 		return nil, err
 	}
 	device.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "device", id)
@@ -73,6 +87,9 @@ func (s *Service) UpdateDevice(ctx context.Context, id int64, req *DeviceUpdateR
 
 	device, err := s.repository.UpdateDevice(ctx, id, req)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("device %d: %w", id, ErrNotFound)
+		}
 		return nil, err
 	}
 
@@ -88,7 +105,13 @@ func (s *Service) DeleteDevice(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid device ID")
 	}
-	return s.repository.DeleteDevice(ctx, id)
+	if err := s.repository.DeleteDevice(ctx, id); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("device %d: %w", id, ErrNotFound)
+		}
+		return err
+	}
+	return nil
 }
 
 // GetDeviceSNMPCredentials retrieves and decrypts SNMP credentials for a device.
@@ -98,6 +121,9 @@ func (s *Service) GetDeviceSNMPCredentials(ctx context.Context, id int64) (*mode
 	}
 	creds, err := s.repository.GetDeviceSNMP(ctx, id)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("device %d: %w", id, ErrNotFound)
+		}
 		return nil, err
 	}
 
@@ -149,7 +175,13 @@ func (s *Service) UnlinkIPFromDevice(ctx context.Context, deviceID, ipID int64) 
 	if ipID <= 0 {
 		return fmt.Errorf("invalid IP address ID")
 	}
-	return s.repository.UnlinkIPFromDevice(ctx, deviceID, ipID)
+	if err := s.repository.UnlinkIPFromDevice(ctx, deviceID, ipID); err != nil {
+		if strings.Contains(err.Error(), "not associated") {
+			return fmt.Errorf("ip %d device %d: %w", ipID, deviceID, ErrNotAssociated)
+		}
+		return err
+	}
+	return nil
 }
 
 // ListDeviceInterfaces returns all interfaces for a device.
@@ -204,6 +236,9 @@ func (s *Service) UpdateDeviceInterface(ctx context.Context, deviceID, ifaceID i
 
 	iface, err := s.repository.UpdateDeviceInterface(ctx, deviceID, ifaceID, req)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fmt.Errorf("interface %d: %w", ifaceID, ErrNotFound)
+		}
 		return nil, err
 	}
 
@@ -236,6 +271,9 @@ func (s *Service) DeleteDeviceInterface(ctx context.Context, deviceID, ifaceID i
 	// Get the interface to find any reverse link
 	iface, err := s.repository.GetDeviceInterface(ctx, ifaceID)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return fmt.Errorf("interface %d: %w", ifaceID, ErrNotFound)
+		}
 		return err
 	}
 

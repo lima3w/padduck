@@ -74,6 +74,31 @@ func (r *Repository) ListLocations(ctx context.Context) ([]*models.Location, err
 	return locs, rows.Err()
 }
 
+// ListLocationsPaginated returns a page of locations with a total count.
+func (r *Repository) ListLocationsPaginated(ctx context.Context, limit, offset int) ([]*models.Location, int64, error) {
+	var total int64
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM locations`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	query := `SELECT ` + locationSelectCols + ` FROM locations ORDER BY name LIMIT $1 OFFSET $2`
+	rows, err := r.db.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	locs := make([]*models.Location, 0)
+	for rows.Next() {
+		l, err := scanLocation(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		locs = append(locs, l)
+	}
+	return locs, total, rows.Err()
+}
+
 // UpdateLocation updates an existing location.
 func (r *Repository) UpdateLocation(ctx context.Context, id int64, p *LocationParams) (*models.Location, error) {
 	query := `UPDATE locations SET parent_id=$1, name=$2, type=$3, address=$4, lat=$5, lng=$6, description=$7, updated_at=now()

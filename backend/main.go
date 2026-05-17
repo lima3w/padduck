@@ -145,6 +145,7 @@ func main() {
 	repo := repository.NewRepository(database.Pool())
 	svc := services.NewService(repo, cfg.MFAEncryptionKey)
 	handler := handlers.NewHandler(svc, cfg.Environment == "production")
+	handler.StartTokenLimiterCleanup(ctx)
 
 	// Initialize admin password on first boot
 	if err := initAdminPassword(ctx, svc); err != nil {

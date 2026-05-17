@@ -39,13 +39,14 @@ func TestListVRFs_NoPermission_Returns403(t *testing.T) {
 // GetVRF — GET /api/v1/vrfs/:id  (ID parsed before permCheck)
 // ---------------------------------------------------------------------------
 
-func TestGetVRF_BadID_Returns400(t *testing.T) {
+func TestGetVRF_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
 	app.Get("/vrfs/:id", h.GetVRF)
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/vrfs/notanumber", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 func TestGetVRF_NoUser_Returns401(t *testing.T) {
