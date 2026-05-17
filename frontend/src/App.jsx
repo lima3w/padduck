@@ -46,6 +46,7 @@ const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
 const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
 const AdminSamlPage = lazy(() => import('./pages/AdminSamlPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
+const AdminIntegrationsPage = lazy(() => import('./pages/AdminIntegrationsPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -130,6 +131,7 @@ export default function App() {
             <Route path="admin/auth/ldap" element={<AdminLdapPage />} />
             <Route path="admin/auth/oauth2" element={<AdminOAuth2Page />} />
             <Route path="admin/auth/saml" element={<AdminSamlPage />} />
+            <Route path="admin/integrations" element={<AdminIntegrationsPage />} />
           </Route>
         </Routes>
       </Suspense>

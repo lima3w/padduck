@@ -1,0 +1,195 @@
+import { useState } from 'react'
+import { generateTokenForMe } from '../api/client'
+
+const PLATFORMS = [
+  {
+    id: 'n8n',
+    name: 'n8n',
+    description: 'Self-hosted workflow automation',
+    steps: [
+      'In n8n, create an HTTP Request node and set the URL to your IPAM instance.',
+      'Under Authentication, choose "Header Auth" and add the header Authorization: Bearer <your-token>.',
+      'Use the Webhook Trigger node to receive IPAM events (configure the webhook URL in IPAM → Admin → Webhooks).',
+      'Pair trigger nodes with HTTP Request action nodes to read/write IPAM data.',
+    ],
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description: 'Cloud workflow automation',
+    steps: [
+      'In Zapier, create a Zap with a "Webhook by Zapier" trigger to receive IPAM events.',
+      'Copy the Zapier webhook URL into IPAM → Admin → Webhooks to push events.',
+      'For action steps, use the "HTTP by Zapier" action with your IPAM API URL.',
+      'Set the Authorization header to Bearer <your-token> in the HTTP action settings.',
+    ],
+  },
+  {
+    id: 'make',
+    name: 'Make (Integromat)',
+    description: 'Visual automation platform',
+    steps: [
+      'In Make, add a "Webhooks" module as a trigger and copy the URL into IPAM → Admin → Webhooks.',
+      'Add an "HTTP" module for actions, set the URL to your IPAM API endpoint.',
+      'Under Headers, add Authorization: Bearer <your-token>.',
+      'Map the response fields to downstream modules in your scenario.',
+    ],
+  },
+]
+
+const KEY_ENDPOINTS = [
+  { method: 'GET', path: '/api/v1/subnets/{id}/next-available', desc: 'Preview the next free IP without allocating it' },
+  { method: 'POST', path: '/api/v1/subnets/{subnetID}/ip-addresses/allocate', desc: 'Allocate the next available IP address' },
+  { method: 'POST', path: '/api/v1/ip-addresses/{id}/assign', desc: 'Assign an IP to a host' },
+  { method: 'POST', path: '/api/v1/ip-addresses/{id}/release', desc: 'Release an IP address' },
+  { method: 'GET', path: '/api/v1/sections', desc: 'List all sections' },
+  { method: 'GET', path: '/api/v1/sections/{id}/subnets', desc: 'List subnets in a section' },
+  { method: 'GET', path: '/api/v1/subnets/{subnetID}/ip-addresses', desc: 'List IPs in a subnet' },
+]
+
+const METHOD_COLORS = {
+  GET: 'bg-blue-100 text-blue-700',
+  POST: 'bg-green-100 text-green-700',
+  PUT: 'bg-amber-100 text-amber-700',
+  DELETE: 'bg-red-100 text-red-700',
+}
+
+export default function AdminIntegrationsPage() {
+  const [token, setToken] = useState('')
+  const [tokenName, setTokenName] = useState('automation-token')
+  const [generating, setGenerating] = useState(false)
+  const [error, setError] = useState('')
+  const [activePlatform, setActivePlatform] = useState('n8n')
+
+  const platform = PLATFORMS.find(p => p.id === activePlatform)
+  const baseUrl = window.location.origin
+
+  async function handleGenerate(e) {
+    e.preventDefault()
+    setGenerating(true)
+    setError('')
+    try {
+      const res = await generateTokenForMe(tokenName)
+      setToken(res.data?.token || res.data?.rawToken || '')
+    } catch {
+      setError('Failed to generate token')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Automation Integrations</h1>
+        <p className="text-sm text-gray-500">
+          Connect IPAM to n8n, Zapier, Make, or any HTTP-capable automation platform using API tokens and webhooks.
+        </p>
+      </div>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold text-gray-800">1. Generate an API Token</h2>
+        <form onSubmit={handleGenerate} className="flex gap-2 items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Token name</label>
+            <input
+              type="text"
+              value={tokenName}
+              onChange={e => setTokenName(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={generating}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {generating ? 'Generating…' : 'Generate'}
+          </button>
+        </form>
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {token && (
+          <div>
+            <p className="text-xs text-amber-600 font-medium mb-1">Copy this token now — it will not be shown again.</p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded px-4 py-3 font-mono text-sm break-all select-all">
+              {token}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold text-gray-800">2. Key API Endpoints</h2>
+        <div className="rounded border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 w-16">Method</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Endpoint</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Description</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {KEY_ENDPOINTS.map(ep => (
+                <tr key={ep.path}>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${METHOD_COLORS[ep.method]}`}>
+                      {ep.method}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-gray-800 text-xs">{ep.path}</td>
+                  <td className="px-4 py-3 text-gray-600">{ep.desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-gray-500">
+          Base URL: <code className="bg-gray-100 px-1 rounded">{baseUrl}</code>.
+          All requests require <code className="bg-gray-100 px-1 rounded">Authorization: Bearer &lt;token&gt;</code>.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-base font-semibold text-gray-800">3. Platform Setup</h2>
+        <div className="flex gap-2">
+          {PLATFORMS.map(p => (
+            <button
+              key={p.id}
+              onClick={() => setActivePlatform(p.id)}
+              className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                activePlatform === p.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+        {platform && (
+          <div className="bg-gray-50 border border-gray-200 rounded p-4 space-y-3">
+            <p className="text-sm font-medium text-gray-700">{platform.description}</p>
+            <ol className="list-decimal list-inside space-y-1.5 text-sm text-gray-700">
+              {platform.steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-gray-800">4. Webhook Events</h2>
+        <p className="text-sm text-gray-600">
+          Configure outbound webhooks in <a href="/admin/webhooks" className="text-blue-600 hover:underline">Admin → Webhooks</a>.
+          IPAM will POST a JSON payload to your automation platform URL on every IP, subnet, or section change.
+        </p>
+        <p className="text-sm text-gray-500">
+          In n8n, use a <strong>Webhook</strong> trigger node. In Zapier, use <strong>Webhooks by Zapier</strong>.
+          In Make, use the <strong>Webhooks</strong> module.
+        </p>
+      </section>
+    </div>
+  )
+}
