@@ -69,19 +69,16 @@ func buildTree(flat []models.SubnetTreeNode) []models.SubnetTreeNode {
 	}
 
 	for i := 1; i < len(items); i++ {
-		bestParent := -1
-		bestPfx := -1
-		for j := 0; j < i; j++ {
+		// Iterate backwards: since items are sorted by ascending prefix length,
+		// the first container we find going backwards is the most specific parent.
+		for j := i - 1; j >= 0; j-- {
 			pj, _ := items[j].net.Mask.Size()
 			pi, _ := items[i].net.Mask.Size()
 			if pj < pi && items[j].net.Contains(items[i].net.IP) {
-				if pj > bestPfx {
-					bestPfx = pj
-					bestParent = j
-				}
+				parentIdx[i] = j
+				break // found most-specific parent, stop early
 			}
 		}
-		parentIdx[i] = bestParent
 	}
 
 	// Build tree using indices
