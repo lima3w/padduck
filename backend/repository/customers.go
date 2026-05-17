@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"ipam-next/models"
 )
 
@@ -57,6 +58,12 @@ func (r *Repository) UpdateCustomer(ctx context.Context, id int64, name, descrip
 }
 
 func (r *Repository) DeleteCustomer(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM customers WHERE id = $1`, id)
-	return err
+	tag, err := r.db.Exec(ctx, `DELETE FROM customers WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }

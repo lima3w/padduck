@@ -48,7 +48,7 @@ func (h *Handler) GetCustomer(c *fiber.Ctx) error {
 	customer, err := h.service.GetCustomer(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting customer", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	return c.JSON(customer)
 }
@@ -64,7 +64,7 @@ func (h *Handler) CreateCustomer(c *fiber.Ctx) error {
 	customer, err := h.service.CreateCustomer(c.Context(), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
 		reqLogger(c).Error("error creating customer", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -90,7 +90,7 @@ func (h *Handler) UpdateCustomer(c *fiber.Ctx) error {
 	customer, err := h.service.UpdateCustomer(c.Context(), int64(id), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
 		reqLogger(c).Error("error updating customer", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -111,7 +111,7 @@ func (h *Handler) DeleteCustomer(c *fiber.Ctx) error {
 	}
 	if err := h.service.DeleteCustomer(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting customer", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	uid, uname := auditUserFromCtx(c)
 	cid := int64(id)
