@@ -54,6 +54,10 @@ func NewMFAService(repo *repository.Repository, encryptionKeyHex string) (*MFASe
 // SetupTOTP generates a new TOTP secret for the user and returns QR code data.
 // The secret is stored unverified until ConfirmTOTP is called.
 func (s *MFAService) SetupTOTP(ctx context.Context, userID int64, username, email string) (secret, qrDataURL string, err error) {
+	if s.IsMFAEnabled(ctx, userID) {
+		return "", "", ErrMFAAlreadyEnabled
+	}
+
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      totpIssuer,
 		AccountName: email,
@@ -138,7 +142,9 @@ func (s *MFAService) regenerateBackupCodes(ctx context.Context, userID int64, ts
 	hashes := make([]string, backupCodeLen)
 	for i := range codes {
 		raw := make([]byte, 6)
-		rand.Read(raw)
+		if _, err := rand.Read(raw); err != nil {
+			return nil, fmt.Errorf("failed to generate backup code: %w", err)
+		}
 		code := strings.ToUpper(hex.EncodeToString(raw))
 		code = code[:6] + "-" + code[6:]
 		codes[i] = code
@@ -216,7 +222,9 @@ func (s *MFAService) IsMFAEnabled(ctx context.Context, userID int64) bool {
 // CreateChallenge issues a short-lived MFA challenge after password auth succeeds.
 func (s *MFAService) CreateChallenge(ctx context.Context, userID int64) (string, error) {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("failed to generate challenge: %w", err)
+	}
 	raw := hex.EncodeToString(b)
 	hash := sha256.Sum256([]byte(raw))
 	hashHex := hex.EncodeToString(hash[:])

@@ -53,7 +53,7 @@ func parseDeviceName(userAgent string) string {
 }
 
 func (s *Service) sessionIdleTimeout(ctx context.Context) time.Duration {
-	if val, err := s.Config.Get("session_idle_timeout_minutes"); err == nil && val != "" {
+	if val, err := s.Config.GetCtx(ctx, "session_idle_timeout_minutes"); err == nil && val != "" {
 		var mins int
 		if _, err := fmt.Sscanf(val, "%d", &mins); err == nil && mins > 0 {
 			return time.Duration(mins) * time.Minute
@@ -63,7 +63,7 @@ func (s *Service) sessionIdleTimeout(ctx context.Context) time.Duration {
 }
 
 func (s *Service) sessionAbsoluteTimeout(ctx context.Context) time.Duration {
-	if val, err := s.Config.Get("session_absolute_timeout_hours"); err == nil && val != "" {
+	if val, err := s.Config.GetCtx(ctx, "session_absolute_timeout_hours"); err == nil && val != "" {
 		var hrs int
 		if _, err := fmt.Sscanf(val, "%d", &hrs); err == nil && hrs > 0 {
 			return time.Duration(hrs) * time.Hour
@@ -134,6 +134,11 @@ func (s *Service) ValidateSession(ctx context.Context, rawToken string) (*models
 	user, err := s.repository.GetUserByID(ctx, session.UserID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("user not found")
+	}
+
+	if user.State == "suspended" || user.State == "deleted" {
+		_ = s.repository.DeleteSession(ctx, session.ID)
+		return nil, nil, fmt.Errorf("account is %s", user.State)
 	}
 
 	return user, session, nil

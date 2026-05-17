@@ -105,9 +105,12 @@ func (s *Service) ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAdd
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
-	ip, _ := s.repository.GetIPAddressByID(ctx, id)
+	ip, err := s.repository.GetIPAddressByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	result, err := s.repository.UpdateIPAddressStatus(ctx, id, "available", nil)
-	if err == nil && ip != nil {
+	if err == nil {
 		go s.DNS.RemoveIPFromDNS(ctx, ip)
 	}
 	return result, err
@@ -118,13 +121,14 @@ func (s *Service) DeleteIPAddress(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid IP address ID")
 	}
-	ip, _ := s.repository.GetIPAddressByID(ctx, id)
+	ip, err := s.repository.GetIPAddressByID(ctx, id)
+	if err != nil {
+		return err
+	}
 	if err := s.repository.DeleteIPAddress(ctx, id); err != nil {
 		return err
 	}
-	if ip != nil {
-		go s.DNS.RemoveIPFromDNS(ctx, ip)
-	}
+	go s.DNS.RemoveIPFromDNS(ctx, ip)
 	return nil
 }
 

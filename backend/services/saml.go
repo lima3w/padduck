@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/crewjam/saml"
@@ -22,10 +23,21 @@ import (
 	"ipam-next/repository"
 )
 
+// samlRequestEntry holds a pending AuthnRequest ID and its expiry time.
+type samlRequestEntry struct {
+	expiresAt time.Time
+}
+
 // SAMLService manages SAML 2.0 Service Provider authentication.
 type SAMLService struct {
 	repository    *repository.Repository
 	encryptionKey string
+
+	// pendingRequests tracks outstanding AuthnRequest IDs to prevent assertion
+	// replay attacks.  A sync.Map is used so no additional locking is required
+	// for concurrent login flows.  Entries are removed after successful
+	// assertion validation or after a 10-minute TTL.
+	pendingRequests sync.Map
 }
 
 // NewSAMLService creates a new SAMLService.
@@ -168,7 +180,9 @@ func marshalXML(v *saml.EntityDescriptor) ([]byte, error) {
 	return xml.MarshalIndent(v, "", "  ")
 }
 
-// GetLoginURL returns the SP-initiated AuthnRequest redirect URL.
+// GetLoginURL returns the SP-initiated AuthnRequest redirect URL and stores
+// the AuthnRequest ID so it can be validated during assertion processing to
+// prevent replay attacks.
 func (s *SAMLService) GetLoginURL(ctx context.Context, relayState string) (string, error) {
 	cfg, err := s.GetConfig(ctx)
 	if err != nil {
@@ -183,11 +197,50 @@ func (s *SAMLService) GetLoginURL(ctx context.Context, relayState string) (strin
 		return "", err
 	}
 
-	authURL, err := sp.ServiceProvider.MakeRedirectAuthenticationRequest(relayState)
+	authnReq, err := sp.ServiceProvider.MakeAuthenticationRequest(
+		sp.ServiceProvider.GetSSOBindingLocation(saml.HTTPRedirectBinding),
+		saml.HTTPRedirectBinding,
+		saml.HTTPPostBinding,
+	)
 	if err != nil {
 		return "", fmt.Errorf("building SAML AuthnRequest: %w", err)
 	}
-	return authURL.String(), nil
+
+	// Store the request ID with a 10-minute TTL for InResponseTo validation.
+	s.pendingRequests.Store(authnReq.ID, samlRequestEntry{expiresAt: time.Now().Add(10 * time.Minute)})
+
+	// Prune expired entries opportunistically to prevent unbounded growth.
+	s.pruneExpiredRequests()
+
+	redirectURL, err := authnReq.Redirect(relayState, &sp.ServiceProvider)
+	if err != nil {
+		return "", fmt.Errorf("building SAML redirect URL: %w", err)
+	}
+	return redirectURL.String(), nil
+}
+
+// pruneExpiredRequests removes expired AuthnRequest IDs from the pending map.
+func (s *SAMLService) pruneExpiredRequests() {
+	now := time.Now()
+	s.pendingRequests.Range(func(key, value interface{}) bool {
+		if entry, ok := value.(samlRequestEntry); ok && now.After(entry.expiresAt) {
+			s.pendingRequests.Delete(key)
+		}
+		return true
+	})
+}
+
+// pendingRequestIDs returns all non-expired AuthnRequest IDs currently stored.
+func (s *SAMLService) pendingRequestIDs() []string {
+	now := time.Now()
+	var ids []string
+	s.pendingRequests.Range(func(key, value interface{}) bool {
+		if entry, ok := value.(samlRequestEntry); ok && now.Before(entry.expiresAt) {
+			ids = append(ids, key.(string))
+		}
+		return true
+	})
+	return ids
 }
 
 // ProcessAssertion validates a SAML response and finds or creates a local user.
@@ -216,9 +269,21 @@ func (s *SAMLService) ProcessAssertion(ctx context.Context, samlResponse, acsURL
 		parsedURL = &url.URL{}
 	}
 
-	assertion, err := sp.ServiceProvider.ParseXMLResponse(rawXML, nil, *parsedURL)
+	// Pass the stored AuthnRequest IDs so the library can validate InResponseTo,
+	// preventing assertion replay attacks.
+	requestIDs := s.pendingRequestIDs()
+	assertion, err := sp.ServiceProvider.ParseXMLResponse(rawXML, requestIDs, *parsedURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid SAML assertion: %w", err)
+	}
+
+	// Remove the consumed request ID so it cannot be replayed.
+	if assertion.Subject != nil {
+		for _, sc := range assertion.Subject.SubjectConfirmations {
+			if sc.SubjectConfirmationData != nil && sc.SubjectConfirmationData.InResponseTo != "" {
+				s.pendingRequests.Delete(sc.SubjectConfirmationData.InResponseTo)
+			}
+		}
 	}
 
 	// Extract NameID as the external identifier

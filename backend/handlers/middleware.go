@@ -52,7 +52,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 		c.Locals("tokenScope", apiToken.Scope)
 
 		// Rate limit check
-		limitStr, _ := h.service.Config.Get("api_token_rate_limit_per_minute")
+		limitStr, _ := h.service.Config.GetCtx(c.Context(), "api_token_rate_limit_per_minute")
 		limit := 100
 		if n, err2 := strconv.Atoi(limitStr); err2 == nil && n >= 0 {
 			limit = n

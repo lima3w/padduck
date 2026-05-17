@@ -393,6 +393,16 @@ func (h *Handler) ListRequestComments(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request ID"})
 	}
 
+	if currentUser.Role != "admin" {
+		ownerID, err := h.service.GetRequestOwner(c.Context(), reqType, int64(id))
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "request not found"})
+		}
+		if ownerID != currentUser.ID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "access denied"})
+		}
+	}
+
 	comments, err := h.service.ListRequestComments(c.Context(), reqType, int64(id))
 	if err != nil {
 		reqLogger(c).Error("error listing request comments", "type", reqType, "id", id, "error", err)
@@ -416,6 +426,16 @@ func (h *Handler) AddRequestComment(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request ID"})
+	}
+
+	if currentUser.Role != "admin" {
+		ownerID, err := h.service.GetRequestOwner(c.Context(), reqType, int64(id))
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "request not found"})
+		}
+		if ownerID != currentUser.ID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "access denied"})
+		}
 	}
 
 	var body struct {

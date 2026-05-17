@@ -312,6 +312,14 @@ func (r *Repository) BulkDeleteUsers(ctx context.Context, userIDs []int64) (int6
 	return result.RowsAffected(), nil
 }
 
+// CountAdminsExcluding returns the number of active admin users whose IDs are not in the exclusion list.
+func (r *Repository) CountAdminsExcluding(ctx context.Context, excludeIDs []int64) (int64, error) {
+	query := `SELECT COUNT(*) FROM users WHERE role = 'admin' AND id != ALL($1)`
+	var count int64
+	err := r.db.QueryRow(ctx, query, excludeIDs).Scan(&count)
+	return count, err
+}
+
 // UpdatePrivacyConsent records user acceptance of the privacy policy
 func (r *Repository) UpdatePrivacyConsent(ctx context.Context, userID int64, version string) error {
 	query := `UPDATE users SET privacy_accepted_at = CURRENT_TIMESTAMP, privacy_accepted_version = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`

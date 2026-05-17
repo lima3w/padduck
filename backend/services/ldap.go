@@ -115,6 +115,13 @@ func (s *LDAPService) TestConnection(ctx context.Context) error {
 
 // Authenticate verifies username+password against LDAP, then finds or creates a local user.
 func (s *LDAPService) Authenticate(ctx context.Context, username, password string) (*models.User, error) {
+	// Guard against empty-password anonymous binds: many LDAP servers treat an
+	// empty password as a successful anonymous (unauthenticated) bind, which
+	// would allow any username to authenticate without a real credential.
+	if password == "" {
+		return nil, fmt.Errorf("password is required")
+	}
+
 	cfg, err := s.GetConfig(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("loading LDAP config: %w", err)

@@ -290,6 +290,27 @@ func (s *Service) CancelIPRequest(ctx context.Context, requestID, requesterID in
 	return s.repository.CancelIPRequest(ctx, requestID, requesterID)
 }
 
+// GetRequestOwner returns the user ID of the requester who owns the given request.
+// requestType must be "subnet" or "ip".
+func (s *Service) GetRequestOwner(ctx context.Context, requestType string, requestID int64) (int64, error) {
+	switch requestType {
+	case "subnet":
+		sr, err := s.repository.GetSubnetRequestByID(ctx, requestID)
+		if err != nil {
+			return 0, fmt.Errorf("subnet request not found")
+		}
+		return sr.RequesterID, nil
+	case "ip":
+		ir, err := s.repository.GetIPRequestByID(ctx, requestID)
+		if err != nil {
+			return 0, fmt.Errorf("ip request not found")
+		}
+		return ir.RequesterID, nil
+	default:
+		return 0, fmt.Errorf("invalid request_type: must be 'subnet' or 'ip'")
+	}
+}
+
 // GetPendingRequestCounts returns the total pending request count.
 func (s *Service) GetPendingRequestCounts(ctx context.Context) (subnetCount, ipCount int64, err error) {
 	subnetCount, err = s.repository.CountPendingSubnetRequests(ctx)

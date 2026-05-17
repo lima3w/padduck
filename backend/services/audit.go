@@ -103,7 +103,7 @@ func (a *AuditService) CountAuditLogs(ctx context.Context, filter *models.AuditL
 // Returns the number of rows deleted.
 func (a *AuditService) PurgeOldLogs(ctx context.Context) (int64, error) {
 	retentionDays := 90
-	if val, err := a.svc.Config.Get("audit_log_retention_days"); err == nil && val != "" {
+	if val, err := a.svc.Config.GetCtx(ctx, "audit_log_retention_days"); err == nil && val != "" {
 		if days, err := strconv.Atoi(val); err == nil && days > 0 {
 			retentionDays = days
 		}
