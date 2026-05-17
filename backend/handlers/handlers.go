@@ -59,8 +59,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	grafana := app.Group("/api/grafana")
 	grafana.Use(h.AuthMiddleware)
 	grafana.Get("/", h.GrafanaHealth)
-	grafana.Post("/search", h.GrafanaSearch)
-	grafana.Post("/query", h.GrafanaQuery)
+	grafana.Post("/search", h.RequireBearerAuth, h.GrafanaSearch)
+	grafana.Post("/query", h.RequireBearerAuth, h.GrafanaQuery)
 
 	// API v1 routes
 	api := app.Group("/api/v1")
