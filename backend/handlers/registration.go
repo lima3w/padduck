@@ -34,7 +34,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
 		case errors.Is(err, services.ErrUsernameTaken),
 			errors.Is(err, services.ErrEmailTaken):
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "an account with those details already exists"})
 		case errors.Is(err, services.ErrInvalidUsername),
 			errors.Is(err, services.ErrInvalidEmail),
 			errors.Is(err, services.ErrPasswordTooShort):
