@@ -72,7 +72,7 @@ func (h *Handler) CreateTag(c *fiber.Ctx) error {
 	tag, err := h.service.CreateIPTag(c.Context(), req.Name, req.Colour, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating tag", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(tag)
@@ -96,7 +96,7 @@ func (h *Handler) UpdateTag(c *fiber.Ctx) error {
 	tag, err := h.service.UpdateIPTag(c.Context(), int64(id), req.Name, req.Colour, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating tag", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	return c.JSON(tag)

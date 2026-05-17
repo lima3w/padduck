@@ -34,8 +34,9 @@ func RespondError(c *fiber.Ctx, statusCode int, code ErrorCode, message string, 
 	reqLogger(c).Warn("api error", "status", statusCode, "code", code, "message", logMessage,
 		"method", c.Method(), "path", c.Path())
 
-	detailStr := ""
-	if len(details) > 0 {
+	// Never expose internal error details to clients for server errors.
+	var detailStr string
+	if len(details) > 0 && statusCode < 500 {
 		detailStr = details[0]
 	}
 

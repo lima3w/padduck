@@ -50,7 +50,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	loc, err := h.service.CreateLocation(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating location", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.Status(fiber.StatusCreated).JSON(loc)
 }
@@ -98,7 +98,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error updating location", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(loc)
 }

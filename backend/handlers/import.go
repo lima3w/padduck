@@ -108,7 +108,8 @@ func (h *Handler) ExportFullData(c *fiber.Ctx) error {
 
 	data, filename, contentType, err := h.service.Import.ExportFullData(c.Context(), format)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		reqLogger(c).Error("export full data failed", "format", format, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	c.Set("Content-Type", contentType)
