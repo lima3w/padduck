@@ -466,7 +466,21 @@ func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
 	if cfg == nil {
 		return c.JSON(fiber.Map{})
 	}
-	return c.JSON(cfg)
+
+	// Never return the SP private key — replace with a presence indicator.
+	return c.JSON(fiber.Map{
+		"id":               cfg.ID,
+		"enabled":          cfg.Enabled,
+		"idp_metadata_url": cfg.IDPMetadataURL,
+		"idp_metadata_xml": cfg.IDPMetadataXML,
+		"sp_cert_pem":      cfg.SPCertPEM,
+		"sp_key_configured": cfg.SPKeyPEM != "",
+		"entity_id":        cfg.EntityID,
+		"acs_url":          cfg.ACSURL,
+		"name_id_format":   cfg.NameIDFormat,
+		"created_at":       cfg.CreatedAt,
+		"updated_at":       cfg.UpdatedAt,
+	})
 }
 
 // UpdateSAMLConfig handles PUT /api/v1/admin/auth/saml.
