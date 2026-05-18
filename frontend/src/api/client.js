@@ -150,6 +150,11 @@ export const getAdminConfig = () => api.get('/admin/config')
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
 
+// Sessions
+export const listMySessions = () => api.get('/auth/me/sessions')
+export const revokeMySession = (sessionId) => api.delete(`/auth/me/sessions/${sessionId}`)
+export const logoutAllDevices = () => api.delete('/auth/me/sessions')
+
 // Security / login history
 export const getLoginHistory = () => api.get('/user/login-history')
 export const requestAccountUnlock = (username) => noAuthApi.post('/auth/unlock', { username })
