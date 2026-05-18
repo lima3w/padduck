@@ -861,6 +861,26 @@ type InactiveIPReport struct {
 	DaysInactive int        `json:"days_inactive"`
 }
 
+// InactiveDeviceReport describes a device that has not been pinged recently.
+type InactiveDeviceReport struct {
+	DeviceID     int64      `json:"device_id"`
+	Hostname     string     `json:"hostname"`
+	Vendor       string     `json:"vendor"`
+	Model        string     `json:"model"`
+	LastPingAt   *time.Time `json:"last_ping_at,omitempty"`
+	DaysInactive int        `json:"days_inactive"`
+}
+
+// FailedScanJobReport describes a scan job that has never run or whose last run is overdue.
+type FailedScanJobReport struct {
+	JobID       int64      `json:"job_id"`
+	JobName     string     `json:"job_name"`
+	ScheduleCron string    `json:"schedule_cron"`
+	LastRunAt   *time.Time `json:"last_run_at,omitempty"`
+	DaysSinceRun int       `json:"days_since_run"`
+	IsActive    bool       `json:"is_active"`
+}
+
 // Customer represents an organisation that owns or uses IP space.
 type Customer struct {
 	ID          int64     `json:"id"`

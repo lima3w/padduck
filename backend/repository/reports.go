@@ -574,3 +574,73 @@ func (r *Repository) GetDNSAudit(ctx context.Context) ([]*DNSAuditRow, error) {
 	}
 	return out, rows.Err()
 }
+
+// GetInactiveDevices returns devices that have not been pinged within the given number of days.
+func (r *Repository) GetInactiveDevices(ctx context.Context, days int) ([]*models.InactiveDeviceReport, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			hostname,
+			COALESCE(vendor, '') AS vendor,
+			COALESCE(model, '') AS model,
+			last_ping_at,
+			CASE
+				WHEN last_ping_at IS NULL THEN $1
+				ELSE GREATEST(0, EXTRACT(DAY FROM now() - last_ping_at)::int)
+			END AS days_inactive
+		FROM devices
+		WHERE last_ping_at IS NULL OR last_ping_at < now() - ($1 || ' days')::interval
+		ORDER BY days_inactive DESC
+		LIMIT 500
+	`, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*models.InactiveDeviceReport
+	for rows.Next() {
+		d := &models.InactiveDeviceReport{}
+		if err := rows.Scan(&d.DeviceID, &d.Hostname, &d.Vendor, &d.Model, &d.LastPingAt, &d.DaysInactive); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// GetOverdueScanJobs returns active scan jobs that have not run within the expected window.
+// It returns jobs that have not run in more than the given number of days (or never).
+func (r *Repository) GetOverdueScanJobs(ctx context.Context, days int) ([]*models.FailedScanJobReport, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			name,
+			COALESCE(schedule_cron, '') AS schedule_cron,
+			last_run_at,
+			CASE
+				WHEN last_run_at IS NULL THEN $1
+				ELSE GREATEST(0, EXTRACT(DAY FROM now() - last_run_at)::int)
+			END AS days_since_run,
+			is_active
+		FROM scan_jobs
+		WHERE is_active = true
+		  AND (last_run_at IS NULL OR last_run_at < now() - ($1 || ' days')::interval)
+		ORDER BY days_since_run DESC
+		LIMIT 500
+	`, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*models.FailedScanJobReport
+	for rows.Next() {
+		j := &models.FailedScanJobReport{}
+		if err := rows.Scan(&j.JobID, &j.JobName, &j.ScheduleCron, &j.LastRunAt, &j.DaysSinceRun, &j.IsActive); err != nil {
+			return nil, err
+		}
+		out = append(out, j)
+	}
+	return out, rows.Err()
+}

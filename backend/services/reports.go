@@ -48,6 +48,9 @@ type reportsRepo interface {
 	GetVLANAssignment(ctx context.Context) ([]*repository.VLANAssignmentRow, error)
 	GetIPAge(ctx context.Context) ([]*repository.IPAgeRow, error)
 	GetDNSAudit(ctx context.Context) ([]*repository.DNSAuditRow, error)
+	// remediation report types
+	GetInactiveDevices(ctx context.Context, days int) ([]*models.InactiveDeviceReport, error)
+	GetOverdueScanJobs(ctx context.Context, days int) ([]*models.FailedScanJobReport, error)
 }
 
 // ReportsService provides reporting and analytics functionality.
@@ -434,6 +437,78 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 			}
 		}
 		return buildReport(report.Format, "DNS Audit", headers, rows)
+
+	case "stale_leases":
+		days := 30
+		if v, ok := report.Filters["days"]; ok {
+			if d, ok := v.(float64); ok {
+				days = int(d)
+			}
+		}
+		ips, err := rs.repo.GetInactiveIPs(ctx, days, nil)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"ip_id", "ip_address", "hostname", "subnet_cidr", "section_name", "days_inactive"}
+		rows := make([]map[string]string, len(ips))
+		for i, ip := range ips {
+			rows[i] = map[string]string{
+				"ip_id":         strconv.FormatInt(ip.IPID, 10),
+				"ip_address":    ip.IPAddress,
+				"hostname":      ip.Hostname,
+				"subnet_cidr":   ip.SubnetCIDR,
+				"section_name":  ip.SectionName,
+				"days_inactive": strconv.Itoa(ip.DaysInactive),
+			}
+		}
+		return buildReport(report.Format, "Stale Leases", headers, rows)
+
+	case "inactive_devices":
+		days := 30
+		if v, ok := report.Filters["days"]; ok {
+			if d, ok := v.(float64); ok {
+				days = int(d)
+			}
+		}
+		devices, err := rs.repo.GetInactiveDevices(ctx, days)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"device_id", "hostname", "vendor", "model", "days_inactive"}
+		rows := make([]map[string]string, len(devices))
+		for i, d := range devices {
+			rows[i] = map[string]string{
+				"device_id":     strconv.FormatInt(d.DeviceID, 10),
+				"hostname":      d.Hostname,
+				"vendor":        d.Vendor,
+				"model":         d.Model,
+				"days_inactive": strconv.Itoa(d.DaysInactive),
+			}
+		}
+		return buildReport(report.Format, "Inactive Devices", headers, rows)
+
+	case "failed_scans":
+		days := 7
+		if v, ok := report.Filters["days"]; ok {
+			if d, ok := v.(float64); ok {
+				days = int(d)
+			}
+		}
+		jobs, err := rs.repo.GetOverdueScanJobs(ctx, days)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"job_id", "job_name", "schedule_cron", "days_since_run"}
+		rows := make([]map[string]string, len(jobs))
+		for i, j := range jobs {
+			rows[i] = map[string]string{
+				"job_id":        strconv.FormatInt(j.JobID, 10),
+				"job_name":      j.JobName,
+				"schedule_cron": j.ScheduleCron,
+				"days_since_run": strconv.Itoa(j.DaysSinceRun),
+			}
+		}
+		return buildReport(report.Format, "Failed Scans", headers, rows)
 
 	default:
 		return nil, "", "", fmt.Errorf("unsupported report type %q", report.ReportType)
