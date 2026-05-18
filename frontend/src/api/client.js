@@ -235,6 +235,7 @@ export const getDnsZoneRecords = (zone, type) =>
 // DNS admin
 export const testDnsConnection = () => api.post('/admin/dns/test')
 export const testTechnitiumConnection = (params) => api.post('/admin/dns/technitium/test', params || {})
+export const checkAllDns = () => api.post('/admin/dns/check-all')
 
 // VRFs
 export const getVrfs = () => api.get('/vrfs')

@@ -52,6 +52,7 @@ export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('registration')
   const [dnsTestStatus, setDnsTestStatus] = useState(null) // null | 'testing' | 'ok' | { error: string }
   const [technitiumTestStatus, setTechnitiumTestStatus] = useState(null) // null | 'testing' | { ok, message }
+  const [dnsBulkStatus, setDnsBulkStatus] = useState(null) // null | 'running' | { ok, message }
   const [notifStats, setNotifStats] = useState(null)
   const [notifStatsLoading, setNotifStatsLoading] = useState(false)
 
@@ -185,6 +186,17 @@ export default function AdminSettingsPage() {
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Connection failed'
       setTechnitiumTestStatus({ ok: false, message: msg })
+    }
+  }
+
+  const handleDnsBulkCheck = async () => {
+    setDnsBulkStatus('running')
+    try {
+      await client.checkAllDns()
+      setDnsBulkStatus({ ok: true, message: 'DNS bulk check started in background' })
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Failed to start DNS check'
+      setDnsBulkStatus({ ok: false, message: msg })
     }
   }
 
@@ -644,6 +656,25 @@ export default function AdminSettingsPage() {
               className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
             >
               {technitiumTestStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+            </button>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-2">DNS Bulk Check</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Run a background check on all IP addresses that have a DNS name assigned, verifying that DNS records are in sync.
+            </p>
+            {dnsBulkStatus && dnsBulkStatus !== 'running' && (
+              <div className={`mb-4 px-3 py-2 rounded text-sm ${dnsBulkStatus.ok ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                {dnsBulkStatus.message}
+              </div>
+            )}
+            <button
+              onClick={handleDnsBulkCheck}
+              disabled={dnsBulkStatus === 'running'}
+              className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-50 transition text-sm font-medium"
+            >
+              {dnsBulkStatus === 'running' ? 'Starting...' : 'Run DNS Bulk Check'}
             </button>
           </div>
 
