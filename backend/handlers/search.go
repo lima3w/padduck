@@ -30,6 +30,19 @@ type IPSearchRequest struct {
 	CustomFields   map[string]string `json:"custom_fields"`
 }
 
+// GlobalSearch handles GET /api/v1/search?q=...
+func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+		return nil
+	}
+	q := c.Query("q")
+	result, err := h.service.GlobalSearch(c.Context(), q, 5)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(result)
+}
+
 // SearchSections handles POST /api/v1/sections/search
 func (h *Handler) SearchSections(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SectionList); err != nil {

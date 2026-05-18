@@ -3,11 +3,75 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"ipam-next/models"
 	"ipam-next/repository"
 )
+
+// GlobalSearchResult holds results from a cross-entity search.
+type GlobalSearchResult struct {
+	Sections []*models.Section `json:"sections"`
+	Subnets  []*models.Subnet  `json:"subnets"`
+	Devices  []*models.Device  `json:"devices"`
+}
+
+// GlobalSearch searches sections, subnets, and devices concurrently.
+func (s *Service) GlobalSearch(ctx context.Context, query string, limit int64) (*GlobalSearchResult, error) {
+	empty := &GlobalSearchResult{
+		Sections: make([]*models.Section, 0),
+		Subnets:  make([]*models.Subnet, 0),
+		Devices:  make([]*models.Device, 0),
+	}
+	if query == "" {
+		return empty, nil
+	}
+	if limit <= 0 || limit > 20 {
+		limit = 5
+	}
+
+	var (
+		wg      sync.WaitGroup
+		mu      sync.Mutex
+		result  = empty
+	)
+
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		secs, err := s.repository.SearchSections(ctx, query, limit, 0)
+		if err == nil && len(secs) > 0 {
+			mu.Lock()
+			result.Sections = secs
+			mu.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		subs, err := s.repository.GlobalSearchSubnets(ctx, query, limit)
+		if err == nil && len(subs) > 0 {
+			mu.Lock()
+			result.Subnets = subs
+			mu.Unlock()
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		devs, err := s.repository.SearchDevicesWithCustomFields(ctx, &repository.DeviceSearchFilter{Query: query}, nil)
+		if err == nil && len(devs) > 0 {
+			if int64(len(devs)) > limit {
+				devs = devs[:limit]
+			}
+			mu.Lock()
+			result.Devices = devs
+			mu.Unlock()
+		}
+	}()
+	wg.Wait()
+
+	return result, nil
+}
 
 const (
 	DefaultLimit  = 50
