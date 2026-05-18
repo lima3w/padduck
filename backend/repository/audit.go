@@ -49,6 +49,11 @@ func (r *Repository) ListAuditLogs(ctx context.Context, filter *models.AuditLogF
 		args = append(args, filter.ResourceType)
 		i++
 	}
+	if filter.ResourceID != nil {
+		where = append(where, fmt.Sprintf("resource_id = $%d", i))
+		args = append(args, *filter.ResourceID)
+		i++
+	}
 	if filter.IPAddress != "" {
 		where = append(where, fmt.Sprintf("ip_address = $%d", i))
 		args = append(args, filter.IPAddress)
@@ -127,6 +132,11 @@ func (r *Repository) CountAuditLogs(ctx context.Context, filter *models.AuditLog
 	if filter.ResourceType != "" {
 		where = append(where, fmt.Sprintf("resource_type = $%d", i))
 		args = append(args, filter.ResourceType)
+		i++
+	}
+	if filter.ResourceID != nil {
+		where = append(where, fmt.Sprintf("resource_id = $%d", i))
+		args = append(args, *filter.ResourceID)
 		i++
 	}
 	if filter.Since != nil {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import CustomFieldForm from '../components/CustomFieldForm'
+import ChangeHistory from '../components/ChangeHistory'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
 import {
@@ -244,6 +245,7 @@ export default function DeviceDetailPage() {
   if (loading) return <p className="text-gray-500">Loading device...</p>
   if (error && !device) return <p className="text-red-600">{error}</p>
 
+  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
   const typeObj = deviceTypes.find(t => t.id === device?.typeId)
 
   return (
@@ -854,6 +856,8 @@ export default function DeviceDetailPage() {
           </form>
         </Modal>
       )}
+
+      {isAdmin && <ChangeHistory resourceType="device" resourceId={device?.id} />}
 
       {(modal === 'iface-add' || modal?.ifaceEdit) && (
         <Modal title={modal === 'iface-add' ? 'Add Interface' : 'Edit Interface'} onClose={() => setModal(null)}>

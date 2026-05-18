@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import ChangeHistory from '../components/ChangeHistory'
 import {
   assignSubnetToVlan,
   getSections,
@@ -198,6 +199,7 @@ export default function VlanDetailPage() {
   if (error && !vlan) return <p className="text-red-600">{error}</p>
   if (!vlan) return <p className="text-gray-500">VLAN not found.</p>
 
+  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
   const domain = getDomain(vlan.domainId)
   const group = getGroup(vlan.groupId)
 
@@ -340,6 +342,8 @@ export default function VlanDetailPage() {
           </tbody>
         </table>
       </div>
+
+      {isAdmin && <ChangeHistory resourceType="vlan" resourceId={vlan?.id} />}
 
       {editModal && (
         <Modal title="Edit VLAN" onClose={() => setEditModal(false)}>
