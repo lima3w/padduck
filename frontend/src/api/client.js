@@ -194,6 +194,7 @@ export const regenerateBackupCodes = (code) => api.post('/auth/me/mfa/backup-cod
 export const getAdminConfig = () => api.get('/admin/config')
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
+export const checkForUpdates = () => api.get('/admin/updates/check')
 
 // Notification preferences
 export const getNotificationPreferences = () => api.get('/user/notification-preferences')

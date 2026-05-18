@@ -1,9 +1,12 @@
 FROM golang:1.26.2-alpine AS builder
+ARG APP_VERSION=dev
+ARG GIT_COMMIT=unknown
+ARG BUILD_DATE=unknown
 WORKDIR /app
 COPY go.mod go.sum ./
 COPY vendor ./vendor
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -trimpath -ldflags="-s -w" -o app .
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -trimpath -ldflags="-s -w -X ipam-next/version.Version=${APP_VERSION} -X ipam-next/version.Commit=${GIT_COMMIT} -X ipam-next/version.BuildDate=${BUILD_DATE}" -o app .
 
 FROM alpine:3.21
 RUN addgroup -S app && adduser -S app -G app

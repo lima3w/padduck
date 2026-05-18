@@ -13,7 +13,12 @@ services:
       start_period: 5s
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        APP_VERSION: "${APP_VERSION:-dev}"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILD_DATE: "${BUILD_DATE:-unknown}"
     environment:
       DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER:-ipam}:${POSTGRES_PASSWORD:-ipam}@db:5432/${POSTGRES_DB:-ipam}}"
       SERVER_PORT: "${SERVER_PORT:-8080}"

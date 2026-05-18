@@ -218,6 +218,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/config", h.GetConfig)
 	admin.Put("/config", h.UpdateConfig)
 	admin.Post("/config/test-email", h.TestSMTP)
+	admin.Get("/updates/check", h.CheckForUpdates)
 	admin.Get("/approvals", h.ListPendingApprovals)
 	admin.Post("/approvals/:id/approve", h.ApproveUser)
 	admin.Post("/approvals/:id/reject", h.RejectUser)
