@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getDashboardSummary, getDashboardRecentActivity, api } from '../api/client'
+import { getDashboardSummary, getDashboardRecentActivity, api, getInactiveIPs } from '../api/client'
 
 function formatRelativeTime(isoString) {
   const now = Date.now()
@@ -69,6 +69,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState(null)
   const [activity, setActivity] = useState([])
   const [nearCapacity, setNearCapacity] = useState([])
+  const [driftedIPs, setDriftedIPs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -88,6 +89,12 @@ export default function DashboardPage() {
       try {
         const capRes = await api.get('/admin/reports/subnets-near-capacity')
         setNearCapacity(Array.isArray(capRes.data) ? capRes.data : [])
+      } catch {}
+      // Load drifted IPs (best-effort, non-blocking)
+      try {
+        const driftRes = await api.get('/admin/reports/inactive-ips', { params: { days: 30 } })
+        const items = driftRes.data?.inactive ?? []
+        setDriftedIPs(items.slice(0, 8))
       } catch {}
     } catch {
       setError('Failed to load dashboard data')
@@ -201,6 +208,46 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Drifted IPs */}
+      {isAdmin && driftedIPs.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+              Drifted IPs <span className="ml-1 text-xs font-normal text-gray-400">(30+ days inactive)</span>
+            </h2>
+            <Link to="/reports/inactive-ips" className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
+              View all →
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
+                  <th className="text-left pb-2 font-medium">IP Address</th>
+                  <th className="text-left pb-2 font-medium">Hostname</th>
+                  <th className="text-left pb-2 font-medium">Subnet</th>
+                  <th className="text-right pb-2 font-medium">Days Inactive</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {driftedIPs.map(ip => (
+                  <tr key={ip.ip_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                    <td className="py-1.5 font-mono text-gray-800 dark:text-gray-200">{ip.ip_address}</td>
+                    <td className="py-1.5 text-gray-600 dark:text-gray-400">{ip.hostname || '—'}</td>
+                    <td className="py-1.5 text-gray-500 dark:text-gray-500 font-mono">{ip.subnet_cidr}</td>
+                    <td className="py-1.5 text-right">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${ip.days_inactive > 90 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'}`}>
+                        {ip.days_inactive}d
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
