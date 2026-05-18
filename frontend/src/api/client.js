@@ -10,6 +10,17 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete'])
+
+async function ensureCSRFToken() {
+  let csrfToken = getCookie('csrf-token')
+  if (csrfToken) return csrfToken
+
+  const response = await axios.get('/api/v1/csrf-token')
+  csrfToken = response.data?.csrf_token || getCookie('csrf-token')
+  return csrfToken
+}
+
 // Keys whose values contain user-defined data and must not have their keys transformed.
 const OPAQUE_FIELDS = new Set(['config', 'custom_fields'])
 
@@ -29,8 +40,9 @@ function deepCamelKeys(obj, opaque = false) {
 }
 
 // Add CSRF token to every mutating request (session cookie is sent automatically by the browser).
-api.interceptors.request.use((config) => {
-  const csrfToken = getCookie('csrf-token')
+api.interceptors.request.use(async (config) => {
+  const method = (config.method || 'get').toLowerCase()
+  const csrfToken = MUTATING_METHODS.has(method) ? await ensureCSRFToken() : getCookie('csrf-token')
   if (csrfToken) {
     config.headers['X-CSRF-Token'] = csrfToken
   }
