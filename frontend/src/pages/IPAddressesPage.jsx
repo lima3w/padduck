@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api } from '../api/client'
+import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api, bulkReleaseIPs } from '../api/client'
 import { submitIPRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -306,6 +306,7 @@ export default function IPAddressesPage() {
   const { subnetID } = useParams()
   const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
   const canAssignIP = user?.role === 'admin'
+  const isAdmin = canAssignIP
 
   const [subnet, setSubnet] = useState(null)
   const [ips, setIPs] = useState([])
@@ -333,6 +334,8 @@ export default function IPAddressesPage() {
   const [ipReqSuccess, setIPReqSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState('ips') // 'ips' | 'delegations'
   const [downloading, setDownloading] = useState(false)
+  const [selected, setSelected] = useState(new Set())
+  const [bulkReleasing, setBulkReleasing] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -351,6 +354,7 @@ export default function IPAddressesPage() {
   async function load(p = page) {
     try {
       setLoading(true)
+      setSelected(new Set())
       setSearchQuery('')
       setSearchStatus('')
       setIsSearchActive(false)
@@ -448,6 +452,7 @@ export default function IPAddressesPage() {
     setIsSearchActive(false)
     setCfFilterRows([])
     setAdvFilters({ tag_id: '', mac_address: '', ptr_record: '', is_assigned: '' })
+    setSelected(new Set())
     load(1)
   }
 
@@ -601,6 +606,32 @@ export default function IPAddressesPage() {
       setError('Export failed')
     } finally {
       setDownloading(false)
+    }
+  }
+
+  function toggleSelect(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  async function handleBulkRelease() {
+    if (selected.size === 0) return
+    setBulkReleasing(true)
+    try {
+      await bulkReleaseIPs(Array.from(selected))
+      setSelected(new Set())
+      load(page)
+    } catch {
+      setError('Failed to bulk release IP addresses')
+    } finally {
+      setBulkReleasing(false)
     }
   }
 
@@ -825,6 +856,16 @@ export default function IPAddressesPage() {
         )}
       </div>
 
+      {selected.size > 0 && isAdmin && (
+        <div className="mb-3 flex items-center gap-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800 text-sm">
+          <span className="text-blue-700 dark:text-blue-300 font-medium">{selected.size} selected</span>
+          <button onClick={handleBulkRelease} disabled={bulkReleasing} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
+            {bulkReleasing ? 'Releasing...' : 'Release selected'}
+          </button>
+          <button onClick={() => setSelected(new Set())} className="px-3 py-1 text-gray-500 hover:text-gray-700 text-xs">Clear</button>
+        </div>
+      )}
+
       {!isSearchActive && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
           {total} address{total !== 1 ? 'es' : ''}
@@ -835,6 +876,11 @@ export default function IPAddressesPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
+              {isAdmin && (
+                <th className="px-3 py-3 w-8">
+                  <input type="checkbox" checked={ips.length > 0 && ips.every(ip => selected.has(ip.id))} onChange={e => e.target.checked ? setSelected(new Set(ips.map(ip => ip.id))) : setSelected(new Set())} />
+                </th>
+              )}
               {col('address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th>}
               {col('hostname') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>}
               {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
@@ -858,6 +904,11 @@ export default function IPAddressesPage() {
             )}
             {ips.map(ip => (
               <tr key={ip.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                {isAdmin && (
+                  <td className="px-3 py-2 w-8">
+                    <input type="checkbox" checked={selected.has(ip.id)} onChange={() => toggleSelect(ip.id)} />
+                  </td>
+                )}
                 {col('address') && <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.Address}</td>}
                 {col('hostname') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.Hostname || '—'}</td>}
                 {col('status') && (
