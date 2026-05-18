@@ -67,6 +67,29 @@ func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query s
 	return subnets, rows.Err()
 }
 
+// GlobalSearchSubnets searches subnets across all sections.
+func (r *Repository) GlobalSearchSubnets(ctx context.Context, query string, limit int64) ([]*models.Subnet, error) {
+	sql := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
+	        WHERE host(s.network_address) ILIKE $1 OR s.description ILIKE $1
+	        ORDER BY s.network_address ASC
+	        LIMIT $2`
+	rows, err := r.db.Query(ctx, sql, "%"+query+"%", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	subnets := make([]*models.Subnet, 0)
+	for rows.Next() {
+		subnet, err := scanSubnet(rows)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, subnet)
+	}
+	return subnets, rows.Err()
+}
+
 func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64, filter ...IPSearchFilter) ([]*models.IPAddress, error) {
 	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
 	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2 OR ip.assigned_to ILIKE $2)`

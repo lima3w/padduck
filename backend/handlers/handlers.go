@@ -101,6 +101,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected.Use(h.AuthMiddleware)
 	protected.Use(h.CSRFMiddleware)
 	protected.Get("/features", h.GetFeatures)
+	protected.Get("/search", h.GlobalSearch)
 
 	// User profile endpoints (protected)
 	me := protected.Group("/auth/me")

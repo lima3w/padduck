@@ -251,6 +251,9 @@ export const searchSubnets = (sectionID, body) =>
 export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offset = 0, filters = {}) =>
   api.post(`/ip-addresses/search/${subnetID}`, { query, status, limit, offset, ...filters })
 
+export const globalSearch = (q) =>
+  api.get('/search', { params: { q } })
+
 // IP Tags
 export const getTags = () => api.get('/tags')
 export const createTag = (data) => api.post('/tags', data)
