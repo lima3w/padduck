@@ -147,6 +147,9 @@ export default function AdminSettingsPage() {
       )
       await client.updateAdminConfig(updates)
       showMessage('Settings saved successfully')
+      if (activeTab === 'features') {
+        window.setTimeout(() => window.location.reload(), 250)
+      }
     } catch (err) {
       showMessage('Failed to save: ' + (err.response?.data?.error || err.message), 'error')
     } finally {
