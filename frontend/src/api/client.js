@@ -402,5 +402,6 @@ export const deleteAutonomousSystem = (id) => api.delete(`/autonomous-systems/${
 // Bulk IP actions
 export const bulkReleaseIPs = (ipIds) => api.post('/admin/ip-addresses/bulk-release', { ip_ids: ipIds })
 
+
 // Inactive IPs report
 export const getInactiveIPs = (days = 30, limit = 10) => api.get('/admin/reports/inactive-ips', { params: { days, limit } })
