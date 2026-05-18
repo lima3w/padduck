@@ -12,4 +12,5 @@ COPY --from=builder /app/app .
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/docs ./docs
 USER app
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD wget -qO- "http://127.0.0.1:${SERVER_PORT:-8080}/health" | grep -q '"status":"ok"' || exit 1
 CMD ["./app"]
