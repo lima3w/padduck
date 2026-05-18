@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, releaseIPAddress, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api } from '../api/client'
+import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api } from '../api/client'
 import { submitIPRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -454,7 +454,7 @@ export default function IPAddressesPage() {
   }
 
   function openAssign(ip) {
-    setForm({ assigned_to: '', tag_id: '', mac_address: '', ptr_record: '' })
+    setForm({ assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', lease_duration_days: '' })
     setModal({ assign: ip })
   }
 
@@ -496,13 +496,27 @@ export default function IPAddressesPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      await assignIPAddress(modal.assign.id, { assigned_to: form.assigned_to })
+      const days = parseInt(form.lease_duration_days)
+      if (days > 0) {
+        await assignIPAddressWithLease(modal.assign.id, { assigned_to: form.assigned_to, lease_duration_days: days })
+      } else {
+        await assignIPAddress(modal.assign.id, { assigned_to: form.assigned_to })
+      }
       setModal(null)
       load(page)
     } catch {
       setError('Failed to assign IP address')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleReleaseExpired(id) {
+    try {
+      await releaseExpiredLease(id)
+      load(page)
+    } catch {
+      setError('Failed to release expired lease')
     }
   }
 
@@ -851,7 +865,16 @@ export default function IPAddressesPage() {
                   </td>
                 )}
                 {col('tag') && <td className="px-4 py-3"><TagBadge tag={ip.Tag} /></td>}
-                {col('assigned_to') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.AssignedTo || '—'}</td>}
+                {col('assigned_to') && (
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                    {ip.AssignedTo || '—'}
+                    {ip.expiresAt && (
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                        {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
+                      </span>
+                    )}
+                  </td>
+                )}
                 {col('device') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                     {ip.device_id ? (
@@ -910,7 +933,12 @@ export default function IPAddressesPage() {
                     <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
                   )}
                   {ip.Status === 'assigned' && (
-                    <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
+                    <>
+                      <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
+                      {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
+                        <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
+                      )}
+                    </>
                   )}
                   {deleteConfirm === ip.id ? (
                     <>
@@ -1043,6 +1071,20 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
                 required
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Lease Duration (days) <span className="text-gray-400 font-normal">— optional</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Leave blank for permanent"
+                value={form.lease_duration_days}
+                onChange={e => setForm(f => ({ ...f, lease_duration_days: e.target.value }))}
+              />
+              <p className="text-xs text-gray-400 mt-1">If set, the assignment will expire after this many days.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
