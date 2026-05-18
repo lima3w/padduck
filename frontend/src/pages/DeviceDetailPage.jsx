@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import CustomFieldForm from '../components/CustomFieldForm'
 import ChangeHistory from '../components/ChangeHistory'
+import DataQualityBadge from '../components/DataQualityBadge'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
 import {
@@ -354,6 +355,18 @@ export default function DeviceDetailPage() {
           </div>
         )}
       </div>
+
+      {isAdmin && device && (
+        <div className="mb-6">
+          <DataQualityBadge fields={[
+            { label: 'Vendor', ok: Boolean(device.vendor) },
+            { label: 'Model', ok: Boolean(device.model) },
+            { label: 'Location', ok: Boolean(device.locationId) },
+            { label: 'Last scanned', ok: Boolean(device.lastPingAt) },
+            { label: 'Description', ok: Boolean(device.description) },
+          ]} entityLabel="device" />
+        </div>
+      )}
 
       <div className="flex border-b dark:border-gray-700 mb-4">
         <button

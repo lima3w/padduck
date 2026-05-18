@@ -11,6 +11,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
+import DataQualityBadge from '../components/DataQualityBadge'
 
 function DelegationsTab({ subnetId }) {
   const [delegations, setDelegations] = useState([])
@@ -720,7 +721,18 @@ export default function IPAddressesPage() {
 
       {activeTab === 'delegations' && <DelegationsTab subnetId={subnetID} />}
 
-      {activeTab === 'ips' && <><div className="mb-4 space-y-2">
+      {activeTab === 'ips' && <>{isAdmin && subnet && (
+        <div className="mb-4">
+          <DataQualityBadge fields={[
+            { label: 'Description', ok: Boolean(subnet.description) },
+            { label: 'Gateway', ok: Boolean(subnet.gateway) },
+            { label: 'Nameserver', ok: Boolean(subnet.nameserverId) },
+            { label: 'VLAN', ok: Boolean(subnet.vlanId) },
+            { label: 'Location', ok: Boolean(subnet.locationId) },
+          ]} entityLabel="subnet" />
+        </div>
+      )}
+      <div className="mb-4 space-y-2">
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
