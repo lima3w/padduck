@@ -115,22 +115,99 @@ function ResultPanel({ result }) {
   )
 }
 
+function DryRunPreviewPanel({ result }) {
+  if (!result) return null
+  const actionConfig = {
+    create:  { label: 'Create',  cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+    skip:    { label: 'Skip',    cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+    warning: { label: 'Warning', cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+    error:   { label: 'Error',   cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  }
+  return (
+    <div className="mt-4 space-y-3">
+      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-sm text-blue-800 dark:text-blue-200 font-medium">
+        Dry Run Preview — no changes were made
+      </div>
+      <div className="flex gap-3 text-sm flex-wrap">
+        <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-200">Total: <strong>{result.total}</strong></span>
+        <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">Would Create: <strong>{result.creates}</strong></span>
+        {result.skips > 0 && <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">Skips: <strong>{result.skips}</strong></span>}
+        {result.warnings > 0 && <span className="px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded text-yellow-700 dark:text-yellow-300">Warnings: <strong>{result.warnings}</strong></span>}
+        {result.errors > 0 && <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300">Errors: <strong>{result.errors}</strong></span>}
+      </div>
+      {result.rows?.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+              <tr>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Row</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Action</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Value</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.rows.map((r, i) => {
+                const cfg = actionConfig[r.action] || actionConfig.error
+                return (
+                  <tr key={i} className="border-b dark:border-gray-700 last:border-0">
+                    <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{r.row}</td>
+                    <td className="px-4 py-2">
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${cfg.cls}`}>{cfg.label}</span>
+                    </td>
+                    <td className="px-4 py-2 font-mono text-gray-700 dark:text-gray-300">{r.value}</td>
+                    <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{r.reason || '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SubnetsTab() {
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
   const [result, setResult] = useState(null)
+  const [dryRunResult, setDryRunResult] = useState(null)
   const [error, setError] = useState('')
 
   function handleFile(f) {
     setFile(f)
     setResult(null)
+    setDryRunResult(null)
     setError('')
+  }
+
+  async function handlePreview() {
+    if (!file) return
+    setPreviewing(true)
+    setResult(null)
+    setDryRunResult(null)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { data } = await api.post('/admin/import/subnets?dry_run=true', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setDryRunResult(data)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Preview failed')
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   async function handleUpload() {
     if (!file) return
     setUploading(true)
     setResult(null)
+    setDryRunResult(null)
     setError('')
     try {
       const formData = new FormData()
@@ -166,19 +243,26 @@ function SubnetsTab() {
       <DropZone onFile={handleFile} />
 
       {file && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
           </span>
           <button
+            onClick={handlePreview}
+            disabled={previewing || uploading}
+            className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+          >
+            {previewing ? 'Previewing...' : 'Preview (Dry Run)'}
+          </button>
+          <button
             onClick={handleUpload}
-            disabled={uploading}
+            disabled={uploading || previewing}
             className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
             {uploading ? 'Uploading...' : 'Upload & Import'}
           </button>
           <button
-            onClick={() => { setFile(null); setResult(null); setError('') }}
+            onClick={() => { setFile(null); setResult(null); setDryRunResult(null); setError('') }}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
             Clear
@@ -187,6 +271,7 @@ function SubnetsTab() {
       )}
 
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
+      <DryRunPreviewPanel result={dryRunResult} />
       <ResultPanel result={result} />
     </div>
   )
@@ -195,19 +280,43 @@ function SubnetsTab() {
 function IPsTab() {
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
   const [result, setResult] = useState(null)
+  const [dryRunResult, setDryRunResult] = useState(null)
   const [error, setError] = useState('')
 
   function handleFile(f) {
     setFile(f)
     setResult(null)
+    setDryRunResult(null)
     setError('')
+  }
+
+  async function handlePreview() {
+    if (!file) return
+    setPreviewing(true)
+    setResult(null)
+    setDryRunResult(null)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { data } = await api.post('/admin/import/ips?dry_run=true', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setDryRunResult(data)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Preview failed')
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   async function handleUpload() {
     if (!file) return
     setUploading(true)
     setResult(null)
+    setDryRunResult(null)
     setError('')
     try {
       const formData = new FormData()
@@ -243,19 +352,26 @@ function IPsTab() {
       <DropZone onFile={handleFile} />
 
       {file && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
           </span>
           <button
+            onClick={handlePreview}
+            disabled={previewing || uploading}
+            className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+          >
+            {previewing ? 'Previewing...' : 'Preview (Dry Run)'}
+          </button>
+          <button
             onClick={handleUpload}
-            disabled={uploading}
+            disabled={uploading || previewing}
             className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
             {uploading ? 'Uploading...' : 'Upload & Import'}
           </button>
           <button
-            onClick={() => { setFile(null); setResult(null); setError('') }}
+            onClick={() => { setFile(null); setResult(null); setDryRunResult(null); setError('') }}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
             Clear
@@ -264,6 +380,7 @@ function IPsTab() {
       )}
 
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
+      <DryRunPreviewPanel result={dryRunResult} />
       <ResultPanel result={result} />
     </div>
   )
@@ -273,12 +390,15 @@ function PHPIpamTab() {
   const [kind, setKind] = useState('subnets')
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
   const [result, setResult] = useState(null)
+  const [dryRunResult, setDryRunResult] = useState(null)
   const [error, setError] = useState('')
 
   function handleFile(f) {
     setFile(f)
     setResult(null)
+    setDryRunResult(null)
     setError('')
   }
 
@@ -286,13 +406,35 @@ function PHPIpamTab() {
     setKind(newKind)
     setFile(null)
     setResult(null)
+    setDryRunResult(null)
     setError('')
+  }
+
+  async function handlePreview() {
+    if (!file) return
+    setPreviewing(true)
+    setResult(null)
+    setDryRunResult(null)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { data } = await api.post(`/admin/import/phpipam?kind=${kind}&dry_run=true`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setDryRunResult(data)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Preview failed')
+    } finally {
+      setPreviewing(false)
+    }
   }
 
   async function handleUpload() {
     if (!file) return
     setUploading(true)
     setResult(null)
+    setDryRunResult(null)
     setError('')
     try {
       const formData = new FormData()
@@ -361,19 +503,26 @@ function PHPIpamTab() {
       </div>
 
       {file && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
           </span>
           <button
+            onClick={handlePreview}
+            disabled={previewing || uploading}
+            className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+          >
+            {previewing ? 'Previewing...' : 'Preview (Dry Run)'}
+          </button>
+          <button
             onClick={handleUpload}
-            disabled={uploading}
+            disabled={uploading || previewing}
             className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
             {uploading ? 'Uploading...' : 'Upload & Import'}
           </button>
           <button
-            onClick={() => { setFile(null); setResult(null); setError('') }}
+            onClick={() => { setFile(null); setResult(null); setDryRunResult(null); setError('') }}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
             Clear
@@ -382,6 +531,7 @@ function PHPIpamTab() {
       )}
 
       {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
+      <DryRunPreviewPanel result={dryRunResult} />
       <ResultPanel result={result} />
     </div>
   )

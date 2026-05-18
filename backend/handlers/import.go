@@ -32,6 +32,14 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 	}
 	defer f.Close()
 
+	if c.QueryBool("dry_run") {
+		result, err := h.service.Import.DryRunSubnetsCSV(c.Context(), f)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(result)
+	}
+
 	result, err := h.service.Import.ImportSubnetsCSV(c.Context(), f)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -60,6 +68,14 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open uploaded file"})
 	}
 	defer f.Close()
+
+	if c.QueryBool("dry_run") {
+		result, err := h.service.Import.DryRunIPsCSV(c.Context(), f)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(result)
+	}
 
 	result, err := h.service.Import.ImportIPsCSV(c.Context(), f)
 	if err != nil {
@@ -95,6 +111,21 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open uploaded file"})
 	}
 	defer f.Close()
+
+	if c.QueryBool("dry_run") {
+		var result interface{}
+		var dryErr error
+		switch kind {
+		case "subnets":
+			result, dryErr = h.service.Import.DryRunPHPIpamSubnetsCSV(c.Context(), f)
+		case "ips":
+			result, dryErr = h.service.Import.DryRunPHPIpamIPsCSV(c.Context(), f)
+		}
+		if dryErr != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": dryErr.Error()})
+		}
+		return c.JSON(result)
+	}
 
 	result, err := h.service.Import.ImportFromPHPIpam(c.Context(), f, kind)
 	if err != nil {

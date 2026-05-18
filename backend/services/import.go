@@ -34,6 +34,36 @@ type ImportRowError struct {
 	Message string `json:"message"`
 }
 
+
+// DryRunRowAction describes the action that would be taken for a single row.
+type DryRunRowAction string
+
+const (
+	DryRunCreate  DryRunRowAction = "create"
+	DryRunSkip    DryRunRowAction = "skip"
+	DryRunWarning DryRunRowAction = "warning"
+	DryRunError   DryRunRowAction = "error"
+)
+
+// DryRunRow is one row's preview outcome.
+type DryRunRow struct {
+	Row    int             `json:"row"`
+	Action DryRunRowAction `json:"action"`
+	Value  string          `json:"value"`
+	Reason string          `json:"reason,omitempty"`
+}
+
+// DryRunResult summarises what would happen in a dry-run import.
+type DryRunResult struct {
+	DryRun   bool        `json:"dry_run"`
+	Total    int         `json:"total"`
+	Creates  int         `json:"creates"`
+	Skips    int         `json:"skips"`
+	Warnings int         `json:"warnings"`
+	Errors   int         `json:"errors"`
+	Rows     []DryRunRow `json:"rows"`
+}
+
 // ImportRepo lists the repository methods needed by ImportService.
 // It is exported so that handler tests can build stub implementations.
 type ImportRepo interface {
@@ -215,6 +245,231 @@ func (s *ImportService) ImportIPsCSV(ctx context.Context, r io.Reader) (*ImportR
 			continue
 		}
 		result.Imported++
+	}
+
+	return result, nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DryRunSubnetsCSV / DryRunIPsCSV (#426)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// DryRunSubnetsCSV validates a subnets CSV without writing to the database.
+func (s *ImportService) DryRunSubnetsCSV(ctx context.Context, r io.Reader) (*DryRunResult, error) {
+	records, err := readCSV(r)
+	if err != nil {
+		return nil, fmt.Errorf("parse CSV: %w", err)
+	}
+
+	result := &DryRunResult{DryRun: true, Rows: []DryRunRow{}}
+
+	sections, _ := s.repo.ListAllSections(ctx)
+	sectionByName := indexSections(sections)
+	existingCIDRs, _ := s.buildSubnetCIDRIndex(ctx)
+
+	for i, rec := range records {
+		row := i + 2
+		result.Total++
+
+		cidr := strings.TrimSpace(rec["cidr"])
+		if cidr == "" {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: cidr, Reason: "cidr is required"})
+			continue
+		}
+
+		networkAddr, prefixLen, err := parseCIDR(cidr)
+		if err != nil {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: cidr, Reason: err.Error()})
+			continue
+		}
+		normalizedCIDR := fmt.Sprintf("%s/%d", networkAddr, prefixLen)
+
+		// Check for duplicate.
+		if _, exists := existingCIDRs[normalizedCIDR]; exists {
+			result.Skips++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunSkip, Value: cidr, Reason: "subnet already exists"})
+			continue
+		}
+
+		// Check section exists if provided.
+		sectionName := strings.TrimSpace(rec["section"])
+		if sectionName != "" {
+			if _, ok := sectionByName[sectionName]; !ok {
+				result.Warnings++
+				result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunWarning, Value: cidr, Reason: fmt.Sprintf("section %q not found; will be skipped on import", sectionName)})
+				continue
+			}
+		}
+
+		result.Creates++
+		result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunCreate, Value: cidr})
+	}
+
+	return result, nil
+}
+
+// DryRunIPsCSV validates an IP addresses CSV without writing to the database.
+func (s *ImportService) DryRunIPsCSV(ctx context.Context, r io.Reader) (*DryRunResult, error) {
+	records, err := readCSV(r)
+	if err != nil {
+		return nil, fmt.Errorf("parse CSV: %w", err)
+	}
+
+	result := &DryRunResult{DryRun: true, Rows: []DryRunRow{}}
+
+	subnetIndex, _ := s.buildSubnetCIDRIndex(ctx)
+
+	for i, rec := range records {
+		row := i + 2
+		result.Total++
+
+		address := strings.TrimSpace(rec["address"])
+		if address == "" {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: address, Reason: "address is required"})
+			continue
+		}
+		if net.ParseIP(address) == nil {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: address, Reason: "invalid IP address"})
+			continue
+		}
+
+		subnetCIDR := strings.TrimSpace(rec["subnet_cidr"])
+		if subnetCIDR == "" {
+			result.Warnings++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunWarning, Value: address, Reason: "subnet_cidr not provided"})
+			continue
+		}
+
+		networkAddr, prefixLen, err := parseCIDR(subnetCIDR)
+		if err != nil {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: address, Reason: fmt.Sprintf("invalid subnet_cidr: %s", err)})
+			continue
+		}
+		normalizedCIDR := fmt.Sprintf("%s/%d", networkAddr, prefixLen)
+		if _, ok := subnetIndex[normalizedCIDR]; !ok {
+			result.Warnings++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunWarning, Value: address, Reason: fmt.Sprintf("subnet %s not found", subnetCIDR)})
+			continue
+		}
+
+		result.Creates++
+		result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunCreate, Value: address})
+	}
+
+	return result, nil
+}
+
+// DryRunPHPIpamSubnetsCSV validates a PHPIpam subnets CSV without writing to the database.
+func (s *ImportService) DryRunPHPIpamSubnetsCSV(ctx context.Context, r io.Reader) (*DryRunResult, error) {
+	records, err := readCSV(r)
+	if err != nil {
+		return nil, fmt.Errorf("parse CSV: %w", err)
+	}
+
+	result := &DryRunResult{DryRun: true, Rows: []DryRunRow{}}
+
+	sections, _ := s.repo.ListAllSections(ctx)
+	sectionByName := indexSections(sections)
+	existingCIDRs, _ := s.buildSubnetCIDRIndex(ctx)
+
+	for i, rec := range records {
+		row := i + 2
+		result.Total++
+
+		subnet := strings.TrimSpace(rec["subnet"])
+		mask := strings.TrimSpace(rec["mask"])
+
+		if subnet == "" || mask == "" {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: subnet, Reason: "subnet and mask are required"})
+			continue
+		}
+
+		prefixLen, err := maskToPrefixLen(mask)
+		if err != nil {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: subnet, Reason: "invalid mask: " + err.Error()})
+			continue
+		}
+		normalizedCIDR := fmt.Sprintf("%s/%d", subnet, prefixLen)
+
+		if _, exists := existingCIDRs[normalizedCIDR]; exists {
+			result.Skips++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunSkip, Value: subnet, Reason: "subnet already exists"})
+			continue
+		}
+
+		sectionName := strings.TrimSpace(rec["sectionName"])
+		if sectionName != "" {
+			if _, ok := sectionByName[sectionName]; !ok {
+				result.Warnings++
+				result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunWarning, Value: subnet, Reason: fmt.Sprintf("section %q not found; will be skipped on import", sectionName)})
+				continue
+			}
+		}
+
+		result.Creates++
+		result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunCreate, Value: subnet})
+	}
+
+	return result, nil
+}
+
+// DryRunPHPIpamIPsCSV validates a PHPIpam IPs CSV without writing to the database.
+func (s *ImportService) DryRunPHPIpamIPsCSV(ctx context.Context, r io.Reader) (*DryRunResult, error) {
+	records, err := readCSV(r)
+	if err != nil {
+		return nil, fmt.Errorf("parse CSV: %w", err)
+	}
+
+	result := &DryRunResult{DryRun: true, Rows: []DryRunRow{}}
+
+	subnetIndex, _ := s.buildSubnetCIDRIndex(ctx)
+
+	for i, rec := range records {
+		row := i + 2
+		result.Total++
+
+		ip := strings.TrimSpace(rec["ip"])
+		if ip == "" {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: ip, Reason: "ip is required"})
+			continue
+		}
+		if net.ParseIP(ip) == nil {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: ip, Reason: "invalid IP address"})
+			continue
+		}
+
+		subnetIP := strings.TrimSpace(rec["subnetIp"])
+		subnetMask := strings.TrimSpace(rec["subnetMask"])
+		if subnetIP == "" || subnetMask == "" {
+			result.Warnings++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunWarning, Value: ip, Reason: "subnetIp and subnetMask are required"})
+			continue
+		}
+
+		prefixLen, err := maskToPrefixLen(subnetMask)
+		if err != nil {
+			result.Errors++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunError, Value: ip, Reason: "invalid subnetMask: " + err.Error()})
+			continue
+		}
+		cidr := fmt.Sprintf("%s/%d", subnetIP, prefixLen)
+		if _, ok := subnetIndex[cidr]; !ok {
+			result.Warnings++
+			result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunWarning, Value: ip, Reason: fmt.Sprintf("subnet %s not found", cidr)})
+			continue
+		}
+
+		result.Creates++
+		result.Rows = append(result.Rows, DryRunRow{Row: row, Action: DryRunCreate, Value: ip})
 	}
 
 	return result, nil
