@@ -10,6 +10,13 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Non-authenticated endpoints. Responses still need the same key normalization
+// as authenticated responses because login/MFA cache user data in localStorage.
+const noAuthApi = axios.create({
+  baseURL: '/api/v1',
+  headers: { 'Content-Type': 'application/json' },
+})
+
 const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete'])
 
 async function ensureCSRFToken() {
@@ -39,6 +46,13 @@ function deepCamelKeys(obj, opaque = false) {
   return obj
 }
 
+function normalizeResponseData(response) {
+  if (response.data && typeof response.data === 'object' && !(response.data instanceof Blob)) {
+    response.data = deepCamelKeys(response.data)
+  }
+  return response
+}
+
 // Add CSRF token to every mutating request (session cookie is sent automatically by the browser).
 api.interceptors.request.use(async (config) => {
   const method = (config.method || 'get').toLowerCase()
@@ -51,12 +65,7 @@ api.interceptors.request.use(async (config) => {
 
 // Normalise response data to camelCase and handle 401s.
 api.interceptors.response.use(
-  (response) => {
-    if (response.data && typeof response.data === 'object' && !(response.data instanceof Blob)) {
-      response.data = deepCamelKeys(response.data)
-    }
-    return response
-  },
+  normalizeResponseData,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('current_user')
@@ -69,6 +78,8 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+noAuthApi.interceptors.response.use(normalizeResponseData)
 
 // Sections
 export const getSections = () => api.get('/sections')
@@ -126,12 +137,6 @@ export const listUserTokens = (userId) => api.get(`/auth/tokens/${userId}`)
 export const listMyTokens = () => api.get('/auth/me/tokens')
 
 export const revokeToken = (tokenId) => api.delete(`/auth/tokens/${tokenId}`)
-
-// Non-authenticated endpoints (no interceptor needed)
-const noAuthApi = axios.create({
-  baseURL: '/api/v1',
-  headers: { 'Content-Type': 'application/json' },
-})
 
 export const generateTokenAnonymous = (userId, tokenName) =>
   noAuthApi.post(`/auth/tokens/${userId}`, { token_name: tokenName })

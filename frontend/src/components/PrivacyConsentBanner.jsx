@@ -14,7 +14,7 @@ export default function PrivacyConsentBanner() {
 
     try {
       const u = JSON.parse(cached)
-      setUserAcceptedVersion(u.privacyAcceptedVersion || null)
+      setUserAcceptedVersion(u.privacyAcceptedVersion || u.privacy_accepted_version || null)
     } catch {
       return
     }
@@ -33,11 +33,18 @@ export default function PrivacyConsentBanner() {
     setError(null)
     try {
       await acceptPrivacyPolicy()
-      // Update cached user with new accepted version
-      const res = await getCurrentUser()
-      localStorage.setItem('current_user', JSON.stringify(res.data))
+      const cached = JSON.parse(localStorage.getItem('current_user') || '{}')
+      localStorage.setItem('current_user', JSON.stringify({
+        ...cached,
+        privacyAcceptedVersion: policyVersion,
+        privacy_accepted_version: undefined,
+      }))
+      setUserAcceptedVersion(policyVersion)
       setDismissed(true)
-    } catch {
+      getCurrentUser()
+        .then((res) => localStorage.setItem('current_user', JSON.stringify(res.data)))
+        .catch(() => {})
+    } catch (err) {
       setError('Failed to record consent. Please try again.')
     } finally {
       setAccepting(false)

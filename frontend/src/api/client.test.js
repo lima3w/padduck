@@ -2,21 +2,31 @@ import axios from 'axios'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('axios', () => {
-  const instance = {
-    interceptors: {
-      request: {
-        use: vi.fn((handler) => {
-          instance.requestInterceptor = handler
-        }),
+  const instances = []
+  const makeInstance = () => {
+    const instance = {
+      interceptors: {
+        request: {
+          use: vi.fn((handler) => {
+            instance.requestInterceptor = handler
+          }),
+        },
+        response: {
+          use: vi.fn((handler) => {
+            instance.responseInterceptor = handler
+          }),
+        },
       },
-      response: { use: vi.fn() },
-    },
+    }
+    instances.push(instance)
+    return instance
   }
 
   return {
     default: {
-      create: vi.fn(() => instance),
+      create: vi.fn(() => makeInstance()),
       get: vi.fn(),
+      __instances: instances,
     },
   }
 })
@@ -54,5 +64,22 @@ describe('api client CSRF handling', () => {
 
     expect(axios.get).not.toHaveBeenCalled()
     expect(config.headers['X-CSRF-Token']).toBeUndefined()
+  })
+
+  it('normalizes unauthenticated auth response user fields before caching callers receive them', async () => {
+    await import('./client')
+
+    const noAuthApi = axios.__instances[1]
+    const response = noAuthApi.responseInterceptor({
+      data: {
+        user: {
+          id: 1,
+          privacy_accepted_version: '1.0',
+        },
+      },
+    })
+
+    expect(response.data.user.privacyAcceptedVersion).toBe('1.0')
+    expect(response.data.user.privacy_accepted_version).toBeUndefined()
   })
 })
