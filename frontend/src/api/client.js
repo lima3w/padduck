@@ -408,3 +408,6 @@ export const getInactiveIPs = (days = 30, limit = 10) => api.get('/admin/reports
 
 // Duplicate detection report (#425)
 export const getDuplicates = () => api.get('/admin/reports/duplicates')
+
+// Reconciliation center (#424)
+export const getReconciliationReport = () => api.get('/admin/reports/reconciliation')

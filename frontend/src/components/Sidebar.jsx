@@ -253,6 +253,16 @@ export default function Sidebar() {
         >
           Duplicate Detection
         </NavLink>
+        <NavLink
+          to="/reports/reconciliation"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          Reconciliation Center
+        </NavLink>
 
         {isAdmin && (
           <>
