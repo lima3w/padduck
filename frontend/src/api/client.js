@@ -398,3 +398,9 @@ export const getAutonomousSystem = (id) => api.get(`/autonomous-systems/${id}`)
 export const createAutonomousSystem = (data) => api.post('/autonomous-systems', data)
 export const updateAutonomousSystem = (id, data) => api.put(`/autonomous-systems/${id}`, data)
 export const deleteAutonomousSystem = (id) => api.delete(`/autonomous-systems/${id}`)
+
+// Bulk IP actions
+export const bulkReleaseIPs = (ipIds) => api.post('/admin/ip-addresses/bulk-release', { ip_ids: ipIds })
+
+// Inactive IPs report
+export const getInactiveIPs = (days = 30, limit = 10) => api.get('/admin/reports/inactive-ips', { params: { days, limit } })
