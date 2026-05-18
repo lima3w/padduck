@@ -31,7 +31,13 @@ const CONFIG_KEYS_BY_TAB = {
     'technitium_default_zone',
     'technitium_skip_tls',
   ],
-  scanner: ['scanner_resolve_hostnames'],
+  scanner: [
+    'scanner_resolve_hostnames',
+    'scanner_snmp_community',
+    'scanner_snmp_version',
+    'scanner_port_scan_enabled',
+    'scanner_port_list',
+  ],
 }
 
 export default function AdminSettingsPage() {
@@ -665,15 +671,80 @@ export default function AdminSettingsPage() {
                 </div>
               </label>
             </div>
-            <div className="flex gap-3 items-center mt-6">
-              <button
-                onClick={handleSaveConfig}
-                disabled={saving}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </button>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-base font-semibold mb-4">SNMP</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Global community string</label>
+                <input
+                  type="text"
+                  value={config.scanner_snmp_community ?? ''}
+                  onChange={(e) => handleConfigChange('scanner_snmp_community', e.target.value)}
+                  placeholder="public"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Used when no per-device community is configured. Default: public.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SNMP version</label>
+                <select
+                  value={config.scanner_snmp_version ?? '2c'}
+                  onChange={(e) => handleConfigChange('scanner_snmp_version', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="2c">v2c</option>
+                  <option value="3">v3</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Global default version. Per-device credentials override this.</p>
+              </div>
             </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-base font-semibold mb-4">Port Scanning</h3>
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.scanner_port_scan_enabled === 'true'}
+                  onChange={(e) =>
+                    handleConfigChange('scanner_port_scan_enabled', e.target.checked ? 'true' : 'false')
+                  }
+                  className="w-4 h-4 text-blue-600"
+                />
+                <div>
+                  <span className="font-medium text-gray-900">Enable TCP port scanning</span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    After a successful ping, probe the ports listed below on each alive host. Default: disabled.
+                  </p>
+                </div>
+              </label>
+              {config.scanner_port_scan_enabled === 'true' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Port list</label>
+                  <input
+                    type="text"
+                    value={config.scanner_port_list ?? ''}
+                    onChange={(e) => handleConfigChange('scanner_port_list', e.target.value)}
+                    placeholder="22,80,443,3306,5432,8080,8443"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Comma-separated port numbers. Default: 22,80,443,3306,5432,8080,8443.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={handleSaveConfig}
+              disabled={saving}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </div>
       )}
