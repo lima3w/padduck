@@ -10,6 +10,7 @@ import (
 
 	"ipam-next/internal/export"
 	"ipam-next/models"
+	"ipam-next/repository"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -153,6 +154,18 @@ func (r *stubReportsRepo) GetSubnetByID(_ context.Context, id int64) (*models.Su
 		}
 	}
 	return nil, context.Canceled
+}
+func (r *stubReportsRepo) GetSubnetGaps(_ context.Context) ([]*repository.SubnetGapRow, error) {
+	return nil, nil
+}
+func (r *stubReportsRepo) GetVLANAssignment(_ context.Context) ([]*repository.VLANAssignmentRow, error) {
+	return nil, nil
+}
+func (r *stubReportsRepo) GetIPAge(_ context.Context) ([]*repository.IPAgeRow, error) {
+	return nil, nil
+}
+func (r *stubReportsRepo) GetDNSAudit(_ context.Context) ([]*repository.DNSAuditRow, error) {
+	return nil, nil
 }
 
 func newTestReportsService(repo *stubReportsRepo) *ReportsService {

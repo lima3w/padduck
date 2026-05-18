@@ -181,7 +181,7 @@ func TestAddRecord_APIError(t *testing.T) {
 
 func TestDeleteRecord_SendsCorrectParams(t *testing.T) {
 	_, c, cap := fakeServer(t, "/api/zones/records/delete", okBare(t))
-	err := c.DeleteRecord(context.Background(), "example.com", "host.example.com")
+	err := c.DeleteRecord(context.Background(), "example.com", "host.example.com", "")
 	require.NoError(t, err)
 	assert.Equal(t, "example.com", cap.params.Get("zone"))
 	assert.Equal(t, "host.example.com", cap.params.Get("domain"))
