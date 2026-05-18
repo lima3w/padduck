@@ -893,6 +893,27 @@ type Customer struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// DuplicateHostname describes a hostname that appears on more than one device.
+type DuplicateHostname struct {
+	Hostname  string  `json:"hostname"`
+	Count     int     `json:"count"`
+	DeviceIDs []int64 `json:"device_ids"`
+}
+
+// ConflictingIP describes an IP address that is assigned to more than one entry.
+type ConflictingIP struct {
+	IPAddress  string   `json:"ip_address"`
+	SubnetCIDR string   `json:"subnet_cidr"`
+	Count      int      `json:"count"`
+	Hostnames  []string `json:"hostnames"`
+}
+
+// DuplicatesReport is the aggregate response for GET /admin/reports/duplicates.
+type DuplicatesReport struct {
+	DuplicateHostnames []DuplicateHostname `json:"duplicate_hostnames"`
+	ConflictingIPs     []ConflictingIP     `json:"conflicting_ips"`
+}
+
 // AutonomousSystem represents a BGP Autonomous System entry.
 type AutonomousSystem struct {
 	ID          int64     `json:"id"`
