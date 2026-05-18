@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"log"
 	"time"
@@ -20,13 +21,19 @@ type Handler struct {
 	service      *services.Service
 	tokenLimiter *tokenRateLimiter
 	isProduction bool
+	csrfSecret   []byte // per-process CSRF signing key, generated at startup
 }
 
 func NewHandler(service *services.Service, isProduction bool) *Handler {
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		panic("handlers: failed to generate CSRF secret: " + err.Error())
+	}
 	return &Handler{
 		service:      service,
 		tokenLimiter: newTokenRateLimiter(),
 		isProduction: isProduction,
+		csrfSecret:   secret,
 	}
 }
 

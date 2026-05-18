@@ -193,12 +193,14 @@ func (s *Service) CheckPermission(ctx context.Context, userID int64, permission 
 			}
 			return nil
 		}
-		// Custom roles did not grant the permission; fall through to legacy role check.
+		// Custom roles exist but did not grant the permission; deny immediately.
+		// Do NOT fall through to the legacy role check — doing so would allow the
+		// legacy "admin" role to override explicit custom-role denials.
+		return fmt.Errorf("permission denied: %s", permission)
 	}
 
-	// Legacy fallback: use the role column. This ensures that users whose legacy
-	// role (e.g. "admin") grants broader access than their custom role assignments
-	// are not inadvertently locked out.
+	// Legacy fallback: only reached when the user has NO custom role assignments.
+	// Uses the role column so that users without any custom roles are not locked out.
 	user, err := s.repository.GetUserByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("permission denied")

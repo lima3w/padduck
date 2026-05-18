@@ -32,6 +32,10 @@ type IPSearchRequest struct {
 
 // SearchSections handles POST /api/v1/sections/search
 func (h *Handler) SearchSections(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+		return nil
+	}
+
 	req := new(SearchRequest)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
@@ -55,6 +59,9 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 	sectionID, err := c.ParamsInt("sectionID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+	}
+	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+		return nil
 	}
 
 	req := new(SearchRequest)
@@ -80,6 +87,9 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+		return nil
 	}
 
 	req := new(IPSearchRequest)

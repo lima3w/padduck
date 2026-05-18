@@ -298,6 +298,9 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
+	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+		return nil
+	}
 
 	req := new(AssignWithLeaseRequest)
 	if err := c.BodyParser(req); err != nil {
@@ -319,6 +322,9 @@ func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
 	}
+	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
+		return nil
+	}
 
 	expired, err := h.service.IsIPLeaseExpired(c.Context(), int64(id))
 	if err != nil {
@@ -334,6 +340,9 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+	}
+	if err := h.permCheck(c, services.PermV2IPRelease); err != nil {
+		return nil
 	}
 
 	ip, err := h.service.ReleaseExpiredLease(c.Context(), int64(id))

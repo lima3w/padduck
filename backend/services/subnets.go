@@ -20,7 +20,7 @@ func (e *SubnetOverlapError) Error() string {
 
 // ValidateCIDR validates a CIDR notation
 func ValidateCIDR(address string, prefixLength int) error {
-	if prefixLength < 0 || prefixLength > 32 {
+	if prefixLength < 0 || prefixLength > 128 {
 		return fmt.Errorf("invalid prefix length: %d", prefixLength)
 	}
 
@@ -106,15 +106,27 @@ func (s *Service) OverlapReport(ctx context.Context) ([]*OverlapPair, error) {
 	return pairs, nil
 }
 
-// broadcastAddr computes the broadcast address of a network
+// broadcastAddr computes the broadcast address of a network.
+// For IPv4 it returns the classical broadcast (host bits all 1).
+// For IPv6 (no broadcast concept) it returns the last address in the prefix (host bits all 1).
 func broadcastAddr(n *net.IPNet) string {
-	ip := n.IP.To4()
-	mask := n.Mask
-	broadcast := make(net.IP, 4)
-	for i := 0; i < 4; i++ {
-		broadcast[i] = ip[i] | ^mask[i]
+	if ip4 := n.IP.To4(); ip4 != nil {
+		// IPv4 path
+		mask := n.Mask
+		broadcast := make(net.IP, 4)
+		for i := 0; i < 4; i++ {
+			broadcast[i] = ip4[i] | ^mask[i]
+		}
+		return broadcast.String()
 	}
-	return broadcast.String()
+	// IPv6 path — return last address in prefix (host bits set to 1)
+	ip6 := n.IP.To16()
+	mask := n.Mask
+	last := make(net.IP, 16)
+	for i := 0; i < 16; i++ {
+		last[i] = ip6[i] | ^mask[i]
+	}
+	return last.String()
 }
 
 // validateGatewayInCIDR checks that the gateway IP is within the subnet

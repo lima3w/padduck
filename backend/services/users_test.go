@@ -266,7 +266,7 @@ func TestBulkImportUsersValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := svc.BulkImportUsers(ctx, tt.records, "pass")
+			results, err := svc.BulkImportUsers(ctx, tt.records)
 			assert.NoError(t, err) // function-level error is nil; errors are per-record
 			require.Len(t, results, 1)
 			assert.Contains(t, results[0].Error, tt.wantErr)
