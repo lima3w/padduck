@@ -557,9 +557,34 @@ func maskSecret(set bool) string {
 	return ""
 }
 
+// GetAuthProviders handles GET /api/v1/auth/providers.
+// Returns which external auth providers are currently enabled (no auth required).
+func (h *Handler) GetAuthProviders(c *fiber.Ctx) error {
+	ldapEnabled := false
+	oauth2Enabled := false
+	samlEnabled := false
+
+	if cfg, err := h.service.LDAP.GetConfig(c.Context()); err == nil && cfg != nil {
+		ldapEnabled = cfg.Enabled
+	}
+	if cfg, err := h.service.OAuth2.GetConfig(c.Context()); err == nil && cfg != nil {
+		oauth2Enabled = cfg.Enabled
+	}
+	if cfg, err := h.service.SAML.GetConfig(c.Context()); err == nil && cfg != nil {
+		samlEnabled = cfg.Enabled
+	}
+
+	return c.JSON(fiber.Map{
+		"ldap":   ldapEnabled,
+		"oauth2": oauth2Enabled,
+		"saml":   samlEnabled,
+	})
+}
+
 // RegisterExternalAuthRoutes adds the LDAP/OAuth2/SAML routes to the app.
 func (h *Handler) RegisterExternalAuthRoutes(auth fiber.Router, admin fiber.Router) {
 	// Public authentication endpoints
+	auth.Get("/providers", h.GetAuthProviders)
 	auth.Get("/ldap/login", h.LDAPStatus)
 	auth.Post("/ldap/login", h.LDAPLogin)
 	auth.Get("/oauth2/login", h.OAuth2Login)
