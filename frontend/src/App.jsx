@@ -44,6 +44,7 @@ const ImportDataPage = lazy(() => import('./pages/ImportDataPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const VRFsPage = lazy(() => import('./pages/VRFsPage'))
+const AdminRolesPage = lazy(() => import('./pages/AdminRolesPage'))
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'))
 const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
 const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
@@ -113,6 +114,7 @@ export default function App() {
             <Route path="devices/:id" element={<DeviceDetailPage />} />
             <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
             <Route path="admin/users" element={<AdminUsersPage />} />
+            <Route path="admin/roles" element={<AdminRolesPage />} />
             <Route path="locations" element={<LocationsPage />} />
             <Route path="locations/:id" element={<LocationDetailPage />} />
             <Route path="racks/:id" element={<RackDetailPage />} />

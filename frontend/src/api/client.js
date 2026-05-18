@@ -261,6 +261,13 @@ export const getVlanUsageReport = () => api.get('/admin/vlans/usage-report')
 
 // Admin roles (for LDAP group mappings)
 export const getAdminRoles = () => api.get('/admin/roles')
+export const createRole = (data) => api.post('/admin/roles', data)
+export const getRole = (id) => api.get(`/admin/roles/${id}`)
+export const updateRole = (id, data) => api.put(`/admin/roles/${id}`, data)
+export const deleteRole = (id) => api.delete(`/admin/roles/${id}`)
+export const addPermissionToRole = (roleId, data) => api.post(`/admin/roles/${roleId}/permissions`, data)
+export const removePermissionFromRole = (roleId, permId) => api.delete(`/admin/roles/${roleId}/permissions/${permId}`)
+export const listAvailablePermissions = () => api.get('/admin/permissions')
 
 // LDAP (#229 #232)
 export const getLdapConfig = () => api.get('/admin/auth/ldap')

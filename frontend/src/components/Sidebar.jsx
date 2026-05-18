@@ -243,6 +243,16 @@ export default function Sidebar() {
               Users &amp; Roles
             </NavLink>
             <NavLink
+              to="/admin/roles"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Role Management
+            </NavLink>
+            <NavLink
               to="/admin/settings"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
