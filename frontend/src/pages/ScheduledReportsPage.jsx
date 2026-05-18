@@ -7,6 +7,10 @@ const REPORT_TYPES = [
   { value: 'inactive_ips', label: 'Inactive IPs' },
   { value: 'new_allocations', label: 'New Allocations' },
   { value: 'full_audit', label: 'Full Audit' },
+  { value: 'subnet_gaps', label: 'Subnet Gaps' },
+  { value: 'vlan_assignment', label: 'VLAN Assignment' },
+  { value: 'ip_age', label: 'IP Age' },
+  { value: 'dns_audit', label: 'DNS Audit' },
 ]
 
 const FORMAT_OPTIONS = [
@@ -19,6 +23,10 @@ const DEFAULT_FILTERS = {
   inactive_ips: '{"days": 90}',
   new_allocations: '{"days": 30}',
   full_audit: '{}',
+  subnet_gaps: '{}',
+  vlan_assignment: '{}',
+  ip_age: '{}',
+  dns_audit: '{}',
 }
 
 const EMPTY_FORM = {

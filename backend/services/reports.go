@@ -11,6 +11,7 @@ import (
 
 	"ipam-next/internal/export"
 	"ipam-next/models"
+	"ipam-next/repository"
 )
 
 // reportsRepo lists the repository methods used by ReportsService.
@@ -42,6 +43,11 @@ type reportsRepo interface {
 	// sections and subnets for export
 	ListAllSections(ctx context.Context) ([]*models.Section, error)
 	GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error)
+	// expanded report types
+	GetSubnetGaps(ctx context.Context) ([]*repository.SubnetGapRow, error)
+	GetVLANAssignment(ctx context.Context) ([]*repository.VLANAssignmentRow, error)
+	GetIPAge(ctx context.Context) ([]*repository.IPAgeRow, error)
+	GetDNSAudit(ctx context.Context) ([]*repository.DNSAuditRow, error)
 }
 
 // ReportsService provides reporting and analytics functionality.
@@ -349,6 +355,85 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 			}
 		}
 		return buildReport(report.Format, "Inactive IPs", headers, rows)
+
+	case "subnet_gaps":
+		gaps, err := rs.repo.GetSubnetGaps(ctx)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"subnet_id", "cidr", "description", "total_ips", "used_ips", "free_ips", "used_pct"}
+		rows := make([]map[string]string, len(gaps))
+		for i, g := range gaps {
+			rows[i] = map[string]string{
+				"subnet_id":   strconv.FormatInt(g.SubnetID, 10),
+				"cidr":        g.CIDR,
+				"description": g.Description,
+				"total_ips":   strconv.Itoa(g.TotalIPs),
+				"used_ips":    strconv.Itoa(g.UsedIPs),
+				"free_ips":    strconv.Itoa(g.FreeIPs),
+				"used_pct":    fmt.Sprintf("%.2f", g.UsedPct),
+			}
+		}
+		return buildReport(report.Format, "Subnet Gaps", headers, rows)
+
+	case "vlan_assignment":
+		vlans, err := rs.repo.GetVLANAssignment(ctx)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"vlan_id", "vlan_name", "vlan_tag", "subnet_count", "subnet_cidrs"}
+		rows := make([]map[string]string, len(vlans))
+		for i, v := range vlans {
+			rows[i] = map[string]string{
+				"vlan_id":      strconv.FormatInt(v.VLANID, 10),
+				"vlan_name":    v.VLANName,
+				"vlan_tag":     strconv.Itoa(v.VLANTag),
+				"subnet_count": strconv.Itoa(v.SubnetCount),
+				"subnet_cidrs": v.SubnetCIDRs,
+			}
+		}
+		return buildReport(report.Format, "VLAN Assignment", headers, rows)
+
+	case "ip_age":
+		ips, err := rs.repo.GetIPAge(ctx)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"ip_id", "address", "status", "assigned_to", "days_old", "days_since_seen"}
+		rows := make([]map[string]string, len(ips))
+		for i, ip := range ips {
+			daysSinceSeen := "never"
+			if ip.DaysSinceSeen >= 0 {
+				daysSinceSeen = strconv.Itoa(ip.DaysSinceSeen)
+			}
+			rows[i] = map[string]string{
+				"ip_id":           strconv.FormatInt(ip.IPID, 10),
+				"address":         ip.Address,
+				"status":          ip.Status,
+				"assigned_to":     ip.AssignedTo,
+				"days_old":        strconv.Itoa(ip.DaysOld),
+				"days_since_seen": daysSinceSeen,
+			}
+		}
+		return buildReport(report.Format, "IP Age", headers, rows)
+
+	case "dns_audit":
+		entries, err := rs.repo.GetDNSAudit(ctx)
+		if err != nil {
+			return nil, "", "", err
+		}
+		headers := []string{"ip_id", "address", "dns_name", "ptr_record", "dns_last_checked"}
+		rows := make([]map[string]string, len(entries))
+		for i, e := range entries {
+			rows[i] = map[string]string{
+				"ip_id":            strconv.FormatInt(e.IPID, 10),
+				"address":          e.Address,
+				"dns_name":         e.DNSName,
+				"ptr_record":       e.PTRRecord,
+				"dns_last_checked": e.DNSLastChecked,
+			}
+		}
+		return buildReport(report.Format, "DNS Audit", headers, rows)
 
 	default:
 		return nil, "", "", fmt.Errorf("unsupported report type %q", report.ReportType)
