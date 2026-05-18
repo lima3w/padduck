@@ -72,7 +72,10 @@ export const deleteSubnet = (id) => api.delete(`/subnets/${id}`)
 export const getIPAddresses = (subnetID) => api.get(`/subnets/${subnetID}/ip-addresses`)
 export const createIPAddress = (subnetID, data) => api.post(`/subnets/${subnetID}/ip-addresses`, data)
 export const assignIPAddress = (id, data) => api.post(`/ip-addresses/${id}/assign`, data)
+export const assignIPAddressWithLease = (id, data) => api.post(`/ip-addresses/${id}/assign-with-lease`, data)
 export const releaseIPAddress = (id) => api.post(`/ip-addresses/${id}/release`)
+export const getIPLeaseStatus = (id) => api.get(`/ip-addresses/${id}/lease-status`)
+export const releaseExpiredLease = (id) => api.post(`/ip-addresses/${id}/release-expired`)
 export const deleteIPAddress = (id) => api.delete(`/ip-addresses/${id}`)
 
 // Logout (POST /auth/me/logout)
@@ -129,6 +132,12 @@ export const verifyEmail = (token) =>
 export const resendVerification = (email) =>
   noAuthApi.post('/auth/resend-verification', { email })
 
+export const requestPasswordReset = (email) =>
+  noAuthApi.post('/auth/request-password-reset', { email })
+
+export const resetPassword = (token, newPassword) =>
+  noAuthApi.post('/auth/reset-password', { token, new_password: newPassword })
+
 export const verifyMFA = (mfaChallenge, code) =>
   noAuthApi.post('/auth/verify-mfa', { mfa_challenge: mfaChallenge, code })
 
@@ -143,6 +152,16 @@ export const regenerateBackupCodes = (code) => api.post('/auth/me/mfa/backup-cod
 export const getAdminConfig = () => api.get('/admin/config')
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
+
+// Notification preferences
+export const getNotificationPreferences = () => api.get('/user/notification-preferences')
+export const updateNotificationPreferences = (data) => api.put('/user/notification-preferences', data)
+export const getNotificationStats = () => api.get('/admin/notification-stats')
+
+// Sessions
+export const listMySessions = () => api.get('/auth/me/sessions')
+export const revokeMySession = (sessionId) => api.delete(`/auth/me/sessions/${sessionId}`)
+export const logoutAllDevices = () => api.delete('/auth/me/sessions')
 
 // Security / login history
 export const getLoginHistory = () => api.get('/user/login-history')
@@ -169,6 +188,15 @@ export const getWebhookDeliveries = (limit = 50) => api.get('/admin/webhooks/del
 
 // Admin user management
 export const adminUnlockUser = (id) => api.post(`/admin/users/${id}/unlock`)
+export const suspendUser = (id, reason) => api.post(`/admin/users/${id}/suspend`, { reason })
+export const unsuspendUser = (id) => api.post(`/admin/users/${id}/unsuspend`)
+export const impersonateUser = (id) => api.post(`/admin/users/${id}/impersonate`)
+export const sendPasswordResetEmail = (id) => api.post(`/admin/users/${id}/send-password-reset`)
+export const updateUserEmail = (id, email) => api.put(`/admin/users/${id}/email`, { email })
+export const gdprDeleteUser = (id) => api.post(`/admin/users/${id}/gdpr-delete`)
+export const bulkSuspendUsers = (userIds, reason) => api.post('/admin/users/bulk-suspend', { user_ids: userIds, reason })
+export const bulkActivateUsers = (userIds) => api.post('/admin/users/bulk-activate', { user_ids: userIds })
+export const bulkDeleteUsers = (userIds) => api.post('/admin/users/bulk-delete', { user_ids: userIds })
 
 // Search
 export const searchSections = (query, limit = 50, offset = 0) =>
@@ -207,6 +235,15 @@ export const getDnsZoneRecords = (zone, type) =>
 // DNS admin
 export const testDnsConnection = () => api.post('/admin/dns/test')
 export const testTechnitiumConnection = (params) => api.post('/admin/dns/technitium/test', params || {})
+export const checkAllDns = () => api.post('/admin/dns/check-all')
+
+// VRFs
+export const getVrfs = () => api.get('/vrfs')
+export const getVrf = (id) => api.get(`/vrfs/${id}`)
+export const createVrf = (data) => api.post('/vrfs', data)
+export const updateVrf = (id, data) => api.put(`/vrfs/${id}`, data)
+export const deleteVrf = (id) => api.delete(`/vrfs/${id}`)
+export const getVrfVlans = (id) => api.get(`/vrfs/${id}/vlans`)
 
 // VLAN Domains (#206)
 export const getVlanDomains = () => api.get('/vlan-domains')
@@ -237,6 +274,13 @@ export const getVlanUsageReport = () => api.get('/admin/vlans/usage-report')
 
 // Admin roles (for LDAP group mappings)
 export const getAdminRoles = () => api.get('/admin/roles')
+export const createRole = (data) => api.post('/admin/roles', data)
+export const getRole = (id) => api.get(`/admin/roles/${id}`)
+export const updateRole = (id, data) => api.put(`/admin/roles/${id}`, data)
+export const deleteRole = (id) => api.delete(`/admin/roles/${id}`)
+export const addPermissionToRole = (roleId, data) => api.post(`/admin/roles/${roleId}/permissions`, data)
+export const removePermissionFromRole = (roleId, permId) => api.delete(`/admin/roles/${roleId}/permissions/${permId}`)
+export const listAvailablePermissions = () => api.get('/admin/permissions')
 
 // LDAP (#229 #232)
 export const getLdapConfig = () => api.get('/admin/auth/ldap')
@@ -254,6 +298,10 @@ export const updateOAuth2Config = (config) => api.put('/admin/auth/oauth2', conf
 export const getSamlConfig = () => api.get('/admin/auth/saml')
 export const updateSamlConfig = (config) => api.put('/admin/auth/saml', config)
 
+// Privacy policy
+export const getPrivacyPolicyVersion = () => noAuthApi.get('/privacy-policy/version')
+export const acceptPrivacyPolicy = () => api.post('/auth/me/accept-privacy')
+
 // Public auth providers info
 export const getAuthProviders = () => noAuthApi.get('/auth/providers')
 
@@ -270,6 +318,7 @@ export const deleteCustomField = (id) => api.delete(`/admin/custom-fields/${id}`
 export const reorderCustomFields = (ids) => api.put('/admin/custom-fields/reorder', { ids })
 
 // Devices
+export const getDeviceSNMPCredentials = (id) => api.get(`/devices/${id}/snmp-credentials`)
 export const getDevice = (id) => api.get(`/devices/${id}`)
 export const updateDevice = (id, data) => api.put(`/devices/${id}`, data)
 export const getDeviceTypes = () => api.get('/device-types')

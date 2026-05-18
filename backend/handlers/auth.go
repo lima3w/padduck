@@ -59,14 +59,15 @@ type ListTokensResponse struct {
 }
 
 type UserResponse struct {
-	ID          int64  `json:"id"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
-	Role        string `json:"role"`
-	State       string `json:"state"`
-	GravatarURL string `json:"gravatar_url"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID                     int64   `json:"id"`
+	Username               string  `json:"username"`
+	Email                  string  `json:"email"`
+	Role                   string  `json:"role"`
+	State                  string  `json:"state"`
+	GravatarURL            string  `json:"gravatar_url"`
+	PrivacyAcceptedVersion *string `json:"privacy_accepted_version,omitempty"`
+	CreatedAt              string  `json:"created_at"`
+	UpdatedAt              string  `json:"updated_at"`
 }
 
 type LoginRequest struct {
@@ -100,14 +101,15 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(UserResponse{
-		ID:          user.ID,
-		Username:    user.Username,
-		Email:       user.Email,
-		Role:        user.Role,
-		State:       user.State,
-		GravatarURL: gravatarURL(user.Email, 80),
-		CreatedAt:   user.CreatedAt.String(),
-		UpdatedAt:   user.UpdatedAt.String(),
+		ID:                     user.ID,
+		Username:               user.Username,
+		Email:                  user.Email,
+		Role:                   user.Role,
+		State:                  user.State,
+		GravatarURL:            gravatarURL(user.Email, 80),
+		PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
+		CreatedAt:              user.CreatedAt.String(),
+		UpdatedAt:              user.UpdatedAt.String(),
 	})
 }
 
@@ -257,14 +259,15 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	h.setSessionCookie(c, token)
 	return c.JSON(LoginResponse{
 		User: UserResponse{
-			ID:          user.ID,
-			Username:    user.Username,
-			Email:       user.Email,
-			Role:        user.Role,
-			State:       user.State,
-			GravatarURL: gravatarURL(user.Email, 80),
-			CreatedAt:   user.CreatedAt.String(),
-			UpdatedAt:   user.UpdatedAt.String(),
+			ID:                     user.ID,
+			Username:               user.Username,
+			Email:                  user.Email,
+			Role:                   user.Role,
+			State:                  user.State,
+			GravatarURL:            gravatarURL(user.Email, 80),
+			PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
+			CreatedAt:              user.CreatedAt.String(),
+			UpdatedAt:              user.UpdatedAt.String(),
 		},
 	})
 }

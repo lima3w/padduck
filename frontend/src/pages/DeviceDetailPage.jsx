@@ -8,7 +8,7 @@ import {
   getDevice, updateDevice, getDeviceTypes,
   getDeviceIPs, associateDeviceIP, disassociateDeviceIP,
   getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface,
-  getCustomFields,
+  getCustomFields, getDeviceSNMPCredentials,
 } from '../api/client'
 
 const MEDIA_TYPES = ['copper', 'fiber', 'SFP', 'SFP+', 'QSFP', 'other']
@@ -30,6 +30,10 @@ export default function DeviceDetailPage() {
   const [assocForm, setAssocForm] = useState({ ip_id: '', interface_name: '', is_primary: false })
   const [deleteIfaceConfirm, setDeleteIfaceConfirm] = useState(null)
   const [deleteIpConfirm, setDeleteIpConfirm] = useState(null)
+  const [snmpCreds, setSnmpCreds] = useState(null) // null = not loaded, false = not found
+  const [snmpLoading, setSnmpLoading] = useState(false)
+  const [snmpError, setSnmpError] = useState(null)
+  const [snmpRevealed, setSnmpRevealed] = useState({}) // field key -> bool
   const [saving, setSaving] = useState(false)
   const [cfDefs, setCfDefs] = useState([])
   const [locations, setLocations] = useState([])
@@ -109,6 +113,13 @@ export default function DeviceDetailPage() {
       rack_unit_start: device.rackUnitStart != null ? String(device.rackUnitStart) : '',
       rack_unit_size: device.rackUnitSize != null ? String(device.rackUnitSize) : '',
       custom_fields: device.customFields || {},
+      snmp_version: 'v2c',
+      snmp_community: '',
+      snmp_v3_user: '',
+      snmp_v3_auth_proto: 'SHA',
+      snmp_v3_auth_pass: '',
+      snmp_v3_priv_proto: 'AES',
+      snmp_v3_priv_pass: '',
     })
     setModal('edit')
   }
@@ -129,6 +140,13 @@ export default function DeviceDetailPage() {
         rack_unit_start: editForm.rack_unit_start ? parseInt(editForm.rack_unit_start) : null,
         rack_unit_size: editForm.rack_unit_size ? parseInt(editForm.rack_unit_size) : null,
         custom_fields: editForm.custom_fields || {},
+        snmp_version: editForm.snmp_version || 'v2c',
+        snmp_community: editForm.snmp_community || null,
+        snmp_v3_user: editForm.snmp_v3_user || null,
+        snmp_v3_auth_proto: editForm.snmp_v3_auth_proto || null,
+        snmp_v3_auth_pass: editForm.snmp_v3_auth_pass || null,
+        snmp_v3_priv_proto: editForm.snmp_v3_priv_proto || null,
+        snmp_v3_priv_pass: editForm.snmp_v3_priv_pass || null,
       }
       const res = await updateDevice(id, body)
       setDevice(res.data)
@@ -356,6 +374,16 @@ export default function DeviceDetailPage() {
         >
           Interfaces
         </button>
+        <button
+          onClick={() => setTab('credentials')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition ${
+            tab === 'credentials'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          Credentials
+        </button>
       </div>
 
       {tab === 'ips' && (
@@ -466,6 +494,95 @@ export default function DeviceDetailPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {tab === 'credentials' && (
+        <div className="max-w-lg space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">SNMP Credentials</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Stored credentials are revealed on demand. Each field must be individually shown.
+            </p>
+          </div>
+
+          {snmpError && <p className="text-sm text-red-600">{snmpError}</p>}
+
+          {snmpCreds === null && !snmpLoading && (
+            <button
+              onClick={async () => {
+                setSnmpLoading(true)
+                setSnmpError(null)
+                try {
+                  const res = await getDeviceSNMPCredentials(id)
+                  setSnmpCreds(res.data)
+                  setSnmpRevealed({})
+                } catch (err) {
+                  const status = err.response?.status
+                  if (status === 403) setSnmpError('You do not have permission to view SNMP credentials.')
+                  else if (status === 404) setSnmpCreds(false)
+                  else setSnmpError('Failed to load credentials.')
+                } finally {
+                  setSnmpLoading(false)
+                }
+              }}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              Load Credentials
+            </button>
+          )}
+
+          {snmpLoading && <p className="text-sm text-gray-500">Loading…</p>}
+
+          {snmpCreds === false && (
+            <p className="text-sm text-gray-500">No SNMP credentials stored for this device.</p>
+          )}
+
+          {snmpCreds && snmpCreds !== false && (() => {
+            const rows = [
+              { key: 'snmpVersion', label: 'SNMP Version', value: snmpCreds.snmpVersion, sensitive: false },
+              { key: 'snmpCommunity', label: 'Community String', value: snmpCreds.snmpCommunity, sensitive: true },
+              { key: 'snmpV3User', label: 'SNMPv3 Username', value: snmpCreds.snmpV3User, sensitive: false },
+              { key: 'snmpV3AuthProto', label: 'Auth Protocol', value: snmpCreds.snmpV3AuthProto, sensitive: false },
+              { key: 'snmpV3AuthPass', label: 'Auth Password', value: snmpCreds.snmpV3AuthPass, sensitive: true },
+              { key: 'snmpV3PrivProto', label: 'Priv Protocol', value: snmpCreds.snmpV3PrivProto, sensitive: false },
+              { key: 'snmpV3PrivPass', label: 'Priv Password', value: snmpCreds.snmpV3PrivPass, sensitive: true },
+            ].filter((r) => r.value != null && r.value !== '')
+
+            return (
+              <div className="border border-gray-200 dark:border-gray-700 rounded divide-y divide-gray-100 dark:divide-gray-700">
+                {rows.map(({ key, label, value, sensitive }) => (
+                  <div key={key} className="flex items-center justify-between px-4 py-3 gap-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 w-36 flex-shrink-0">{label}</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {!sensitive || snmpRevealed[key] ? (
+                        <span className="text-sm font-mono text-gray-900 dark:text-gray-100 break-all">{value}</span>
+                      ) : (
+                        <span className="text-sm text-gray-400 font-mono">••••••••</span>
+                      )}
+                      {sensitive && (
+                        <button
+                          onClick={() => setSnmpRevealed((p) => ({ ...p, [key]: !p[key] }))}
+                          className="flex-shrink-0 text-xs text-blue-600 hover:underline"
+                        >
+                          {snmpRevealed[key] ? 'Hide' : 'Reveal'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
+          {snmpCreds && (
+            <button
+              onClick={() => { setSnmpCreds(null); setSnmpRevealed({}) }}
+              className="text-xs text-gray-400 hover:text-gray-600 hover:underline"
+            >
+              Clear credentials from view
+            </button>
+          )}
         </div>
       )}
 
@@ -589,6 +706,94 @@ export default function DeviceDetailPage() {
                 )}
               </>
             )}
+            <div className="border-t dark:border-gray-600 pt-4">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">SNMP</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SNMP Version</label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    value={editForm.snmp_version}
+                    onChange={e => setEditForm(f => ({ ...f, snmp_version: e.target.value }))}
+                  >
+                    <option value="v1">v1</option>
+                    <option value="v2c">v2c</option>
+                    <option value="v3">v3</option>
+                  </select>
+                </div>
+                {(editForm.snmp_version === 'v1' || editForm.snmp_version === 'v2c') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Community String</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                      placeholder="Leave blank to keep existing"
+                      value={editForm.snmp_community}
+                      onChange={e => setEditForm(f => ({ ...f, snmp_community: e.target.value }))}
+                    />
+                  </div>
+                )}
+                {editForm.snmp_version === 'v3' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                      <input
+                        type="text"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        value={editForm.snmp_v3_user}
+                        onChange={e => setEditForm(f => ({ ...f, snmp_v3_user: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Protocol</label>
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={editForm.snmp_v3_auth_proto}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_auth_proto: e.target.value }))}
+                        >
+                          <option value="SHA">SHA</option>
+                          <option value="MD5">MD5</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Password</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          placeholder="Leave blank to keep existing"
+                          value={editForm.snmp_v3_auth_pass}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_auth_pass: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Protocol</label>
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={editForm.snmp_v3_priv_proto}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_priv_proto: e.target.value }))}
+                        >
+                          <option value="AES">AES</option>
+                          <option value="DES">DES</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Password</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          placeholder="Leave blank to keep existing"
+                          value={editForm.snmp_v3_priv_pass}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_priv_pass: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>

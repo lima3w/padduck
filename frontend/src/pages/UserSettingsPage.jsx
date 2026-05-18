@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import * as client from '../api/client'
 
@@ -521,14 +522,219 @@ function LoginHistoryTab() {
   )
 }
 
+const NOTIF_LABELS = {
+  loginSuccess: 'Successful login',
+  loginFailed: 'Failed login attempt',
+  accountLocked: 'Account locked',
+  passwordChanged: 'Password changed',
+  mfaChanges: 'MFA changes',
+  apiTokenChanges: 'API token changes',
+  roleChanges: 'Role changes',
+  sessionRevoked: 'Session revoked',
+}
+
+function NotificationsTab() {
+  const [prefs, setPrefs] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    client.getNotificationPreferences()
+      .then((res) => setPrefs(res.data))
+      .catch(() => setError('Failed to load preferences.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggle = (key) => {
+    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }))
+    setSaved(false)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      const updates = {}
+      Object.keys(NOTIF_LABELS).forEach((k) => {
+        const snakeKey = k.replace(/([A-Z])/g, '_$1').toLowerCase()
+        updates[snakeKey] = prefs[k]
+      })
+      const res = await client.updateNotificationPreferences(updates)
+      setPrefs(res.data)
+      setSaved(true)
+    } catch {
+      setError('Failed to save preferences.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <p className="text-sm text-gray-500">Loading…</p>
+
+  return (
+    <div className="max-w-lg space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Notification Preferences</h2>
+        <p className="text-sm text-gray-600">Choose which security events send you an email.</p>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="divide-y divide-gray-100 border border-gray-200 rounded">
+        {Object.entries(NOTIF_LABELS).map(([key, label]) => (
+          <label key={key} className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50">
+            <span className="text-sm text-gray-800">{label}</span>
+            <input
+              type="checkbox"
+              checked={prefs?.[key] ?? true}
+              onChange={() => toggle(key)}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+          </label>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+        >
+          {saving ? 'Saving…' : 'Save preferences'}
+        </button>
+        {saved && <span className="text-sm text-green-600">Saved.</span>}
+      </div>
+    </div>
+  )
+}
+
+function SessionsTab() {
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [revoking, setRevoking] = useState(null)
+  const [logoutAllLoading, setLogoutAllLoading] = useState(false)
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const load = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await client.listMySessions()
+      setSessions(res.data)
+    } catch {
+      setError('Failed to load sessions.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRevoke = async (id) => {
+    setRevoking(id)
+    try {
+      await client.revokeMySession(id)
+      setSessions((prev) => prev.filter((s) => s.id !== id))
+    } catch {
+      setError('Failed to revoke session.')
+    } finally {
+      setRevoking(null)
+    }
+  }
+
+  const handleLogoutAll = async () => {
+    if (!confirm('Sign out of all other devices?')) return
+    setLogoutAllLoading(true)
+    try {
+      await client.logoutAllDevices()
+      await load()
+    } catch {
+      setError('Failed to sign out all devices.')
+    } finally {
+      setLogoutAllLoading(false)
+    }
+  }
+
+  const fmt = (iso) => {
+    try { return new Date(iso).toLocaleString() } catch { return iso }
+  }
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Active Sessions</h2>
+          <p className="text-sm text-gray-600">Devices currently signed in to your account.</p>
+        </div>
+        <button
+          onClick={handleLogoutAll}
+          disabled={logoutAllLoading || loading}
+          className="flex-shrink-0 text-sm text-red-600 border border-red-300 px-3 py-1.5 rounded hover:bg-red-50 disabled:opacity-50 transition"
+        >
+          {logoutAllLoading ? 'Signing out…' : 'Sign out all devices'}
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : sessions.length === 0 ? (
+        <p className="text-sm text-gray-500">No active sessions.</p>
+      ) : (
+        <div className="divide-y divide-gray-200 border border-gray-200 rounded">
+          {sessions.map((s) => (
+            <div key={s.id} className="px-4 py-3 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {s.deviceName || 'Unknown device'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {s.ipAddress || 'Unknown IP'}
+                  {' · '}Last active {fmt(s.lastUsedAt)}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Expires {fmt(s.absoluteExpiresAt)}
+                </p>
+              </div>
+              <button
+                onClick={() => handleRevoke(s.id)}
+                disabled={revoking === s.id}
+                className="flex-shrink-0 text-xs text-red-600 hover:underline disabled:opacity-50"
+              >
+                {revoking === s.id ? 'Revoking…' : 'Revoke'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const TAB_PARAM_MAP = { history: 'login-history', notif: 'notifications' }
+const VALID_TABS = new Set(['profile', 'security', 'tokens', 'login-history', 'sessions', 'notifications'])
+
 export default function UserSettingsPage() {
   const { user } = useAuth()
-  const [tab, setTab] = useState('profile')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const rawTab = searchParams.get('tab') || 'profile'
+  const resolvedTab = TAB_PARAM_MAP[rawTab] || rawTab
+  const tab = VALID_TABS.has(resolvedTab) ? resolvedTab : 'profile'
+
+  const setTab = (id) => setSearchParams({ tab: id }, { replace: true })
 
   const tabs = [
     { id: 'profile', label: 'Profile' },
     { id: 'security', label: 'Security' },
     { id: 'tokens', label: 'API Tokens' },
+    { id: 'sessions', label: 'Sessions' },
+    { id: 'notifications', label: 'Notifications' },
     { id: 'login-history', label: 'Login History' },
   ]
 
@@ -555,6 +761,8 @@ export default function UserSettingsPage() {
       {tab === 'profile' && <ProfileTab user={user} />}
       {tab === 'security' && <SecurityTab user={user} />}
       {tab === 'tokens' && <TokensTab user={user} />}
+      {tab === 'sessions' && <SessionsTab />}
+      {tab === 'notifications' && <NotificationsTab />}
       {tab === 'login-history' && <LoginHistoryTab />}
     </div>
   )

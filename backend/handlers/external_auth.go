@@ -536,14 +536,15 @@ func (h *Handler) issueSessionResponse(c *fiber.Ctx, user *models.User) error {
 	h.setSessionCookie(c, token)
 	return c.JSON(LoginResponse{
 		User: UserResponse{
-			ID:          user.ID,
-			Username:    user.Username,
-			Email:       user.Email,
-			Role:        user.Role,
-			State:       user.State,
-			GravatarURL: gravatarURL(user.Email, 80),
-			CreatedAt:   user.CreatedAt.String(),
-			UpdatedAt:   user.UpdatedAt.String(),
+			ID:                     user.ID,
+			Username:               user.Username,
+			Email:                  user.Email,
+			Role:                   user.Role,
+			State:                  user.State,
+			GravatarURL:            gravatarURL(user.Email, 80),
+			PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
+			CreatedAt:              user.CreatedAt.String(),
+			UpdatedAt:              user.UpdatedAt.String(),
 		},
 	})
 }

@@ -13,27 +13,42 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestBuildPTR_ValidIPv4(t *testing.T) {
-	zone, name := buildPTR("192.168.1.5")
+	zone, name := buildPTR("192.168.1.5", 0)
 	assert.Equal(t, "1.168.192.in-addr.arpa.", zone)
 	assert.Equal(t, "5.1.168.192.in-addr.arpa.", name)
 }
 
 func TestBuildPTR_AnotherIPv4(t *testing.T) {
-	zone, name := buildPTR("10.0.0.1")
+	zone, name := buildPTR("10.0.0.1", 0)
 	assert.Equal(t, "0.0.10.in-addr.arpa.", zone)
 	assert.Equal(t, "1.0.0.10.in-addr.arpa.", name)
 }
 
 func TestBuildPTR_InvalidAddress_ReturnsEmpty(t *testing.T) {
-	zone, name := buildPTR("not-an-ip")
+	zone, name := buildPTR("not-an-ip", 0)
 	assert.Empty(t, zone)
 	assert.Empty(t, name)
 }
 
-func TestBuildPTR_IPv6_ReturnsEmpty(t *testing.T) {
-	zone, name := buildPTR("2001:db8::1")
-	assert.Empty(t, zone)
-	assert.Empty(t, name)
+func TestBuildPTR_IPv6_Prefix48(t *testing.T) {
+	// 2001:db8::1 with /48 → 12-nibble zone, full 32-nibble name
+	zone, name := buildPTR("2001:db8::1", 48)
+	assert.Equal(t, "0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.", zone)
+	assert.Equal(t, "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.", name)
+}
+
+func TestBuildPTR_IPv6_Prefix64(t *testing.T) {
+	// 2001:db8::1 with /64 → 16-nibble zone
+	zone, name := buildPTR("2001:db8::1", 64)
+	assert.Equal(t, "0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.", zone)
+	assert.Equal(t, "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.", name)
+}
+
+func TestBuildPTR_IPv6_PrefixZero_ClampedToOneNibble(t *testing.T) {
+	// prefixLen=0 should clamp to 1-nibble zone minimum
+	zone, name := buildPTR("2001:db8::1", 0)
+	assert.Equal(t, "2.ip6.arpa.", zone)
+	assert.NotEmpty(t, name)
 }
 
 // ---------------------------------------------------------------------------

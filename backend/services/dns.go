@@ -132,7 +132,15 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 	}
 
 	// PTR record
-	ptrZone, ptrName := buildPTR(ip.Address)
+	prefixLen := 0
+	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
+		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+			prefixLen = subnet.PrefixLength
+		} else {
+			log.Printf("[pdns] SyncIPToPDNS: subnet lookup for PTR ip=%s: %v", ip.Address, err)
+		}
+	}
+	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
 	if ptrZone != "" {
 		ptrZones, _ := d.svc.Config.GetCtx(ctx, "pdns_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
@@ -173,7 +181,15 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 		log.Printf("[pdns] RemoveIPFromPDNS DeleteRecord A/AAAA ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
 	}
 
-	ptrZone, ptrName := buildPTR(ip.Address)
+	prefixLen := 0
+	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
+		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+			prefixLen = subnet.PrefixLength
+		} else {
+			log.Printf("[pdns] RemoveIPFromPDNS: subnet lookup for PTR ip=%s: %v", ip.Address, err)
+		}
+	}
+	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
 	if ptrZone != "" {
 		ptrZones, _ := d.svc.Config.GetCtx(ctx, "pdns_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
@@ -321,7 +337,8 @@ func (d *DNSService) GetDNSZoneRecords(ctx context.Context, zone, typeFilter str
 	return nil, fmt.Errorf("no DNS provider configured")
 }
 
-// SyncIPToTechnitium creates an A record in Technitium for the IP's dns_name.
+// SyncIPToTechnitium creates an A/AAAA record in Technitium for the IP's dns_name
+// and, if a reverse zone is configured, a PTR record too.
 // Requires technitium_default_zone to be configured. DNS failures are logged but do not block the caller.
 func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddress) {
 	client := d.technitiumClient(ctx)
@@ -336,12 +353,32 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 		log.Printf("[technitium] SyncIPToTechnitium: technitium_default_zone not configured")
 		return
 	}
-	if err := client.AddRecord(ctx, zone, *ip.DNSName, ip.Address); err != nil {
-		log.Printf("[technitium] SyncIPToTechnitium AddRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+	fqdn := *ip.DNSName
+	if !strings.HasSuffix(fqdn, ".") {
+		fqdn += "."
+	}
+	if err := client.AddRecord(ctx, zone, fqdn, ip.Address); err != nil {
+		log.Printf("[technitium] SyncIPToTechnitium AddRecord ip=%s dns=%s: %v", ip.Address, fqdn, err)
+	}
+	// PTR record — reuse buildPTR helper with subnet prefix for IPv6
+	prefixLen := 0
+	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
+		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+			prefixLen = subnet.PrefixLength
+		}
+	}
+	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
+	if ptrZone != "" {
+		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
+		if containsZone(ptrZones, ptrZone) {
+			if err := client.AddPTRRecord(ctx, ptrZone, ptrName, fqdn); err != nil {
+				log.Printf("[technitium] SyncIPToTechnitium AddPTRRecord ip=%s: %v", ip.Address, err)
+			}
+		}
 	}
 }
 
-// RemoveIPFromTechnitium deletes the A record for an IP's dns_name from Technitium.
+// RemoveIPFromTechnitium deletes the A/AAAA and PTR records for an IP from Technitium.
 // DNS failures are logged but do not block the caller.
 func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAddress) {
 	client := d.technitiumClient(ctx)
@@ -355,8 +392,24 @@ func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAd
 	if zone == "" {
 		return
 	}
-	if err := client.DeleteRecord(ctx, zone, *ip.DNSName); err != nil {
+	if err := client.DeleteRecord(ctx, zone, *ip.DNSName, ip.Address); err != nil {
 		log.Printf("[technitium] RemoveIPFromTechnitium DeleteRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+	}
+	// PTR record
+	prefixLen := 0
+	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
+		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+			prefixLen = subnet.PrefixLength
+		}
+	}
+	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
+	if ptrZone != "" {
+		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
+		if containsZone(ptrZones, ptrZone) {
+			if err := client.DeletePTRRecord(ctx, ptrZone, ptrName); err != nil {
+				log.Printf("[technitium] RemoveIPFromTechnitium DeletePTRRecord ip=%s: %v", ip.Address, err)
+			}
+		}
 	}
 }
 
@@ -389,22 +442,52 @@ func errString(err error) string {
 	return err.Error()
 }
 
-// buildPTR returns the PTR zone and name for an IPv4 address (e.g. "0.0.168.192.in-addr.arpa." and "1.0.168.192.in-addr.arpa.").
-// Returns empty strings for non-IPv4 addresses.
-func buildPTR(address string) (zone, name string) {
+// buildPTR returns the PTR zone and record name for an IP address.
+// For IPv4 the zone is fixed at the /24 boundary (e.g. "1.168.192.in-addr.arpa.").
+// For IPv6, prefixLen is rounded down to a nibble boundary to compute the zone
+// (e.g. prefixLen=48 → 12-nibble zone "0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.").
+// Returns empty strings for unparseable addresses.
+func buildPTR(address string, prefixLen int) (zone, name string) {
 	ip := net.ParseIP(address)
 	if ip == nil {
 		return "", ""
 	}
-	ip4 := ip.To4()
-	if ip4 == nil {
-		// IPv6 PTR not implemented
+	if ip4 := ip.To4(); ip4 != nil {
+		parts := strings.Split(ip4.String(), ".")
+		zone = fmt.Sprintf("%s.%s.%s.in-addr.arpa.", parts[2], parts[1], parts[0])
+		name = fmt.Sprintf("%s.%s.%s.%s.in-addr.arpa.", parts[3], parts[2], parts[1], parts[0])
+		return zone, name
+	}
+	// IPv6: expand to 32 hex nibbles, reverse for PTR name and zone.
+	ip6 := ip.To16()
+	if ip6 == nil {
 		return "", ""
 	}
-	// e.g. 192.168.1.5 → zone=0.168.192.in-addr.arpa., name=5.1.168.192.in-addr.arpa.
-	parts := strings.Split(ip4.String(), ".")
-	zone = fmt.Sprintf("%s.%s.%s.in-addr.arpa.", parts[2], parts[1], parts[0])
-	name = fmt.Sprintf("%s.%s.%s.%s.in-addr.arpa.", parts[3], parts[2], parts[1], parts[0])
+	nibbles := make([]byte, 32)
+	const hexChars = "0123456789abcdef"
+	for i := 0; i < 16; i++ {
+		nibbles[i*2] = hexChars[ip6[i]>>4]
+		nibbles[i*2+1] = hexChars[ip6[i]&0xf]
+	}
+	// Full reversed name (nibbles most-significant last).
+	nameNibbles := make([]string, 32)
+	for i := 0; i < 32; i++ {
+		nameNibbles[i] = string(nibbles[31-i])
+	}
+	name = strings.Join(nameNibbles, ".") + ".ip6.arpa."
+	// Zone uses the most-significant prefixLen/4 nibbles (min 1, max 32).
+	nibbleCount := prefixLen / 4
+	if nibbleCount < 1 {
+		nibbleCount = 1
+	}
+	if nibbleCount > 32 {
+		nibbleCount = 32
+	}
+	zoneNibbles := make([]string, nibbleCount)
+	for i := 0; i < nibbleCount; i++ {
+		zoneNibbles[i] = string(nibbles[nibbleCount-1-i])
+	}
+	zone = strings.Join(zoneNibbles, ".") + ".ip6.arpa."
 	return zone, name
 }
 

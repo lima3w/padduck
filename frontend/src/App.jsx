@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Suspense, lazy, useEffect } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import PrivacyConsentBanner from './components/PrivacyConsentBanner'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
@@ -41,6 +42,11 @@ const UtilizationTrendsPage = lazy(() => import('./pages/UtilizationTrendsPage')
 const ScheduledReportsPage = lazy(() => import('./pages/ScheduledReportsPage'))
 const InactiveIPsPage = lazy(() => import('./pages/InactiveIPsPage'))
 const ImportDataPage = lazy(() => import('./pages/ImportDataPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const VRFsPage = lazy(() => import('./pages/VRFsPage'))
+const AdminRolesPage = lazy(() => import('./pages/AdminRolesPage'))
+const RacksPage = lazy(() => import('./pages/RacksPage'))
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'))
 const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
 const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
@@ -85,11 +91,14 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route
             path="/"
             element={
               <ProtectedRoute>
+                <PrivacyConsentBanner />
                 <Layout />
               </ProtectedRoute>
             }
@@ -108,14 +117,17 @@ export default function App() {
             <Route path="devices/:id" element={<DeviceDetailPage />} />
             <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
             <Route path="admin/users" element={<AdminUsersPage />} />
+            <Route path="admin/roles" element={<AdminRolesPage />} />
             <Route path="locations" element={<LocationsPage />} />
             <Route path="locations/:id" element={<LocationDetailPage />} />
+            <Route path="racks" element={<RacksPage />} />
             <Route path="racks/:id" element={<RackDetailPage />} />
             <Route path="dns/nameservers" element={<NameserversPage />} />
             <Route path="dns/zones" element={<DnsZonesPage />} />
             <Route path="dns/zones/:zone" element={<DnsZoneDetailPage />} />
             <Route path="admin/requests" element={<AdminRequestsPage />} />
             <Route path="requests" element={<MyRequestsPage />} />
+            <Route path="vrfs" element={<VRFsPage />} />
             <Route path="vlans" element={<VlansPage />} />
             <Route path="vlans/:id" element={<VlanDetailPage />} />
             <Route path="admin/vlan-domains" element={<VlanDomainsPage />} />

@@ -31,10 +31,22 @@ type SNMPResult struct {
 	ARPEntries     []ARPEntry
 }
 
-// ScanSNMP performs an SNMP query against ip using the given community string and
-// SNMP version. version must be "2c" or "3" (SNMPv3 is not yet implemented here
-// but the parameter is accepted for future extension). timeout applies per request.
-func ScanSNMP(ctx context.Context, ip, community, version string, timeout time.Duration) (*SNMPResult, error) {
+// SNMPv3Params holds credentials for SNMPv3 User-based Security Model (USM).
+// AuthProto and PrivProto accept "MD5", "SHA" and "DES", "AES" respectively.
+// Security level is derived automatically: NoAuthNoPriv when AuthPass is empty,
+// AuthNoPriv when only AuthPass is set, AuthPriv when both passwords are set.
+type SNMPv3Params struct {
+	User      string
+	AuthProto string
+	AuthPass  string
+	PrivProto string
+	PrivPass  string
+}
+
+// ScanSNMP performs an SNMP query against ip. version must be "2c" or "3".
+// For version "3", v3 must be non-nil and contain at least a User; community
+// is ignored in that case. timeout applies per request.
+func ScanSNMP(ctx context.Context, ip, community, version string, v3 *SNMPv3Params, timeout time.Duration) (*SNMPResult, error) {
 	if timeout <= 0 {
 		timeout = 5 * time.Second
 	}
@@ -43,19 +55,35 @@ func ScanSNMP(ctx context.Context, ip, community, version string, timeout time.D
 	}
 
 	params := &gosnmp.GoSNMP{
-		Target:    ip,
-		Port:      161,
-		Community: community,
-		Timeout:   timeout,
-		Retries:   1,
-		MaxOids:   gosnmp.MaxOids,
+		Target:  ip,
+		Port:    161,
+		Timeout: timeout,
+		Retries: 1,
+		MaxOids: gosnmp.MaxOids,
 	}
 
-	switch version {
-	case "3":
+	if version == "3" && v3 != nil {
 		params.Version = gosnmp.Version3
-	default:
+		params.SecurityModel = gosnmp.UserSecurityModel
+		usp := &gosnmp.UsmSecurityParameters{UserName: v3.User}
+		switch {
+		case v3.AuthPass != "" && v3.PrivPass != "":
+			params.MsgFlags = gosnmp.AuthPriv
+			usp.AuthenticationProtocol = snmpAuthProto(v3.AuthProto)
+			usp.AuthenticationPassphrase = v3.AuthPass
+			usp.PrivacyProtocol = snmpPrivProto(v3.PrivProto)
+			usp.PrivacyPassphrase = v3.PrivPass
+		case v3.AuthPass != "":
+			params.MsgFlags = gosnmp.AuthNoPriv
+			usp.AuthenticationProtocol = snmpAuthProto(v3.AuthProto)
+			usp.AuthenticationPassphrase = v3.AuthPass
+		default:
+			params.MsgFlags = gosnmp.NoAuthNoPriv
+		}
+		params.SecurityParameters = usp
+	} else {
 		params.Version = gosnmp.Version2c
+		params.Community = community
 	}
 
 	// Respect context cancellation.
@@ -214,4 +242,26 @@ func arpIPFromOID(oid string) string {
 		return ""
 	}
 	return parsed.String()
+}
+
+// snmpAuthProto maps a protocol name string to the gosnmp constant.
+// Defaults to MD5 for unrecognised values.
+func snmpAuthProto(s string) gosnmp.SnmpV3AuthProtocol {
+	switch s {
+	case "SHA", "sha":
+		return gosnmp.SHA
+	default:
+		return gosnmp.MD5
+	}
+}
+
+// snmpPrivProto maps a protocol name string to the gosnmp constant.
+// Defaults to DES for unrecognised values.
+func snmpPrivProto(s string) gosnmp.SnmpV3PrivProtocol {
+	switch s {
+	case "AES", "aes":
+		return gosnmp.AES
+	default:
+		return gosnmp.DES
+	}
 }

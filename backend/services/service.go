@@ -43,7 +43,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Registration:  registrationSvc,
 		MFA:           mfaSvc,
 		Notification:  NewNotificationService(repo, emailSvc),
-		Discovery:     NewDiscoveryService(repo, configSvc),
+		Discovery:     NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		LDAP:          NewLDAPService(repo, mfaEncryptionKey),
 		OAuth2:        NewOAuth2Service(repo, mfaEncryptionKey),
 		SAML:          NewSAMLService(repo, mfaEncryptionKey),

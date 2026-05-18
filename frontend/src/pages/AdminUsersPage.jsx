@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
-import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser } from '../api/client'
+import {
+  getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser,
+  adminUnlockUser, suspendUser, unsuspendUser, impersonateUser,
+  sendPasswordResetEmail, updateUserEmail, gdprDeleteUser,
+  bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers,
+} from '../api/client'
 
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
 const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
@@ -21,6 +26,20 @@ export default function AdminUsersPage() {
   const [createModal, setCreateModal] = useState(false)
   const [createForm, setCreateForm] = useState(CREATE_EMPTY_FORM)
   const [createError, setCreateError] = useState('')
+  const [message, setMessage] = useState(null)
+
+  // Lifecycle actions
+  const [suspendModal, setSuspendModal] = useState(null) // user object
+  const [suspendReason, setSuspendReason] = useState('')
+  const [emailModal, setEmailModal] = useState(null) // user object
+  const [emailValue, setEmailValue] = useState('')
+  const [gdprConfirm, setGdprConfirm] = useState(null) // user object
+  const [actionLoading, setActionLoading] = useState(null) // userId + action key
+
+  // Bulk actions
+  const [selected, setSelected] = useState(new Set())
+  const [bulkAction, setBulkAction] = useState('')
+  const [bulkSuspendReason, setBulkSuspendReason] = useState('')
 
   useEffect(() => {
     loadAll()
@@ -113,6 +132,105 @@ export default function AdminUsersPage() {
     }
   }
 
+  const showMsg = (text, type = 'success') => {
+    setMessage({ text, type })
+    setTimeout(() => setMessage(null), 4000)
+  }
+
+  const runAction = async (userId, key, fn) => {
+    setActionLoading(`${userId}-${key}`)
+    try {
+      await fn()
+      showMsg(`Done.`)
+      await loadAll()
+    } catch (err) {
+      showMsg(err.response?.data?.error || 'Action failed.', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleSuspend = async () => {
+    if (!suspendModal) return
+    setActionLoading(`${suspendModal.id}-suspend`)
+    try {
+      await suspendUser(suspendModal.id, suspendReason)
+      setSuspendModal(null)
+      setSuspendReason('')
+      showMsg(`${suspendModal.username} suspended.`)
+      await loadAll()
+    } catch (err) {
+      showMsg(err.response?.data?.error || 'Failed to suspend user.', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleUpdateEmail = async () => {
+    if (!emailModal || !emailValue.trim()) return
+    setActionLoading(`${emailModal.id}-email`)
+    try {
+      await updateUserEmail(emailModal.id, emailValue.trim())
+      setEmailModal(null)
+      setEmailValue('')
+      showMsg('Email updated.')
+      await loadAll()
+    } catch (err) {
+      showMsg(err.response?.data?.error || 'Failed to update email.', 'error')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleGdprDelete = async () => {
+    if (!gdprConfirm) return
+    try {
+      await gdprDeleteUser(gdprConfirm.id)
+      setGdprConfirm(null)
+      showMsg(`${gdprConfirm.username} deleted (GDPR).`)
+      await loadAll()
+    } catch (err) {
+      showMsg(err.response?.data?.error || 'GDPR delete failed.', 'error')
+    }
+  }
+
+  const handleBulkAction = async () => {
+    const ids = [...selected]
+    if (!ids.length || !bulkAction) return
+    try {
+      if (bulkAction === 'suspend') await bulkSuspendUsers(ids, bulkSuspendReason)
+      else if (bulkAction === 'activate') await bulkActivateUsers(ids)
+      else if (bulkAction === 'delete') {
+        if (!confirm(`Delete ${ids.length} user(s)? This cannot be undone.`)) return
+        await bulkDeleteUsers(ids)
+      }
+      setSelected(new Set())
+      setBulkAction('')
+      setBulkSuspendReason('')
+      showMsg(`Bulk ${bulkAction} applied to ${ids.length} user(s).`)
+      await loadAll()
+    } catch (err) {
+      showMsg(err.response?.data?.error || 'Bulk action failed.', 'error')
+    }
+  }
+
+  const toggleSelect = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selected.size === users.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(users.map((u) => u.id)))
+    }
+  }
+
   if (loading) return <p className="text-gray-500">Loading users...</p>
 
   return (
@@ -128,11 +246,53 @@ export default function AdminUsersPage() {
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      {message && (
+        <div className={`mb-4 p-3 rounded text-sm ${message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
+          {message.text}
+        </div>
+      )}
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
+          <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">{selected.size} selected</span>
+          <select
+            value={bulkAction}
+            onChange={(e) => setBulkAction(e.target.value)}
+            className="text-sm border border-gray-300 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600"
+          >
+            <option value="">Choose action…</option>
+            <option value="suspend">Suspend</option>
+            <option value="activate">Activate</option>
+            <option value="delete">Delete</option>
+          </select>
+          {bulkAction === 'suspend' && (
+            <input
+              type="text"
+              value={bulkSuspendReason}
+              onChange={(e) => setBulkSuspendReason(e.target.value)}
+              placeholder="Reason (optional)"
+              className="text-sm border border-gray-300 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+            />
+          )}
+          <button
+            onClick={handleBulkAction}
+            disabled={!bulkAction}
+            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            Apply
+          </button>
+          <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:text-gray-700">Clear</button>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
+              <th className="px-3 py-3 w-6">
+                <input type="checkbox" checked={selected.size === users.length && users.length > 0} onChange={toggleSelectAll} className="rounded" />
+              </th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-6"></th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Username</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Email</th>
@@ -144,7 +304,7 @@ export default function AdminUsersPage() {
           <tbody>
             {users.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">No users found</td>
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">No users found</td>
               </tr>
             )}
             {users.map(user => (
@@ -154,6 +314,9 @@ export default function AdminUsersPage() {
                   className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
                   onClick={() => toggleExpand(user.id)}
                 >
+                  <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selected.has(user.id)} onChange={() => toggleSelect(user.id)} className="rounded" />
+                  </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {expandedUser === user.id ? '▼' : '▶'}
                   </td>
@@ -178,17 +341,73 @@ export default function AdminUsersPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => openAssign(user.id)}
-                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
-                    >
-                      + Assign Role
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => openAssign(user.id)}
+                        className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+                      >
+                        + Role
+                      </button>
+                      {user.state === 'suspended' ? (
+                        <button
+                          onClick={() => runAction(user.id, 'unsuspend', () => unsuspendUser(user.id))}
+                          disabled={actionLoading === `${user.id}-unsuspend`}
+                          className="px-2 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50 disabled:opacity-50"
+                        >
+                          Unsuspend
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setSuspendModal(user); setSuspendReason('') }}
+                          className="px-2 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50"
+                        >
+                          Suspend
+                        </button>
+                      )}
+                      {user.locked && (
+                        <button
+                          onClick={() => runAction(user.id, 'unlock', () => adminUnlockUser(user.id))}
+                          disabled={actionLoading === `${user.id}-unlock`}
+                          className="px-2 py-1 text-xs border border-yellow-300 text-yellow-700 rounded hover:bg-yellow-50 disabled:opacity-50"
+                        >
+                          Unlock
+                        </button>
+                      )}
+                      <button
+                        onClick={() => runAction(user.id, 'pwreset', () => sendPasswordResetEmail(user.id))}
+                        disabled={actionLoading === `${user.id}-pwreset`}
+                        className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Reset PW
+                      </button>
+                      <button
+                        onClick={() => { setEmailModal(user); setEmailValue(user.email || '') }}
+                        className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50"
+                      >
+                        Email
+                      </button>
+                      <button
+                        onClick={() => runAction(user.id, 'impersonate', async () => {
+                          await impersonateUser(user.id)
+                          window.location.href = '/dashboard'
+                        })}
+                        disabled={actionLoading === `${user.id}-impersonate`}
+                        className="px-2 py-1 text-xs border border-purple-300 text-purple-700 rounded hover:bg-purple-50 disabled:opacity-50"
+                      >
+                        Impersonate
+                      </button>
+                      <button
+                        onClick={() => setGdprConfirm(user)}
+                        className="px-2 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50"
+                      >
+                        GDPR Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 {expandedUser === user.id && (
                   <tr key={`${user.id}-roles`} className="border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">
-                    <td colSpan={6} className="px-8 py-3">
+                    <td colSpan={7} className="px-8 py-3">
                       <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                         Assigned Custom Roles
                       </div>
@@ -293,6 +512,78 @@ export default function AdminUsersPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Suspend modal */}
+      {suspendModal && (
+        <Modal title={`Suspend ${suspendModal.username}`} onClose={() => setSuspendModal(null)}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">The user will be unable to log in while suspended.</p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason (optional)</label>
+              <input
+                type="text"
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                placeholder="e.g. Policy violation"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setSuspendModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={handleSuspend}
+                disabled={actionLoading === `${suspendModal.id}-suspend`}
+                className="px-4 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
+              >
+                {actionLoading === `${suspendModal.id}-suspend` ? 'Suspending…' : 'Suspend User'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Update email modal */}
+      {emailModal && (
+        <Modal title={`Update Email — ${emailModal.username}`} onClose={() => setEmailModal(null)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New email address</label>
+              <input
+                type="email"
+                value={emailValue}
+                onChange={(e) => setEmailValue(e.target.value)}
+                className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setEmailModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={handleUpdateEmail}
+                disabled={!emailValue.trim() || actionLoading === `${emailModal.id}-email`}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {actionLoading === `${emailModal.id}-email` ? 'Saving…' : 'Update Email'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* GDPR delete confirmation */}
+      {gdprConfirm && (
+        <Modal title="GDPR Delete User" onClose={() => setGdprConfirm(null)}>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+            Permanently anonymise and delete all personal data for <strong>{gdprConfirm.username}</strong>?
+            This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setGdprConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+            <button onClick={handleGdprDelete} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
+              GDPR Delete
+            </button>
+          </div>
         </Modal>
       )}
 

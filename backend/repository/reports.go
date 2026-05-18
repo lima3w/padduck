@@ -413,3 +413,164 @@ func (r *Repository) GetSubnetsByUtilisationThreshold(ctx context.Context, thres
 	}
 	return out, rows.Err()
 }
+
+// SubnetGapRow holds subnet free-space data for the subnet_gaps report.
+type SubnetGapRow struct {
+	SubnetID    int64
+	CIDR        string
+	Description string
+	TotalIPs    int
+	UsedIPs     int
+	FreeIPs     int
+	UsedPct     float64
+}
+
+// GetSubnetGaps returns all subnets with their allocated vs free IP counts.
+func (r *Repository) GetSubnetGaps(ctx context.Context) ([]*SubnetGapRow, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			s.id,
+			host(s.network_address) || '/' || s.prefix_length AS cidr,
+			s.description,
+			(1 << (32 - s.prefix_length)) AS total_ips,
+			COUNT(ip.id) FILTER (WHERE ip.status <> 'available') AS used_ips,
+			(1 << (32 - s.prefix_length)) - COUNT(ip.id) FILTER (WHERE ip.status <> 'available') AS free_ips
+		FROM subnets s
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		GROUP BY s.id
+		ORDER BY free_ips DESC, s.network_address
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*SubnetGapRow
+	for rows.Next() {
+		row := &SubnetGapRow{}
+		if err := rows.Scan(&row.SubnetID, &row.CIDR, &row.Description, &row.TotalIPs, &row.UsedIPs, &row.FreeIPs); err != nil {
+			return nil, err
+		}
+		if row.TotalIPs > 0 {
+			row.UsedPct = float64(row.UsedIPs) / float64(row.TotalIPs) * 100
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
+// VLANAssignmentRow holds VLAN-to-subnet assignment data for the vlan_assignment report.
+type VLANAssignmentRow struct {
+	VLANID      int64
+	VLANName    string
+	VLANTag     int
+	SubnetCount int
+	SubnetCIDRs string
+}
+
+// GetVLANAssignment returns all VLANs with their assigned subnets.
+func (r *Repository) GetVLANAssignment(ctx context.Context) ([]*VLANAssignmentRow, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			v.id,
+			v.name,
+			v.vlan_id AS vlan_tag,
+			COUNT(s.id) AS subnet_count,
+			COALESCE(string_agg(host(s.network_address) || '/' || s.prefix_length, ', ' ORDER BY s.network_address), '') AS subnet_cidrs
+		FROM vlans v
+		LEFT JOIN subnets s ON s.vlan_id = v.id
+		GROUP BY v.id, v.name, v.vlan_id
+		ORDER BY v.vlan_id
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*VLANAssignmentRow
+	for rows.Next() {
+		row := &VLANAssignmentRow{}
+		if err := rows.Scan(&row.VLANID, &row.VLANName, &row.VLANTag, &row.SubnetCount, &row.SubnetCIDRs); err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
+// IPAgeRow holds IP address age data for the ip_age report.
+type IPAgeRow struct {
+	IPID        int64
+	Address     string
+	Status      string
+	AssignedTo  string
+	DaysOld     int
+	DaysSinceSeen int
+}
+
+// GetIPAge returns all IP addresses with their age and days since last seen.
+func (r *Repository) GetIPAge(ctx context.Context) ([]*IPAgeRow, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			address,
+			status,
+			COALESCE(assigned_to, '') AS assigned_to,
+			EXTRACT(DAY FROM now() - created_at)::int AS days_old,
+			CASE WHEN last_seen IS NOT NULL THEN EXTRACT(DAY FROM now() - last_seen)::int ELSE -1 END AS days_since_seen
+		FROM ip_addresses
+		ORDER BY days_old DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*IPAgeRow
+	for rows.Next() {
+		row := &IPAgeRow{}
+		if err := rows.Scan(&row.IPID, &row.Address, &row.Status, &row.AssignedTo, &row.DaysOld, &row.DaysSinceSeen); err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
+// DNSAuditRow holds DNS audit data for the dns_audit report.
+type DNSAuditRow struct {
+	IPID           int64
+	Address        string
+	DNSName        string
+	PTRRecord      string
+	DNSLastChecked string
+}
+
+// GetDNSAudit returns all IP addresses that have a dns_name set, with their DNS check status.
+func (r *Repository) GetDNSAudit(ctx context.Context) ([]*DNSAuditRow, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			address,
+			COALESCE(dns_name, '') AS dns_name,
+			COALESCE(ptr_record, '') AS ptr_record,
+			COALESCE(dns_last_checked::text, 'never') AS dns_last_checked
+		FROM ip_addresses
+		WHERE dns_name IS NOT NULL AND dns_name <> ''
+		ORDER BY address
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []*DNSAuditRow
+	for rows.Next() {
+		row := &DNSAuditRow{}
+		if err := rows.Scan(&row.IPID, &row.Address, &row.DNSName, &row.PTRRecord, &row.DNSLastChecked); err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
