@@ -41,6 +41,7 @@ const TopologyPage = lazy(() => import('./pages/TopologyPage'))
 const UtilizationTrendsPage = lazy(() => import('./pages/UtilizationTrendsPage'))
 const ScheduledReportsPage = lazy(() => import('./pages/ScheduledReportsPage'))
 const InactiveIPsPage = lazy(() => import('./pages/InactiveIPsPage'))
+const DuplicatesPage = lazy(() => import('./pages/DuplicatesPage'))
 const ImportDataPage = lazy(() => import('./pages/ImportDataPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
@@ -169,6 +170,7 @@ export default function App() {
             <Route path="sections/:id/topology" element={<TopologyPage />} />
             <Route path="reports/utilization-trends" element={<UtilizationTrendsPage />} />
             <Route path="reports/inactive-ips" element={<InactiveIPsPage />} />
+            <Route path="reports/duplicates" element={<DuplicatesPage />} />
             <Route path="admin/reports/scheduled" element={<ScheduledReportsPage />} />
             <Route path="admin/import" element={<ImportDataPage />} />
             <Route path="admin/export" element={<ExportDataPage />} />

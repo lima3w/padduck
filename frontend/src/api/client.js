@@ -405,3 +405,6 @@ export const bulkReleaseIPs = (ipIds) => api.post('/admin/ip-addresses/bulk-rele
 
 // Inactive IPs report
 export const getInactiveIPs = (days = 30, limit = 10) => api.get('/admin/reports/inactive-ips', { params: { days, limit } })
+
+// Duplicate detection report (#425)
+export const getDuplicates = () => api.get('/admin/reports/duplicates')

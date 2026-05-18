@@ -173,6 +173,12 @@ func (r *stubReportsRepo) GetInactiveDevices(_ context.Context, days int) ([]*mo
 func (r *stubReportsRepo) GetOverdueScanJobs(_ context.Context, days int) ([]*models.FailedScanJobReport, error) {
 	return nil, nil
 }
+func (r *stubReportsRepo) GetDuplicates(_ context.Context) (*models.DuplicatesReport, error) {
+	return &models.DuplicatesReport{
+		DuplicateHostnames: []models.DuplicateHostname{},
+		ConflictingIPs:     []models.ConflictingIP{},
+	}, nil
+}
 
 func newTestReportsService(repo *stubReportsRepo) *ReportsService {
 	cfg := &ConfigService{}

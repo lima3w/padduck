@@ -442,6 +442,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/reports/inactive-ips", h.GetInactiveIPs)
 	admin.Post("/ip-addresses/bulk-release", h.BulkReleaseIPs)
 
+	// Duplicate detection (#425)
+	admin.Get("/reports/duplicates", h.GetDuplicates)
+
 	// Import & Export (v1.12.0 #225 #226 #227 #228)
 	admin.Post("/import/subnets", h.ImportSubnetsCSV)
 	admin.Post("/import/ips", h.ImportIPsCSV)

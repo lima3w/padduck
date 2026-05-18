@@ -51,6 +51,8 @@ type reportsRepo interface {
 	// remediation report types
 	GetInactiveDevices(ctx context.Context, days int) ([]*models.InactiveDeviceReport, error)
 	GetOverdueScanJobs(ctx context.Context, days int) ([]*models.FailedScanJobReport, error)
+	// duplicate detection (#425)
+	GetDuplicates(ctx context.Context) (*models.DuplicatesReport, error)
 }
 
 // ReportsService provides reporting and analytics functionality.
@@ -597,6 +599,15 @@ func (rs *ReportsService) BulkReleaseIPs(ctx context.Context, ipIDs []int64, ope
 	}
 
 	return count, nil
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Duplicate detection (#425)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GetDuplicates returns a report of duplicate device hostnames and conflicting IP assignments.
+func (rs *ReportsService) GetDuplicates(ctx context.Context) (*models.DuplicatesReport, error) {
+	return rs.repo.GetDuplicates(ctx)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
