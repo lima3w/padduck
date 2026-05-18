@@ -474,6 +474,7 @@ type AuditLogFilter struct {
 	Username     string
 	Action       string
 	ResourceType string
+	ResourceID   *int64
 	IPAddress    string
 	Status       string
 	Since        *time.Time

@@ -117,6 +117,13 @@ func buildAuditFilter(c *fiber.Ctx) *models.AuditLogFilter {
 		Status:       c.Query("status"),
 	}
 
+	// parse resource_id if provided
+	if ridStr := c.Query("resource_id"); ridStr != "" {
+		if v, err := strconv.ParseInt(ridStr, 10, 64); err == nil {
+			filter.ResourceID = &v
+		}
+	}
+
 	if limitStr := c.Query("limit"); limitStr != "" {
 		if n, err := strconv.Atoi(limitStr); err == nil && n > 0 {
 			filter.Limit = n
