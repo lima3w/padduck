@@ -7,6 +7,7 @@ import Pagination from '../components/Pagination'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
+import { downloadFile } from '../utils/download'
 
 const DEFAULT_LIMIT = 25
 
@@ -32,6 +33,14 @@ export default function SectionsPage() {
   const [subnetReqSuccess, setSubnetReqSuccess] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  async function handleExport() {
+    setDownloading(true)
+    try { await downloadFile('/api/v1/admin/reports/export/sections', 'sections.csv') }
+    catch { setError('Export failed') }
+    finally { setDownloading(false) }
+  }
 
   useEffect(() => { load(1) }, [])
 
@@ -165,9 +174,14 @@ export default function SectionsPage() {
             </button>
           )}
           {canCreateSubnet && (
-            <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-              + New Section
-            </button>
+            <>
+              <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
+                {downloading ? 'Exporting...' : 'Export CSV'}
+              </button>
+              <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+                + New Section
+              </button>
+            </>
           )}
         </div>
       </div>
