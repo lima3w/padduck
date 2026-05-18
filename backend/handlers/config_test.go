@@ -116,9 +116,22 @@ var allFrontendConfigKeys = []string{
 	"technitium_url",
 	"technitium_token",
 	"technitium_default_zone",
+	"technitium_ptr_zones",
 	"technitium_skip_tls",
 	// scanner tab
 	"scanner_resolve_hostnames",
+	"scanner_snmp_community",
+	"scanner_snmp_version",
+	"scanner_port_scan_enabled",
+	"scanner_port_list",
+	// features tab
+	"feature_customers_enabled",
+	"feature_vlans_enabled",
+	"feature_vrfs_enabled",
+	"feature_racks_enabled",
+	"feature_locations_enabled",
+	"feature_bgp_enabled",
+	"feature_devices_enabled",
 }
 
 func TestUpdateConfig_AllFrontendKeys_AreAllowed(t *testing.T) {

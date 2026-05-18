@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getPendingRequestCount } from '../api/requests'
-import { getDnsZones } from '../api/client'
+import { getDnsZones, getFeatures } from '../api/client'
+import { DEFAULT_FEATURES, normalizeFeatures } from '../utils/features'
 
 export default function Sidebar() {
   const user = (() => {
@@ -11,6 +12,7 @@ export default function Sidebar() {
 
   const [pendingCount, setPendingCount] = useState(0)
   const [dnsConfigured, setDnsConfigured] = useState(true)
+  const [features, setFeatures] = useState(DEFAULT_FEATURES)
 
   useEffect(() => {
     if (!isAdmin) return
@@ -38,6 +40,20 @@ export default function Sidebar() {
     return () => { cancelled = true }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    async function loadFeatures() {
+      try {
+        const res = await getFeatures()
+        if (!cancelled) setFeatures(normalizeFeatures(res.data))
+      } catch {
+        if (!cancelled) setFeatures(DEFAULT_FEATURES)
+      }
+    }
+    loadFeatures()
+    return () => { cancelled = true }
+  }, [])
+
   return (
     <aside className="w-48 bg-gray-800 dark:bg-gray-900 text-gray-200 dark:text-gray-300 h-full min-h-0 flex flex-col border-r border-gray-700 dark:border-gray-700">
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-4">
@@ -62,16 +78,18 @@ export default function Sidebar() {
         >
           Sections
         </NavLink>
-        <NavLink
-          to="/devices"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          Devices
-        </NavLink>
+        {features.devices && (
+          <NavLink
+            to="/devices"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            Devices
+          </NavLink>
+        )}
         {!isAdmin && (
           <NavLink
             to="/requests"
@@ -85,78 +103,96 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Physical
-        </div>
-        <NavLink
-          to="/locations"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          Locations
-        </NavLink>
-        <NavLink
-          to="/racks"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          Racks
-        </NavLink>
+        {(features.locations || features.racks) && (
+          <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Physical
+          </div>
+        )}
+        {features.locations && (
+          <NavLink
+            to="/locations"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            Locations
+          </NavLink>
+        )}
+        {features.racks && (
+          <NavLink
+            to="/racks"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            Racks
+          </NavLink>
+        )}
 
-        <NavLink
-          to="/autonomous-systems"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          BGP / AS Numbers
-        </NavLink>
+        {features.bgp && (
+          <NavLink
+            to="/autonomous-systems"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            BGP / AS Numbers
+          </NavLink>
+        )}
 
-        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Customers
-        </div>
-        <NavLink
-          to="/customers"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          Customers
-        </NavLink>
+        {features.customers && (
+          <>
+            <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Customers
+            </div>
+            <NavLink
+              to="/customers"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Customers
+            </NavLink>
+          </>
+        )}
 
-        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          VLANs &amp; VRFs
-        </div>
-        <NavLink
-          to="/vlans"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          VLANs
-        </NavLink>
-        <NavLink
-          to="/vrfs"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
-            }`
-          }
-        >
-          VRFs
-        </NavLink>
+        {(features.vlans || features.vrfs) && (
+          <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            VLANs &amp; VRFs
+          </div>
+        )}
+        {features.vlans && (
+          <NavLink
+            to="/vlans"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            VLANs
+          </NavLink>
+        )}
+        {features.vrfs && (
+          <NavLink
+            to="/vrfs"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            VRFs
+          </NavLink>
+        )}
 
         <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
           DNS

@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import { getFeatures } from './api/client'
+import { normalizeFeatures } from './utils/features'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
@@ -80,7 +82,38 @@ function PageLoadingFallback() {
   )
 }
 
+function FeatureGate({ feature, children }) {
+  const [features, setFeatures] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getFeatures()
+      .then((res) => {
+        if (!cancelled) setFeatures(normalizeFeatures(res.data))
+      })
+      .catch(() => {
+        if (!cancelled) setFeatures(normalizeFeatures())
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  if (!features) return <PageLoadingFallback />
+  if (features[feature] === false) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Feature disabled</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          This part of the application has been disabled by an administrator.
+        </p>
+      </div>
+    )
+  }
+  return children
+}
+
 export default function App() {
+  const gated = (feature, element) => <FeatureGate feature={feature}>{element}</FeatureGate>
+
   return (
     <BrowserRouter>
       <DarkModeBootstrap />
@@ -110,26 +143,26 @@ export default function App() {
             <Route path="admin/tags" element={<AdminTagsPage />} />
             <Route path="admin/overlap-report" element={<OverlapReportPage />} />
             <Route path="settings" element={<UserSettingsPage />} />
-            <Route path="devices" element={<DevicesPage />} />
-            <Route path="devices/:id" element={<DeviceDetailPage />} />
+            <Route path="devices" element={gated('devices', <DevicesPage />)} />
+            <Route path="devices/:id" element={gated('devices', <DeviceDetailPage />)} />
             <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
             <Route path="admin/users" element={<AdminUsersPage />} />
             <Route path="admin/roles" element={<AdminRolesPage />} />
-            <Route path="locations" element={<LocationsPage />} />
-            <Route path="locations/:id" element={<LocationDetailPage />} />
-            <Route path="racks" element={<RacksPage />} />
-            <Route path="racks/:id" element={<RackDetailPage />} />
+            <Route path="locations" element={gated('locations', <LocationsPage />)} />
+            <Route path="locations/:id" element={gated('locations', <LocationDetailPage />)} />
+            <Route path="racks" element={gated('racks', <RacksPage />)} />
+            <Route path="racks/:id" element={gated('racks', <RackDetailPage />)} />
             <Route path="dns/nameservers" element={<NameserversPage />} />
             <Route path="dns/zones" element={<DnsZonesPage />} />
             <Route path="dns/zones/:zone" element={<DnsZoneDetailPage />} />
             <Route path="admin/requests" element={<AdminRequestsPage />} />
             <Route path="requests" element={<MyRequestsPage />} />
-            <Route path="vrfs" element={<VRFsPage />} />
-            <Route path="vlans" element={<VlansPage />} />
-            <Route path="vlans/:id" element={<VlanDetailPage />} />
-            <Route path="admin/vlan-domains" element={<VlanDomainsPage />} />
-            <Route path="admin/vlan-groups" element={<VlanGroupsPage />} />
-            <Route path="admin/vlans/usage-report" element={<VlanUsageReportPage />} />
+            <Route path="vrfs" element={gated('vrfs', <VRFsPage />)} />
+            <Route path="vlans" element={gated('vlans', <VlansPage />)} />
+            <Route path="vlans/:id" element={gated('vlans', <VlanDetailPage />)} />
+            <Route path="admin/vlan-domains" element={gated('vlans', <VlanDomainsPage />)} />
+            <Route path="admin/vlan-groups" element={gated('vlans', <VlanGroupsPage />)} />
+            <Route path="admin/vlans/usage-report" element={gated('vlans', <VlanUsageReportPage />)} />
             <Route path="admin/scan-jobs" element={<ScanJobsPage />} />
             <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
             <Route path="admin/webhooks" element={<AdminWebhooksPage />} />
@@ -144,8 +177,8 @@ export default function App() {
             <Route path="admin/auth/saml" element={<AdminSamlPage />} />
             <Route path="admin/integrations" element={<AdminIntegrationsPage />} />
             <Route path="admin/grafana" element={<AdminGrafanaPage />} />
-            <Route path="customers" element={<CustomersPage />} />
-            <Route path="autonomous-systems" element={<AutonomousSystemsPage />} />
+            <Route path="customers" element={gated('customers', <CustomersPage />)} />
+            <Route path="autonomous-systems" element={gated('bgp', <AutonomousSystemsPage />)} />
           </Route>
         </Routes>
       </Suspense>

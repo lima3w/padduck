@@ -79,6 +79,17 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"technitium_ptr_zones":        true,
 		"technitium_skip_tls":         true,
 		"scanner_resolve_hostnames":   true,
+		"scanner_snmp_community":      true,
+		"scanner_snmp_version":        true,
+		"scanner_port_scan_enabled":   true,
+		"scanner_port_list":           true,
+		"feature_customers_enabled":   true,
+		"feature_vlans_enabled":       true,
+		"feature_vrfs_enabled":        true,
+		"feature_racks_enabled":       true,
+		"feature_locations_enabled":   true,
+		"feature_bgp_enabled":         true,
+		"feature_devices_enabled":     true,
 	}
 
 	sensitiveConfigKeys := map[string]bool{

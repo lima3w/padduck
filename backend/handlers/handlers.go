@@ -100,6 +100,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected := api.Group("")
 	protected.Use(h.AuthMiddleware)
 	protected.Use(h.CSRFMiddleware)
+	protected.Get("/features", h.GetFeatures)
 
 	// User profile endpoints (protected)
 	me := protected.Group("/auth/me")
@@ -177,7 +178,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
 
 	// VRFs routes
-	vrfs := protected.Group("/vrfs")
+	vrfs := protected.Group("/vrfs", h.requireFeature(featureVrfs))
 	vrfs.Get("", h.ListVRFs)
 	vrfs.Post("", h.CreateVRF)
 	vrfs.Get("/:id", h.GetVRF)
@@ -186,7 +187,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vrfs.Get("/:vrfID/vlans", h.ListVLANsByVRF)
 
 	// VLANs routes (top-level)
-	vlans := protected.Group("/vlans")
+	vlans := protected.Group("/vlans", h.requireFeature(featureVlans))
 	vlans.Get("", h.ListVLANs)
 	vlans.Post("", h.CreateVLAN)
 	vlans.Get("/:id", h.GetVLAN)
@@ -197,7 +198,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vlans.Delete("/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
 
 	// VLAN Domains routes (v1.8.0 #206)
-	vlanDomains := protected.Group("/vlan-domains")
+	vlanDomains := protected.Group("/vlan-domains", h.requireFeature(featureVlans))
 	vlanDomains.Get("", h.ListVLANDomains)
 	vlanDomains.Post("", h.CreateVLANDomain)
 	vlanDomains.Get("/:id", h.GetVLANDomain)
@@ -205,7 +206,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	vlanDomains.Delete("/:id", h.DeleteVLANDomain)
 
 	// VLAN Groups routes (v1.8.0 #207)
-	vlanGroups := protected.Group("/vlan-groups")
+	vlanGroups := protected.Group("/vlan-groups", h.requireFeature(featureVlans))
 	vlanGroups.Get("", h.ListVLANGroups)
 	vlanGroups.Post("", h.CreateVLANGroup)
 	vlanGroups.Get("/:id", h.GetVLANGroup)
@@ -320,10 +321,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	tags.Delete("/:id", h.DeleteTag)
 
 	// Devices (v1.3.0)
-	deviceTypes := protected.Group("/device-types")
+	deviceTypes := protected.Group("/device-types", h.requireFeature(featureDevices))
 	deviceTypes.Get("", h.ListDeviceTypes)
 
-	devices := protected.Group("/devices")
+	devices := protected.Group("/devices", h.requireFeature(featureDevices))
 	devices.Get("", h.ListDevices)
 	devices.Post("", h.CreateDevice)
 	devices.Post("/search", h.SearchDevices)
@@ -340,7 +341,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	devices.Get("/:id/snmp-credentials", h.GetDeviceSNMPCredentials)
 
 	// Racks (v1.5.0 #195)
-	racks := protected.Group("/racks")
+	racks := protected.Group("/racks", h.requireFeature(featureRacks))
 	racks.Get("", h.ListRacks)
 	racks.Post("", h.CreateRack)
 	racks.Get("/:id", h.GetRack)
@@ -349,7 +350,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	racks.Get("/:id/devices", h.ListDevicesInRack)
 
 	// Locations (v1.5.0 #194)
-	locations := protected.Group("/locations")
+	locations := protected.Group("/locations", h.requireFeature(featureLocations))
 	locations.Get("", h.ListLocations)
 	locations.Get("/tree", h.GetLocationTree)
 	locations.Post("", h.CreateLocation)
@@ -397,7 +398,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/requests/pending-count", h.GetPendingRequestCount)
 
 	// VLAN usage report (v1.8.0 #209)
-	admin.Get("/vlans/usage-report", h.GetVLANUsageReport)
+	admin.Get("/vlans/usage-report", h.requireFeature(featureVlans), h.GetVLANUsageReport)
 
 	// Network tools (v1.10.0 #216 #217)
 	admin.Post("/subnets/:id/split", h.SplitSubnet)
@@ -453,7 +454,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	api.Get("/privacy-policy/version", h.GetPrivacyPolicyVersion)
 
 	// Customers (v1.14.0 #234)
-	customers := protected.Group("/customers")
+	customers := protected.Group("/customers", h.requireFeature(featureCustomers))
 	customers.Get("", h.ListCustomers)
 	customers.Post("", h.CreateCustomer)
 	customers.Get("/:id", h.GetCustomer)
@@ -461,7 +462,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	customers.Delete("/:id", h.DeleteCustomer)
 
 	// BGP Autonomous Systems (v1.14.0 #235)
-	asSystems := protected.Group("/autonomous-systems")
+	asSystems := protected.Group("/autonomous-systems", h.requireFeature(featureBgp))
 	asSystems.Get("", h.ListAutonomousSystems)
 	asSystems.Post("", h.CreateAutonomousSystem)
 	asSystems.Get("/:id", h.GetAutonomousSystem)

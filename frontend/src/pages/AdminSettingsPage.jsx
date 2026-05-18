@@ -38,7 +38,54 @@ const CONFIG_KEYS_BY_TAB = {
     'scanner_port_scan_enabled',
     'scanner_port_list',
   ],
+  features: [
+    'feature_customers_enabled',
+    'feature_vlans_enabled',
+    'feature_vrfs_enabled',
+    'feature_racks_enabled',
+    'feature_locations_enabled',
+    'feature_bgp_enabled',
+    'feature_devices_enabled',
+  ],
 }
+
+const FEATURE_TOGGLES = [
+  {
+    key: 'feature_customers_enabled',
+    title: 'Customers',
+    description: 'Customer records and customer navigation.',
+  },
+  {
+    key: 'feature_vlans_enabled',
+    title: 'VLANs',
+    description: 'VLANs, VLAN domains, VLAN groups, and VLAN usage reports.',
+  },
+  {
+    key: 'feature_vrfs_enabled',
+    title: 'VRFs',
+    description: 'VRF records and VRF navigation.',
+  },
+  {
+    key: 'feature_racks_enabled',
+    title: 'Racks',
+    description: 'Rack records, rack details, and rack device lists.',
+  },
+  {
+    key: 'feature_locations_enabled',
+    title: 'Locations',
+    description: 'Location records, location hierarchy, and location details.',
+  },
+  {
+    key: 'feature_bgp_enabled',
+    title: 'BGP / AS Numbers',
+    description: 'Autonomous system records and BGP navigation.',
+  },
+  {
+    key: 'feature_devices_enabled',
+    title: 'Devices',
+    description: 'Device inventory, device types, interfaces, and device IP associations.',
+  },
+]
 
 export default function AdminSettingsPage() {
   const navigate = useNavigate()
@@ -220,10 +267,12 @@ export default function AdminSettingsPage() {
     { id: 'alerts', label: 'Alerts' },
     { id: 'dns', label: 'DNS' },
     { id: 'scanner', label: 'Scanner' },
+    { id: 'features', label: 'Features' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'tools', label: 'Tools' },
   ]
 
+  const featureEnabled = (key) => config?.[key] !== 'false'
   const toolSections = [
     {
       title: 'Data Tools',
@@ -238,9 +287,9 @@ export default function AdminSettingsPage() {
       links: [
         { to: '/admin/custom-fields', title: 'Custom Fields', description: 'Manage extra fields for subnets, IPs, and devices' },
         { to: '/admin/tags', title: 'IP Tags', description: 'Create and manage IP address tags' },
-        { to: '/admin/vlan-domains', title: 'VLAN Domains', description: 'Manage VLAN namespace boundaries' },
-        { to: '/admin/vlan-groups', title: 'VLAN Groups', description: 'Group VLANs for organization and reporting' },
-        { to: '/admin/vlans/usage-report', title: 'VLAN Usage', description: 'Review VLAN allocation and utilization' },
+        { to: '/admin/vlan-domains', title: 'VLAN Domains', description: 'Manage VLAN namespace boundaries', visible: featureEnabled('feature_vlans_enabled') },
+        { to: '/admin/vlan-groups', title: 'VLAN Groups', description: 'Group VLANs for organization and reporting', visible: featureEnabled('feature_vlans_enabled') },
+        { to: '/admin/vlans/usage-report', title: 'VLAN Usage', description: 'Review VLAN allocation and utilization', visible: featureEnabled('feature_vlans_enabled') },
       ],
     },
     {
@@ -263,6 +312,11 @@ export default function AdminSettingsPage() {
       ],
     },
   ]
+    .map((section) => ({
+      ...section,
+      links: section.links.filter((link) => link.visible !== false),
+    }))
+    .filter((section) => section.links.length > 0)
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
@@ -861,6 +915,44 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {activeTab === 'features' && config && (
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-2">Enabled Modules</h2>
+            <p className="text-sm text-gray-600 mb-5">
+              Disabled modules are removed from navigation and their API routes reject direct access.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {FEATURE_TOGGLES.map((feature) => (
+                <label
+                  key={feature.key}
+                  className="flex items-start gap-3 rounded border border-gray-200 p-4 cursor-pointer hover:bg-gray-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={config[feature.key] !== 'false'}
+                    onChange={(e) => handleConfigChange(feature.key, e.target.checked ? 'true' : 'false')}
+                    className="mt-1 h-4 w-4 rounded text-blue-600"
+                  />
+                  <span>
+                    <span className="block font-medium text-gray-900">{feature.title}</span>
+                    <span className="block text-sm text-gray-500">{feature.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveConfig}
+            disabled={saving}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       )}
 
