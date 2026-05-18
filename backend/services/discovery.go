@@ -19,8 +19,9 @@ import (
 
 // DiscoveryService handles network scanning and IP detection
 type DiscoveryService struct {
-	repository discoveryRepo
-	config     *ConfigService
+	repository    discoveryRepo
+	config        *ConfigService
+	encryptionKey string
 	// in-flight tracks running job IDs (value is struct{})
 	inFlight sync.Map
 	// semaphore channel limits concurrent RunJob executions
@@ -54,6 +55,7 @@ type discoveryRepo interface {
 	GetLastAliveIPsForJob(ctx context.Context, jobID int64) (map[string]bool, error)
 	// SNMP (#210)
 	UpdateIPFromSNMP(ctx context.Context, ipID int64, macAddress, hostname string) error
+	GetDeviceSNMPByIPID(ctx context.Context, ipID int64) (*models.DeviceSNMP, error)
 	// Scan agents (#212)
 	CreateScanAgent(ctx context.Context, name, tokenHash string) (*models.ScanAgent, error)
 	GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error)
@@ -76,12 +78,13 @@ func maxConcurrentJobsFromEnv() int {
 	return 4
 }
 
-func NewDiscoveryService(repo discoveryRepo, configSvc *ConfigService) *DiscoveryService {
+func NewDiscoveryService(repo discoveryRepo, configSvc *ConfigService, encryptionKey string) *DiscoveryService {
 	maxJobs := maxConcurrentJobsFromEnv()
 	return &DiscoveryService{
-		repository: repo,
-		config:     configSvc,
-		semaphore:  make(chan struct{}, maxJobs),
+		repository:    repo,
+		config:        configSvc,
+		encryptionKey: encryptionKey,
+		semaphore:     make(chan struct{}, maxJobs),
 	}
 }
 
@@ -248,7 +251,8 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 
 		// --- SNMP scan (#210) ---
 		if doSNMP && r.alive && ipAddressID != nil {
-			snmpResult, err2 := scanner.ScanSNMP(ctx, r.ip, snmpCommunity, snmpVersion, nil, 5*time.Second)
+			community, version, v3 := d.snmpCredsForIP(ctx, *ipAddressID, snmpCommunity, snmpVersion)
+			snmpResult, err2 := scanner.ScanSNMP(ctx, r.ip, community, version, v3, 5*time.Second)
 			if err2 == nil && snmpResult != nil {
 				mac := ""
 				if len(snmpResult.Interfaces) > 0 {
@@ -670,4 +674,56 @@ type AgentScanResult struct {
 	IPAddress      string `json:"ip_address"`
 	IsAlive        bool   `json:"is_alive"`
 	ResponseTimeMs int64  `json:"response_time_ms,omitempty"`
+}
+
+// snmpCredsForIP returns the SNMP community, version, and SNMPv3 params to use
+// when scanning ipID. If the IP is linked to a device with stored credentials
+// those are preferred; otherwise the globalCommunity/globalVersion fallbacks are
+// returned with a nil v3 param.
+func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globalCommunity, globalVersion string) (community, version string, v3 *scanner.SNMPv3Params) {
+	community = globalCommunity
+	version = globalVersion
+
+	creds, err := d.repository.GetDeviceSNMPByIPID(ctx, ipID)
+	if err != nil {
+		log.Printf("[discovery] snmpCredsForIP ip_id=%d: %v", ipID, err)
+		return
+	}
+	if creds == nil {
+		return // no device linked
+	}
+
+	if creds.SNMPCommunity != nil && *creds.SNMPCommunity != "" {
+		if dec, err := DecryptString(d.encryptionKey, *creds.SNMPCommunity); err == nil {
+			community = dec
+		}
+	}
+	if creds.SNMPVersion != "" {
+		version = creds.SNMPVersion
+	}
+	if version == "v3" || version == "3" {
+		version = "3"
+		p := &scanner.SNMPv3Params{}
+		if creds.SNMPV3User != nil {
+			p.User = *creds.SNMPV3User
+		}
+		if creds.SNMPV3AuthProto != nil {
+			p.AuthProto = *creds.SNMPV3AuthProto
+		}
+		if creds.SNMPV3AuthPass != nil {
+			if dec, err := DecryptString(d.encryptionKey, *creds.SNMPV3AuthPass); err == nil {
+				p.AuthPass = dec
+			}
+		}
+		if creds.SNMPV3PrivProto != nil {
+			p.PrivProto = *creds.SNMPV3PrivProto
+		}
+		if creds.SNMPV3PrivPass != nil {
+			if dec, err := DecryptString(d.encryptionKey, *creds.SNMPV3PrivPass); err == nil {
+				p.PrivPass = dec
+			}
+		}
+		v3 = p
+	}
+	return
 }
