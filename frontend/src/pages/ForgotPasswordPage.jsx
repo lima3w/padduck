@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4"
           >
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Enter the email address associated with your account and we'll send you a reset link.
+              Enter the email address associated with your account and we&apos;ll send you a reset link.
             </p>
 
             {error && (
