@@ -98,6 +98,16 @@ export default function Sidebar() {
         >
           Locations
         </NavLink>
+        <NavLink
+          to="/racks"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+            }`
+          }
+        >
+          Racks
+        </NavLink>
 
         <NavLink
           to="/autonomous-systems"
