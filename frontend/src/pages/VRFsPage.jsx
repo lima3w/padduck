@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { getVrfs, createVrf, updateVrf, deleteVrf } from '../api/client'
+import { downloadFile } from '../utils/download'
 
 // VRF model has no JSON tags — Go field names come through as PascalCase:
 //   ID, Name, RouteDistinguisher, Description, CreatedAt, UpdatedAt
@@ -16,6 +17,16 @@ export default function VRFsPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [downloading, setDownloading] = useState(false)
+
+  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
+
+  async function handleExport() {
+    setDownloading(true)
+    try { await downloadFile('/api/v1/admin/reports/export/vrfs', 'vrfs.csv') }
+    catch { setError('Export failed') }
+    finally { setDownloading(false) }
+  }
 
   useEffect(() => { load() }, [])
 
@@ -91,12 +102,19 @@ export default function VRFsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">VRFs</h1>
-        <button
-          onClick={openCreate}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
-        >
-          + Add VRF
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
+              {downloading ? 'Exporting...' : 'Export CSV'}
+            </button>
+          )}
+          <button
+            onClick={openCreate}
+            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
+          >
+            + Add VRF
+          </button>
+        </div>
       </div>
 
       {message && (

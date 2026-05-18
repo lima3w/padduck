@@ -9,6 +9,7 @@ import { getRacks } from '../api/racks'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
+import { downloadFile } from '../utils/download'
 
 const DEFAULT_LIMIT = 50
 
@@ -29,6 +30,17 @@ export default function DevicesPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const isAdmin = user?.role === 'admin'
+
+  async function handleExport() {
+    setDownloading(true)
+    try { await downloadFile('/api/v1/admin/reports/export/devices', 'devices.csv') }
+    catch { setError('Export failed') }
+    finally { setDownloading(false) }
+  }
   const [cfDefs, setCfDefs] = useState([])
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [locations, setLocations] = useState([])
@@ -237,9 +249,16 @@ export default function DevicesPage() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Devices</h1>
-        <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-          + Add Device
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
+              {downloading ? 'Exporting...' : 'Export CSV'}
+            </button>
+          )}
+          <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+            + Add Device
+          </button>
+        </div>
       </div>
 
       <ErrorBanner error={error} />

@@ -434,6 +434,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/reports/export/subnets", h.ExportSubnets)
 	admin.Get("/reports/export/ips", h.ExportIPs)
 	admin.Get("/reports/export/inactive-ips", h.ExportInactiveIPs)
+	admin.Get("/reports/export/sections", h.ExportSectionsCSV)
+	admin.Get("/reports/export/devices", h.ExportDevicesCSV)
+	admin.Get("/reports/export/vlans", h.ExportVLANsCSV)
+	admin.Get("/reports/export/vrfs", h.ExportVRFsCSV)
 	// Inactive IP reclamation
 	admin.Get("/reports/inactive-ips", h.GetInactiveIPs)
 	admin.Post("/ip-addresses/bulk-release", h.BulkReleaseIPs)
