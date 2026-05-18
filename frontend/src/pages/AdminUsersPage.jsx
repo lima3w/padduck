@@ -10,6 +10,7 @@ import {
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
+import PermissionDenied from '../components/PermissionDenied'
 
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
 const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
@@ -20,6 +21,7 @@ export default function AdminUsersPage() {
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [permissionDenied, setPermissionDenied] = useState(false)
   const [expandedUser, setExpandedUser] = useState(null)
   const [userRoles, setUserRoles] = useState({}) // userId -> roles[]
   const [assignModal, setAssignModal] = useState(null) // userId
@@ -63,7 +65,11 @@ export default function AdminUsersPage() {
       const locsData = await getLocations().catch(() => [])
       setLocations(Array.isArray(locsData) ? locsData : (locsData?.locations ?? []))
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to load data')
+      if (err.response?.status === 403) {
+        setPermissionDenied(true)
+      } else {
+        setError(err.response?.data?.error || err.message || 'Failed to load data')
+      }
     } finally {
       setLoading(false)
     }
@@ -235,6 +241,7 @@ export default function AdminUsersPage() {
   }
 
   if (loading) return <PageSpinner message="Loading users..." />
+  if (permissionDenied) return <PermissionDenied />
 
   return (
     <div>

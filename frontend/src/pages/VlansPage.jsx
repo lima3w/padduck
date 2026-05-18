@@ -11,6 +11,7 @@ import {
 } from '../api/client'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const EMPTY_FORM = { vlanId: '', name: '', description: '', domainId: '', groupId: '' }
 
@@ -178,13 +179,7 @@ export default function VlansPage() {
             </tr>
           </thead>
           <tbody>
-            {vlans.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
-                  No VLANs yet. Add your first VLAN to get started.
-                </td>
-              </tr>
-            )}
+            {vlans.length === 0 && <EmptyRow colSpan={6} message="No VLANs yet. Add your first VLAN to get started." />}
             {vlans.map(vlan => {
               const domain = getDomain(vlan.domainId)
               const group = getGroup(vlan.groupId)
