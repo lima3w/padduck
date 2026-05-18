@@ -248,7 +248,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 
 		// --- SNMP scan (#210) ---
 		if doSNMP && r.alive && ipAddressID != nil {
-			snmpResult, err2 := scanner.ScanSNMP(ctx, r.ip, snmpCommunity, snmpVersion, 5*time.Second)
+			snmpResult, err2 := scanner.ScanSNMP(ctx, r.ip, snmpCommunity, snmpVersion, nil, 5*time.Second)
 			if err2 == nil && snmpResult != nil {
 				mac := ""
 				if len(snmpResult.Interfaces) > 0 {
