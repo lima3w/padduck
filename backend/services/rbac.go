@@ -282,6 +282,8 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2NameserverList: true, PermV2NameserverRead: true,
 			PermV2VLANDomainList: true, PermV2VLANDomainRead: true,
 			PermV2VLANGroupList: true, PermV2VLANGroupRead: true,
+			PermV2CustomerList: true, PermV2CustomerRead: true,
+			PermV2ASList: true, PermV2ASRead: true,
 			// Viewers cannot submit or review requests
 		}
 		return readPerms[permission]

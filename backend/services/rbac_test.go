@@ -652,3 +652,17 @@ func TestLegacyUserRole_GrantsCustomerAndASRead(t *testing.T) {
 		})
 	}
 }
+
+func TestLegacyViewerRole_GrantsCustomerAndASRead(t *testing.T) {
+	granted := []string{
+		PermV2CustomerList,
+		PermV2CustomerRead,
+		PermV2ASList,
+		PermV2ASRead,
+	}
+	for _, perm := range granted {
+		t.Run(perm, func(t *testing.T) {
+			assert.True(t, legacyRoleHasPermission(RoleViewer, perm))
+		})
+	}
+}

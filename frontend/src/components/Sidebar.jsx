@@ -39,8 +39,8 @@ export default function Sidebar() {
   }, [])
 
   return (
-    <aside className="w-48 bg-gray-800 dark:bg-gray-900 text-gray-200 dark:text-gray-300 min-h-full flex flex-col border-r border-gray-700 dark:border-gray-700">
-      <nav className="flex flex-col p-4 gap-1">
+    <aside className="w-48 bg-gray-800 dark:bg-gray-900 text-gray-200 dark:text-gray-300 h-full min-h-0 flex flex-col border-r border-gray-700 dark:border-gray-700">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-4">
         <NavLink
           to="/"
           end
