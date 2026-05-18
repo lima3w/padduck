@@ -65,7 +65,7 @@ func (h *Handler) CSRFMiddleware(c *fiber.Ctx) error {
 					Name:     CSRFCookieName,
 					Value:    token,
 					MaxAge:   3600,
-					Secure:   h.isProduction,
+					Secure:   h.shouldSecureSessionCookie(c),
 					HTTPOnly: false,
 					SameSite: "Strict",
 				})
@@ -93,7 +93,7 @@ func (h *Handler) GetCSRFToken(c *fiber.Ctx) error {
 		Name:     CSRFCookieName,
 		Value:    token,
 		MaxAge:   3600,
-		Secure:   h.isProduction,
+		Secure:   h.shouldSecureSessionCookie(c),
 		HTTPOnly: false,
 		SameSite: "Strict",
 	})

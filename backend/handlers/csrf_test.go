@@ -47,6 +47,48 @@ func TestGetCSRFToken_TokenHasSignedFormat(t *testing.T) {
 	assert.Contains(t, token, ".", "token must contain the signed-double-submit separator")
 }
 
+func TestGetCSRFToken_ProductionHTTP_DoesNotForceSecureCookie(t *testing.T) {
+	t.Setenv("SESSION_COOKIE_SECURE", "")
+	h := &Handler{isProduction: true}
+	app := fiber.New()
+	app.Get("/csrf-token", h.GetCSRFToken)
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/csrf-token", nil))
+	require.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+
+	var csrfCookie *http.Cookie
+	for _, ck := range resp.Cookies() {
+		if ck.Name == CSRFCookieName {
+			csrfCookie = ck
+		}
+	}
+	require.NotNil(t, csrfCookie)
+	assert.False(t, csrfCookie.Secure)
+}
+
+func TestGetCSRFToken_ProductionForwardedHTTPS_SetsSecureCookie(t *testing.T) {
+	t.Setenv("SESSION_COOKIE_SECURE", "")
+	h := &Handler{isProduction: true}
+	app := fiber.New()
+	app.Get("/csrf-token", h.GetCSRFToken)
+
+	req := httptest.NewRequest("GET", "/csrf-token", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+
+	var csrfCookie *http.Cookie
+	for _, ck := range resp.Cookies() {
+		if ck.Name == CSRFCookieName {
+			csrfCookie = ck
+		}
+	}
+	require.NotNil(t, csrfCookie)
+	assert.True(t, csrfCookie.Secure)
+}
+
 // ---------------------------------------------------------------------------
 // CSRFMiddleware
 // ---------------------------------------------------------------------------
@@ -79,6 +121,26 @@ func TestCSRFMiddleware_GET_IssuesCookieWhenAbsent(t *testing.T) {
 	}
 	require.NotNil(t, csrfCookie, "GET should issue a CSRF cookie when none is present")
 	assert.Len(t, csrfCookie.Value, 97)
+}
+
+func TestCSRFMiddleware_GET_ProductionHTTP_DoesNotForceSecureCookie(t *testing.T) {
+	t.Setenv("SESSION_COOKIE_SECURE", "")
+	h := &Handler{isProduction: true}
+	app := fiber.New()
+	app.Use(h.CSRFMiddleware)
+	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/test", nil))
+	require.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+	var csrfCookie *http.Cookie
+	for _, ck := range resp.Cookies() {
+		if ck.Name == CSRFCookieName {
+			csrfCookie = ck
+		}
+	}
+	require.NotNil(t, csrfCookie)
+	assert.False(t, csrfCookie.Secure)
 }
 
 func TestCSRFMiddleware_GET_DoesNotRotateCookieWhenPresent(t *testing.T) {
