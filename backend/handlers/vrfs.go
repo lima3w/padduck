@@ -18,10 +18,39 @@ type UpdateVRFRequest struct {
 	Description        string `json:"description"`
 }
 
+// ListVRFs handles GET /api/v1/vrfs
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2VRFList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		vrfs, total, err := h.service.ListVRFsPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing VRFs", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if vrfs == nil {
+			vrfs = make([]*models.VRF, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  vrfs,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	vrfs, err := h.service.ListVRFs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VRFs", "error", err)
@@ -36,12 +65,12 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVRF(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2VRFRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
-	}
-	if err := h.permCheck(c, services.PermV2VRFRead); err != nil {
-		return nil
 	}
 
 	vrf, err := h.service.GetVRF(c.Context(), int64(id))

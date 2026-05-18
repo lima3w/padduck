@@ -69,7 +69,7 @@ export default function AdminWebhooksPage() {
       url: endpoint.url || '',
       secret: '',
       events: (endpoint.events || []).join(', ') || '*',
-      isActive: endpoint.is_active !== false,
+      isActive: endpoint.isActive !== false,
     })
     setModal({ edit: endpoint })
   }
@@ -155,8 +155,8 @@ export default function AdminWebhooksPage() {
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs break-all">{endpoint.url}</td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{(endpoint.events || []).join(', ') || '*'}</td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${endpoint.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {endpoint.is_active ? 'Active' : 'Disabled'}
+                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${endpoint.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {endpoint.isActive ? 'Active' : 'Disabled'}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right space-x-2">
@@ -194,15 +194,15 @@ export default function AdminWebhooksPage() {
               <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No deliveries yet.</td></tr>
             ) : deliveries.map(delivery => (
               <tr key={delivery.id}>
-                <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{delivery.event_type}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.endpoint_id}</td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{delivery.eventType}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.endpointId}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${deliveryStatusClass(delivery.status)}`}>
                     {delivery.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.response_status || delivery.error_msg || '-'}</td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.created_at ? new Date(delivery.created_at).toLocaleString() : '-'}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.responseStatus || delivery.errorMsg || '-'}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.createdAt ? new Date(delivery.createdAt).toLocaleString() : '-'}</td>
               </tr>
             ))}
           </tbody>

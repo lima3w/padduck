@@ -29,6 +29,15 @@ func (r *Repository) CountRecentFailedAttemptsByIP(ctx context.Context, username
 	return count, err
 }
 
+// CountRecentFailedAttemptsByIPOnly counts failed login attempts from a specific IP address across
+// all usernames within the given time window. Used for per-IP rate limiting.
+func (r *Repository) CountRecentFailedAttemptsByIPOnly(ctx context.Context, ipAddress string, since time.Time) (int, error) {
+	query := `SELECT COUNT(*) FROM login_attempts WHERE ip_address = $1::inet AND success = false AND created_at >= $2`
+	var count int
+	err := r.db.QueryRow(ctx, query, ipAddress, since).Scan(&count)
+	return count, err
+}
+
 func (r *Repository) GetLoginHistory(ctx context.Context, username string, limit int) ([]*models.LoginAttempt, error) {
 	query := `SELECT id, username, COALESCE(ip_address::text, ''), COALESCE(user_agent, ''), success, COALESCE(failure_reason, ''), created_at
 	          FROM login_attempts WHERE username = $1 ORDER BY created_at DESC LIMIT $2`

@@ -203,6 +203,19 @@ func (r *Repository) CountTotalIPsBySubnet(ctx context.Context, subnetID int64) 
 	return count, nil
 }
 
+// GetSubnetUtilizationCounts returns total, available, assigned, and reserved IP counts for a subnet in a single query.
+func (r *Repository) GetSubnetUtilizationCounts(ctx context.Context, subnetID int64) (total, available, assigned, reserved int64, err error) {
+	err = r.db.QueryRow(ctx, `
+		SELECT
+			COUNT(*) AS total,
+			COUNT(*) FILTER (WHERE status = 'available') AS available,
+			COUNT(*) FILTER (WHERE status = 'assigned') AS assigned,
+			COUNT(*) FILTER (WHERE status = 'reserved') AS reserved
+		FROM ip_addresses WHERE subnet_id = $1
+	`, subnetID).Scan(&total, &available, &assigned, &reserved)
+	return
+}
+
 // UpdateIPAddressWithLease updates IP with lease information
 func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, status string, assignedTo *string, assignedAt *time.Time, expiresAt *time.Time) (*models.IPAddress, error) {
 	query := `WITH upd AS (

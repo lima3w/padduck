@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"log"
@@ -36,6 +37,13 @@ func NewHandler(service *services.Service, isProduction bool) *Handler {
 	}
 }
 
+// StartTokenLimiterCleanup starts the background cleanup goroutine for the
+// token rate limiter. It should be called once after NewHandler, passing the
+// application context so that the goroutine stops on shutdown.
+func (h *Handler) StartTokenLimiterCleanup(ctx context.Context) {
+	h.tokenLimiter.StartCleanup(ctx)
+}
+
 // permCheck verifies the authenticated user has the given permission.
 // On denial it writes the error response and returns errResponseWritten (non-nil).
 // Callers must do: if err := h.permCheck(...); err != nil { return nil }
@@ -66,8 +74,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	grafana := app.Group("/api/grafana")
 	grafana.Use(h.AuthMiddleware)
 	grafana.Get("/", h.GrafanaHealth)
-	grafana.Post("/search", h.GrafanaSearch)
-	grafana.Post("/query", h.GrafanaQuery)
+	grafana.Post("/search", h.RequireBearerAuth, h.GrafanaSearch)
+	grafana.Post("/query", h.RequireBearerAuth, h.GrafanaQuery)
 
 	// API v1 routes
 	api := app.Group("/api/v1")

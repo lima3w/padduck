@@ -80,7 +80,7 @@ func NewClient(baseURL, token string, skipTLS bool) *Client {
 	if skipTLS {
 		slog.Warn("Technitium TLS certificate verification is disabled — do not use in production", "url", baseURL)
 		transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // #nosec G402 -- explicit admin Technitium setting.
 		}
 	}
 	return &Client{
@@ -118,7 +118,7 @@ func checkResponse(resp *http.Response) error {
 		return fmt.Errorf("unexpected HTTP status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 	var envelope struct {
-		Status   string `json:"status"`
+		Status       string `json:"status"`
 		ErrorMessage string `json:"errorMessage"`
 	}
 	if err := json.Unmarshal(body, &envelope); err != nil {
@@ -194,7 +194,7 @@ func (c *Client) ListZones(ctx context.Context) ([]Zone, error) {
 func (c *Client) GetZoneRecords(ctx context.Context, zone string) ([]Record, error) {
 	params := url.Values{}
 	params.Set("zone", zone)
-	params.Set("domain", zone)  // required; listZone=true returns all records, not just the apex
+	params.Set("domain", zone) // required; listZone=true returns all records, not just the apex
 	params.Set("listZone", "true")
 	resp, err := c.get(ctx, "/api/zones/records/get", params)
 	if err != nil {

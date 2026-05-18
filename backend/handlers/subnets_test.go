@@ -112,14 +112,15 @@ func TestGetSubnet_NoPermission_Returns403(t *testing.T) {
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
-func TestGetSubnet_BadID_Returns400(t *testing.T) {
+func TestGetSubnet_BadID_NoAuth_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/subnets/:id", h.GetSubnet)
 
+	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
 	resp, err := app.Test(httptest.NewRequest("GET", "/subnets/abc", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------

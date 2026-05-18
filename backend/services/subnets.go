@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 
 	"ipam-next/models"
@@ -32,7 +33,7 @@ func ValidateCIDR(address string, prefixLength int) error {
 
 // checkOverlap checks whether the given CIDR overlaps any existing subnet in the section (excluding excludeID)
 func (s *Service) checkOverlap(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, excludeID int64) error {
-	allowed, _ := s.Config.Get("allow_subnet_overlaps")
+	allowed, _ := s.Config.GetCtx(ctx, "allow_subnet_overlaps")
 	if allowed == "true" {
 		return nil
 	}
@@ -72,17 +73,19 @@ type OverlapPair struct {
 
 // OverlapReport returns all overlapping subnet pairs across all sections
 func (s *Service) OverlapReport(ctx context.Context) ([]*OverlapPair, error) {
-	sections, err := s.repository.ListAllSections(ctx)
+	all, err := s.repository.ListAllSubnets(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	// Group by section_id in Go to avoid one DB query per section
+	bySec := make(map[int64][]*models.Subnet)
+	for _, sub := range all {
+		bySec[sub.SectionID] = append(bySec[sub.SectionID], sub)
+	}
+
 	var pairs []*OverlapPair
-	for _, section := range sections {
-		subnets, err := s.repository.ListSubnetsBySection(ctx, section.ID)
-		if err != nil {
-			return nil, err
-		}
+	for _, subnets := range bySec {
 		for i, a := range subnets {
 			_, netA, err := net.ParseCIDR(fmt.Sprintf("%s/%d", a.NetworkAddress, a.PrefixLength))
 			if err != nil {
@@ -154,9 +157,11 @@ func (s *Service) validateVLANVRFConsistency(ctx context.Context, vlanID int64, 
 	if vlan.DomainID == nil {
 		return nil
 	}
-	// Get the VLAN's own VRF
-	if vlan.VRFID != nil && subnetVRFID != nil && *vlan.VRFID != *subnetVRFID {
-		return fmt.Errorf("subnet VRF does not match VLAN VRF (VLAN is in domain %d)", *vlan.DomainID)
+	// If the VLAN requires a specific VRF, the subnet must specify that same VRF.
+	if vlan.VRFID != nil {
+		if subnetVRFID == nil || *vlan.VRFID != *subnetVRFID {
+			return fmt.Errorf("subnet VRF does not match VLAN VRF (domain %d requires VRF %d)", *vlan.DomainID, *vlan.VRFID)
+		}
 	}
 	return nil
 }
@@ -227,12 +232,12 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 
 	// Apply global defaults
 	if !autoFirst {
-		if v, _ := s.Config.Get("default_auto_reserve_first"); v == "true" {
+		if v, _ := s.Config.GetCtx(ctx, "default_auto_reserve_first"); v == "true" {
 			autoFirst = true
 		}
 	}
 	if !autoLast {
-		if v, _ := s.Config.Get("default_auto_reserve_last"); v == "true" {
+		if v, _ := s.Config.GetCtx(ctx, "default_auto_reserve_last"); v == "true" {
 			autoLast = true
 		}
 	}
@@ -254,11 +259,15 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 	_, ipNet, _ := net.ParseCIDR(cidr)
 	if autoFirst && ipNet != nil {
 		networkIP := ipNet.IP.String()
-		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil)
+		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil); err != nil {
+			slog.Warn("auto-reserve first IP failed", "subnet_id", subnet.ID, "ip", networkIP, "error", err)
+		}
 	}
 	if autoLast && ipNet != nil {
 		bcastIP := broadcastAddr(ipNet)
-		_, _ = s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil)
+		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil); err != nil {
+			slog.Warn("auto-reserve last IP failed", "subnet_id", subnet.ID, "ip", bcastIP, "error", err)
+		}
 	}
 
 	if len(customFields) > 0 && customFields[0] != nil {

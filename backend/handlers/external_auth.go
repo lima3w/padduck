@@ -283,7 +283,8 @@ func (h *Handler) TestLDAPConnection(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.LDAP.TestConnection(c.Context()); err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"ok": false, "error": err.Error()})
+		reqLogger(c).Error("LDAP connection test failed", "error", err)
+		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"ok": false, "error": "LDAP connection failed"})
 	}
 	return c.JSON(fiber.Map{"ok": true})
 }

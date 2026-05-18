@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"strings"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/repository"
@@ -50,7 +50,7 @@ func (h *Handler) GetCustomFieldDefinition(c *fiber.Ctx) error {
 
 	def, err := h.service.GetCustomFieldDefinition(c.Context(), int64(id))
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		reqLogger(c).Error("error getting custom field definition", "id", id, "error", err)
@@ -76,7 +76,7 @@ func (h *Handler) UpdateCustomFieldDefinition(c *fiber.Ctx) error {
 
 	def, err := h.service.UpdateCustomFieldDefinition(c.Context(), int64(id), p)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -95,7 +95,7 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteCustomFieldDefinition(c.Context(), int64(id)); err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		reqLogger(c).Error("error deleting custom field definition", "id", id, "error", err)

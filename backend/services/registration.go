@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"ipam-next/models"
 	"ipam-next/repository"
 	"ipam-next/utils"
@@ -102,6 +103,16 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 
 	user, err := s.repository.CreateUserWithState(ctx, req.Username, req.Email, passwordHash, "user", state)
 	if err != nil {
+		// Handle unique constraint violations from concurrent registrations (TOCTOU race).
+		// PostgreSQL returns error code 23505 for unique_violation.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if strings.Contains(pgErr.ConstraintName, "email") {
+				return nil, ErrEmailTaken
+			}
+			// Default to username conflict (covers username constraint and unknown constraint names).
+			return nil, ErrUsernameTaken
+		}
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
@@ -120,7 +131,10 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 }
 
 func (s *RegistrationService) sendVerificationEmail(ctx context.Context, user *models.User) error {
-	token, tokenHash := generateToken()
+	token, tokenHash, err := generateToken()
+	if err != nil {
+		return err
+	}
 	expiresAt := time.Now().Add(24 * time.Hour)
 
 	if _, err := s.repository.CreateEmailVerification(ctx, user.ID, tokenHash, expiresAt); err != nil {
@@ -261,12 +275,14 @@ func (s *RegistrationService) notifyAdminsOfPendingApproval(ctx context.Context,
 	}
 }
 
-func generateToken() (rawToken, tokenHash string) {
+func generateToken() (rawToken, tokenHash string, err error) {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err = rand.Read(b); err != nil {
+		return "", "", fmt.Errorf("rand.Read: %w", err)
+	}
 	rawToken = hex.EncodeToString(b)
 	tokenHash = hashToken(rawToken)
-	return
+	return rawToken, tokenHash, nil
 }
 
 func hashToken(token string) string {

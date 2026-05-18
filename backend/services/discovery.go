@@ -87,8 +87,11 @@ func NewDiscoveryService(repo discoveryRepo, configSvc *ConfigService) *Discover
 
 // PingHost checks if a host responds to ICMP ping, returning response time in ms
 func PingHost(host string, timeout time.Duration) (bool, int64) {
+	if net.ParseIP(host) == nil {
+		return false, 0
+	}
 	start := time.Now()
-	cmd := exec.Command("ping", "-c", "1", "-W", strconv.Itoa(int(timeout.Seconds())), host)
+	cmd := exec.Command("ping", "-c", "1", "-W", strconv.Itoa(int(timeout.Seconds())), host) // #nosec G204 -- host is validated as an IP address.
 	err := cmd.Run()
 	elapsed := time.Since(start).Milliseconds()
 	if err != nil {
@@ -662,9 +665,9 @@ func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64
 
 // AgentScanResult is the payload submitted by an agent for a single IP.
 type AgentScanResult struct {
-	SubnetID      int64  `json:"subnet_id"`
-	IPAddressID   int64  `json:"ip_address_id,omitempty"`
-	IPAddress     string `json:"ip_address"`
-	IsAlive       bool   `json:"is_alive"`
-	ResponseTimeMs int64 `json:"response_time_ms,omitempty"`
+	SubnetID       int64  `json:"subnet_id"`
+	IPAddressID    int64  `json:"ip_address_id,omitempty"`
+	IPAddress      string `json:"ip_address"`
+	IsAlive        bool   `json:"is_alive"`
+	ResponseTimeMs int64  `json:"response_time_ms,omitempty"`
 }

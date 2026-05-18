@@ -65,7 +65,8 @@ func (h *Handler) ApproveUser(c *fiber.Ctx) error {
 	reviewerID := currentUser.ID
 
 	if err := h.service.Registration.ApproveUser(c.Context(), approvalID, reviewerID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to approve user: " + err.Error()})
+		reqLogger(c).Error("approve user failed", "approval_id", approvalID, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	adminID, adminName := auditUserFromCtx(c)
@@ -92,12 +93,15 @@ func (h *Handler) RejectUser(c *fiber.Ctx) error {
 	var req struct {
 		Reason string `json:"reason"`
 	}
-	c.BodyParser(&req)
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
 
 	reviewerID := currentUser.ID
 
 	if err := h.service.Registration.RejectUser(c.Context(), approvalID, reviewerID, req.Reason); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to reject user: " + err.Error()})
+		reqLogger(c).Error("reject user failed", "approval_id", approvalID, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	adminID, adminName := auditUserFromCtx(c)

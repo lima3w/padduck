@@ -1,22 +1,55 @@
 package handlers
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/models"
 	"ipam-next/repository"
 	"ipam-next/services"
 )
 
 // ListLocations handles GET /api/v1/locations
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListLocations(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		locs, total, err := h.service.ListLocationsPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing locations", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if locs == nil {
+			locs = make([]*models.Location, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  locs,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	locs, err := h.service.ListLocations(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing locations", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	if locs == nil {
+		locs = make([]*models.Location, 0)
 	}
 	return c.JSON(locs)
 }
@@ -50,7 +83,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	loc, err := h.service.CreateLocation(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating location", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.Status(fiber.StatusCreated).JSON(loc)
 }
@@ -66,7 +99,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 	}
 	loc, err := h.service.GetLocation(c.Context(), int64(id))
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error getting location", "id", id, "error", err)
@@ -94,11 +127,11 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 	}
 	loc, err := h.service.UpdateLocation(c.Context(), int64(id), req)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error updating location", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(loc)
 }
@@ -113,7 +146,7 @@ func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid location ID"})
 	}
 	if err := h.service.DeleteLocation(c.Context(), int64(id)); err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
 		}
 		reqLogger(c).Error("error deleting location", "id", id, "error", err)

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -47,7 +48,7 @@ func (h *Handler) CreateRack(c *fiber.Ctx) error {
 	rack, err := h.service.CreateRack(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating rack", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.Status(fiber.StatusCreated).JSON(rack)
 }
@@ -65,7 +66,7 @@ func (h *Handler) GetRack(c *fiber.Ctx) error {
 
 	rack, err := h.service.GetRack(c.Context(), int64(id))
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
 		reqLogger(c).Error("error getting rack", "id", id, "error", err)
@@ -97,11 +98,11 @@ func (h *Handler) UpdateRack(c *fiber.Ctx) error {
 
 	rack, err := h.service.UpdateRack(c.Context(), int64(id), req)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
 		reqLogger(c).Error("error updating rack", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(rack)
 }
@@ -118,7 +119,7 @@ func (h *Handler) DeleteRack(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.DeleteRack(c.Context(), int64(id)); err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "rack not found"})
 		}
 		reqLogger(c).Error("error deleting rack", "id", id, "error", err)

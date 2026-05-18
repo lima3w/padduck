@@ -117,7 +117,7 @@ func (h *Handler) ApproveSubnetRequest(c *fiber.Ctx) error {
 	sr, err := h.service.ApproveSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error approving subnet request", "id", id, "error", err)
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
+		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -156,7 +156,7 @@ func (h *Handler) RejectSubnetRequest(c *fiber.Ctx) error {
 	sr, err := h.service.RejectSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error rejecting subnet request", "id", id, "error", err)
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
+		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -184,7 +184,7 @@ func (h *Handler) CancelSubnetRequest(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.CancelSubnetRequest(c.Context(), int64(id), currentUser.ID); err != nil {
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not cancellable") {
+		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotCancellable) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		reqLogger(c).Error("error cancelling subnet request", "id", id, "error", err)
@@ -290,7 +290,7 @@ func (h *Handler) ApproveIPRequest(c *fiber.Ctx) error {
 		if errors.As(err, &takenErr) {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": takenErr.Error()})
 		}
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
+		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -329,7 +329,7 @@ func (h *Handler) RejectIPRequest(c *fiber.Ctx) error {
 	ir, err := h.service.RejectIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error rejecting IP request", "id", id, "error", err)
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not pending") {
+		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -357,7 +357,7 @@ func (h *Handler) CancelIPRequest(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.CancelIPRequest(c.Context(), int64(id), currentUser.ID); err != nil {
-		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "not cancellable") {
+		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotCancellable) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 		}
 		reqLogger(c).Error("error cancelling IP request", "id", id, "error", err)
@@ -393,6 +393,16 @@ func (h *Handler) ListRequestComments(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request ID"})
 	}
 
+	if currentUser.Role != "admin" {
+		ownerID, err := h.service.GetRequestOwner(c.Context(), reqType, int64(id))
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "request not found"})
+		}
+		if ownerID != currentUser.ID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "access denied"})
+		}
+	}
+
 	comments, err := h.service.ListRequestComments(c.Context(), reqType, int64(id))
 	if err != nil {
 		reqLogger(c).Error("error listing request comments", "type", reqType, "id", id, "error", err)
@@ -416,6 +426,16 @@ func (h *Handler) AddRequestComment(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request ID"})
+	}
+
+	if currentUser.Role != "admin" {
+		ownerID, err := h.service.GetRequestOwner(c.Context(), reqType, int64(id))
+		if err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "request not found"})
+		}
+		if ownerID != currentUser.ID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "access denied"})
+		}
 	}
 
 	var body struct {

@@ -25,16 +25,23 @@ jobs:
 
       - name: Run backend tests
         working-directory: ./backend
-        run: |
-          go mod download
-          go mod tidy
-          go test ./...
+        run: go test -mod=vendor ./...
 
       - name: Run frontend tests
         working-directory: ./frontend
         run: |
           npm ci
           npm test
+
+      - name: Generate dependency SBOM
+        run: make sbom
+
+      - name: Publish dependency SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-sbom
+          path: sbom/dependency-sbom.cdx.json
+          if-no-files-found: error
 
       - name: Configure firewall
         run: |

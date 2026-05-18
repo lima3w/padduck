@@ -24,10 +24,39 @@ type UpdateAutonomousSystemRequest struct {
 	RIR         string `json:"rir"`
 }
 
+// ListAutonomousSystems handles GET /api/v1/autonomous-systems
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2ASList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		items, total, err := h.service.ListAutonomousSystemsPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing autonomous systems", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if items == nil {
+			items = make([]*models.AutonomousSystem, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  items,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	items, err := h.service.ListAutonomousSystems(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing autonomous systems", "error", err)
@@ -40,17 +69,17 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2ASRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid ID"})
 	}
-	if err := h.permCheck(c, services.PermV2ASRead); err != nil {
-		return nil
-	}
 	item, err := h.service.GetAutonomousSystem(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting autonomous system", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "autonomous system")
 	}
 	return c.JSON(item)
 }
@@ -66,7 +95,7 @@ func (h *Handler) CreateAutonomousSystem(c *fiber.Ctx) error {
 	item, err := h.service.CreateAutonomousSystem(c.Context(), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
 		reqLogger(c).Error("error creating autonomous system", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "autonomous system")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -92,7 +121,7 @@ func (h *Handler) UpdateAutonomousSystem(c *fiber.Ctx) error {
 	item, err := h.service.UpdateAutonomousSystem(c.Context(), int64(id), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
 		reqLogger(c).Error("error updating autonomous system", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "autonomous system")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -113,7 +142,7 @@ func (h *Handler) DeleteAutonomousSystem(c *fiber.Ctx) error {
 	}
 	if err := h.service.DeleteAutonomousSystem(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting autonomous system", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "autonomous system")
 	}
 	uid, uname := auditUserFromCtx(c)
 	aid := int64(id)

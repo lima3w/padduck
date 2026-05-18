@@ -30,6 +30,7 @@ type UserDetailResponse struct {
 }
 
 // ListUsers handles GET /api/v1/users (admin only)
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
@@ -39,14 +40,22 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
 	}
 
-	users, err := h.service.ListAllUsers(c.Context())
-	if err != nil {
-		reqLogger(c).Error("error listing users", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
-	}
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
 
-	response := make([]UserDetailResponse, 0)
-	if users != nil {
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		users, total, err := h.service.ListUsersPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing users", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		response := make([]UserDetailResponse, 0, len(users))
 		for _, u := range users {
 			response = append(response, UserDetailResponse{
 				ID:          u.ID,
@@ -59,6 +68,32 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 				UpdatedAt:   u.UpdatedAt.String(),
 			})
 		}
+		return c.JSON(fiber.Map{
+			"data":  response,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
+	users, err := h.service.ListAllUsers(c.Context())
+	if err != nil {
+		reqLogger(c).Error("error listing users", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	response := make([]UserDetailResponse, 0)
+	for _, u := range users {
+		response = append(response, UserDetailResponse{
+			ID:          u.ID,
+			Username:    u.Username,
+			Email:       u.Email,
+			Role:        u.Role,
+			State:       u.State,
+			GravatarURL: gravatarURL(u.Email, 80),
+			CreatedAt:   u.CreatedAt.String(),
+			UpdatedAt:   u.UpdatedAt.String(),
+		})
 	}
 
 	return c.JSON(response)

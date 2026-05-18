@@ -68,6 +68,31 @@ func (r *Repository) ListVLANsByVRF(ctx context.Context, vrfID int64) ([]*models
 	return vlans, rows.Err()
 }
 
+// ListVLANsPaginated returns a page of VLANs with a total count.
+func (r *Repository) ListVLANsPaginated(ctx context.Context, limit, offset int) ([]*models.VLAN, int64, error) {
+	var total int64
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM vlans`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	query := `SELECT id, vrf_id, domain_id, group_id, vlan_id, name, description, created_at, updated_at FROM vlans ORDER BY vlan_id ASC LIMIT $1 OFFSET $2`
+	rows, err := r.db.Query(ctx, query, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	vlans := make([]*models.VLAN, 0)
+	for rows.Next() {
+		vlan := &models.VLAN{}
+		if err := rows.Scan(&vlan.ID, &vlan.VRFID, &vlan.DomainID, &vlan.GroupID, &vlan.VlanID, &vlan.Name, &vlan.Description, &vlan.CreatedAt, &vlan.UpdatedAt); err != nil {
+			return nil, 0, err
+		}
+		vlans = append(vlans, vlan)
+	}
+	return vlans, total, rows.Err()
+}
+
 func (r *Repository) UpdateVLAN(ctx context.Context, id int64, domainID *int64, groupID *int64, name, description string) (*models.VLAN, error) {
 	query := `UPDATE vlans SET name = $1, description = $2, domain_id = $3, group_id = $4, updated_at = CURRENT_TIMESTAMP
 	          WHERE id = $5

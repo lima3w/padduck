@@ -153,6 +153,14 @@ func (s *Service) BulkActivateUsers(ctx context.Context, userIDs []int64) (int64
 
 // BulkDeleteUsers deletes multiple users
 func (s *Service) BulkDeleteUsers(ctx context.Context, userIDs []int64) (int64, error) {
+	// Ensure at least one admin would remain after deletion
+	remainingAdmins, err := s.repository.CountAdminsExcluding(ctx, userIDs)
+	if err != nil {
+		return 0, fmt.Errorf("failed to check admin count: %w", err)
+	}
+	if remainingAdmins == 0 {
+		return 0, fmt.Errorf("cannot delete all admins")
+	}
 	return s.repository.BulkDeleteUsers(ctx, userIDs)
 }
 
@@ -221,7 +229,7 @@ type BulkImportResult struct {
 
 // AcceptPrivacyPolicy records user's consent to the current privacy policy
 func (s *Service) AcceptPrivacyPolicy(ctx context.Context, userID int64) error {
-	version, err := s.Config.Get("privacy_policy_version")
+	version, err := s.Config.GetCtx(ctx, "privacy_policy_version")
 	if err != nil || version == "" {
 		version = "1.0"
 	}
@@ -230,7 +238,7 @@ func (s *Service) AcceptPrivacyPolicy(ctx context.Context, userID int64) error {
 
 // GetPrivacyPolicyVersion returns the current privacy policy version
 func (s *Service) GetPrivacyPolicyVersion(ctx context.Context) string {
-	v, err := s.Config.Get("privacy_policy_version")
+	v, err := s.Config.GetCtx(ctx, "privacy_policy_version")
 	if err != nil || v == "" {
 		return "1.0"
 	}

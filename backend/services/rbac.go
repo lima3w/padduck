@@ -99,7 +99,7 @@ const (
 	// VLAN group permissions (v1.8.0 #207)
 	PermV2VLANGroupList   = "ipam:vlan_group:list"
 	PermV2VLANGroupRead   = "ipam:vlan_group:read"
-	PermV2VLANGroupWrite  = "ipam:vlan_group:write"
+	PermV2VLANGroupWrite  = "ipam:vlan_group:write" // #nosec G101 -- permission string, not a credential.
 	PermV2VLANGroupDelete = "ipam:vlan_group:delete"
 
 	// Admin-only operation permissions
@@ -244,8 +244,11 @@ func permMatches(perms []*models.RolePermission, permission string, scopes []Res
 		if p.ResourceType == nil {
 			return true // global grant
 		}
+		if p.ResourceID == nil {
+			continue
+		}
 		for _, s := range scopes {
-			if *p.ResourceType == s.Type && (p.ResourceID == nil || *p.ResourceID == s.ID) {
+			if *p.ResourceType == s.Type && *p.ResourceID == s.ID {
 				return true
 			}
 		}
@@ -262,6 +265,8 @@ func legacyRoleHasPermission(role, permission string) bool {
 		adminOnly := map[string]bool{
 			PermV2UserWrite: true, PermV2AuditRead: true, PermV2DeviceAdmin: true,
 			PermV2SubnetRequestReview: true, PermV2AdminRead: true, PermV2AdminWrite: true,
+			PermV2CustomerWrite: true, PermV2CustomerDelete: true,
+			PermV2ASWrite: true, PermV2ASDelete: true,
 		}
 		return !adminOnly[permission]
 	case "viewer":
@@ -272,7 +277,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2VRFList: true, PermV2VRFRead: true,
 			PermV2VLANList: true, PermV2VLANRead: true,
 			PermV2UserList: true, PermV2UserRead: true,
-			PermV2DeviceRead: true,
+			PermV2DeviceRead:   true,
 			PermV2LocationList: true, PermV2LocationRead: true,
 			PermV2NameserverList: true, PermV2NameserverRead: true,
 			PermV2VLANDomainList: true, PermV2VLANDomainRead: true,
@@ -396,6 +401,9 @@ func (s *Service) AddPermissionToRole(ctx context.Context, roleID int64, permiss
 	}
 	if !IsValidPermission(permission) {
 		return nil, fmt.Errorf("unknown permission: %s", permission)
+	}
+	if resourceType != nil && *resourceType != "" && resourceID == nil {
+		return nil, fmt.Errorf("resource ID is required when resource type is set")
 	}
 	return s.repository.AddPermissionToRole(ctx, roleID, permission, resourceType, resourceID)
 }

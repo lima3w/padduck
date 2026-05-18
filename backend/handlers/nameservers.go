@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -32,7 +33,7 @@ func (h *Handler) GetNameserver(c *fiber.Ctx) error {
 	}
 	ns, err := h.service.GetNameserver(c.Context(), int64(id))
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
 		reqLogger(c).Error("error getting nameserver", "id", id, "error", err)
@@ -61,7 +62,7 @@ func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
 	ns, err := h.service.CreateNameserver(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating nameserver", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -94,11 +95,11 @@ func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
 	}
 	ns, err := h.service.UpdateNameserver(c.Context(), int64(id), req)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
 		reqLogger(c).Error("error updating nameserver", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -118,7 +119,7 @@ func (h *Handler) DeleteNameserver(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid nameserver ID"})
 	}
 	if err := h.service.DeleteNameserver(c.Context(), int64(id)); err != nil {
-		if strings.Contains(err.Error(), "not found") {
+		if errors.Is(err, services.ErrNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
 		}
 		reqLogger(c).Error("error deleting nameserver", "id", id, "error", err)

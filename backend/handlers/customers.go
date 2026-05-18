@@ -22,10 +22,39 @@ type UpdateCustomerRequest struct {
 	Notes       string `json:"notes"`
 }
 
+// ListCustomers handles GET /api/v1/customers
+// Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2CustomerList); err != nil {
 		return nil
 	}
+
+	page := c.QueryInt("page", 0)
+	limit := c.QueryInt("limit", 0)
+
+	if page > 0 || limit > 0 {
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 25
+		}
+		customers, total, err := h.service.ListCustomersPaginated(c.Context(), page, limit)
+		if err != nil {
+			reqLogger(c).Error("error listing customers", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		}
+		if customers == nil {
+			customers = make([]*models.Customer, 0)
+		}
+		return c.JSON(fiber.Map{
+			"data":  customers,
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		})
+	}
+
 	customers, err := h.service.ListCustomers(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing customers", "error", err)
@@ -38,17 +67,17 @@ func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetCustomer(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2CustomerRead); err != nil {
+		return nil
+	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid customer ID"})
 	}
-	if err := h.permCheck(c, services.PermV2CustomerRead); err != nil {
-		return nil
-	}
 	customer, err := h.service.GetCustomer(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting customer", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	return c.JSON(customer)
 }
@@ -64,7 +93,7 @@ func (h *Handler) CreateCustomer(c *fiber.Ctx) error {
 	customer, err := h.service.CreateCustomer(c.Context(), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
 		reqLogger(c).Error("error creating customer", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -90,7 +119,7 @@ func (h *Handler) UpdateCustomer(c *fiber.Ctx) error {
 	customer, err := h.service.UpdateCustomer(c.Context(), int64(id), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
 		reqLogger(c).Error("error updating customer", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -111,7 +140,7 @@ func (h *Handler) DeleteCustomer(c *fiber.Ctx) error {
 	}
 	if err := h.service.DeleteCustomer(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting customer", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return respondCustomerASError(c, err, "customer")
 	}
 	uid, uname := auditUserFromCtx(c)
 	cid := int64(id)

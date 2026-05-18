@@ -17,10 +17,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -79,7 +81,7 @@ func main() {
 		cancel()
 	}()
 
-	log.Printf("IPAM scan agent started, server=%s poll_interval=%s", serverURL, pollInterval)
+	log.Printf("IPAM scan agent started, server=%q poll_interval=%s", serverURL, pollInterval) // #nosec G706 -- operator-provided URL is quoted in a local startup log.
 
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
@@ -118,16 +120,20 @@ func runCycle(ctx context.Context, client *http.Client, serverURL, token string)
 }
 
 func doHeartbeat(ctx context.Context, client *http.Client, serverURL, token string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+"/api/v1/scan-agent/heartbeat", nil)
+	endpoint, err := agentEndpoint(serverURL, "/api/v1/scan-agent/heartbeat")
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, nil) // #nosec G704 -- server URL is operator configured and scheme validated.
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- request target is the configured IPAM server.
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("heartbeat status %d", resp.StatusCode)
 	}
@@ -135,12 +141,16 @@ func doHeartbeat(ctx context.Context, client *http.Client, serverURL, token stri
 }
 
 func fetchJobs(ctx context.Context, client *http.Client, serverURL, token string) ([]ScanJob, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+"/api/v1/scan-agent/jobs", nil)
+	endpoint, err := agentEndpoint(serverURL, "/api/v1/scan-agent/jobs")
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil) // #nosec G704 -- server URL is operator configured and scheme validated.
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- request target is the configured IPAM server.
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +216,11 @@ func runJob(ctx context.Context, job ScanJob) []AgentScanResult {
 
 // pingHost returns whether the host responded and the round-trip time in ms.
 func pingHost(host string, timeout time.Duration) (bool, int64) {
+	if net.ParseIP(host) == nil {
+		return false, 0
+	}
 	start := time.Now()
-	cmd := exec.Command("ping", "-c", "1", "-W", strconv.Itoa(int(timeout.Seconds())), host)
+	cmd := exec.Command("ping", "-c", "1", "-W", strconv.Itoa(int(timeout.Seconds())), host) // #nosec G204 -- host is generated from parsed CIDR IPs.
 	err := cmd.Run()
 	elapsed := time.Since(start).Milliseconds()
 	if err != nil {
@@ -266,19 +279,40 @@ func postResults(ctx context.Context, client *http.Client, serverURL, token stri
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+"/api/v1/scan-agent/results", bytes.NewReader(body))
+	endpoint, err := agentEndpoint(serverURL, "/api/v1/scan-agent/results")
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body)) // #nosec G704 -- server URL is operator configured and scheme validated.
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- request target is the configured IPAM server.
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("post results status %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func agentEndpoint(serverURL, path string) (string, error) {
+	base, err := url.Parse(strings.TrimSpace(serverURL))
+	if err != nil {
+		return "", err
+	}
+	if base.Scheme != "http" && base.Scheme != "https" {
+		return "", fmt.Errorf("unsupported server URL scheme %q", base.Scheme)
+	}
+	if base.Host == "" {
+		return "", fmt.Errorf("server URL host is required")
+	}
+	base.Path = strings.TrimRight(base.Path, "/") + path
+	base.RawQuery = ""
+	base.Fragment = ""
+	return base.String(), nil
 }

@@ -25,14 +25,21 @@ const (
 )
 
 // lockoutDuration returns the lockout duration based on how many times the account has been locked.
+// Durations escalate exponentially to deter persistent attackers.
 func lockoutDuration(lockoutCount int) time.Duration {
 	switch {
 	case lockoutCount <= 1:
 		return 5 * time.Minute
 	case lockoutCount == 2:
-		return 10 * time.Minute
+		return 15 * time.Minute
+	case lockoutCount == 3:
+		return 1 * time.Hour
+	case lockoutCount == 4:
+		return 4 * time.Hour
+	case lockoutCount == 5:
+		return 24 * time.Hour
 	default:
-		return 30 * time.Minute
+		return 7 * 24 * time.Hour // 7 days after 6+ lockouts
 	}
 }
 
@@ -60,6 +67,22 @@ func (s *Service) ProcessFailedLogin(ctx context.Context, userID int64, username
 		// Send a heads-up after 3 failures
 		_ = s.sendFailedLoginAlert(ctx, userID, username, ipAddress, count)
 	}
+}
+
+const (
+	ipThrottleThreshold = 20             // max failed attempts per IP within the window
+	ipThrottleWindow    = 15 * time.Minute
+)
+
+// IsIPThrottled returns true if the given IP address has accumulated too many
+// failed login attempts across any usernames within the throttle window.
+func (s *Service) IsIPThrottled(ctx context.Context, ipAddress string) (bool, error) {
+	since := time.Now().Add(-ipThrottleWindow)
+	count, err := s.repository.CountRecentFailedAttemptsByIPOnly(ctx, ipAddress, since)
+	if err != nil {
+		return false, err
+	}
+	return count >= ipThrottleThreshold, nil
 }
 
 // lockAccount creates a lockout record and sends a notification email.
@@ -90,7 +113,7 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 	}
 
 	// Queue lockout notification (best-effort)
-	appURL, _ := s.Config.Get("app_url")
+	appURL, _ := s.Config.GetCtx(ctx, "app_url")
 	if appURL == "" {
 		appURL = "http://localhost:3000"
 	}
@@ -181,7 +204,7 @@ func (s *Service) RequestUnlockEmail(ctx context.Context, username string) error
 		return err
 	}
 
-	appURL, _ := s.Config.Get("app_url")
+	appURL, _ := s.Config.GetCtx(ctx, "app_url")
 	if appURL == "" {
 		appURL = "http://localhost:3000"
 	}

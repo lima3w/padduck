@@ -68,7 +68,10 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 
 // GetMFAStatus handles GET /api/v1/auth/me/mfa
 func (h *Handler) GetMFAStatus(c *fiber.Ctx) error {
-	user := c.Locals("user").(*models.User)
+	user, ok := c.Locals("user").(*models.User)
+	if !ok || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
 	enabled, backupRemaining := h.service.MFA.GetMFAStatus(c.Context(), user.ID)
 	return c.JSON(fiber.Map{
 		"totp_enabled":      enabled,
@@ -79,10 +82,16 @@ func (h *Handler) GetMFAStatus(c *fiber.Ctx) error {
 // SetupTOTP handles POST /api/v1/auth/me/mfa/setup
 // Returns the QR code and secret for the user to scan.
 func (h *Handler) SetupTOTP(c *fiber.Ctx) error {
-	user := c.Locals("user").(*models.User)
+	user, ok := c.Locals("user").(*models.User)
+	if !ok || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
 
 	secret, qrDataURL, err := h.service.MFA.SetupTOTP(c.Context(), user.ID, user.Username, user.Email)
 	if err != nil {
+		if errors.Is(err, services.ErrMFAAlreadyEnabled) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "MFA is already enabled — disable it first"})
+		}
 		reqLogger(c).Error("TOTP setup error", "user_id", user.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to set up MFA"})
 	}
@@ -97,7 +106,10 @@ func (h *Handler) SetupTOTP(c *fiber.Ctx) error {
 // ConfirmTOTP handles POST /api/v1/auth/me/mfa/confirm
 // Verifies the first code and enables TOTP; returns backup codes.
 func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
-	user := c.Locals("user").(*models.User)
+	user, ok := c.Locals("user").(*models.User)
+	if !ok || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
 
 	var req struct {
 		Code string `json:"code"`
@@ -135,7 +147,10 @@ func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 
 // DisableTOTP handles DELETE /api/v1/auth/me/mfa
 func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
-	user := c.Locals("user").(*models.User)
+	user, ok := c.Locals("user").(*models.User)
+	if !ok || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
 
 	var req struct {
 		Code string `json:"code"`
@@ -169,7 +184,10 @@ func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 
 // RegenerateBackupCodes handles POST /api/v1/auth/me/mfa/backup-codes
 func (h *Handler) RegenerateBackupCodes(c *fiber.Ctx) error {
-	user := c.Locals("user").(*models.User)
+	user, ok := c.Locals("user").(*models.User)
+	if !ok || user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+	}
 
 	var req struct {
 		Code string `json:"code"`

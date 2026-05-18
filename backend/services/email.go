@@ -17,6 +17,18 @@ func NewEmailService(configSvc *ConfigService) *EmailService {
 	return &EmailService{configSvc: configSvc}
 }
 
+func (e *EmailService) IsSMTPConfigured() bool {
+	return e.configSvc.IsSMTPConfigured()
+}
+
+func (e *EmailService) AppURL() string {
+	appURL, _ := e.configSvc.Get("app_url")
+	if appURL == "" {
+		return "http://localhost:3000"
+	}
+	return appURL
+}
+
 type smtpConfig struct {
 	host     string
 	port     int
@@ -120,7 +132,9 @@ func (e *EmailService) TestConnection() error {
 	if err != nil {
 		return fmt.Errorf("cannot reach SMTP server: %w", err)
 	}
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		return fmt.Errorf("closing SMTP test connection: %w", err)
+	}
 	return nil
 }
 

@@ -52,7 +52,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 		c.Locals("tokenScope", apiToken.Scope)
 
 		// Rate limit check
-		limitStr, _ := h.service.Config.Get("api_token_rate_limit_per_minute")
+		limitStr, _ := h.service.Config.GetCtx(c.Context(), "api_token_rate_limit_per_minute")
 		limit := 100
 		if n, err2 := strconv.Atoi(limitStr); err2 == nil && n >= 0 {
 			limit = n
@@ -76,6 +76,18 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 		}
 	}
 
+	return c.Next()
+}
+
+// RequireBearerAuth rejects requests that authenticated via session cookie instead of a Bearer token.
+// Use on endpoints designed for server-to-server API calls (e.g., Grafana datasource) to prevent CSRF.
+func (h *Handler) RequireBearerAuth(c *fiber.Ctx) error {
+	auth := c.Get("Authorization")
+	if !strings.HasPrefix(auth, "Bearer ") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Bearer token required for this endpoint",
+		})
+	}
 	return c.Next()
 }
 

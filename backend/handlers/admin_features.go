@@ -89,6 +89,20 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
 	}
 
+	var req struct {
+		MFACode string `json:"mfa_code"`
+	}
+	_ = c.BodyParser(&req)
+
+	if h.service.MFA.IsMFAEnabled(c.Context(), admin.ID) {
+		if req.MFACode == "" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "MFA code required for impersonation"})
+		}
+		if !h.service.MFA.ValidateTOTPCode(c.Context(), admin.ID, req.MFACode) {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "invalid MFA code"})
+		}
+	}
+
 	token, err := h.service.StartImpersonation(c.Context(), int64(targetID), admin.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -168,8 +182,25 @@ func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user_ids required"})
 	}
 
+	// Filter out the admin's own ID to prevent self-deletion
+	filtered := make([]int64, 0, len(req.UserIDs))
+	for _, id := range req.UserIDs {
+		if id == admin.ID {
+			continue // skip self-deletion
+		}
+		filtered = append(filtered, id)
+	}
+	req.UserIDs = filtered
+
+	if len(req.UserIDs) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "no valid user IDs to delete"})
+	}
+
 	count, err := h.service.BulkDeleteUsers(c.Context(), req.UserIDs)
 	if err != nil {
+		if err.Error() == "cannot delete all admins" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
@@ -195,6 +226,13 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field required"})
 	}
+
+
+	const maxBulkImportSize = 5 * 1024 * 1024 // 5 MB
+	if file.Size > maxBulkImportSize {
+		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
+	}
+
 
 	f, err := file.Open()
 	if err != nil {

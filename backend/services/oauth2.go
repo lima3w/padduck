@@ -177,12 +177,17 @@ func (s *OAuth2Service) Exchange(ctx context.Context, code, state string) (*mode
 				var claims struct {
 					Sub               string `json:"sub"`
 					Email             string `json:"email"`
+					EmailVerified     *bool  `json:"email_verified"`
 					PreferredUsername string `json:"preferred_username"`
 					Name              string `json:"name"`
 				}
 				if err := idToken.Claims(&claims); err == nil {
 					sub = claims.Sub
-					email = claims.Email
+					// Only trust the email if email_verified is absent (provider
+					// guarantees verification) or explicitly true.
+					if claims.EmailVerified == nil || *claims.EmailVerified {
+						email = claims.Email
+					}
 					preferredUsername = claims.PreferredUsername
 					if preferredUsername == "" {
 						preferredUsername = claims.Name
@@ -201,12 +206,16 @@ func (s *OAuth2Service) Exchange(ctx context.Context, code, state string) (*mode
 			var info struct {
 				Sub               string `json:"sub"`
 				Email             string `json:"email"`
+				EmailVerified     *bool  `json:"email_verified"`
 				PreferredUsername string `json:"preferred_username"`
 				Name              string `json:"name"`
 			}
 			if decErr := decodeJSON(resp.Body, &info); decErr == nil {
 				sub = info.Sub
-				email = info.Email
+				// Only trust the email if email_verified is absent or explicitly true.
+				if info.EmailVerified == nil || *info.EmailVerified {
+					email = info.Email
+				}
 				preferredUsername = info.PreferredUsername
 				if preferredUsername == "" {
 					preferredUsername = info.Name
@@ -218,8 +227,13 @@ func (s *OAuth2Service) Exchange(ctx context.Context, code, state string) (*mode
 	if sub == "" {
 		return nil, fmt.Errorf("could not determine user identity from OAuth2 provider")
 	}
+	// Require a verified email address.  Storing a fabricated "@oauth2.local"
+	// address (or an unverified one) would create a false identity that could
+	// be exploited for privilege escalation if email-based lookups are ever
+	// introduced.  Fail loudly instead so the administrator can configure the
+	// OAuth2 provider to include a verified email claim.
 	if email == "" {
-		email = sub + "@oauth2.local"
+		return nil, fmt.Errorf("OAuth2 provider did not return a verified email address")
 	}
 	if preferredUsername == "" {
 		preferredUsername = email
