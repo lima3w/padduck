@@ -113,6 +113,13 @@ export default function DeviceDetailPage() {
       rack_unit_start: device.rackUnitStart != null ? String(device.rackUnitStart) : '',
       rack_unit_size: device.rackUnitSize != null ? String(device.rackUnitSize) : '',
       custom_fields: device.customFields || {},
+      snmp_version: 'v2c',
+      snmp_community: '',
+      snmp_v3_user: '',
+      snmp_v3_auth_proto: 'SHA',
+      snmp_v3_auth_pass: '',
+      snmp_v3_priv_proto: 'AES',
+      snmp_v3_priv_pass: '',
     })
     setModal('edit')
   }
@@ -133,6 +140,13 @@ export default function DeviceDetailPage() {
         rack_unit_start: editForm.rack_unit_start ? parseInt(editForm.rack_unit_start) : null,
         rack_unit_size: editForm.rack_unit_size ? parseInt(editForm.rack_unit_size) : null,
         custom_fields: editForm.custom_fields || {},
+        snmp_version: editForm.snmp_version || 'v2c',
+        snmp_community: editForm.snmp_community || null,
+        snmp_v3_user: editForm.snmp_v3_user || null,
+        snmp_v3_auth_proto: editForm.snmp_v3_auth_proto || null,
+        snmp_v3_auth_pass: editForm.snmp_v3_auth_pass || null,
+        snmp_v3_priv_proto: editForm.snmp_v3_priv_proto || null,
+        snmp_v3_priv_pass: editForm.snmp_v3_priv_pass || null,
       }
       const res = await updateDevice(id, body)
       setDevice(res.data)
@@ -692,6 +706,94 @@ export default function DeviceDetailPage() {
                 )}
               </>
             )}
+            <div className="border-t dark:border-gray-600 pt-4">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">SNMP</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SNMP Version</label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    value={editForm.snmp_version}
+                    onChange={e => setEditForm(f => ({ ...f, snmp_version: e.target.value }))}
+                  >
+                    <option value="v1">v1</option>
+                    <option value="v2c">v2c</option>
+                    <option value="v3">v3</option>
+                  </select>
+                </div>
+                {(editForm.snmp_version === 'v1' || editForm.snmp_version === 'v2c') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Community String</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                      placeholder="Leave blank to keep existing"
+                      value={editForm.snmp_community}
+                      onChange={e => setEditForm(f => ({ ...f, snmp_community: e.target.value }))}
+                    />
+                  </div>
+                )}
+                {editForm.snmp_version === 'v3' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                      <input
+                        type="text"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        value={editForm.snmp_v3_user}
+                        onChange={e => setEditForm(f => ({ ...f, snmp_v3_user: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Protocol</label>
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={editForm.snmp_v3_auth_proto}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_auth_proto: e.target.value }))}
+                        >
+                          <option value="SHA">SHA</option>
+                          <option value="MD5">MD5</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Password</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          placeholder="Leave blank to keep existing"
+                          value={editForm.snmp_v3_auth_pass}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_auth_pass: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Protocol</label>
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={editForm.snmp_v3_priv_proto}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_priv_proto: e.target.value }))}
+                        >
+                          <option value="AES">AES</option>
+                          <option value="DES">DES</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Password</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          placeholder="Leave blank to keep existing"
+                          value={editForm.snmp_v3_priv_pass}
+                          onChange={e => setEditForm(f => ({ ...f, snmp_v3_priv_pass: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>

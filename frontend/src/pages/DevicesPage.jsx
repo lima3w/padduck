@@ -9,7 +9,7 @@ import { getRacks } from '../api/racks'
 
 const DEFAULT_LIMIT = 50
 
-const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', location_id: '', rack_id: '', rack_unit_start: '', rack_unit_size: '', custom_fields: {} }
+const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', location_id: '', rack_id: '', rack_unit_start: '', rack_unit_size: '', custom_fields: {}, snmp_version: 'v2c', snmp_community: '', snmp_v3_user: '', snmp_v3_auth_proto: 'SHA', snmp_v3_auth_pass: '', snmp_v3_priv_proto: 'AES', snmp_v3_priv_pass: '' }
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState([])
@@ -195,6 +195,13 @@ export default function DevicesPage() {
         rack_unit_start: form.rack_unit_start ? parseInt(form.rack_unit_start) : null,
         rack_unit_size: form.rack_unit_size ? parseInt(form.rack_unit_size) : null,
         custom_fields: form.custom_fields || {},
+        snmp_version: form.snmp_version || 'v2c',
+        snmp_community: form.snmp_community || null,
+        snmp_v3_user: form.snmp_v3_user || null,
+        snmp_v3_auth_proto: form.snmp_v3_auth_proto || null,
+        snmp_v3_auth_pass: form.snmp_v3_auth_pass || null,
+        snmp_v3_priv_proto: form.snmp_v3_priv_proto || null,
+        snmp_v3_priv_pass: form.snmp_v3_priv_pass || null,
       }
       if (modal === 'create') {
         await api.post('/devices', body)
@@ -566,6 +573,92 @@ export default function DevicesPage() {
                 )}
               </>
             )}
+            <div className="border-t dark:border-gray-600 pt-4">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">SNMP</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SNMP Version</label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    value={form.snmp_version}
+                    onChange={e => setForm(f => ({ ...f, snmp_version: e.target.value }))}
+                  >
+                    <option value="v1">v1</option>
+                    <option value="v2c">v2c</option>
+                    <option value="v3">v3</option>
+                  </select>
+                </div>
+                {(form.snmp_version === 'v1' || form.snmp_version === 'v2c') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Community String</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                      placeholder="public"
+                      value={form.snmp_community}
+                      onChange={e => setForm(f => ({ ...f, snmp_community: e.target.value }))}
+                    />
+                  </div>
+                )}
+                {form.snmp_version === 'v3' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                      <input
+                        type="text"
+                        className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                        value={form.snmp_v3_user}
+                        onChange={e => setForm(f => ({ ...f, snmp_v3_user: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Protocol</label>
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={form.snmp_v3_auth_proto}
+                          onChange={e => setForm(f => ({ ...f, snmp_v3_auth_proto: e.target.value }))}
+                        >
+                          <option value="SHA">SHA</option>
+                          <option value="MD5">MD5</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Password</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={form.snmp_v3_auth_pass}
+                          onChange={e => setForm(f => ({ ...f, snmp_v3_auth_pass: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Protocol</label>
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={form.snmp_v3_priv_proto}
+                          onChange={e => setForm(f => ({ ...f, snmp_v3_priv_proto: e.target.value }))}
+                        >
+                          <option value="AES">AES</option>
+                          <option value="DES">DES</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Password</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                          value={form.snmp_v3_priv_pass}
+                          onChange={e => setForm(f => ({ ...f, snmp_v3_priv_pass: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">
                 <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
