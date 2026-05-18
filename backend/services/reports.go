@@ -581,6 +581,11 @@ func (rs *ReportsService) GetInactiveIPs(ctx context.Context, days int, sectionI
 	return rs.repo.GetInactiveIPs(ctx, days, sectionID)
 }
 
+// GetDNSAudit returns all IPs with DNS name tracking data.
+func (rs *ReportsService) GetDNSAudit(ctx context.Context) ([]*repository.DNSAuditRow, error) {
+	return rs.repo.GetDNSAudit(ctx)
+}
+
 // BulkReleaseIPs releases a set of IPs back to 'available' and logs the action.
 func (rs *ReportsService) BulkReleaseIPs(ctx context.Context, ipIDs []int64, operatorUserID int64) (int64, error) {
 	count, err := rs.repo.BulkReleaseIPs(ctx, ipIDs)

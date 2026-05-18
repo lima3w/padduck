@@ -441,6 +441,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Inactive IP reclamation
 	admin.Get("/reports/inactive-ips", h.GetInactiveIPs)
 	admin.Post("/ip-addresses/bulk-release", h.BulkReleaseIPs)
+	// Reconciliation center (#424)
+	admin.Get("/reports/reconciliation", h.GetReconciliationReport)
 
 	// Duplicate detection (#425)
 	admin.Get("/reports/duplicates", h.GetDuplicates)

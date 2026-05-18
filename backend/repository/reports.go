@@ -673,11 +673,11 @@ func (r *Repository) GetIPAge(ctx context.Context) ([]*IPAgeRow, error) {
 
 // DNSAuditRow holds DNS audit data for the dns_audit report.
 type DNSAuditRow struct {
-	IPID           int64
-	Address        string
-	DNSName        string
-	PTRRecord      string
-	DNSLastChecked string
+	IPID           int64  `json:"ip_id"`
+	Address        string `json:"address"`
+	DNSName        string `json:"dns_name"`
+	PTRRecord      string `json:"ptr_record"`
+	DNSLastChecked string `json:"dns_last_checked"`
 }
 
 // GetDNSAudit returns all IP addresses that have a dns_name set, with their DNS check status.
