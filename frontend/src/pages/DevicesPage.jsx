@@ -6,6 +6,9 @@ import CustomFieldForm from '../components/CustomFieldForm'
 import { api } from '../api/client'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const DEFAULT_LIMIT = 50
 
@@ -228,7 +231,7 @@ export default function DevicesPage() {
     }
   }
 
-  if (loading && devices.length === 0) return <p className="text-gray-500">Loading devices...</p>
+  if (loading && devices.length === 0) return <PageSpinner message="Loading devices..." />
 
   return (
     <div>
@@ -239,7 +242,7 @@ export default function DevicesPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       <div className="mb-4 space-y-2">
         <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
@@ -367,7 +370,7 @@ export default function DevicesPage() {
           </thead>
           <tbody>
             {devices.length === 0 && (
-              <tr><td colSpan={7 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No devices yet</td></tr>
+              <EmptyRow colSpan={7 + searchableFields.length} message="No devices yet." />
             )}
 
             {devices.map(d => (

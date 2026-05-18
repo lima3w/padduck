@@ -7,6 +7,9 @@ import {
   sendPasswordResetEmail, updateUserEmail, gdprDeleteUser,
   bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers,
 } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
 const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
@@ -231,7 +234,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading users...</p>
+  if (loading) return <PageSpinner message="Loading users..." />
 
   return (
     <div>
@@ -245,7 +248,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
       {message && (
         <div className={`mb-4 p-3 rounded text-sm ${message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
           {message.text}
@@ -303,9 +306,7 @@ export default function AdminUsersPage() {
           </thead>
           <tbody>
             {users.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">No users found</td>
-              </tr>
+              <EmptyRow colSpan={7} message="No users found." />
             )}
             {users.map(user => (
               <>

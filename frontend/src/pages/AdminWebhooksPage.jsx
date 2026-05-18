@@ -7,6 +7,9 @@ import {
   updateWebhookEndpoint,
 } from '../api/client'
 import Modal from '../components/Modal'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const EMPTY_FORM = { name: '', url: '', secret: '', events: '*', isActive: true }
 
@@ -113,7 +116,7 @@ export default function AdminWebhooksPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading webhooks...</p>
+  if (loading) return <PageSpinner message="Loading webhooks..." />
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -128,12 +131,7 @@ export default function AdminWebhooksPage() {
       </div>
 
       {message && <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded text-sm">{message}</div>}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded text-sm">
-          {error}
-          <button onClick={() => setError('')} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
+      <ErrorBanner error={error} onDismiss={() => setError('')} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-8">
         <table className="w-full text-sm">
@@ -148,7 +146,7 @@ export default function AdminWebhooksPage() {
           </thead>
           <tbody className="divide-y dark:divide-gray-700">
             {endpoints.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No webhook endpoints configured.</td></tr>
+              <EmptyRow colSpan={5} message="No webhook endpoints configured." />
             ) : endpoints.map(endpoint => (
               <tr key={endpoint.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{endpoint.name}</td>
@@ -191,7 +189,7 @@ export default function AdminWebhooksPage() {
           </thead>
           <tbody className="divide-y dark:divide-gray-700">
             {deliveries.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No deliveries yet.</td></tr>
+              <EmptyRow colSpan={5} message="No deliveries yet." />
             ) : deliveries.map(delivery => (
               <tr key={delivery.id}>
                 <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{delivery.eventType}</td>

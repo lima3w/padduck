@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const SCAN_TYPE_LABELS = { ping: 'Ping', snmp: 'SNMP', 'ping+snmp': 'Ping + SNMP' }
 
@@ -157,7 +160,7 @@ export default function ScanJobsPage() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading…</div>
+  if (loading) return <PageSpinner message="Loading scan jobs..." />
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -171,9 +174,7 @@ export default function ScanJobsPage() {
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded text-sm">{error}</div>
-      )}
+      <ErrorBanner error={error} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Job list */}
@@ -283,9 +284,7 @@ export default function ScanJobsPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {results.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-6 text-center text-gray-400">No results yet</td>
-                        </tr>
+                        <EmptyRow colSpan={5} message="No results yet." />
                       ) : (
                         results.map((r) => (
                           <tr key={r.id} className="hover:bg-gray-50">
@@ -333,9 +332,7 @@ export default function ScanJobsPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {history.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} className="px-4 py-6 text-center text-gray-400">No scan history yet</td>
-                            </tr>
+                            <EmptyRow colSpan={5} message="No scan history yet." />
                           ) : (
                             history.map((run) => (
                               <tr

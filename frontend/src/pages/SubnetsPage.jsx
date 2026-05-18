@@ -18,6 +18,9 @@ import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import SubnetTree from '../components/SubnetTree'
 import CustomFieldForm from '../components/CustomFieldForm'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 import { getLocations } from '../api/locations'
 import { downloadFile } from '../utils/download'
 
@@ -437,7 +440,7 @@ export default function SubnetsPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading subnets...</p>
+  if (loading) return <PageSpinner message="Loading subnets..." />
 
   return (
     <div>
@@ -486,7 +489,7 @@ export default function SubnetsPage() {
         </div>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       {viewMode === 'list' && (
         <>
@@ -598,7 +601,7 @@ export default function SubnetsPage() {
               </thead>
               <tbody>
                 {subnets.length === 0 && (
-                  <tr><td colSpan={8 + searchableFields.length} className="px-4 py-6 text-center text-gray-400">No subnets yet</td></tr>
+                  <EmptyRow colSpan={8 + searchableFields.length} message="No subnets yet." />
                 )}
                 {subnets.map(s => (
                   <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">

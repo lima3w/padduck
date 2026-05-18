@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { getTags, createTag, updateTag, deleteTag } from '../api/client'
 import Modal from '../components/Modal'
 import TagBadge from '../components/TagBadge'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const EMPTY_FORM = { name: '', colour: '#6B7280', description: '' }
 
@@ -82,7 +85,7 @@ export default function AdminTagsPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading tags...</p>
+  if (loading) return <PageSpinner message="Loading tags..." />
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -98,12 +101,7 @@ export default function AdminTagsPage() {
           {message.text}
         </div>
       )}
-      {error && (
-        <div className="mb-4 p-3 rounded text-sm bg-red-50 text-red-700 border border-red-200">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
@@ -118,7 +116,7 @@ export default function AdminTagsPage() {
           </thead>
           <tbody>
             {tags.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">No tags</td></tr>
+              <EmptyRow colSpan={5} message="No tags yet." />
             )}
             {tags.map(tag => (
               <tr key={tag.id} className="border-b last:border-0 hover:bg-gray-50">

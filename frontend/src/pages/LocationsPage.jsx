@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { getLocationTree, getLocations, createLocation, updateLocation, deleteLocation } from '../api/locations'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
 
 const LOCATION_TYPES = ['site', 'building', 'floor', 'room', 'cage', 'other']
 
@@ -146,7 +148,7 @@ export default function LocationsPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading locations...</p>
+  if (loading) return <PageSpinner message="Loading locations..." />
 
   return (
     <div>
@@ -157,7 +159,7 @@ export default function LocationsPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">

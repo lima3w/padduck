@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { getNameservers, createNameserver, updateNameserver, deleteNameserver } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
 
 const EMPTY_FORM = { name: '', server1: '', server2: '', server3: '', description: '' }
 
@@ -98,7 +100,7 @@ export default function NameserversPage() {
     )
   }
 
-  if (loading) return <p className="text-gray-500">Loading nameservers...</p>
+  if (loading) return <PageSpinner message="Loading nameservers..." />
 
   return (
     <div>
@@ -112,7 +114,7 @@ export default function NameserversPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">

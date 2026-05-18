@@ -8,6 +8,9 @@ import TagBadge from '../components/TagBadge'
 import CustomFieldForm from '../components/CustomFieldForm'
 import { downloadFile } from '../utils/download'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 function DelegationsTab({ subnetId }) {
   const [delegations, setDelegations] = useState([])
@@ -86,7 +89,7 @@ function DelegationsTab({ subnetId }) {
   const inputClass = "w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 
-  if (loading) return <p className="text-gray-500 text-sm py-4">Loading delegations...</p>
+  if (loading) return <PageSpinner message="Loading delegations..." />
 
   return (
     <div>
@@ -94,7 +97,7 @@ function DelegationsTab({ subnetId }) {
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">IPv6 Prefix Delegations</h2>
         <button onClick={openCreate} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">+ Add Delegation</button>
       </div>
-      {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
+      <ErrorBanner error={error} />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
@@ -108,7 +111,7 @@ function DelegationsTab({ subnetId }) {
           </thead>
           <tbody>
             {delegations.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-400">No delegations yet</td></tr>
+              <EmptyRow colSpan={5} message="No delegations yet." />
             )}
             {delegations.map(d => (
               <tr key={d.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -601,7 +604,7 @@ export default function IPAddressesPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading IP addresses...</p>
+  if (loading) return <PageSpinner message="Loading IP addresses..." />
 
   const col = (key) => visibleCols.includes(key)
 
@@ -682,7 +685,7 @@ export default function IPAddressesPage() {
         </div>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       {activeTab === 'delegations' && <DelegationsTab subnetId={subnetID} />}
 
@@ -851,7 +854,7 @@ export default function IPAddressesPage() {
           </thead>
           <tbody>
             {ips.length === 0 && (
-              <tr><td colSpan={visibleCols.length + searchableFields.length + 1} className="px-4 py-6 text-center text-gray-400">No IP addresses yet</td></tr>
+              <EmptyRow colSpan={visibleCols.length + searchableFields.length + 1} message="No IP addresses yet." />
             )}
             {ips.map(ip => (
               <tr key={ip.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
