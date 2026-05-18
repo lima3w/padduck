@@ -167,6 +167,12 @@ func (r *stubReportsRepo) GetIPAge(_ context.Context) ([]*repository.IPAgeRow, e
 func (r *stubReportsRepo) GetDNSAudit(_ context.Context) ([]*repository.DNSAuditRow, error) {
 	return nil, nil
 }
+func (r *stubReportsRepo) GetInactiveDevices(_ context.Context, days int) ([]*models.InactiveDeviceReport, error) {
+	return nil, nil
+}
+func (r *stubReportsRepo) GetOverdueScanJobs(_ context.Context, days int) ([]*models.FailedScanJobReport, error) {
+	return nil, nil
+}
 
 func newTestReportsService(repo *stubReportsRepo) *ReportsService {
 	cfg := &ConfigService{}

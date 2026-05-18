@@ -11,6 +11,9 @@ const REPORT_TYPES = [
   { value: 'vlan_assignment', label: 'VLAN Assignment' },
   { value: 'ip_age', label: 'IP Age' },
   { value: 'dns_audit', label: 'DNS Audit' },
+  { value: 'stale_leases', label: 'Stale Leases' },
+  { value: 'inactive_devices', label: 'Inactive Devices' },
+  { value: 'failed_scans', label: 'Failed Scans' },
 ]
 
 const FORMAT_OPTIONS = [
@@ -27,6 +30,9 @@ const DEFAULT_FILTERS = {
   vlan_assignment: '{}',
   ip_age: '{}',
   dns_audit: '{}',
+  stale_leases: '{"days": 30}',
+  inactive_devices: '{"days": 30}',
+  failed_scans: '{"days": 7}',
 }
 
 const EMPTY_FORM = {
