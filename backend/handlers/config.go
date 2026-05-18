@@ -76,6 +76,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"technitium_url":              true,
 		"technitium_token":            true,
 		"technitium_default_zone":     true,
+		"technitium_ptr_zones":        true,
 		"technitium_skip_tls":         true,
 		"scanner_resolve_hostnames":   true,
 	}

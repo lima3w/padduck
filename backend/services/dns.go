@@ -337,7 +337,8 @@ func (d *DNSService) GetDNSZoneRecords(ctx context.Context, zone, typeFilter str
 	return nil, fmt.Errorf("no DNS provider configured")
 }
 
-// SyncIPToTechnitium creates an A record in Technitium for the IP's dns_name.
+// SyncIPToTechnitium creates an A/AAAA record in Technitium for the IP's dns_name
+// and, if a reverse zone is configured, a PTR record too.
 // Requires technitium_default_zone to be configured. DNS failures are logged but do not block the caller.
 func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddress) {
 	client := d.technitiumClient(ctx)
@@ -352,12 +353,32 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 		log.Printf("[technitium] SyncIPToTechnitium: technitium_default_zone not configured")
 		return
 	}
-	if err := client.AddRecord(ctx, zone, *ip.DNSName, ip.Address); err != nil {
-		log.Printf("[technitium] SyncIPToTechnitium AddRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+	fqdn := *ip.DNSName
+	if !strings.HasSuffix(fqdn, ".") {
+		fqdn += "."
+	}
+	if err := client.AddRecord(ctx, zone, fqdn, ip.Address); err != nil {
+		log.Printf("[technitium] SyncIPToTechnitium AddRecord ip=%s dns=%s: %v", ip.Address, fqdn, err)
+	}
+	// PTR record — reuse buildPTR helper with subnet prefix for IPv6
+	prefixLen := 0
+	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
+		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+			prefixLen = subnet.PrefixLength
+		}
+	}
+	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
+	if ptrZone != "" {
+		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
+		if containsZone(ptrZones, ptrZone) {
+			if err := client.AddPTRRecord(ctx, ptrZone, ptrName, fqdn); err != nil {
+				log.Printf("[technitium] SyncIPToTechnitium AddPTRRecord ip=%s: %v", ip.Address, err)
+			}
+		}
 	}
 }
 
-// RemoveIPFromTechnitium deletes the A record for an IP's dns_name from Technitium.
+// RemoveIPFromTechnitium deletes the A/AAAA and PTR records for an IP from Technitium.
 // DNS failures are logged but do not block the caller.
 func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAddress) {
 	client := d.technitiumClient(ctx)
@@ -371,8 +392,24 @@ func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAd
 	if zone == "" {
 		return
 	}
-	if err := client.DeleteRecord(ctx, zone, *ip.DNSName); err != nil {
+	if err := client.DeleteRecord(ctx, zone, *ip.DNSName, ip.Address); err != nil {
 		log.Printf("[technitium] RemoveIPFromTechnitium DeleteRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+	}
+	// PTR record
+	prefixLen := 0
+	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
+		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+			prefixLen = subnet.PrefixLength
+		}
+	}
+	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
+	if ptrZone != "" {
+		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
+		if containsZone(ptrZones, ptrZone) {
+			if err := client.DeletePTRRecord(ctx, ptrZone, ptrName); err != nil {
+				log.Printf("[technitium] RemoveIPFromTechnitium DeletePTRRecord ip=%s: %v", ip.Address, err)
+			}
+		}
 	}
 }
 

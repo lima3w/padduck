@@ -209,12 +209,18 @@ func (c *Client) GetZoneRecords(ctx context.Context, zone string) ([]Record, err
 	return payload.Records, nil
 }
 
-// AddRecord adds a DNS A record in the specified zone.
+// AddRecord adds an A or AAAA record in the specified zone.
+// The record type is inferred from ipAddress: an address containing ":" is
+// treated as IPv6 (AAAA); otherwise IPv4 (A).
 func (c *Client) AddRecord(ctx context.Context, zone, fqdn, ipAddress string) error {
+	rtype := "A"
+	if strings.Contains(ipAddress, ":") {
+		rtype = "AAAA"
+	}
 	params := url.Values{}
 	params.Set("zone", zone)
 	params.Set("domain", fqdn)
-	params.Set("type", "A")
+	params.Set("type", rtype)
 	params.Set("ipAddress", ipAddress)
 	resp, err := c.get(ctx, "/api/zones/records/add", params)
 	if err != nil {
@@ -223,12 +229,45 @@ func (c *Client) AddRecord(ctx context.Context, zone, fqdn, ipAddress string) er
 	return checkResponse(resp)
 }
 
-// DeleteRecord deletes a DNS A record from the specified zone.
-func (c *Client) DeleteRecord(ctx context.Context, zone, fqdn string) error {
+// DeleteRecord deletes an A or AAAA record from the specified zone.
+// The record type is inferred from the presence of ":" in ipAddress.
+// Pass an empty ipAddress to delete an A record (backwards-compatible default).
+func (c *Client) DeleteRecord(ctx context.Context, zone, fqdn, ipAddress string) error {
+	rtype := "A"
+	if strings.Contains(ipAddress, ":") {
+		rtype = "AAAA"
+	}
 	params := url.Values{}
 	params.Set("zone", zone)
 	params.Set("domain", fqdn)
-	params.Set("type", "A")
+	params.Set("type", rtype)
+	resp, err := c.get(ctx, "/api/zones/records/delete", params)
+	if err != nil {
+		return err
+	}
+	return checkResponse(resp)
+}
+
+// AddPTRRecord adds a PTR record in the specified reverse zone.
+func (c *Client) AddPTRRecord(ctx context.Context, zone, ptrName, fqdn string) error {
+	params := url.Values{}
+	params.Set("zone", zone)
+	params.Set("domain", ptrName)
+	params.Set("type", "PTR")
+	params.Set("ptrName", fqdn)
+	resp, err := c.get(ctx, "/api/zones/records/add", params)
+	if err != nil {
+		return err
+	}
+	return checkResponse(resp)
+}
+
+// DeletePTRRecord deletes a PTR record from the specified reverse zone.
+func (c *Client) DeletePTRRecord(ctx context.Context, zone, ptrName string) error {
+	params := url.Values{}
+	params.Set("zone", zone)
+	params.Set("domain", ptrName)
+	params.Set("type", "PTR")
 	resp, err := c.get(ctx, "/api/zones/records/delete", params)
 	if err != nil {
 		return err
