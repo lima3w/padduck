@@ -470,17 +470,17 @@ func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
 
 	// Never return the SP private key — replace with a presence indicator.
 	return c.JSON(fiber.Map{
-		"id":               cfg.ID,
-		"enabled":          cfg.Enabled,
-		"idp_metadata_url": cfg.IDPMetadataURL,
-		"idp_metadata_xml": cfg.IDPMetadataXML,
-		"sp_cert_pem":      cfg.SPCertPEM,
+		"id":                cfg.ID,
+		"enabled":           cfg.Enabled,
+		"idp_metadata_url":  cfg.IDPMetadataURL,
+		"idp_metadata_xml":  cfg.IDPMetadataXML,
+		"sp_cert_pem":       cfg.SPCertPEM,
 		"sp_key_configured": cfg.SPKeyPEM != "",
-		"entity_id":        cfg.EntityID,
-		"acs_url":          cfg.ACSURL,
-		"name_id_format":   cfg.NameIDFormat,
-		"created_at":       cfg.CreatedAt,
-		"updated_at":       cfg.UpdatedAt,
+		"entity_id":         cfg.EntityID,
+		"acs_url":           cfg.ACSURL,
+		"name_id_format":    cfg.NameIDFormat,
+		"created_at":        cfg.CreatedAt,
+		"updated_at":        cfg.UpdatedAt,
 	})
 }
 
@@ -564,14 +564,20 @@ func (h *Handler) GetAuthProviders(c *fiber.Ctx) error {
 	oauth2Enabled := false
 	samlEnabled := false
 
-	if cfg, err := h.service.LDAP.GetConfig(c.Context()); err == nil && cfg != nil {
-		ldapEnabled = cfg.Enabled
+	if h.service != nil && h.service.LDAP != nil {
+		if cfg, err := h.service.LDAP.GetConfig(c.Context()); err == nil && cfg != nil {
+			ldapEnabled = cfg.Enabled
+		}
 	}
-	if cfg, err := h.service.OAuth2.GetConfig(c.Context()); err == nil && cfg != nil {
-		oauth2Enabled = cfg.Enabled
+	if h.service != nil && h.service.OAuth2 != nil {
+		if cfg, err := h.service.OAuth2.GetConfig(c.Context()); err == nil && cfg != nil {
+			oauth2Enabled = cfg.Enabled
+		}
 	}
-	if cfg, err := h.service.SAML.GetConfig(c.Context()); err == nil && cfg != nil {
-		samlEnabled = cfg.Enabled
+	if h.service != nil && h.service.SAML != nil {
+		if cfg, err := h.service.SAML.GetConfig(c.Context()); err == nil && cfg != nil {
+			samlEnabled = cfg.Enabled
+		}
 	}
 
 	return c.JSON(fiber.Map{
@@ -581,8 +587,9 @@ func (h *Handler) GetAuthProviders(c *fiber.Ctx) error {
 	})
 }
 
-// RegisterExternalAuthRoutes adds the LDAP/OAuth2/SAML routes to the app.
-func (h *Handler) RegisterExternalAuthRoutes(auth fiber.Router, admin fiber.Router) {
+// RegisterExternalAuthPublicRoutes adds LDAP/OAuth2/SAML routes that must stay
+// reachable before a session exists.
+func (h *Handler) RegisterExternalAuthPublicRoutes(auth fiber.Router) {
 	// Public authentication endpoints
 	auth.Get("/providers", h.GetAuthProviders)
 	auth.Get("/ldap/login", h.LDAPStatus)
@@ -592,7 +599,10 @@ func (h *Handler) RegisterExternalAuthRoutes(auth fiber.Router, admin fiber.Rout
 	auth.Get("/saml/metadata", h.SAMLMetadata)
 	auth.Get("/saml/login", h.SAMLLogin)
 	auth.Post("/saml/acs", h.SAMLAssertionConsumerService)
+}
 
+// RegisterExternalAuthAdminRoutes adds protected external-auth configuration routes.
+func (h *Handler) RegisterExternalAuthAdminRoutes(admin fiber.Router) {
 	// Admin configuration endpoints
 	admin.Get("/auth/ldap", h.GetLDAPConfig)
 	admin.Put("/auth/ldap", h.UpdateLDAPConfig)

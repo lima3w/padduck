@@ -90,6 +90,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	auth.Post("/reset-password", h.ResetPassword)
 	auth.Post("/unlock", h.RequestUnlock)
 	auth.Get("/unlock", h.VerifyUnlock)
+	auth.Post("/verify-mfa", h.VerifyMFA)
+	h.RegisterExternalAuthPublicRoutes(auth)
 
 	// CSRF token endpoint
 	api.Get("/csrf-token", h.GetCSRFToken)
@@ -98,9 +100,6 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	protected := api.Group("")
 	protected.Use(h.AuthMiddleware)
 	protected.Use(h.CSRFMiddleware)
-
-	// MFA verification (public — called before session is issued)
-	auth.Post("/verify-mfa", h.VerifyMFA)
 
 	// User profile endpoints (protected)
 	me := protected.Group("/auth/me")
@@ -443,7 +442,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/export/full", h.ExportFullData)
 
 	// LDAP & SSO (v1.13.0 #229 #230 #231 #232)
-	h.RegisterExternalAuthRoutes(auth, admin)
+	h.RegisterExternalAuthAdminRoutes(admin)
 
 	// GDPR user self-service (v0.8.14 #170)
 	me.Get("/export", h.ExportMyData)

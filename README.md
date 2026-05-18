@@ -28,6 +28,8 @@ variables:
 - `ADMIN_PASSWORD` (empty means generate on first boot)
 - `RESET_ADMIN_PASSWORD` (default `false`)
 - `MFA_ENCRYPTION_KEY` (required in production; 64 hex characters)
+- `SESSION_COOKIE_SECURE` (`auto`, `true`, or `false`; unset/`auto` marks
+  session cookies secure only when the request is HTTPS or forwarded as HTTPS)
 
 ## Deployment
 Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/deploy.yml`.

@@ -4,6 +4,7 @@ import (
 	"crypto/md5" // #nosec G501 -- Gravatar uses an MD5 email hash identifier.
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -81,13 +82,36 @@ type LoginResponse struct {
 	User UserResponse `json:"user"`
 }
 
+func (h *Handler) shouldSecureSessionCookie(c *fiber.Ctx) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("SESSION_COOKIE_SECURE"))) {
+	case "true", "1", "yes":
+		return true
+	case "false", "0", "no":
+		return false
+	}
+
+	if !h.isProduction {
+		return false
+	}
+
+	if c.Protocol() == "https" {
+		return true
+	}
+	for _, proto := range strings.Split(c.Get("X-Forwarded-Proto"), ",") {
+		if strings.EqualFold(strings.TrimSpace(proto), "https") {
+			return true
+		}
+	}
+	return false
+}
+
 func (h *Handler) setSessionCookie(c *fiber.Ctx, token string) {
 	c.Cookie(&fiber.Cookie{
 		Name:     sessionCookieName,
 		Value:    token,
 		Path:     "/",
 		MaxAge:   7 * 24 * 3600,
-		Secure:   h.isProduction,
+		Secure:   h.shouldSecureSessionCookie(c),
 		HTTPOnly: true,
 		SameSite: "Strict",
 	})

@@ -108,6 +108,65 @@ func TestLogin_MissingUsername_Returns400(t *testing.T) {
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
 
+func TestSetSessionCookie_ProductionHTTP_DoesNotForceSecure(t *testing.T) {
+	t.Setenv("SESSION_COOKIE_SECURE", "")
+	h := &Handler{isProduction: true}
+	app := fiber.New()
+	app.Get("/set-cookie", func(c *fiber.Ctx) error {
+		h.setSessionCookie(c, "test-session")
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/set-cookie", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusNoContent, resp.StatusCode)
+	cookies := resp.Cookies()
+	if assert.Len(t, cookies, 1) {
+		assert.Equal(t, sessionCookieName, cookies[0].Name)
+		assert.False(t, cookies[0].Secure)
+	}
+}
+
+func TestSetSessionCookie_ProductionForwardedHTTPS_SetsSecure(t *testing.T) {
+	t.Setenv("SESSION_COOKIE_SECURE", "")
+	h := &Handler{isProduction: true}
+	app := fiber.New()
+	app.Get("/set-cookie", func(c *fiber.Ctx) error {
+		h.setSessionCookie(c, "test-session")
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	req := httptest.NewRequest("GET", "/set-cookie", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusNoContent, resp.StatusCode)
+	cookies := resp.Cookies()
+	if assert.Len(t, cookies, 1) {
+		assert.Equal(t, sessionCookieName, cookies[0].Name)
+		assert.True(t, cookies[0].Secure)
+	}
+}
+
+func TestSetSessionCookie_SecureOverride(t *testing.T) {
+	t.Setenv("SESSION_COOKIE_SECURE", "true")
+	h := &Handler{isProduction: false}
+	app := fiber.New()
+	app.Get("/set-cookie", func(c *fiber.Ctx) error {
+		h.setSessionCookie(c, "test-session")
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	resp, err := app.Test(httptest.NewRequest("GET", "/set-cookie", nil))
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusNoContent, resp.StatusCode)
+	cookies := resp.Cookies()
+	if assert.Len(t, cookies, 1) {
+		assert.Equal(t, sessionCookieName, cookies[0].Name)
+		assert.True(t, cookies[0].Secure)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Logout — POST /auth/logout
 // ---------------------------------------------------------------------------
