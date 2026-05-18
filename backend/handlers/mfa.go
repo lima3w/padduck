@@ -55,13 +55,14 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 	h.setSessionCookie(c, token)
 	return c.JSON(LoginResponse{
 		User: UserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			Role:      user.Role,
-			State:     user.State,
-			CreatedAt: user.CreatedAt.String(),
-			UpdatedAt: user.UpdatedAt.String(),
+			ID:                     user.ID,
+			Username:               user.Username,
+			Email:                  user.Email,
+			Role:                   user.Role,
+			State:                  user.State,
+			PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
+			CreatedAt:              user.CreatedAt.String(),
+			UpdatedAt:              user.UpdatedAt.String(),
 		},
 	})
 }

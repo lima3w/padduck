@@ -297,6 +297,10 @@ export const updateOAuth2Config = (config) => api.put('/admin/auth/oauth2', conf
 export const getSamlConfig = () => api.get('/admin/auth/saml')
 export const updateSamlConfig = (config) => api.put('/admin/auth/saml', config)
 
+// Privacy policy
+export const getPrivacyPolicyVersion = () => noAuthApi.get('/privacy-policy/version')
+export const acceptPrivacyPolicy = () => api.post('/auth/me/accept-privacy')
+
 // Public auth providers info
 export const getAuthProviders = () => noAuthApi.get('/auth/providers')
 
