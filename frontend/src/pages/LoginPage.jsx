@@ -244,11 +244,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <span className="text-gray-600 text-sm">Don&apos;t have an account? </span>
-          <Link to="/register" className="text-blue-600 text-sm hover:underline font-medium">
-            Register
-          </Link>
+        <div className="mt-4 text-center space-y-2">
+          <div>
+            <span className="text-gray-600 text-sm">Don&apos;t have an account? </span>
+            <Link to="/register" className="text-blue-600 text-sm hover:underline font-medium">
+              Register
+            </Link>
+          </div>
+          <div>
+            <Link to="/forgot-password" className="text-blue-600 text-sm hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
         {(providers.oauth2 || providers.saml) && (

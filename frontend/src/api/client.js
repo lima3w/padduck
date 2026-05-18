@@ -129,6 +129,12 @@ export const verifyEmail = (token) =>
 export const resendVerification = (email) =>
   noAuthApi.post('/auth/resend-verification', { email })
 
+export const requestPasswordReset = (email) =>
+  noAuthApi.post('/auth/request-password-reset', { email })
+
+export const resetPassword = (token, newPassword) =>
+  noAuthApi.post('/auth/reset-password', { token, new_password: newPassword })
+
 export const verifyMFA = (mfaChallenge, code) =>
   noAuthApi.post('/auth/verify-mfa', { mfa_challenge: mfaChallenge, code })
 

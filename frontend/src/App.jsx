@@ -41,6 +41,8 @@ const UtilizationTrendsPage = lazy(() => import('./pages/UtilizationTrendsPage')
 const ScheduledReportsPage = lazy(() => import('./pages/ScheduledReportsPage'))
 const InactiveIPsPage = lazy(() => import('./pages/InactiveIPsPage'))
 const ImportDataPage = lazy(() => import('./pages/ImportDataPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'))
 const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
 const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
@@ -85,6 +87,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route
             path="/"
