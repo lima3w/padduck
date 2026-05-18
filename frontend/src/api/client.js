@@ -185,6 +185,15 @@ export const getWebhookDeliveries = (limit = 50) => api.get('/admin/webhooks/del
 
 // Admin user management
 export const adminUnlockUser = (id) => api.post(`/admin/users/${id}/unlock`)
+export const suspendUser = (id, reason) => api.post(`/admin/users/${id}/suspend`, { reason })
+export const unsuspendUser = (id) => api.post(`/admin/users/${id}/unsuspend`)
+export const impersonateUser = (id) => api.post(`/admin/users/${id}/impersonate`)
+export const sendPasswordResetEmail = (id) => api.post(`/admin/users/${id}/send-password-reset`)
+export const updateUserEmail = (id, email) => api.put(`/admin/users/${id}/email`, { email })
+export const gdprDeleteUser = (id) => api.post(`/admin/users/${id}/gdpr-delete`)
+export const bulkSuspendUsers = (userIds, reason) => api.post('/admin/users/bulk-suspend', { user_ids: userIds, reason })
+export const bulkActivateUsers = (userIds) => api.post('/admin/users/bulk-activate', { user_ids: userIds })
+export const bulkDeleteUsers = (userIds) => api.post('/admin/users/bulk-delete', { user_ids: userIds })
 
 // Search
 export const searchSections = (query, limit = 50, offset = 0) =>
