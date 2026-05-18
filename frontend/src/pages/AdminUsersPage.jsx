@@ -7,6 +7,10 @@ import {
   sendPasswordResetEmail, updateUserEmail, gdprDeleteUser,
   bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers,
 } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
+import PermissionDenied from '../components/PermissionDenied'
 
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
 const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
@@ -17,6 +21,7 @@ export default function AdminUsersPage() {
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [permissionDenied, setPermissionDenied] = useState(false)
   const [expandedUser, setExpandedUser] = useState(null)
   const [userRoles, setUserRoles] = useState({}) // userId -> roles[]
   const [assignModal, setAssignModal] = useState(null) // userId
@@ -60,7 +65,11 @@ export default function AdminUsersPage() {
       const locsData = await getLocations().catch(() => [])
       setLocations(Array.isArray(locsData) ? locsData : (locsData?.locations ?? []))
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to load data')
+      if (err.response?.status === 403) {
+        setPermissionDenied(true)
+      } else {
+        setError(err.response?.data?.error || err.message || 'Failed to load data')
+      }
     } finally {
       setLoading(false)
     }
@@ -231,7 +240,8 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading users...</p>
+  if (loading) return <PageSpinner message="Loading users..." />
+  if (permissionDenied) return <PermissionDenied />
 
   return (
     <div>
@@ -245,7 +255,7 @@ export default function AdminUsersPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
       {message && (
         <div className={`mb-4 p-3 rounded text-sm ${message.type === 'error' ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'}`}>
           {message.text}
@@ -303,9 +313,7 @@ export default function AdminUsersPage() {
           </thead>
           <tbody>
             {users.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">No users found</td>
-              </tr>
+              <EmptyRow colSpan={7} message="No users found." />
             )}
             {users.map(user => (
               <>

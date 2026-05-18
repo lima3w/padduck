@@ -4,6 +4,9 @@ import { getSectionsPaginated, createSection, updateSection, deleteSection, sear
 import { submitSubnetRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const DEFAULT_LIMIT = 25
 
@@ -146,7 +149,7 @@ export default function SectionsPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading sections...</p>
+  if (loading) return <PageSpinner message="Loading sections..." />
 
   return (
     <div>
@@ -169,7 +172,7 @@ export default function SectionsPage() {
         </div>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       <div className="mb-4">
         <form onSubmit={handleSearch} className="flex gap-2">
@@ -216,7 +219,7 @@ export default function SectionsPage() {
           </thead>
           <tbody>
             {sections.length === 0 && (
-              <tr><td colSpan={3} className="px-4 py-6 text-center text-gray-400">No sections yet</td></tr>
+              <EmptyRow colSpan={3} message="No sections yet." />
             )}
             {sections.map(s => (
               <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">

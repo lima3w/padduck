@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { getDnsZones } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
 
 export default function DnsZonesPage() {
   const navigate = useNavigate()
@@ -33,7 +35,7 @@ export default function DnsZonesPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading DNS zones...</p>
+  if (loading) return <PageSpinner message="Loading DNS zones..." />
 
   if (!configured) {
     return (
@@ -57,7 +59,7 @@ export default function DnsZonesPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">DNS Zones</h1>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">

@@ -6,6 +6,8 @@ import {
   updateVlanDomain,
   deleteVlanDomain,
 } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
 
 const EMPTY_FORM = { name: '', description: '' }
 
@@ -102,7 +104,7 @@ export default function VlanDomainsPage() {
     )
   }
 
-  if (loading) return <p className="text-gray-500">Loading VLAN domains...</p>
+  if (loading) return <PageSpinner message="Loading VLAN domains..." />
 
   return (
     <div>
@@ -121,12 +123,7 @@ export default function VlanDomainsPage() {
           {message.text}
         </div>
       )}
-      {error && (
-        <div className="mb-4 p-3 rounded text-sm bg-red-50 text-red-700 border border-red-200">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">

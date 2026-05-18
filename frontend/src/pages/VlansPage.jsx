@@ -9,6 +9,9 @@ import {
   getVlanDomains,
   getVlanGroups,
 } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const EMPTY_FORM = { vlanId: '', name: '', description: '', domainId: '', groupId: '' }
 
@@ -142,7 +145,7 @@ export default function VlansPage() {
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading VLANs...</p>
+  if (loading) return <PageSpinner message="Loading VLANs..." />
 
   return (
     <div>
@@ -161,12 +164,7 @@ export default function VlansPage() {
           {message.text}
         </div>
       )}
-      {error && (
-        <div className="mb-4 p-3 rounded text-sm bg-red-50 text-red-700 border border-red-200">
-          {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
-        </div>
-      )}
+      <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <table className="w-full text-sm">
@@ -181,13 +179,7 @@ export default function VlansPage() {
             </tr>
           </thead>
           <tbody>
-            {vlans.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
-                  No VLANs yet. Add your first VLAN to get started.
-                </td>
-              </tr>
-            )}
+            {vlans.length === 0 && <EmptyRow colSpan={6} message="No VLANs yet. Add your first VLAN to get started." />}
             {vlans.map(vlan => {
               const domain = getDomain(vlan.domainId)
               const group = getGroup(vlan.groupId)

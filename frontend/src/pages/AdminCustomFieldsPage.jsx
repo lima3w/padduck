@@ -4,6 +4,9 @@ import {
   getCustomFields, createCustomField, updateCustomField,
   deleteCustomField, reorderCustomFields,
 } from '../api/client'
+import PageSpinner from '../components/PageSpinner'
+import ErrorBanner from '../components/ErrorBanner'
+import EmptyRow from '../components/EmptyRow'
 
 const ENTITY_TYPES = ['subnet', 'ip_address', 'device']
 const ENTITY_LABELS = { subnet: 'Subnets', ip_address: 'IP Addresses', device: 'Devices' }
@@ -144,7 +147,7 @@ export default function AdminCustomFieldsPage() {
     setForm(f => ({ ...f, options: f.options.filter((_, i) => i !== idx) }))
   }
 
-  if (loading) return <p className="text-gray-500">Loading custom fields...</p>
+  if (loading) return <PageSpinner message="Loading custom fields..." />
 
   return (
     <div>
@@ -155,7 +158,7 @@ export default function AdminCustomFieldsPage() {
         </button>
       </div>
 
-      {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+      <ErrorBanner error={error} />
 
       <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
         {ENTITY_TYPES.map(et => (
@@ -189,7 +192,7 @@ export default function AdminCustomFieldsPage() {
             </thead>
             <tbody>
               {fieldsForTab(et).length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No custom fields for {ENTITY_LABELS[et]} yet</td></tr>
+                <EmptyRow colSpan={7} message={`No custom fields for ${ENTITY_LABELS[et]} yet.`} />
               )}
               {fieldsForTab(et).map((field, idx, list) => (
                 <tr key={field.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
