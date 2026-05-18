@@ -310,6 +310,7 @@ export const deleteCustomField = (id) => api.delete(`/admin/custom-fields/${id}`
 export const reorderCustomFields = (ids) => api.put('/admin/custom-fields/reorder', { ids })
 
 // Devices
+export const getDeviceSNMPCredentials = (id) => api.get(`/devices/${id}/snmp-credentials`)
 export const getDevice = (id) => api.get(`/devices/${id}`)
 export const updateDevice = (id, data) => api.put(`/devices/${id}`, data)
 export const getDeviceTypes = () => api.get('/device-types')
