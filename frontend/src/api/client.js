@@ -19,9 +19,9 @@ const noAuthApi = axios.create({
 
 const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete'])
 
-async function ensureCSRFToken() {
+async function ensureCSRFToken({ forceRefresh = false } = {}) {
   let csrfToken = getCookie('csrf-token')
-  if (csrfToken) return csrfToken
+  if (csrfToken && !forceRefresh) return csrfToken
 
   const response = await axios.get('/api/v1/csrf-token')
   csrfToken = response.data?.csrf_token || getCookie('csrf-token')
@@ -53,6 +53,14 @@ function normalizeResponseData(response) {
   return response
 }
 
+function isCSRFValidationError(error) {
+  return error.response?.status === 403 && error.response?.data?.error === 'csrf validation failed'
+}
+
+function isMutatingRequest(config) {
+  return MUTATING_METHODS.has((config?.method || 'get').toLowerCase())
+}
+
 // Add CSRF token to every mutating request (session cookie is sent automatically by the browser).
 api.interceptors.request.use(async (config) => {
   const method = (config.method || 'get').toLowerCase()
@@ -66,7 +74,18 @@ api.interceptors.request.use(async (config) => {
 // Normalise response data to camelCase and handle 401s.
 api.interceptors.response.use(
   normalizeResponseData,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config || {}
+    if (isCSRFValidationError(error) && isMutatingRequest(originalRequest) && !originalRequest._csrfRetried) {
+      const csrfToken = await ensureCSRFToken({ forceRefresh: true })
+      originalRequest._csrfRetried = true
+      originalRequest.headers = {
+        ...(originalRequest.headers || {}),
+        'X-CSRF-Token': csrfToken,
+      }
+      return api.request(originalRequest)
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('current_user')
       const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/auth/']

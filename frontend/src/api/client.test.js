@@ -5,6 +5,7 @@ vi.mock('axios', () => {
   const instances = []
   const makeInstance = () => {
     const instance = {
+      request: vi.fn(),
       interceptors: {
         request: {
           use: vi.fn((handler) => {
@@ -12,8 +13,9 @@ vi.mock('axios', () => {
           }),
         },
         response: {
-          use: vi.fn((handler) => {
+          use: vi.fn((handler, errorHandler) => {
             instance.responseInterceptor = handler
+            instance.responseErrorInterceptor = errorHandler
           }),
         },
       },
@@ -81,5 +83,27 @@ describe('api client CSRF handling', () => {
 
     expect(response.data.user.privacyAcceptedVersion).toBe('1.0')
     expect(response.data.user.privacy_accepted_version).toBeUndefined()
+  })
+
+  it('refreshes csrf and retries a mutating request once after csrf validation fails', async () => {
+    document.cookie = 'csrf-token=stale-token; path=/'
+    axios.get.mockResolvedValue({ data: { csrf_token: 'fresh-token' } })
+
+    const client = await import('./client')
+    client.api.request.mockResolvedValue({ data: { ok: true } })
+
+    const retry = await client.api.responseErrorInterceptor({
+      config: { method: 'post', url: '/auth/me/accept-privacy', headers: { 'X-CSRF-Token': 'stale-token' } },
+      response: { status: 403, data: { error: 'csrf validation failed' } },
+    })
+
+    expect(axios.get).toHaveBeenCalledWith('/api/v1/csrf-token')
+    expect(client.api.request).toHaveBeenCalledWith(expect.objectContaining({
+      method: 'post',
+      url: '/auth/me/accept-privacy',
+      _csrfRetried: true,
+      headers: expect.objectContaining({ 'X-CSRF-Token': 'fresh-token' }),
+    }))
+    expect(retry).toEqual({ data: { ok: true } })
   })
 })
