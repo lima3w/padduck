@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Suspense, lazy, useEffect } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import PrivacyConsentBanner from './components/PrivacyConsentBanner'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
@@ -98,7 +97,6 @@ export default function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <PrivacyConsentBanner />
                 <Layout />
               </ProtectedRoute>
             }
