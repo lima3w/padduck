@@ -265,7 +265,7 @@ export default function AdminSettingsPage() {
   ]
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="w-full max-w-7xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Settings</h1>
 
       {message.text && (
