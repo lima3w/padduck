@@ -224,6 +224,14 @@ export const getDnsZoneRecords = (zone, type) =>
 export const testDnsConnection = () => api.post('/admin/dns/test')
 export const testTechnitiumConnection = (params) => api.post('/admin/dns/technitium/test', params || {})
 
+// VRFs
+export const getVrfs = () => api.get('/vrfs')
+export const getVrf = (id) => api.get(`/vrfs/${id}`)
+export const createVrf = (data) => api.post('/vrfs', data)
+export const updateVrf = (id, data) => api.put(`/vrfs/${id}`, data)
+export const deleteVrf = (id) => api.delete(`/vrfs/${id}`)
+export const getVrfVlans = (id) => api.get(`/vrfs/${id}/vlans`)
+
 // VLAN Domains (#206)
 export const getVlanDomains = () => api.get('/vlan-domains')
 export const getVlanDomain = (id) => api.get(`/vlan-domains/${id}`)

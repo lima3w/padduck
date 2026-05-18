@@ -43,6 +43,7 @@ const InactiveIPsPage = lazy(() => import('./pages/InactiveIPsPage'))
 const ImportDataPage = lazy(() => import('./pages/ImportDataPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const VRFsPage = lazy(() => import('./pages/VRFsPage'))
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'))
 const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
 const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
@@ -120,6 +121,7 @@ export default function App() {
             <Route path="dns/zones/:zone" element={<DnsZoneDetailPage />} />
             <Route path="admin/requests" element={<AdminRequestsPage />} />
             <Route path="requests" element={<MyRequestsPage />} />
+            <Route path="vrfs" element={<VRFsPage />} />
             <Route path="vlans" element={<VlansPage />} />
             <Route path="vlans/:id" element={<VlanDetailPage />} />
             <Route path="admin/vlan-domains" element={<VlanDomainsPage />} />
