@@ -224,6 +224,46 @@ export default function AdminSettingsPage() {
     { id: 'tools', label: 'Tools' },
   ]
 
+  const toolSections = [
+    {
+      title: 'Data Tools',
+      links: [
+        { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all sections' },
+        { to: '/admin/import', title: 'Data Import', description: 'Import subnets, IP addresses, or phpIPAM data' },
+        { to: '/admin/export', title: 'Data Export', description: 'Export a full data backup' },
+      ],
+    },
+    {
+      title: 'Schema & Taxonomy',
+      links: [
+        { to: '/admin/custom-fields', title: 'Custom Fields', description: 'Manage extra fields for subnets, IPs, and devices' },
+        { to: '/admin/tags', title: 'IP Tags', description: 'Create and manage IP address tags' },
+        { to: '/admin/vlan-domains', title: 'VLAN Domains', description: 'Manage VLAN namespace boundaries' },
+        { to: '/admin/vlan-groups', title: 'VLAN Groups', description: 'Group VLANs for organization and reporting' },
+        { to: '/admin/vlans/usage-report', title: 'VLAN Usage', description: 'Review VLAN allocation and utilization' },
+      ],
+    },
+    {
+      title: 'Discovery & Automation',
+      links: [
+        { to: '/admin/scan-jobs', title: 'Scan Jobs', description: 'Schedule and run network discovery scans' },
+        { to: '/admin/scan-agents', title: 'Scan Agents', description: 'Manage remote discovery agents and tokens' },
+        { to: '/admin/webhooks', title: 'Webhooks', description: 'Configure outbound event delivery' },
+        { to: '/admin/integrations', title: 'Integrations', description: 'Integration setup notes and connection checks' },
+        { to: '/admin/grafana', title: 'Grafana', description: 'Configure the Grafana datasource integration' },
+      ],
+    },
+    {
+      title: 'Reports & Authentication',
+      links: [
+        { to: '/admin/reports/scheduled', title: 'Scheduled Reports', description: 'Manage recurring emailed reports' },
+        { to: '/admin/auth/ldap', title: 'LDAP / AD', description: 'Configure LDAP authentication and group mappings' },
+        { to: '/admin/auth/oauth2', title: 'OAuth2 / OIDC', description: 'Configure OAuth2 or OpenID Connect login' },
+        { to: '/admin/auth/saml', title: 'SAML SSO', description: 'Configure SAML single sign-on' },
+      ],
+    },
+  ]
+
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Settings</h1>
@@ -801,36 +841,26 @@ export default function AdminSettingsPage() {
 
       {activeTab === 'tools' && (
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Subnet Tools</h2>
-            <div className="space-y-3">
-              <Link
-                to="/admin/overlap-report"
-                className="flex items-center gap-3 p-3 rounded border hover:bg-gray-50 transition"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">Subnet Overlap Check</p>
-                  <p className="text-sm text-gray-500">Find all overlapping subnets across all sections</p>
-                </div>
-                <span className="ml-auto text-blue-600 text-sm">Open →</span>
-              </Link>
+          {toolSections.map((section) => (
+            <div key={section.title} className="bg-white border border-gray-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-4">{section.title}</h2>
+              <div className="space-y-3">
+                {section.links.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className="flex items-center gap-3 p-3 rounded border hover:bg-gray-50 transition"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{link.title}</p>
+                      <p className="text-sm text-gray-500">{link.description}</p>
+                    </div>
+                    <span className="ml-auto shrink-0 text-blue-600 text-sm">Open →</span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">IP Tags</h2>
-            <div className="space-y-3">
-              <Link
-                to="/admin/tags"
-                className="flex items-center gap-3 p-3 rounded border hover:bg-gray-50 transition"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">Manage IP Tags</p>
-                  <p className="text-sm text-gray-500">Create, edit, and delete IP address tags with colour coding</p>
-                </div>
-                <span className="ml-auto text-blue-600 text-sm">Open →</span>
-              </Link>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 

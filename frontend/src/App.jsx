@@ -35,7 +35,6 @@ const VlanUsageReportPage = lazy(() => import('./pages/VlanUsageReportPage'))
 const ScanJobsPage = lazy(() => import('./pages/ScanJobsPage'))
 const AdminAgentsPage = lazy(() => import('./pages/AdminAgentsPage'))
 const AdminWebhooksPage = lazy(() => import('./pages/AdminWebhooksPage'))
-const CalculatorPage = lazy(() => import('./pages/CalculatorPage'))
 const TopologyPage = lazy(() => import('./pages/TopologyPage'))
 const UtilizationTrendsPage = lazy(() => import('./pages/UtilizationTrendsPage'))
 const ScheduledReportsPage = lazy(() => import('./pages/ScheduledReportsPage'))
@@ -134,7 +133,6 @@ export default function App() {
             <Route path="admin/scan-jobs" element={<ScanJobsPage />} />
             <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
             <Route path="admin/webhooks" element={<AdminWebhooksPage />} />
-            <Route path="tools/calculator" element={<CalculatorPage />} />
             <Route path="sections/:id/topology" element={<TopologyPage />} />
             <Route path="reports/utilization-trends" element={<UtilizationTrendsPage />} />
             <Route path="reports/inactive-ips" element={<InactiveIPsPage />} />
