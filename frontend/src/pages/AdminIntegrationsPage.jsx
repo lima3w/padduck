@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { generateTokenForMe } from '../api/client'
+import { useState, useEffect } from 'react'
+import { generateTokenForMe, getAdminConfig, testDnsConnection, testTechnitiumConnection, testLdapConnection } from '../api/client'
 
 const PLATFORMS = [
   {
@@ -54,6 +54,94 @@ const METHOD_COLORS = {
   DELETE: 'bg-red-100 text-red-700',
 }
 
+function IntegrationHealthPanel() {
+  const [config, setConfig] = useState(null)
+  const [status, setStatus] = useState({}) // key → null | 'testing' | { ok, message }
+
+  useEffect(() => {
+    getAdminConfig()
+      .then(res => setConfig(res.data?.config || {}))
+      .catch(() => {})
+  }, [])
+
+  const test = async (key, fn) => {
+    setStatus(s => ({ ...s, [key]: 'testing' }))
+    try {
+      await fn()
+      setStatus(s => ({ ...s, [key]: { ok: true, message: 'Connected' } }))
+    } catch (err) {
+      const msg = err.response?.data?.error || err.message || 'Connection failed'
+      setStatus(s => ({ ...s, [key]: { ok: false, message: msg } }))
+    }
+  }
+
+  if (!config) return null
+
+  const integrations = [
+    {
+      key: 'pdns',
+      name: 'PowerDNS',
+      enabled: config.pdns_enabled === 'true',
+      configured: !!(config.pdns_api_url && config.pdns_api_key),
+      onTest: () => test('pdns', testDnsConnection),
+    },
+    {
+      key: 'technitium',
+      name: 'Technitium DNS',
+      enabled: !!(config.technitium_url && config.technitium_token),
+      configured: !!(config.technitium_url && config.technitium_token),
+      onTest: () => test('technitium', testTechnitiumConnection),
+    },
+    {
+      key: 'ldap',
+      name: 'LDAP',
+      enabled: config.ldap_enabled === 'true',
+      configured: !!(config.ldap_url),
+      onTest: () => test('ldap', testLdapConnection),
+    },
+  ]
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-base font-semibold text-gray-800">Integration Health</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {integrations.map(intg => {
+          const st = status[intg.key]
+          const canTest = intg.configured && intg.enabled
+          return (
+            <div key={intg.key} className="border border-gray-200 rounded-lg p-4 space-y-2 bg-white">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm text-gray-800">{intg.name}</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  intg.enabled && intg.configured
+                    ? 'bg-green-100 text-green-700'
+                    : intg.configured
+                    ? 'bg-yellow-100 text-yellow-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {intg.enabled && intg.configured ? 'Enabled' : intg.configured ? 'Disabled' : 'Not configured'}
+                </span>
+              </div>
+              {st && st !== 'testing' && (
+                <p className={`text-xs ${st.ok ? 'text-green-600' : 'text-red-600'}`}>
+                  {st.ok ? `✓ ${st.message}` : `✗ ${st.message}`}
+                </p>
+              )}
+              <button
+                onClick={intg.onTest}
+                disabled={!canTest || st === 'testing'}
+                className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-40 transition"
+              >
+                {st === 'testing' ? 'Testing…' : 'Test Connection'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 export default function AdminIntegrationsPage() {
   const [token, setToken] = useState('')
   const [tokenName, setTokenName] = useState('automation-token')
@@ -86,6 +174,8 @@ export default function AdminIntegrationsPage() {
           Connect IPAM to n8n, Zapier, Make, or any HTTP-capable automation platform using API tokens and webhooks.
         </p>
       </div>
+
+      <IntegrationHealthPanel />
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">1. Generate an API Token</h2>
