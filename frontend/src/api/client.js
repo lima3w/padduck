@@ -150,6 +150,11 @@ export const getAdminConfig = () => api.get('/admin/config')
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
 
+// Notification preferences
+export const getNotificationPreferences = () => api.get('/user/notification-preferences')
+export const updateNotificationPreferences = (data) => api.put('/user/notification-preferences', data)
+export const getNotificationStats = () => api.get('/admin/notification-stats')
+
 // Sessions
 export const listMySessions = () => api.get('/auth/me/sessions')
 export const revokeMySession = (sessionId) => api.delete(`/auth/me/sessions/${sessionId}`)
