@@ -37,4 +37,5 @@ Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/d
 
 ## Docs
 - docs/openapi.yaml
+- docs/roadmap.md
 - docs/user-guide.md
