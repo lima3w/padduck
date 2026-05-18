@@ -351,11 +351,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 		return buildReport(report.Format, "Inactive IPs", headers, rows)
 
 	default:
-		headers := []string{"report_type", "status"}
-		rows := []map[string]string{
-			{"report_type": report.ReportType, "status": "not_implemented"},
-		}
-		return buildReport(report.Format, report.Name, headers, rows)
+		return nil, "", "", fmt.Errorf("unsupported report type %q", report.ReportType)
 	}
 }
 
