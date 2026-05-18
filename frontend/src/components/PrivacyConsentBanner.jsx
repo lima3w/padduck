@@ -54,7 +54,7 @@ export default function PrivacyConsentBanner() {
             : `Please accept our privacy policy (version ${policyVersion}) to continue using this application.`}
         </p>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          By clicking "Accept", you agree to our privacy policy regarding the collection and use of
+          By clicking &quot;Accept&quot;, you agree to our privacy policy regarding the collection and use of
           your data within this IPAM system.
         </p>
         {error && <p className="text-sm text-red-600">{error}</p>}
