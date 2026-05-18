@@ -101,6 +101,8 @@ func newTestImportService(repo *stubImportRepo) *ImportService {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestImportSubnetsCSV_HappyPath(t *testing.T) {
+	t.Parallel()
+
 	repo := newStubImportRepo()
 	repo.sections = []*models.Section{
 		{ID: 1, Name: "Default"},
@@ -211,6 +213,8 @@ func TestImportSubnetsCSV_WithVLAN(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestImportIPsCSV_HappyPath(t *testing.T) {
+	t.Parallel()
+
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{
 		{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24},
@@ -218,7 +222,7 @@ func TestImportIPsCSV_HappyPath(t *testing.T) {
 	svc := newTestImportService(repo)
 
 	csv := "address,hostname,status,subnet_cidr,assigned_to,mac_address\n" +
-		"10.0.0.10,server1,active,10.0.0.0/24,alice,aa:bb:cc:dd:ee:ff"
+		"10.0.0.10,server1,assigned,10.0.0.0/24,alice,aa:bb:cc:dd:ee:ff"
 
 	result, err := svc.ImportIPsCSV(context.Background(), strings.NewReader(csv))
 	require.NoError(t, err)
@@ -227,27 +231,31 @@ func TestImportIPsCSV_HappyPath(t *testing.T) {
 	assert.Equal(t, 0, result.Failed)
 	require.Len(t, repo.createdIPs, 1)
 	assert.Equal(t, "10.0.0.10", repo.createdIPs[0].Address)
-	assert.Equal(t, "active", repo.createdIPs[0].Status)
+	assert.Equal(t, "assigned", repo.createdIPs[0].Status)
 }
 
 func TestImportIPsCSV_DefaultStatus(t *testing.T) {
+	t.Parallel()
+
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{
 		{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24},
 	}
 	svc := newTestImportService(repo)
 
-	// No status column value — should default to "active".
+	// No status column value — should default to "available".
 	csv := "address,hostname,status,subnet_cidr,assigned_to,mac_address\n" +
 		"10.0.0.11,server2,,10.0.0.0/24,,"
 
 	result, err := svc.ImportIPsCSV(context.Background(), strings.NewReader(csv))
 	require.NoError(t, err)
 	assert.Equal(t, 1, result.Imported)
-	assert.Equal(t, "active", repo.createdIPs[0].Status)
+	assert.Equal(t, "available", repo.createdIPs[0].Status)
 }
 
 func TestImportIPsCSV_InvalidStatus(t *testing.T) {
+	t.Parallel()
+
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{
 		{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24},
@@ -262,6 +270,28 @@ func TestImportIPsCSV_InvalidStatus(t *testing.T) {
 	assert.Equal(t, 1, result.Total)
 	assert.Equal(t, 1, result.Failed)
 	assert.Contains(t, result.Errors[0].Message, "invalid status")
+	assert.Empty(t, repo.createdIPs)
+}
+
+func TestImportIPsCSV_RejectsLegacyStatusesBeforeDBInsert(t *testing.T) {
+	t.Parallel()
+
+	repo := newStubImportRepo()
+	repo.subnets = []*models.Subnet{
+		{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24},
+	}
+	svc := newTestImportService(repo)
+
+	csv := "address,hostname,status,subnet_cidr,assigned_to,mac_address\n" +
+		"10.0.0.13,server4,active,10.0.0.0/24,,"
+
+	result, err := svc.ImportIPsCSV(context.Background(), strings.NewReader(csv))
+	require.NoError(t, err)
+	assert.Equal(t, 1, result.Total)
+	assert.Equal(t, 0, result.Imported)
+	assert.Equal(t, 1, result.Failed)
+	assert.Contains(t, result.Errors[0].Message, `invalid status "active"`)
+	assert.Empty(t, repo.createdIPs)
 }
 
 func TestImportIPsCSV_MissingAddress(t *testing.T) {
@@ -293,19 +323,20 @@ func TestImportIPsCSV_SubnetNotFound(t *testing.T) {
 }
 
 func TestImportIPsCSV_AllValidStatuses(t *testing.T) {
+	t.Parallel()
+
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24}}
 	svc := newTestImportService(repo)
 
 	csv := "address,hostname,status,subnet_cidr,assigned_to,mac_address\n" +
-		"10.0.0.1,h1,active,10.0.0.0/24,,\n" +
+		"10.0.0.1,h1,available,10.0.0.0/24,,\n" +
 		"10.0.0.2,h2,reserved,10.0.0.0/24,,\n" +
-		"10.0.0.3,h3,dhcp,10.0.0.0/24,,\n" +
-		"10.0.0.4,h4,inactive,10.0.0.0/24,,"
+		"10.0.0.3,h3,assigned,10.0.0.0/24,,"
 
 	result, err := svc.ImportIPsCSV(context.Background(), strings.NewReader(csv))
 	require.NoError(t, err)
-	assert.Equal(t, 4, result.Imported)
+	assert.Equal(t, 3, result.Imported)
 	assert.Equal(t, 0, result.Failed)
 }
 

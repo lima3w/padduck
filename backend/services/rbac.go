@@ -242,8 +242,11 @@ func permMatches(perms []*models.RolePermission, permission string, scopes []Res
 		if p.ResourceType == nil {
 			return true // global grant
 		}
+		if p.ResourceID == nil {
+			continue
+		}
 		for _, s := range scopes {
-			if *p.ResourceType == s.Type && (p.ResourceID == nil || *p.ResourceID == s.ID) {
+			if *p.ResourceType == s.Type && *p.ResourceID == s.ID {
 				return true
 			}
 		}
@@ -396,6 +399,9 @@ func (s *Service) AddPermissionToRole(ctx context.Context, roleID int64, permiss
 	}
 	if !IsValidPermission(permission) {
 		return nil, fmt.Errorf("unknown permission: %s", permission)
+	}
+	if resourceType != nil && *resourceType != "" && resourceID == nil {
+		return nil, fmt.Errorf("resource ID is required when resource type is set")
 	}
 	return s.repository.AddPermissionToRole(ctx, roleID, permission, resourceType, resourceID)
 }

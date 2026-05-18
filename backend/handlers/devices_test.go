@@ -7,46 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
 )
-
-// permUser returns a user with ID=0 so CheckPermission returns "permission denied"
-// without touching the nil service repository — gives a clean 403.
-func permUser() *models.User { return &models.User{ID: 0, Role: "user"} }
-
-func deviceApp(h *Handler, method, path string, handler fiber.Handler) *fiber.App {
-	app := fiber.New()
-	switch method {
-	case "GET":
-		app.Get(path, handler)
-	case "POST":
-		app.Post(path, handler)
-	case "PUT":
-		app.Put(path, handler)
-	case "DELETE":
-		app.Delete(path, handler)
-	}
-	return app
-}
-
-func deviceAppAs(h *Handler, method, path string, handler fiber.Handler, u *models.User) *fiber.App {
-	app := fiber.New()
-	app.Use(func(c *fiber.Ctx) error {
-		c.Locals("user", u)
-		return c.Next()
-	})
-	switch method {
-	case "GET":
-		app.Get(path, handler)
-	case "POST":
-		app.Post(path, handler)
-	case "PUT":
-		app.Put(path, handler)
-	case "DELETE":
-		app.Delete(path, handler)
-	}
-	return app
-}
 
 // ---------------------------------------------------------------------------
 // ListDeviceTypes — GET /api/v1/device-types

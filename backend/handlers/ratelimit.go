@@ -14,16 +14,22 @@ type RateLimiter struct {
 	mu       sync.RWMutex
 	limit    int
 	window   time.Duration
+	now      func() time.Time
 }
 
 // NewRateLimiter creates a new rate limiter
 // limit: maximum requests allowed
 // window: time window to count requests
 func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
+	return newRateLimiterWithClock(limit, window, time.Now)
+}
+
+func newRateLimiterWithClock(limit int, window time.Duration, now func() time.Time) *RateLimiter {
 	rl := &RateLimiter{
 		requests: make(map[string][]time.Time),
 		limit:    limit,
 		window:   window,
+		now:      now,
 	}
 
 	// Cleanup old entries every minute
@@ -43,7 +49,7 @@ func (rl *RateLimiter) Allow(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	now := time.Now()
+	now := rl.now()
 	windowStart := now.Add(-rl.window)
 
 	// Get or create request list for this IP
@@ -78,7 +84,7 @@ func (rl *RateLimiter) cleanup() {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
-	now := time.Now()
+	now := rl.now()
 	windowStart := now.Add(-rl.window * 2) // Keep 2 windows of history
 
 	for ip, requests := range rl.requests {

@@ -22,6 +22,8 @@ func newTestService() *Service {
 // ---------------------------------------------------------------------------
 
 func TestPermissionConstants(t *testing.T) {
+	t.Parallel()
+
 	constants := map[string]string{
 		"PermSectionCreate": PermSectionCreate,
 		"PermSectionRead":   PermSectionRead,
@@ -50,6 +52,8 @@ func TestPermissionConstants(t *testing.T) {
 }
 
 func TestRoleConstants(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(t, "admin", RoleAdmin)
 	assert.Equal(t, "user", RoleUser)
 	assert.Equal(t, "viewer", RoleViewer)
@@ -327,12 +331,75 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCheckPermission_InvalidUserID(t *testing.T) {
+	t.Parallel()
+
 	svc := newTestService()
 	ctx := context.Background()
 
 	for _, id := range []int64{0, -1, -99} {
 		err := svc.CheckPermission(ctx, id, PermV2SectionRead)
 		assert.Error(t, err, "userID %d should be rejected", id)
+	}
+}
+
+func TestPermMatches_ResourceScopedPermissions(t *testing.T) {
+	t.Parallel()
+
+	resourceType := "subnet"
+	resourceID := int64(42)
+	otherResourceID := int64(99)
+
+	cases := []struct {
+		name   string
+		perms  []*models.RolePermission
+		scopes []ResourceScope
+		want   bool
+	}{
+		{
+			name: "global grant matches any resource",
+			perms: []*models.RolePermission{{
+				Permission: PermV2SubnetRead,
+			}},
+			scopes: []ResourceScope{{Type: "subnet", ID: otherResourceID}},
+			want:   true,
+		},
+		{
+			name: "type only grant does not wildcard resource type",
+			perms: []*models.RolePermission{{
+				Permission:   PermV2SubnetRead,
+				ResourceType: &resourceType,
+				ResourceID:   nil,
+			}},
+			scopes: []ResourceScope{{Type: "subnet", ID: resourceID}},
+			want:   false,
+		},
+		{
+			name: "exact resource grant matches",
+			perms: []*models.RolePermission{{
+				Permission:   PermV2SubnetRead,
+				ResourceType: &resourceType,
+				ResourceID:   &resourceID,
+			}},
+			scopes: []ResourceScope{{Type: "subnet", ID: resourceID}},
+			want:   true,
+		},
+		{
+			name: "different resource id does not match",
+			perms: []*models.RolePermission{{
+				Permission:   PermV2SubnetRead,
+				ResourceType: &resourceType,
+				ResourceID:   &resourceID,
+			}},
+			scopes: []ResourceScope{{Type: "subnet", ID: otherResourceID}},
+			want:   false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, permMatches(tc.perms, PermV2SubnetRead, tc.scopes))
+		})
 	}
 }
 
@@ -438,6 +505,17 @@ func TestAddPermissionToRole_UnknownPermission(t *testing.T) {
 	_, err := svc.AddPermissionToRole(ctx, 1, "not:a:real:permission", nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown permission")
+}
+
+func TestAddPermissionToRole_ResourceTypeRequiresResourceID(t *testing.T) {
+	t.Parallel()
+
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	ctx := context.Background()
+	resourceType := "subnet"
+	_, err := svc.AddPermissionToRole(ctx, 1, PermV2SubnetRead, &resourceType, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "resource ID is required")
 }
 
 func TestAddPermissionToRole_ValidArgs_ReachesRepo(t *testing.T) {

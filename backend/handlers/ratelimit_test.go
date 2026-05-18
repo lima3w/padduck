@@ -14,6 +14,8 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestRateLimiter_AllowsUpToLimit(t *testing.T) {
+	t.Parallel()
+
 	rl := NewRateLimiter(3, 1*time.Minute)
 	assert.True(t, rl.Allow("10.0.0.1"))
 	assert.True(t, rl.Allow("10.0.0.1"))
@@ -22,6 +24,8 @@ func TestRateLimiter_AllowsUpToLimit(t *testing.T) {
 }
 
 func TestRateLimiter_DifferentIPsAreIndependent(t *testing.T) {
+	t.Parallel()
+
 	rl := NewRateLimiter(1, 1*time.Minute)
 	assert.True(t, rl.Allow("10.0.0.1"))
 	assert.False(t, rl.Allow("10.0.0.1"))
@@ -29,10 +33,13 @@ func TestRateLimiter_DifferentIPsAreIndependent(t *testing.T) {
 }
 
 func TestRateLimiter_WindowExpiry_AllowsAgain(t *testing.T) {
-	rl := NewRateLimiter(1, 50*time.Millisecond)
+	t.Parallel()
+
+	now := time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
+	rl := newRateLimiterWithClock(1, time.Minute, func() time.Time { return now })
 	assert.True(t, rl.Allow("10.0.0.3"))
 	assert.False(t, rl.Allow("10.0.0.3"))
-	time.Sleep(60 * time.Millisecond)
+	now = now.Add(time.Minute + time.Nanosecond)
 	assert.True(t, rl.Allow("10.0.0.3")) // window expired — allowed again
 }
 
@@ -41,6 +48,8 @@ func TestRateLimiter_WindowExpiry_AllowsAgain(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRateLimitMiddleware_Returns429WhenLimitExceeded(t *testing.T) {
+	t.Parallel()
+
 	h := &Handler{}
 	app := fiber.New()
 	app.Use(h.RateLimitMiddleware(2, 1*time.Minute))
@@ -62,6 +71,8 @@ func TestRateLimitMiddleware_Returns429WhenLimitExceeded(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTokenRateLimiter_ZeroLimit_AlwaysAllows(t *testing.T) {
+	t.Parallel()
+
 	r := newTokenRateLimiter()
 	for i := 0; i < 10; i++ {
 		assert.True(t, r.Allow(1, 0))
@@ -69,6 +80,8 @@ func TestTokenRateLimiter_ZeroLimit_AlwaysAllows(t *testing.T) {
 }
 
 func TestTokenRateLimiter_AllowsUpToLimit(t *testing.T) {
+	t.Parallel()
+
 	r := newTokenRateLimiter()
 	assert.True(t, r.Allow(42, 2))
 	assert.True(t, r.Allow(42, 2))
@@ -76,6 +89,8 @@ func TestTokenRateLimiter_AllowsUpToLimit(t *testing.T) {
 }
 
 func TestTokenRateLimiter_DifferentTokensAreIndependent(t *testing.T) {
+	t.Parallel()
+
 	r := newTokenRateLimiter()
 	assert.True(t, r.Allow(1, 1))
 	assert.False(t, r.Allow(1, 1))
