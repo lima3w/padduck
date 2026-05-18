@@ -23,8 +23,10 @@ import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import { getLocations } from '../api/locations'
 import { downloadFile } from '../utils/download'
+import { loadPrefs, savePrefs } from '../utils/listPrefs'
 
 const DEFAULT_LIMIT = 25
+const FILTER_KEY = 'ipam_filters_subnets'
 
 const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
 
@@ -69,7 +71,7 @@ export default function SubnetsPage() {
   const [cfDefs, setCfDefs] = useState([])
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [locations, setLocations] = useState([])
-  const [filterLocationId, setFilterLocationId] = useState('')
+  const [filterLocationId, setFilterLocationId] = useState(() => loadPrefs(FILTER_KEY, { filterLocationId: '' }).filterLocationId)
   const [nameservers, setNameservers] = useState([])
   const [vlans, setVlans] = useState([])
 
@@ -109,6 +111,10 @@ export default function SubnetsPage() {
     loadNameservers()
     loadVlans()
   }, [sectionID])
+
+  useEffect(() => {
+    savePrefs(FILTER_KEY, { filterLocationId })
+  }, [filterLocationId])
 
   async function loadLocations() {
     try {

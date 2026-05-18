@@ -10,10 +10,39 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import { downloadFile } from '../utils/download'
+import { loadPrefs, savePrefs, loadColPrefs, saveColPrefs } from '../utils/listPrefs'
+
+const FILTER_KEY = 'ipam_filters_devices'
+const COL_KEY = 'ipam_cols_devices'
+const DEFAULT_COLS = { vendor_model: true, location: true, ips: true, status: true }
 
 const DEFAULT_LIMIT = 50
 
 const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', location_id: '', rack_id: '', rack_unit_start: '', rack_unit_size: '', custom_fields: {}, snmp_version: 'v2c', snmp_community: '', snmp_v3_user: '', snmp_v3_auth_proto: 'SHA', snmp_v3_auth_pass: '', snmp_v3_priv_proto: 'AES', snmp_v3_priv_pass: '' }
+
+const COL_LABELS = { vendor_model: 'Vendor / Model', location: 'Location', ips: 'IPs', status: 'Status' }
+
+function ColToggle({ cols, setCols }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(o => !o)} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm flex items-center gap-1">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" /></svg>
+        Columns
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 py-1">
+          {Object.entries(COL_LABELS).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+              <input type="checkbox" checked={cols[key] !== false} onChange={e => setCols(c => ({ ...c, [key]: e.target.checked }))} className="rounded" />
+              {label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function DevicesPage() {
   const [devices, setDevices] = useState([])
@@ -22,10 +51,13 @@ export default function DevicesPage() {
   const [deviceTypes, setDeviceTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [filterHostname, setFilterHostname] = useState('')
-  const [filterTypeId, setFilterTypeId] = useState('')
-  const [filterOnline, setFilterOnline] = useState('')
+  const [savedFilters] = useState(() => loadPrefs(FILTER_KEY, { filterHostname: '', filterTypeId: '', filterOnline: '', filterLocationId: '' }))
+  const [filterHostname, setFilterHostname] = useState(savedFilters.filterHostname)
+  const [filterTypeId, setFilterTypeId] = useState(savedFilters.filterTypeId)
+  const [filterOnline, setFilterOnline] = useState(savedFilters.filterOnline)
   const [isFiltered, setIsFiltered] = useState(false)
+  const [cols, setCols] = useState(() => loadColPrefs(COL_KEY, DEFAULT_COLS))
+  const col = (name) => cols[name] !== false
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -45,7 +77,7 @@ export default function DevicesPage() {
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [locations, setLocations] = useState([])
   const [racks, setRacks] = useState([])
-  const [filterLocationId, setFilterLocationId] = useState('')
+  const [filterLocationId, setFilterLocationId] = useState(savedFilters.filterLocationId)
 
   useEffect(() => {
     loadDeviceTypes()
@@ -53,6 +85,14 @@ export default function DevicesPage() {
     loadCfDefs()
     loadLocations()
   }, [])
+
+  useEffect(() => {
+    savePrefs(FILTER_KEY, { filterHostname, filterTypeId, filterOnline, filterLocationId })
+  }, [filterHostname, filterTypeId, filterOnline, filterLocationId])
+
+  useEffect(() => {
+    saveColPrefs(COL_KEY, cols)
+  }, [cols])
 
   async function loadLocations() {
     try {
@@ -162,6 +202,7 @@ export default function DevicesPage() {
     setFilterLocationId('')
     setCfFilterRows([])
     setIsFiltered(false)
+    savePrefs(FILTER_KEY, { filterHostname: '', filterTypeId: '', filterOnline: '', filterLocationId: '' })
     load(1)
   }
 
@@ -250,6 +291,7 @@ export default function DevicesPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Devices</h1>
         <div className="flex items-center gap-2">
+          <ColToggle cols={cols} setCols={setCols} />
           {isAdmin && (
             <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
               {downloading ? 'Exporting...' : 'Export CSV'}
@@ -377,10 +419,10 @@ export default function DevicesPage() {
             <tr>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Vendor / Model</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">IPs</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+              {col('vendor_model') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Vendor / Model</th>}
+              {col('location') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>}
+              {col('ips') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">IPs</th>}
+              {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
               {searchableFields.map(f => (
                 <th key={f.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{f.label}</th>
               ))}
@@ -389,7 +431,7 @@ export default function DevicesPage() {
           </thead>
           <tbody>
             {devices.length === 0 && (
-              <EmptyRow colSpan={7 + searchableFields.length} message="No devices yet." />
+              <EmptyRow colSpan={2 + [col('vendor_model'),col('location'),col('ips'),col('status')].filter(Boolean).length + 1 + searchableFields.length} message="No devices yet." />
             )}
 
             {devices.map(d => (
@@ -404,27 +446,27 @@ export default function DevicesPage() {
                     {d.hostname}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                {col('vendor_model') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   {[d.vendor, d.model].filter(Boolean).join(' / ') || '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                </td>}
+                {col('location') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   {d.locationId ? (
                     <Link to={`/locations/${d.locationId}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
                       {locations.find(l => l.id === d.locationId)?.name || `#${d.locationId}`}
                     </Link>
                   ) : '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                </td>}
+                {col('ips') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   {d.ipCount ?? 0}
-                </td>
-                <td className="px-4 py-3">
+                </td>}
+                {col('status') && <td className="px-4 py-3">
                   <span className={`inline-flex items-center gap-1.5 text-xs font-medium`}>
                     <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                     <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
                       {d.isOnline ? 'Online' : 'Offline'}
                     </span>
                   </span>
-                </td>
+                </td>}
                 {searchableFields.map(f => {
                   const val = d.customFields?.[f.name]
                   return (
