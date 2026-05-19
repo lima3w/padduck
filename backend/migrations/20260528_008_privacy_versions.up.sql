@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS privacy_policy_versions (
     id BIGSERIAL PRIMARY KEY,
     version TEXT NOT NULL UNIQUE,

@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS break_glass_sessions (
     id BIGSERIAL PRIMARY KEY,
     initiated_by_user_id BIGINT NOT NULL REFERENCES users(id),

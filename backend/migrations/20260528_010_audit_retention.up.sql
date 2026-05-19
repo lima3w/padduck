@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS audit_retention_settings (
     id BIGSERIAL PRIMARY KEY,
     retention_days INT NOT NULL DEFAULT 365 CHECK (retention_days >= 30),
