@@ -62,6 +62,9 @@ const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const AutonomousSystemsPage = lazy(() => import('./pages/AutonomousSystemsPage'))
 const DiscoveryConflictsPage = lazy(() => import('./pages/DiscoveryConflictsPage'))
 const TopologyHintsPage = lazy(() => import('./pages/TopologyHintsPage'))
+const APITokenAnalyticsPage = lazy(() => import('./pages/APITokenAnalyticsPage'))
+const IntegrationTemplatesPage = lazy(() => import('./pages/IntegrationTemplatesPage'))
+const AutomationPoliciesPage = lazy(() => import('./pages/AutomationPoliciesPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -175,6 +178,9 @@ export default function App() {
             <Route path="admin/discovery/conflicts" element={<DiscoveryConflictsPage />} />
             <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
             <Route path="admin/webhooks" element={<AdminWebhooksPage />} />
+            <Route path="admin/api-token-analytics" element={<APITokenAnalyticsPage />} />
+            <Route path="admin/integration-templates" element={<IntegrationTemplatesPage />} />
+            <Route path="admin/automation/policies" element={<AutomationPoliciesPage />} />
             <Route path="sections/:id/topology" element={<TopologyPage />} />
             <Route path="reports/utilization-trends" element={<UtilizationTrendsPage />} />
             <Route path="reports/inactive-ips" element={<InactiveIPsPage />} />
