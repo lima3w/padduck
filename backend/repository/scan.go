@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -296,10 +297,13 @@ func (r *Repository) UpdateIPFromSNMP(ctx context.Context, ipID int64, macAddres
 	return err
 }
 
+// scanAgentCols is the column list for scan_agents SELECT queries.
+const scanAgentCols = `id, name, token_hash, last_seen, is_active, created_at, version, capabilities, status, last_error`
+
 // CreateScanAgent inserts a new scan agent record.
 func (r *Repository) CreateScanAgent(ctx context.Context, name, tokenHash string) (*models.ScanAgent, error) {
 	row := r.db.QueryRow(ctx,
-		`INSERT INTO scan_agents (name, token_hash) VALUES ($1, $2) RETURNING id, name, token_hash, last_seen, is_active, created_at`,
+		`INSERT INTO scan_agents (name, token_hash) VALUES ($1, $2) RETURNING `+scanAgentCols,
 		name, tokenHash,
 	)
 	return scanScanAgent(row)
@@ -308,7 +312,7 @@ func (r *Repository) CreateScanAgent(ctx context.Context, name, tokenHash string
 // GetScanAgentByToken retrieves an active scan agent by token hash.
 func (r *Repository) GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT id, name, token_hash, last_seen, is_active, created_at FROM scan_agents WHERE token_hash=$1 AND is_active=true`,
+		`SELECT `+scanAgentCols+` FROM scan_agents WHERE token_hash=$1 AND is_active=true`,
 		tokenHash,
 	)
 	return scanScanAgent(row)
@@ -317,7 +321,7 @@ func (r *Repository) GetScanAgentByToken(ctx context.Context, tokenHash string) 
 // GetScanAgentByID retrieves a scan agent by its primary key.
 func (r *Repository) GetScanAgentByID(ctx context.Context, id int64) (*models.ScanAgent, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT id, name, token_hash, last_seen, is_active, created_at FROM scan_agents WHERE id=$1`,
+		`SELECT `+scanAgentCols+` FROM scan_agents WHERE id=$1`,
 		id,
 	)
 	return scanScanAgent(row)
@@ -326,7 +330,7 @@ func (r *Repository) GetScanAgentByID(ctx context.Context, id int64) (*models.Sc
 // ListScanAgents returns all scan agents ordered by name.
 func (r *Repository) ListScanAgents(ctx context.Context) ([]*models.ScanAgent, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, name, token_hash, last_seen, is_active, created_at FROM scan_agents ORDER BY name`,
+		`SELECT `+scanAgentCols+` FROM scan_agents ORDER BY name`,
 	)
 	if err != nil {
 		return nil, err
@@ -343,16 +347,34 @@ func (r *Repository) ListScanAgents(ctx context.Context) ([]*models.ScanAgent, e
 	return result, rows.Err()
 }
 
-// UpdateScanAgentLastSeen records the current time as last_seen for an agent.
-func (r *Repository) UpdateScanAgentLastSeen(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `UPDATE scan_agents SET last_seen=now() WHERE id=$1`, id)
+// HeartbeatAgent updates last_seen and optional health fields for an agent.
+func (r *Repository) HeartbeatAgent(ctx context.Context, id int64, version *string, capabilities []string, status string, lastError *string) error {
+	var capJSON *string
+	if capabilities != nil {
+		b, err := json.Marshal(capabilities)
+		if err != nil {
+			return fmt.Errorf("marshal capabilities: %w", err)
+		}
+		s := string(b)
+		capJSON = &s
+	}
+	_, err := r.db.Exec(ctx, `
+		UPDATE scan_agents
+		SET last_seen = now(),
+		    version = COALESCE($2, version),
+		    capabilities = CASE WHEN $3::jsonb IS NOT NULL THEN $3::jsonb ELSE capabilities END,
+		    status = COALESCE($4, status),
+		    last_error = $5
+		WHERE id = $1`,
+		id, version, capJSON, status, lastError,
+	)
 	return err
 }
 
 // UpdateScanAgentActive sets is_active on a scan agent.
 func (r *Repository) UpdateScanAgentActive(ctx context.Context, id int64, isActive bool) (*models.ScanAgent, error) {
 	row := r.db.QueryRow(ctx,
-		`UPDATE scan_agents SET is_active=$2 WHERE id=$1 RETURNING id, name, token_hash, last_seen, is_active, created_at`,
+		`UPDATE scan_agents SET is_active=$2 WHERE id=$1 RETURNING `+scanAgentCols,
 		id, isActive,
 	)
 	return scanScanAgent(row)
@@ -361,7 +383,7 @@ func (r *Repository) UpdateScanAgentActive(ctx context.Context, id int64, isActi
 // UpdateScanAgentToken replaces the token hash for an agent.
 func (r *Repository) UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string) (*models.ScanAgent, error) {
 	row := r.db.QueryRow(ctx,
-		`UPDATE scan_agents SET token_hash=$2 WHERE id=$1 RETURNING id, name, token_hash, last_seen, is_active, created_at`,
+		`UPDATE scan_agents SET token_hash=$2 WHERE id=$1 RETURNING `+scanAgentCols,
 		id, newTokenHash,
 	)
 	return scanScanAgent(row)
@@ -402,5 +424,75 @@ func (r *Repository) ListScanJobsForAgent(ctx context.Context, agentID int64) ([
 
 func scanScanAgent(row interface{ Scan(dest ...any) error }) (*models.ScanAgent, error) {
 	a := &models.ScanAgent{}
-	return a, row.Scan(&a.ID, &a.Name, &a.TokenHash, &a.LastSeen, &a.IsActive, &a.CreatedAt)
+	var capJSON []byte
+	err := row.Scan(&a.ID, &a.Name, &a.TokenHash, &a.LastSeen, &a.IsActive, &a.CreatedAt, &a.Version, &capJSON, &a.Status, &a.LastError)
+	if err != nil {
+		return nil, err
+	}
+	if len(capJSON) > 0 {
+		_ = json.Unmarshal(capJSON, &a.Capabilities)
+	}
+	return a, nil
+}
+
+// ---------------------------------------------------------------------------
+// Scan profiles (#432)
+// ---------------------------------------------------------------------------
+
+const scanProfileCols = `id, name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version, created_at, updated_at`
+
+func scanScanProfile(row interface{ Scan(dest ...any) error }) (*models.ScanProfile, error) {
+	p := &models.ScanProfile{}
+	return p, row.Scan(&p.ID, &p.Name, &p.Description, &p.ScanType, &p.PingConcurrency, &p.TCPPorts, &p.DNSLookup, &p.SNMPCommunity, &p.SNMPVersion, &p.CreatedAt, &p.UpdatedAt)
+}
+
+// CreateScanProfile inserts a new scan profile.
+func (r *Repository) CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
+	query := `INSERT INTO scan_profiles (name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING ` + scanProfileCols
+	return scanScanProfile(r.db.QueryRow(ctx, query, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
+}
+
+// ListScanProfiles returns all scan profiles ordered by name.
+func (r *Repository) ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error) {
+	rows, err := r.db.Query(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]*models.ScanProfile, 0)
+	for rows.Next() {
+		p, err := scanScanProfile(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, p)
+	}
+	return result, rows.Err()
+}
+
+// GetScanProfileByID retrieves a scan profile by primary key.
+func (r *Repository) GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error) {
+	return scanScanProfile(r.db.QueryRow(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles WHERE id=$1`, id))
+}
+
+// UpdateScanProfile updates a scan profile.
+func (r *Repository) UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
+	query := `UPDATE scan_profiles
+		SET name=$2, description=$3, scan_type=$4, ping_concurrency=$5, tcp_ports=$6, dns_lookup=$7, snmp_community=$8, snmp_version=$9, updated_at=now()
+		WHERE id=$1 RETURNING ` + scanProfileCols
+	return scanScanProfile(r.db.QueryRow(ctx, query, id, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
+}
+
+// DeleteScanProfile removes a scan profile by ID.
+func (r *Repository) DeleteScanProfile(ctx context.Context, id int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM scan_profiles WHERE id=$1`, id)
+	return err
+}
+
+// SetSubnetScanProfile sets or clears the scan_profile_id for a subnet.
+func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error {
+	_, err := r.db.Exec(ctx, `UPDATE subnets SET scan_profile_id=$2 WHERE id=$1`, subnetID, profileID)
+	return err
 }

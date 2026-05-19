@@ -539,12 +539,31 @@ type ScanRunChange struct {
 
 // ScanAgent represents a remote scanning agent
 type ScanAgent struct {
-	ID        int64      `json:"id"`
-	Name      string     `json:"name"`
-	TokenHash string     `json:"-"`
-	LastSeen  *time.Time `json:"last_seen,omitempty"`
-	IsActive  bool       `json:"is_active"`
-	CreatedAt time.Time  `json:"created_at"`
+	ID           int64      `json:"id"`
+	Name         string     `json:"name"`
+	TokenHash    string     `json:"-"`
+	LastSeen     *time.Time `json:"last_seen,omitempty"`
+	IsActive     bool       `json:"is_active"`
+	CreatedAt    time.Time  `json:"created_at"`
+	Version      *string    `json:"version,omitempty"`
+	Capabilities []string   `json:"capabilities,omitempty"`
+	Status       string     `json:"status"`
+	LastError    *string    `json:"last_error,omitempty"`
+}
+
+// ScanProfile holds reusable scan configuration that can be referenced by scan jobs or subnets.
+type ScanProfile struct {
+	ID              int64     `json:"id"`
+	Name            string    `json:"name"`
+	Description     *string   `json:"description,omitempty"`
+	ScanType        string    `json:"scan_type"`
+	PingConcurrency int       `json:"ping_concurrency"`
+	TCPPorts        *string   `json:"tcp_ports,omitempty"`
+	DNSLookup       bool      `json:"dns_lookup"`
+	SNMPCommunity   *string   `json:"snmp_community,omitempty"`
+	SNMPVersion     string    `json:"snmp_version"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 // ScanResult records the outcome of scanning a single IP address

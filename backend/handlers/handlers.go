@@ -282,6 +282,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Scan agents (#212)
 	admin.Get("/scan-agents", h.ListScanAgents)
 	admin.Post("/scan-agents", h.CreateScanAgent)
+	admin.Get("/scan-agents/health", h.GetAgentHealthSummary)
 	admin.Get("/scan-agents/:id", h.GetScanAgent)
 	admin.Post("/scan-agents/:id/rotate-token", h.RotateScanAgentToken)
 	admin.Delete("/scan-agents/:id", h.DeleteScanAgent)

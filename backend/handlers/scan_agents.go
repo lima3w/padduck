@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/models"
@@ -197,9 +198,40 @@ func (h *Handler) AgentHeartbeat(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
 	}
-	if err := h.service.Discovery.HeartbeatAgent(c.Context(), agent.ID); err != nil {
+	var req struct {
+		Version      *string  `json:"version"`
+		Capabilities []string `json:"capabilities"`
+		Status       string   `json:"status"`
+		LastError    *string  `json:"last_error"`
+	}
+	// parse body (ok if body is empty — all fields optional)
+	_ = c.BodyParser(&req)
+	if req.Status == "" {
+		req.Status = "healthy"
+	}
+	if err := h.service.Discovery.HeartbeatAgent(c.Context(), agent.ID, req.Version, req.Capabilities, req.Status, req.LastError); err != nil {
 		reqLogger(c).Error("agent heartbeat error", "agent_id", agent.ID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	return c.JSON(fiber.Map{"message": "ok"})
+}
+
+// GetAgentHealthSummary handles GET /api/v1/admin/scan-agents/health
+// Returns all agents with computed health status considering last_seen staleness.
+func (h *Handler) GetAgentHealthSummary(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+		return nil
+	}
+	agents, err := h.service.Discovery.ListAgents(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	// Compute effective status: if last_seen is >5 min ago, mark offline
+	now := time.Now()
+	for _, a := range agents {
+		if a.LastSeen != nil && now.Sub(*a.LastSeen) > 5*time.Minute && a.Status != "offline" {
+			a.Status = "offline"
+		}
+	}
+	return c.JSON(agents)
 }

@@ -61,11 +61,18 @@ type discoveryRepo interface {
 	GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error)
 	GetScanAgentByID(ctx context.Context, id int64) (*models.ScanAgent, error)
 	ListScanAgents(ctx context.Context) ([]*models.ScanAgent, error)
-	UpdateScanAgentLastSeen(ctx context.Context, id int64) error
+	HeartbeatAgent(ctx context.Context, id int64, version *string, capabilities []string, status string, lastError *string) error
 	UpdateScanAgentActive(ctx context.Context, id int64, isActive bool) (*models.ScanAgent, error)
 	UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string) (*models.ScanAgent, error)
 	DeleteScanAgent(ctx context.Context, id int64) error
 	ListScanJobsForAgent(ctx context.Context, agentID int64) ([]*models.ScanJob, error)
+	// Scan profiles (#432)
+	CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error)
+	ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error)
+	GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error)
+	UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error)
+	DeleteScanProfile(ctx context.Context, id int64) error
+	SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error
 }
 
 // maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
@@ -635,9 +642,9 @@ func (d *DiscoveryService) GetJobsForAgent(ctx context.Context, agentID int64) (
 	return d.repository.ListScanJobsForAgent(ctx, agentID)
 }
 
-// HeartbeatAgent records that an agent is alive.
-func (d *DiscoveryService) HeartbeatAgent(ctx context.Context, agentID int64) error {
-	return d.repository.UpdateScanAgentLastSeen(ctx, agentID)
+// HeartbeatAgent records that an agent is alive and stores optional health metadata.
+func (d *DiscoveryService) HeartbeatAgent(ctx context.Context, agentID int64, version *string, capabilities []string, status string, lastError *string) error {
+	return d.repository.HeartbeatAgent(ctx, agentID, version, capabilities, status, lastError)
 }
 
 // AcceptAgentResults processes scan results submitted by a remote agent.
@@ -726,4 +733,70 @@ func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globa
 		v3 = p
 	}
 	return
+}
+
+// ---------------------------------------------------------------------------
+// Scan profile service methods (#432)
+// ---------------------------------------------------------------------------
+
+// CreateScanProfile creates a new scan profile.
+func (d *DiscoveryService) CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	validTypes := map[string]bool{"ping": true, "snmp": true, "ping+snmp": true}
+	if scanType == "" {
+		scanType = "ping"
+	}
+	if !validTypes[scanType] {
+		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
+	}
+	if pingConcurrency <= 0 {
+		pingConcurrency = 20
+	}
+	if snmpVersion == "" {
+		snmpVersion = "v2c"
+	}
+	return d.repository.CreateScanProfile(ctx, name, scanType, desc, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion)
+}
+
+// ListScanProfiles returns all scan profiles.
+func (d *DiscoveryService) ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error) {
+	return d.repository.ListScanProfiles(ctx)
+}
+
+// GetScanProfileByID retrieves a scan profile by ID.
+func (d *DiscoveryService) GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error) {
+	return d.repository.GetScanProfileByID(ctx, id)
+}
+
+// UpdateScanProfile updates a scan profile.
+func (d *DiscoveryService) UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	validTypes := map[string]bool{"ping": true, "snmp": true, "ping+snmp": true}
+	if scanType == "" {
+		scanType = "ping"
+	}
+	if !validTypes[scanType] {
+		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
+	}
+	if pingConcurrency <= 0 {
+		pingConcurrency = 20
+	}
+	if snmpVersion == "" {
+		snmpVersion = "v2c"
+	}
+	return d.repository.UpdateScanProfile(ctx, id, name, scanType, desc, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion)
+}
+
+// DeleteScanProfile removes a scan profile.
+func (d *DiscoveryService) DeleteScanProfile(ctx context.Context, id int64) error {
+	return d.repository.DeleteScanProfile(ctx, id)
+}
+
+// SetSubnetScanProfile assigns or clears the scan profile for a subnet.
+func (d *DiscoveryService) SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error {
+	return d.repository.SetSubnetScanProfile(ctx, subnetID, profileID)
 }
