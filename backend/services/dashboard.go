@@ -5,18 +5,65 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"time"
 
 	"ipam-next/models"
 )
 
 // GetDashboardSummary returns aggregate IPAM statistics.
 func (s *Service) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
-	return s.repository.GetDashboardSummary(ctx)
+	if s.dashboardSummaryCache == nil {
+		s.dashboardSummaryCache = newTTLCache[*models.DashboardSummary](30 * time.Second)
+	}
+	if summary, ok := s.dashboardSummaryCache.get("summary"); ok {
+		return cloneDashboardSummary(summary), nil
+	}
+
+	summary, err := s.repository.GetDashboardSummary(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.dashboardSummaryCache.set("summary", cloneDashboardSummary(summary))
+	return cloneDashboardSummary(summary), nil
 }
 
 // GetDashboardRecentActivity returns the most recent IPAM-relevant audit log entries.
 func (s *Service) GetDashboardRecentActivity(ctx context.Context) ([]*models.DashboardActivity, error) {
-	return s.repository.GetDashboardRecentActivity(ctx)
+	if s.dashboardActivityCache == nil {
+		s.dashboardActivityCache = newTTLCache[[]*models.DashboardActivity](15 * time.Second)
+	}
+	if activities, ok := s.dashboardActivityCache.get("recent"); ok {
+		return cloneDashboardActivities(activities), nil
+	}
+
+	activities, err := s.repository.GetDashboardRecentActivity(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.dashboardActivityCache.set("recent", cloneDashboardActivities(activities))
+	return cloneDashboardActivities(activities), nil
+}
+
+func cloneDashboardSummary(summary *models.DashboardSummary) *models.DashboardSummary {
+	if summary == nil {
+		return nil
+	}
+	out := *summary
+	out.TopSubnets = append([]models.SubnetUtilisation(nil), summary.TopSubnets...)
+	return &out
+}
+
+func cloneDashboardActivities(activities []*models.DashboardActivity) []*models.DashboardActivity {
+	out := make([]*models.DashboardActivity, 0, len(activities))
+	for _, activity := range activities {
+		if activity == nil {
+			out = append(out, nil)
+			continue
+		}
+		clone := *activity
+		out = append(out, &clone)
+	}
+	return out
 }
 
 // GetSubnetTree returns subnets for a section as a nested tree, ordered by network address.

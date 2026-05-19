@@ -29,6 +29,13 @@ type stubReportsRepo struct {
 	snapshots        []snapshotCall
 	inactiveIPs      []*models.InactiveIPReport
 	sections         []*models.Section
+	trends           []*models.SubnetUtilisationTrend
+	duplicates       *models.DuplicatesReport
+
+	utilisationTrendCalls int
+	inactiveIPCalls       int
+	duplicateCalls        int
+	listScheduledCalls    int
 }
 
 type snapshotCall struct {
@@ -64,7 +71,8 @@ func (r *stubReportsRepo) GetUtilisationHistory(_ context.Context, subnetID int6
 	return r.history[subnetID], nil
 }
 func (r *stubReportsRepo) GetUtilisationTrends(_ context.Context) ([]*models.SubnetUtilisationTrend, error) {
-	return nil, nil
+	r.utilisationTrendCalls++
+	return r.trends, nil
 }
 func (r *stubReportsRepo) GetLatestUtilisationForSubnet(_ context.Context, subnetID int64) (*models.SubnetUtilisationPoint, error) {
 	pts := r.history[subnetID]
@@ -109,6 +117,7 @@ func (r *stubReportsRepo) GetScheduledReportByID(_ context.Context, id int64) (*
 	return rpt, nil
 }
 func (r *stubReportsRepo) ListScheduledReports(_ context.Context) ([]*models.ScheduledReport, error) {
+	r.listScheduledCalls++
 	var out []*models.ScheduledReport
 	for _, rpt := range r.scheduledReports {
 		out = append(out, rpt)
@@ -139,6 +148,7 @@ func (r *stubReportsRepo) DeleteScheduledReport(_ context.Context, id int64) err
 	return nil
 }
 func (r *stubReportsRepo) GetInactiveIPs(_ context.Context, days int, sectionID *int64) ([]*models.InactiveIPReport, error) {
+	r.inactiveIPCalls++
 	return r.inactiveIPs, nil
 }
 func (r *stubReportsRepo) BulkReleaseIPs(_ context.Context, ipIDs []int64) (int64, error) {
@@ -174,6 +184,10 @@ func (r *stubReportsRepo) GetOverdueScanJobs(_ context.Context, days int) ([]*mo
 	return nil, nil
 }
 func (r *stubReportsRepo) GetDuplicates(_ context.Context) (*models.DuplicatesReport, error) {
+	r.duplicateCalls++
+	if r.duplicates != nil {
+		return r.duplicates, nil
+	}
 	return &models.DuplicatesReport{
 		DuplicateHostnames: []models.DuplicateHostname{},
 		ConflictingIPs:     []models.ConflictingIP{},
@@ -395,6 +409,91 @@ func TestScheduledReport_Delete(t *testing.T) {
 
 	_, err = svc.GetScheduledReport(ctx, rpt.ID)
 	assert.Error(t, err)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Performance budgets
+// ─────────────────────────────────────────────────────────────────────────────
+
+func TestPerformanceBudget_UtilisationTrendWorkflowUsesCachedRead(t *testing.T) {
+	repo := newStubRepo()
+	repo.trends = []*models.SubnetUtilisationTrend{
+		{SubnetID: 1, CIDR: "10.0.0.0/24", CurrentPct: 50},
+	}
+	svc := newTestReportsService(repo)
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		trends, err := svc.GetUtilisationTrends(ctx)
+		require.NoError(t, err)
+		require.Len(t, trends, 1)
+	}
+
+	assert.LessOrEqual(t, repo.utilisationTrendCalls, 1, "utilisation trends should stay within the repository-call budget")
+}
+
+func TestPerformanceBudget_InactiveIPWorkflowUsesParameterizedCachedRead(t *testing.T) {
+	assignedTo := "ops"
+	repo := newStubRepo()
+	repo.inactiveIPs = []*models.InactiveIPReport{
+		{IPID: 1, IPAddress: "10.0.0.10", AssignedTo: &assignedTo, DaysInactive: 90},
+	}
+	svc := newTestReportsService(repo)
+	ctx := context.Background()
+	sectionID := int64(42)
+
+	for i := 0; i < 3; i++ {
+		ips, err := svc.GetInactiveIPs(ctx, 90, &sectionID)
+		require.NoError(t, err)
+		require.Len(t, ips, 1)
+	}
+	if _, err := svc.GetInactiveIPs(ctx, 30, &sectionID); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.LessOrEqual(t, repo.inactiveIPCalls, 2, "inactive IP reads should cache identical day/section parameters")
+}
+
+func TestPerformanceBudget_DuplicateReportWorkflowUsesCachedRead(t *testing.T) {
+	repo := newStubRepo()
+	repo.duplicates = &models.DuplicatesReport{
+		DuplicateHostnames: []models.DuplicateHostname{{Hostname: "router-1", Count: 2, DeviceIDs: []int64{1, 2}}},
+		ConflictingIPs:     []models.ConflictingIP{{IPAddress: "10.0.0.5", Count: 2, Hostnames: []string{"a", "b"}}},
+	}
+	svc := newTestReportsService(repo)
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		report, err := svc.GetDuplicates(ctx)
+		require.NoError(t, err)
+		require.Len(t, report.DuplicateHostnames, 1)
+	}
+
+	assert.LessOrEqual(t, repo.duplicateCalls, 1, "duplicate report should stay within the repository-call budget")
+}
+
+func TestPerformanceBudget_ScheduledReportListInvalidatesOnMutation(t *testing.T) {
+	repo := newStubRepo()
+	svc := newTestReportsService(repo)
+	ctx := context.Background()
+
+	_, err := svc.CreateScheduledReport(ctx, "Weekly", "utilisation_summary", "0 9 * * 1", []string{"admin@example.com"}, map[string]any{}, "csv", 1)
+	require.NoError(t, err)
+
+	for i := 0; i < 3; i++ {
+		reports, err := svc.ListScheduledReports(ctx)
+		require.NoError(t, err)
+		require.Len(t, reports, 1)
+	}
+	require.Equal(t, 1, repo.listScheduledCalls)
+
+	_, err = svc.CreateScheduledReport(ctx, "Daily", "inactive_ips", "0 7 * * *", []string{"admin@example.com"}, map[string]any{"days": 90}, "csv", 1)
+	require.NoError(t, err)
+	reports, err := svc.ListScheduledReports(ctx)
+	require.NoError(t, err)
+	require.Len(t, reports, 2)
+
+	assert.Equal(t, 2, repo.listScheduledCalls, "scheduled report list cache should be invalidated by writes")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -61,6 +61,7 @@ type ReportsService struct {
 	config *ConfigService
 	email  *EmailService
 	audit  *AuditService
+	cache  *ttlCache[any]
 }
 
 // NewReportsService creates a new ReportsService.
@@ -70,6 +71,7 @@ func NewReportsService(repo reportsRepo, config *ConfigService, email *EmailServ
 		config: config,
 		email:  email,
 		audit:  audit,
+		cache:  newTTLCache[any](30 * time.Second),
 	}
 }
 
@@ -124,7 +126,15 @@ func (rs *ReportsService) GetUtilisationHistory(ctx context.Context, subnetID in
 
 // GetUtilisationTrends returns trend data for all subnets.
 func (rs *ReportsService) GetUtilisationTrends(ctx context.Context) ([]*models.SubnetUtilisationTrend, error) {
-	return rs.repo.GetUtilisationTrends(ctx)
+	if value, ok := rs.reportCache().get("utilisation_trends"); ok {
+		return cloneUtilisationTrends(value.([]*models.SubnetUtilisationTrend)), nil
+	}
+	trends, err := rs.repo.GetUtilisationTrends(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rs.reportCache().set("utilisation_trends", cloneUtilisationTrends(trends))
+	return cloneUtilisationTrends(trends), nil
 }
 
 // StartUtilisationSnapshotJob launches a background goroutine that periodically takes snapshots.
@@ -256,7 +266,16 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 
 // GetSubnetsNearCapacity returns subnets whose latest utilisation exceeds the threshold.
 func (rs *ReportsService) GetSubnetsNearCapacity(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilisationTrend, error) {
-	return rs.repo.GetSubnetsByUtilisationThreshold(ctx, thresholdPct)
+	key := fmt.Sprintf("subnets_near_capacity:%.2f", thresholdPct)
+	if value, ok := rs.reportCache().get(key); ok {
+		return cloneUtilisationTrends(value.([]*models.SubnetUtilisationTrend)), nil
+	}
+	trends, err := rs.repo.GetSubnetsByUtilisationThreshold(ctx, thresholdPct)
+	if err != nil {
+		return nil, err
+	}
+	rs.reportCache().set(key, cloneUtilisationTrends(trends))
+	return cloneUtilisationTrends(trends), nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -265,7 +284,11 @@ func (rs *ReportsService) GetSubnetsNearCapacity(ctx context.Context, thresholdP
 
 // CreateScheduledReport creates a new scheduled report.
 func (rs *ReportsService) CreateScheduledReport(ctx context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
-	return rs.repo.CreateScheduledReport(ctx, name, reportType, scheduleCron, recipientEmails, filters, format, createdBy)
+	report, err := rs.repo.CreateScheduledReport(ctx, name, reportType, scheduleCron, recipientEmails, filters, format, createdBy)
+	if err == nil {
+		rs.clearReportCache()
+	}
+	return report, err
 }
 
 // GetScheduledReport retrieves a scheduled report by ID.
@@ -275,17 +298,33 @@ func (rs *ReportsService) GetScheduledReport(ctx context.Context, id int64) (*mo
 
 // ListScheduledReports returns all scheduled reports.
 func (rs *ReportsService) ListScheduledReports(ctx context.Context) ([]*models.ScheduledReport, error) {
-	return rs.repo.ListScheduledReports(ctx)
+	if value, ok := rs.reportCache().get("scheduled_reports"); ok {
+		return cloneScheduledReports(value.([]*models.ScheduledReport)), nil
+	}
+	reports, err := rs.repo.ListScheduledReports(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rs.reportCache().set("scheduled_reports", cloneScheduledReports(reports))
+	return cloneScheduledReports(reports), nil
 }
 
 // UpdateScheduledReport updates a scheduled report.
 func (rs *ReportsService) UpdateScheduledReport(ctx context.Context, id int64, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string) (*models.ScheduledReport, error) {
-	return rs.repo.UpdateScheduledReport(ctx, id, name, reportType, scheduleCron, recipientEmails, filters, format)
+	report, err := rs.repo.UpdateScheduledReport(ctx, id, name, reportType, scheduleCron, recipientEmails, filters, format)
+	if err == nil {
+		rs.clearReportCache()
+	}
+	return report, err
 }
 
 // DeleteScheduledReport removes a scheduled report.
 func (rs *ReportsService) DeleteScheduledReport(ctx context.Context, id int64) error {
-	return rs.repo.DeleteScheduledReport(ctx, id)
+	err := rs.repo.DeleteScheduledReport(ctx, id)
+	if err == nil {
+		rs.clearReportCache()
+	}
+	return err
 }
 
 // RunScheduledReport generates and emails a report.
@@ -306,14 +345,18 @@ func (rs *ReportsService) RunScheduledReport(ctx context.Context, report *models
 		}
 	}
 
-	return rs.repo.UpdateScheduledReportRunTime(ctx, report.ID, time.Now())
+	err = rs.repo.UpdateScheduledReportRunTime(ctx, report.ID, time.Now())
+	if err == nil {
+		rs.clearReportCache()
+	}
+	return err
 }
 
 // generateReportData builds the report payload for a given report definition.
 func (rs *ReportsService) generateReportData(ctx context.Context, report *models.ScheduledReport) ([]byte, string, string, error) {
 	switch report.ReportType {
 	case "utilisation_summary":
-		trends, err := rs.repo.GetUtilisationTrends(ctx)
+		trends, err := rs.GetUtilisationTrends(ctx)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -321,12 +364,12 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 		rows := make([]map[string]string, len(trends))
 		for i, t := range trends {
 			rows[i] = map[string]string{
-				"subnet_id":   strconv.FormatInt(t.SubnetID, 10),
-				"cidr":        t.CIDR,
-				"description": t.Description,
-				"current_pct": fmt.Sprintf("%.2f", t.CurrentPct),
+				"subnet_id":    strconv.FormatInt(t.SubnetID, 10),
+				"cidr":         t.CIDR,
+				"description":  t.Description,
+				"current_pct":  fmt.Sprintf("%.2f", t.CurrentPct),
 				"week_ago_pct": fmt.Sprintf("%.2f", t.WeekAgoPct),
-				"delta_pct":   fmt.Sprintf("%.2f", t.DeltaPct),
+				"delta_pct":    fmt.Sprintf("%.2f", t.DeltaPct),
 			}
 		}
 		return buildReport(report.Format, "Utilisation Summary", headers, rows)
@@ -338,7 +381,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				days = int(d)
 			}
 		}
-		ips, err := rs.repo.GetInactiveIPs(ctx, days, nil)
+		ips, err := rs.GetInactiveIPs(ctx, days, nil)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -350,12 +393,12 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				assignedTo = *ip.AssignedTo
 			}
 			rows[i] = map[string]string{
-				"ip_id":        strconv.FormatInt(ip.IPID, 10),
-				"ip_address":   ip.IPAddress,
-				"hostname":     ip.Hostname,
-				"subnet_cidr":  ip.SubnetCIDR,
-				"section_name": ip.SectionName,
-				"assigned_to":  assignedTo,
+				"ip_id":         strconv.FormatInt(ip.IPID, 10),
+				"ip_address":    ip.IPAddress,
+				"hostname":      ip.Hostname,
+				"subnet_cidr":   ip.SubnetCIDR,
+				"section_name":  ip.SectionName,
+				"assigned_to":   assignedTo,
 				"days_inactive": strconv.Itoa(ip.DaysInactive),
 			}
 		}
@@ -447,7 +490,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				days = int(d)
 			}
 		}
-		ips, err := rs.repo.GetInactiveIPs(ctx, days, nil)
+		ips, err := rs.GetInactiveIPs(ctx, days, nil)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -504,9 +547,9 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 		rows := make([]map[string]string, len(jobs))
 		for i, j := range jobs {
 			rows[i] = map[string]string{
-				"job_id":        strconv.FormatInt(j.JobID, 10),
-				"job_name":      j.JobName,
-				"schedule_cron": j.ScheduleCron,
+				"job_id":         strconv.FormatInt(j.JobID, 10),
+				"job_name":       j.JobName,
+				"schedule_cron":  j.ScheduleCron,
 				"days_since_run": strconv.Itoa(j.DaysSinceRun),
 			}
 		}
@@ -537,6 +580,108 @@ func buildReport(format, title string, headers []string, rows []map[string]strin
 	}
 }
 
+func (rs *ReportsService) reportCache() *ttlCache[any] {
+	if rs.cache == nil {
+		rs.cache = newTTLCache[any](30 * time.Second)
+	}
+	return rs.cache
+}
+
+func (rs *ReportsService) clearReportCache() {
+	if rs.cache != nil {
+		rs.cache.clear()
+	}
+}
+
+func sectionCacheKey(sectionID *int64) string {
+	if sectionID == nil {
+		return "all"
+	}
+	return strconv.FormatInt(*sectionID, 10)
+}
+
+func cloneUtilisationTrends(trends []*models.SubnetUtilisationTrend) []*models.SubnetUtilisationTrend {
+	out := make([]*models.SubnetUtilisationTrend, 0, len(trends))
+	for _, trend := range trends {
+		if trend == nil {
+			out = append(out, nil)
+			continue
+		}
+		clone := *trend
+		out = append(out, &clone)
+	}
+	return out
+}
+
+func cloneInactiveIPs(ips []*models.InactiveIPReport) []*models.InactiveIPReport {
+	out := make([]*models.InactiveIPReport, 0, len(ips))
+	for _, ip := range ips {
+		if ip == nil {
+			out = append(out, nil)
+			continue
+		}
+		clone := *ip
+		if ip.AssignedTo != nil {
+			assignedTo := *ip.AssignedTo
+			clone.AssignedTo = &assignedTo
+		}
+		if ip.LastSeen != nil {
+			lastSeen := *ip.LastSeen
+			clone.LastSeen = &lastSeen
+		}
+		out = append(out, &clone)
+	}
+	return out
+}
+
+func cloneScheduledReports(reports []*models.ScheduledReport) []*models.ScheduledReport {
+	out := make([]*models.ScheduledReport, 0, len(reports))
+	for _, report := range reports {
+		if report == nil {
+			out = append(out, nil)
+			continue
+		}
+		out = append(out, cloneScheduledReport(report))
+	}
+	return out
+}
+
+func cloneScheduledReport(report *models.ScheduledReport) *models.ScheduledReport {
+	if report == nil {
+		return nil
+	}
+	clone := *report
+	clone.RecipientEmails = append([]string(nil), report.RecipientEmails...)
+	if report.Filters != nil {
+		clone.Filters = make(map[string]any, len(report.Filters))
+		for key, value := range report.Filters {
+			clone.Filters[key] = value
+		}
+	}
+	if report.LastRunAt != nil {
+		lastRunAt := *report.LastRunAt
+		clone.LastRunAt = &lastRunAt
+	}
+	return &clone
+}
+
+func cloneDuplicatesReport(report *models.DuplicatesReport) *models.DuplicatesReport {
+	if report == nil {
+		return nil
+	}
+	clone := &models.DuplicatesReport{
+		DuplicateHostnames: append([]models.DuplicateHostname(nil), report.DuplicateHostnames...),
+		ConflictingIPs:     append([]models.ConflictingIP(nil), report.ConflictingIPs...),
+	}
+	for i := range clone.DuplicateHostnames {
+		clone.DuplicateHostnames[i].DeviceIDs = append([]int64(nil), clone.DuplicateHostnames[i].DeviceIDs...)
+	}
+	for i := range clone.ConflictingIPs {
+		clone.ConflictingIPs[i].Hostnames = append([]string(nil), clone.ConflictingIPs[i].Hostnames...)
+	}
+	return clone
+}
+
 // StartScheduledReportJob launches a background goroutine that checks and runs due reports.
 func (rs *ReportsService) StartScheduledReportJob(ctx context.Context) {
 	go func() {
@@ -547,7 +692,7 @@ func (rs *ReportsService) StartScheduledReportJob(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case now := <-ticker.C:
-				reports, err := rs.repo.ListScheduledReports(ctx)
+				reports, err := rs.ListScheduledReports(ctx)
 				if err != nil {
 					log.Printf("[reports] list scheduled reports: %v", err)
 					continue
@@ -578,7 +723,16 @@ func reportIsDue(rpt *models.ScheduledReport, now time.Time) bool {
 
 // GetInactiveIPs returns IPs that have been inactive for the given number of days.
 func (rs *ReportsService) GetInactiveIPs(ctx context.Context, days int, sectionID *int64) ([]*models.InactiveIPReport, error) {
-	return rs.repo.GetInactiveIPs(ctx, days, sectionID)
+	key := fmt.Sprintf("inactive_ips:%d:%s", days, sectionCacheKey(sectionID))
+	if value, ok := rs.reportCache().get(key); ok {
+		return cloneInactiveIPs(value.([]*models.InactiveIPReport)), nil
+	}
+	ips, err := rs.repo.GetInactiveIPs(ctx, days, sectionID)
+	if err != nil {
+		return nil, err
+	}
+	rs.reportCache().set(key, cloneInactiveIPs(ips))
+	return cloneInactiveIPs(ips), nil
 }
 
 // GetDNSAudit returns all IPs with DNS name tracking data.
@@ -592,14 +746,15 @@ func (rs *ReportsService) BulkReleaseIPs(ctx context.Context, ipIDs []int64, ope
 	if err != nil {
 		return 0, err
 	}
+	rs.clearReportCache()
 
 	if rs.audit != nil {
 		rs.audit.Log(ctx, AuditEntry{
-			UserID: &operatorUserID,
-			Action: "ip.bulk_release",
+			UserID:       &operatorUserID,
+			Action:       "ip.bulk_release",
 			ResourceType: "ip_address",
 			ResourceName: fmt.Sprintf("%d IPs", count),
-			Status: "success",
+			Status:       "success",
 		})
 	}
 
@@ -612,7 +767,15 @@ func (rs *ReportsService) BulkReleaseIPs(ctx context.Context, ipIDs []int64, ope
 
 // GetDuplicates returns a report of duplicate device hostnames and conflicting IP assignments.
 func (rs *ReportsService) GetDuplicates(ctx context.Context) (*models.DuplicatesReport, error) {
-	return rs.repo.GetDuplicates(ctx)
+	if value, ok := rs.reportCache().get("duplicates"); ok {
+		return cloneDuplicatesReport(value.(*models.DuplicatesReport)), nil
+	}
+	report, err := rs.repo.GetDuplicates(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rs.reportCache().set("duplicates", cloneDuplicatesReport(report))
+	return cloneDuplicatesReport(report), nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -621,7 +784,7 @@ func (rs *ReportsService) GetDuplicates(ctx context.Context) (*models.Duplicates
 
 // ExportSubnets builds a CSV/PDF of all subnets with utilisation data.
 func (rs *ReportsService) ExportSubnets(ctx context.Context, format string) ([]byte, string, string, error) {
-	trends, err := rs.repo.GetUtilisationTrends(ctx)
+	trends, err := rs.GetUtilisationTrends(ctx)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -664,7 +827,7 @@ func (rs *ReportsService) ExportIPs(ctx context.Context, subnetID int64, format 
 
 // ExportInactiveIPs builds a CSV/PDF of inactive IPs.
 func (rs *ReportsService) ExportInactiveIPs(ctx context.Context, days int, format string) ([]byte, string, string, error) {
-	ips, err := rs.repo.GetInactiveIPs(ctx, days, nil)
+	ips, err := rs.GetInactiveIPs(ctx, days, nil)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -673,10 +836,10 @@ func (rs *ReportsService) ExportInactiveIPs(ctx context.Context, days int, forma
 	rows := make([]map[string]string, len(ips))
 	for i, ip := range ips {
 		rows[i] = map[string]string{
-			"ip_address":   ip.IPAddress,
-			"hostname":     ip.Hostname,
-			"subnet_cidr":  ip.SubnetCIDR,
-			"section_name": ip.SectionName,
+			"ip_address":    ip.IPAddress,
+			"hostname":      ip.Hostname,
+			"subnet_cidr":   ip.SubnetCIDR,
+			"section_name":  ip.SectionName,
 			"days_inactive": strconv.Itoa(ip.DaysInactive),
 		}
 	}

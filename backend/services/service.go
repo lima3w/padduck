@@ -2,7 +2,9 @@ package services
 
 import (
 	"log"
+	"time"
 
+	"ipam-next/models"
 	"ipam-next/repository"
 )
 
@@ -25,6 +27,9 @@ type Service struct {
 	OAuth2        *OAuth2Service
 	SAML          *SAMLService
 	Topology      *TopologyService
+
+	dashboardSummaryCache  *ttlCache[*models.DashboardSummary]
+	dashboardActivityCache *ttlCache[[]*models.DashboardActivity]
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -38,17 +43,19 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	}
 
 	svc := &Service{
-		repository:    repo,
-		encryptionKey: mfaEncryptionKey,
-		Config:        configSvc,
-		Email:         emailSvc,
-		Registration:  registrationSvc,
-		MFA:           mfaSvc,
-		Notification:  NewNotificationService(repo, emailSvc),
-		Discovery:     NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
-		LDAP:          NewLDAPService(repo, mfaEncryptionKey),
-		OAuth2:        NewOAuth2Service(repo, mfaEncryptionKey),
-		SAML:          NewSAMLService(repo, mfaEncryptionKey),
+		repository:             repo,
+		encryptionKey:          mfaEncryptionKey,
+		Config:                 configSvc,
+		Email:                  emailSvc,
+		Registration:           registrationSvc,
+		MFA:                    mfaSvc,
+		Notification:           NewNotificationService(repo, emailSvc),
+		Discovery:              NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
+		LDAP:                   NewLDAPService(repo, mfaEncryptionKey),
+		OAuth2:                 NewOAuth2Service(repo, mfaEncryptionKey),
+		SAML:                   NewSAMLService(repo, mfaEncryptionKey),
+		dashboardSummaryCache:  newTTLCache[*models.DashboardSummary](30 * time.Second),
+		dashboardActivityCache: newTTLCache[[]*models.DashboardActivity](15 * time.Second),
 	}
 	svc.Audit = NewAuditService(svc)
 	svc.DNS = NewDNSService(svc)
