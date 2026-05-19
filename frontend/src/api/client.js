@@ -411,3 +411,11 @@ export const getDuplicates = () => api.get('/admin/reports/duplicates')
 
 // Reconciliation center (#424)
 export const getReconciliationReport = () => api.get('/admin/reports/reconciliation')
+
+// Scan profiles (#432)
+export const getScanProfiles = () => api.get('/admin/scan-profiles')
+export const createScanProfile = (data) => api.post('/admin/scan-profiles', data)
+export const updateScanProfile = (id, data) => api.put(`/admin/scan-profiles/${id}`, data)
+export const deleteScanProfile = (id) => api.delete(`/admin/scan-profiles/${id}`)
+export const getSubnetScanProfile = (subnetId) => api.get(`/admin/subnets/${subnetId}/scan-profile`)
+export const setSubnetScanProfile = (subnetId, profileId) => api.put(`/admin/subnets/${subnetId}/scan-profile`, { profile_id: profileId })

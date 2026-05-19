@@ -324,6 +324,29 @@ export default function Sidebar() {
             >
               Audit Log
             </NavLink>
+            <div className="mt-2 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Discovery
+            </div>
+            <NavLink
+              to="/admin/scan-jobs"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Scan Jobs
+            </NavLink>
+            <NavLink
+              to="/admin/scan-profiles"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Scan Profiles
+            </NavLink>
           </>
         )}
       </nav>

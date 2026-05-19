@@ -496,3 +496,65 @@ func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, p
 	_, err := r.db.Exec(ctx, `UPDATE subnets SET scan_profile_id=$2 WHERE id=$1`, subnetID, profileID)
 	return err
 }
+
+// ---------------------------------------------------------------------------
+// Scan profiles (#432)
+// ---------------------------------------------------------------------------
+
+const scanProfileCols = `id, name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version, created_at, updated_at`
+
+func scanScanProfile(row interface{ Scan(dest ...any) error }) (*models.ScanProfile, error) {
+	p := &models.ScanProfile{}
+	return p, row.Scan(&p.ID, &p.Name, &p.Description, &p.ScanType, &p.PingConcurrency, &p.TCPPorts, &p.DNSLookup, &p.SNMPCommunity, &p.SNMPVersion, &p.CreatedAt, &p.UpdatedAt)
+}
+
+// CreateScanProfile inserts a new scan profile.
+func (r *Repository) CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
+	query := `INSERT INTO scan_profiles (name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING ` + scanProfileCols
+	return scanScanProfile(r.db.QueryRow(ctx, query, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
+}
+
+// ListScanProfiles returns all scan profiles ordered by name.
+func (r *Repository) ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error) {
+	rows, err := r.db.Query(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]*models.ScanProfile, 0)
+	for rows.Next() {
+		p, err := scanScanProfile(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, p)
+	}
+	return result, rows.Err()
+}
+
+// GetScanProfileByID retrieves a scan profile by primary key.
+func (r *Repository) GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error) {
+	return scanScanProfile(r.db.QueryRow(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles WHERE id=$1`, id))
+}
+
+// UpdateScanProfile updates a scan profile.
+func (r *Repository) UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
+	query := `UPDATE scan_profiles
+		SET name=$2, description=$3, scan_type=$4, ping_concurrency=$5, tcp_ports=$6, dns_lookup=$7, snmp_community=$8, snmp_version=$9, updated_at=now()
+		WHERE id=$1 RETURNING ` + scanProfileCols
+	return scanScanProfile(r.db.QueryRow(ctx, query, id, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
+}
+
+// DeleteScanProfile removes a scan profile by ID.
+func (r *Repository) DeleteScanProfile(ctx context.Context, id int64) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM scan_profiles WHERE id=$1`, id)
+	return err
+}
+
+// SetSubnetScanProfile sets or clears the scan_profile_id for a subnet.
+func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error {
+	_, err := r.db.Exec(ctx, `UPDATE subnets SET scan_profile_id=$2 WHERE id=$1`, subnetID, profileID)
+	return err
+}
