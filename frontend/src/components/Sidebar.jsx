@@ -377,6 +377,39 @@ export default function Sidebar() {
             >
               Topology Hints
             </NavLink>
+            <div className="mt-2 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Automation
+            </div>
+            <NavLink
+              to="/admin/automation/policies"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Policies
+            </NavLink>
+            <NavLink
+              to="/admin/integration-templates"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Integration Templates
+            </NavLink>
+            <NavLink
+              to="/admin/api-token-analytics"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Token Analytics
+            </NavLink>
           </>
         )}
       </nav>
