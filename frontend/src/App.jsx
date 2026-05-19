@@ -50,6 +50,7 @@ const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const VRFsPage = lazy(() => import('./pages/VRFsPage'))
 const AdminRolesPage = lazy(() => import('./pages/AdminRolesPage'))
+const RolePresetsPage = lazy(() => import('./pages/RolePresetsPage'))
 const RacksPage = lazy(() => import('./pages/RacksPage'))
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'))
 const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
@@ -67,6 +68,7 @@ const IntegrationTemplatesPage = lazy(() => import('./pages/IntegrationTemplates
 const AutomationPoliciesPage = lazy(() => import('./pages/AutomationPoliciesPage'))
 const DeploymentHealthPage = lazy(() => import('./pages/DeploymentHealthPage'))
 const PrivacyConsentReportPage = lazy(() => import('./pages/PrivacyConsentReportPage'))
+const BreakGlassPage = lazy(() => import('./pages/BreakGlassPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -159,6 +161,7 @@ export default function App() {
             <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
             <Route path="admin/users" element={<AdminUsersPage />} />
             <Route path="admin/roles" element={<AdminRolesPage />} />
+            <Route path="admin/roles/presets" element={<RolePresetsPage />} />
             <Route path="locations" element={gated('locations', <LocationsPage />)} />
             <Route path="locations/:id" element={gated('locations', <LocationDetailPage />)} />
             <Route path="racks" element={gated('racks', <RacksPage />)} />
@@ -201,6 +204,7 @@ export default function App() {
             <Route path="admin/topology/hints" element={<TopologyHintsPage />} />
             <Route path="admin/system-health" element={<DeploymentHealthPage />} />
             <Route path="admin/privacy/consent-report" element={<PrivacyConsentReportPage />} />
+            <Route path="admin/break-glass" element={<BreakGlassPage />} />
           </Route>
         </Routes>
       </Suspense>

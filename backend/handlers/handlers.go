@@ -256,6 +256,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Role management
 	admin.Get("/roles", h.ListRoles)
 	admin.Post("/roles", h.CreateRole)
+	admin.Get("/roles/presets", h.ListRolePresets)
+	admin.Get("/roles/:id/diff", h.GetRolePresetDiff)
 	admin.Get("/roles/:id", h.GetRole)
 	admin.Put("/roles/:id", h.UpdateRole)
 	admin.Delete("/roles/:id", h.DeleteRole)

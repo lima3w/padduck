@@ -305,6 +305,16 @@ export default function Sidebar() {
               Role Management
             </NavLink>
             <NavLink
+              to="/admin/roles/presets"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Permission Presets
+            </NavLink>
+            <NavLink
               to="/admin/settings"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
@@ -313,6 +323,16 @@ export default function Sidebar() {
               }
             >
               Settings
+            </NavLink>
+            <NavLink
+              to="/admin/break-glass"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Break-Glass
             </NavLink>
             <NavLink
               to="/admin/audit-log"

@@ -336,6 +336,8 @@ export const deleteRole = (id) => api.delete(`/admin/roles/${id}`)
 export const addPermissionToRole = (roleId, data) => api.post(`/admin/roles/${roleId}/permissions`, data)
 export const removePermissionFromRole = (roleId, permId) => api.delete(`/admin/roles/${roleId}/permissions/${permId}`)
 export const listAvailablePermissions = () => api.get('/admin/permissions')
+export const listRolePresets = () => api.get('/admin/roles/presets')
+export const getRolePresetDiff = (roleId, presetId) => api.get(`/admin/roles/${roleId}/diff`, { params: { preset: presetId } })
 
 // LDAP (#229 #232)
 export const getLdapConfig = () => api.get('/admin/auth/ldap')
@@ -453,3 +455,8 @@ export const getConsentReport = () => api.get('/admin/privacy/consent-report')
 
 // Deployment health (#447)
 export const getSystemHealth = () => api.get('/admin/system-health')
+
+// Break-glass emergency access (#443)
+export const getBreakGlassStatus = () => api.get('/admin/break-glass')
+export const activateBreakGlass = (justification) => api.post('/admin/break-glass/activate', { justification })
+export const endBreakGlass = () => api.post('/admin/break-glass/end')
