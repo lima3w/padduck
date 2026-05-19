@@ -23,6 +23,7 @@ type Service struct {
 	LDAP            *LDAPService
 	OAuth2          *OAuth2Service
 	SAML            *SAMLService
+	Topology        *TopologyService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -53,6 +54,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	svc.Reports = NewReportsService(repo, configSvc, emailSvc, svc.Audit)
 	svc.Import = NewImportService(repo)
 	svc.Webhooks = NewWebhookService(repo)
+	svc.Topology = NewTopologyService(repo)
 	return svc
 }
 

@@ -61,6 +61,7 @@ const AdminGrafanaPage = lazy(() => import('./pages/AdminGrafanaPage'))
 const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const AutonomousSystemsPage = lazy(() => import('./pages/AutonomousSystemsPage'))
 const DiscoveryConflictsPage = lazy(() => import('./pages/DiscoveryConflictsPage'))
+const TopologyHintsPage = lazy(() => import('./pages/TopologyHintsPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -189,6 +190,7 @@ export default function App() {
             <Route path="admin/grafana" element={<AdminGrafanaPage />} />
             <Route path="customers" element={gated('customers', <CustomersPage />)} />
             <Route path="autonomous-systems" element={gated('bgp', <AutonomousSystemsPage />)} />
+            <Route path="admin/topology/hints" element={<TopologyHintsPage />} />
           </Route>
         </Routes>
       </Suspense>
