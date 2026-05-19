@@ -111,3 +111,23 @@ func (a *AuditService) PurgeOldLogs(ctx context.Context) (int64, error) {
 	before := time.Now().AddDate(0, 0, -retentionDays)
 	return a.svc.repository.DeleteAuditLogsBefore(ctx, before)
 }
+
+// GetRetentionSettings returns the audit retention settings row.
+func (a *AuditService) GetRetentionSettings(ctx context.Context) (*models.AuditRetentionSettings, error) {
+	return a.svc.repository.GetAuditRetentionSettings(ctx)
+}
+
+// UpdateRetentionSettings updates the audit retention settings row.
+func (a *AuditService) UpdateRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error) {
+	return a.svc.repository.UpdateAuditRetentionSettings(ctx, retentionDays, archiveEnabled)
+}
+
+// PruneByRetentionSettings prunes audit logs using the retention_days from the settings table.
+func (a *AuditService) PruneByRetentionSettings(ctx context.Context) (int64, error) {
+	s, err := a.svc.repository.GetAuditRetentionSettings(ctx)
+	if err != nil {
+		// Fall back to 365 days if settings unavailable
+		return a.svc.repository.PruneAuditLogs(ctx, 365)
+	}
+	return a.svc.repository.PruneAuditLogs(ctx, s.RetentionDays)
+}

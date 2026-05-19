@@ -335,6 +335,16 @@ export default function Sidebar() {
               Break-Glass
             </NavLink>
             <NavLink
+              to="/admin/identity-policies"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Identity Policies
+            </NavLink>
+            <NavLink
               to="/admin/audit-log"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
@@ -343,6 +353,16 @@ export default function Sidebar() {
               }
             >
               Audit Log
+            </NavLink>
+            <NavLink
+              to="/admin/audit/retention"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Audit Retention
             </NavLink>
             <NavLink
               to="/admin/discovery/conflicts"

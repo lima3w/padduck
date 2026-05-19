@@ -142,6 +142,7 @@ type UserApproval struct {
 type Session struct {
 	ID                int64
 	UserID            int64
+	Username          string // populated by join queries (e.g. ListAllActiveSessions)
 	TokenHash         string
 	DeviceName        string
 	IPAddress         string
