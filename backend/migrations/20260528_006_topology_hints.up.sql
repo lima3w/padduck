@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS topology_hints (
     id BIGSERIAL PRIMARY KEY,
     source_type TEXT NOT NULL,
