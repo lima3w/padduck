@@ -73,6 +73,13 @@ type discoveryRepo interface {
 	UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error)
 	DeleteScanProfile(ctx context.Context, id int64) error
 	SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error
+	// Scan retention (#435)
+	GetScanRetentionSettings(ctx context.Context) (*models.ScanRetentionSettings, error)
+	UpdateScanRetentionSettings(ctx context.Context, rawHistoryDays, rollupAfterDays int, rollupEnabled bool) (*models.ScanRetentionSettings, error)
+	PruneScanHistory(ctx context.Context, olderThanDays int) (int64, error)
+	// Device fingerprints (#430)
+	GetDeviceFingerprint(ctx context.Context, deviceID int64) (*models.DeviceFingerprint, error)
+	UpsertDeviceFingerprint(ctx context.Context, deviceID int64, openPorts []int, osGuess, vendorGuess *string, confidenceScore float64, evidence []string) (*models.DeviceFingerprint, error)
 }
 
 // maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
@@ -799,4 +806,116 @@ func (d *DiscoveryService) DeleteScanProfile(ctx context.Context, id int64) erro
 // SetSubnetScanProfile assigns or clears the scan profile for a subnet.
 func (d *DiscoveryService) SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error {
 	return d.repository.SetSubnetScanProfile(ctx, subnetID, profileID)
+}
+
+// ---------------------------------------------------------------------------
+// Scan retention service methods (#435)
+// ---------------------------------------------------------------------------
+
+// GetRetentionSettings returns the current scan retention settings.
+func (d *DiscoveryService) GetRetentionSettings(ctx context.Context) (*models.ScanRetentionSettings, error) {
+	return d.repository.GetScanRetentionSettings(ctx)
+}
+
+// UpdateRetentionSettings validates and persists updated retention settings.
+func (d *DiscoveryService) UpdateRetentionSettings(ctx context.Context, rawHistoryDays, rollupAfterDays int, rollupEnabled bool) (*models.ScanRetentionSettings, error) {
+	if rawHistoryDays < 1 {
+		return nil, fmt.Errorf("raw_history_days must be >= 1")
+	}
+	if rollupAfterDays < 1 {
+		return nil, fmt.Errorf("rollup_after_days must be >= 1")
+	}
+	return d.repository.UpdateScanRetentionSettings(ctx, rawHistoryDays, rollupAfterDays, rollupEnabled)
+}
+
+// RunRetentionPrune reads retention settings and deletes scan data older than the configured threshold.
+func (d *DiscoveryService) RunRetentionPrune(ctx context.Context) (int64, error) {
+	settings, err := d.repository.GetScanRetentionSettings(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("get retention settings: %w", err)
+	}
+	return d.repository.PruneScanHistory(ctx, settings.RawHistoryDays)
+}
+
+// ---------------------------------------------------------------------------
+// Device fingerprints (#430)
+// ---------------------------------------------------------------------------
+
+// GetDeviceFingerprint returns the stored fingerprint for a device.
+func (d *DiscoveryService) GetDeviceFingerprint(ctx context.Context, deviceID int64) (*models.DeviceFingerprint, error) {
+	return d.repository.GetDeviceFingerprint(ctx, deviceID)
+}
+
+// BuildDeviceFingerprint derives a fingerprint from the device's scan data and persists it.
+func (d *DiscoveryService) BuildDeviceFingerprint(ctx context.Context, deviceID int64, deviceIP string, isAlive bool, ptrRecord *string, openPortsStr *string) (*models.DeviceFingerprint, error) {
+	var openPorts []int
+	var evidence []string
+	var confidence float64
+
+	if isAlive {
+		confidence += 0.4
+		evidence = append(evidence, "responds to ping")
+	}
+	if ptrRecord != nil && *ptrRecord != "" {
+		confidence += 0.2
+		evidence = append(evidence, "has PTR record: "+*ptrRecord)
+	}
+	if openPortsStr != nil && *openPortsStr != "" {
+		parts := strings.Split(*openPortsStr, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if n, err := strconv.Atoi(p); err == nil {
+				openPorts = append(openPorts, n)
+			}
+		}
+		if len(openPorts) > 0 {
+			confidence += 0.2
+			evidence = append(evidence, fmt.Sprintf("%d open ports detected", len(openPorts)))
+		}
+	}
+
+	var osGuess *string
+	var vendorGuess *string
+	portSet := make(map[int]bool)
+	for _, p := range openPorts {
+		portSet[p] = true
+	}
+	if portSet[22] && portSet[80] {
+		g := "Linux/Unix"
+		osGuess = &g
+		confidence += 0.1
+	} else if portSet[3389] || portSet[445] {
+		g := "Windows"
+		osGuess = &g
+		confidence += 0.1
+	}
+	if portSet[161] {
+		g := "Network device"
+		vendorGuess = &g
+		evidence = append(evidence, "SNMP port open")
+	}
+
+	if confidence > 1.0 {
+		confidence = 1.0
+	}
+
+	return d.repository.UpsertDeviceFingerprint(ctx, deviceID, openPorts, osGuess, vendorGuess, confidence, evidence)
+}
+
+// StartRetentionPruner starts a background goroutine that runs RunRetentionPrune once per day.
+func (d *DiscoveryService) StartRetentionPruner(ctx context.Context) {
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if _, err := d.RunRetentionPrune(ctx); err != nil {
+					log.Printf("[retention] prune error: %v", err)
+				}
+			}
+		}
+	}()
 }

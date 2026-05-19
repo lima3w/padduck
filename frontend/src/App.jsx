@@ -36,6 +36,7 @@ const VlanGroupsPage = lazy(() => import('./pages/VlanGroupsPage'))
 const VlanUsageReportPage = lazy(() => import('./pages/VlanUsageReportPage'))
 const ScanJobsPage = lazy(() => import('./pages/ScanJobsPage'))
 const ScanProfilesPage = lazy(() => import('./pages/ScanProfilesPage'))
+const ScanRetentionPage = lazy(() => import('./pages/ScanRetentionPage'))
 const AdminAgentsPage = lazy(() => import('./pages/AdminAgentsPage'))
 const AdminWebhooksPage = lazy(() => import('./pages/AdminWebhooksPage'))
 const TopologyPage = lazy(() => import('./pages/TopologyPage'))
@@ -168,6 +169,7 @@ export default function App() {
             <Route path="admin/vlans/usage-report" element={gated('vlans', <VlanUsageReportPage />)} />
             <Route path="admin/scan-jobs" element={<ScanJobsPage />} />
             <Route path="admin/scan-profiles" element={<ScanProfilesPage />} />
+            <Route path="admin/scan-retention" element={<ScanRetentionPage />} />
             <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
             <Route path="admin/webhooks" element={<AdminWebhooksPage />} />
             <Route path="sections/:id/topology" element={<TopologyPage />} />

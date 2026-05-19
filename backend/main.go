@@ -158,6 +158,8 @@ func main() {
 
 	// Start discovery scheduler
 	svc.Discovery.StartScheduler(ctx)
+	// Start retention pruner (#435)
+	svc.Discovery.StartRetentionPruner(ctx)
 
 	// Start reporting jobs (utilisation snapshots + scheduled reports)
 	svc.Reports.StartUtilisationSnapshotJob(ctx)
