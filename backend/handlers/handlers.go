@@ -243,6 +243,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/privacy/versions", h.CreatePrivacyVersion)
 	admin.Get("/privacy/consent-report", h.GetConsentReport)
 
+	// Break-glass emergency access (#443)
+	admin.Get("/break-glass", h.GetBreakGlassStatus)
+	admin.Post("/break-glass/activate", h.ActivateBreakGlass)
+	admin.Post("/break-glass/end", h.EndBreakGlass)
+
 	admin.Get("/automation/policies", h.ListAutomationPolicies)
 	admin.Post("/automation/policies", h.CreateAutomationPolicy)
 	admin.Put("/automation/policies/:id", h.UpdateAutomationPolicy)

@@ -1057,3 +1057,15 @@ type UserConsentStatus struct {
 	PrivacyAcceptedVer *string    `json:"privacy_accepted_version,omitempty"`
 	HasConsent         bool       `json:"has_consent"`
 }
+
+// BreakGlassSession represents an emergency admin break-glass access session.
+type BreakGlassSession struct {
+	ID                int64      `json:"id"`
+	InitiatedByUserID int64      `json:"initiated_by_user_id"`
+	Justification     string     `json:"justification"`
+	ExpiresAt         time.Time  `json:"expires_at"`
+	EndedAt           *time.Time `json:"ended_at,omitempty"`
+	EndedByUserID     *int64     `json:"ended_by_user_id,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	IsActive          bool       `json:"is_active"`
+}
