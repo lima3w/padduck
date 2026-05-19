@@ -2,9 +2,18 @@ import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
 
-function isOnline(lastSeen) {
-  if (!lastSeen) return false
-  return Date.now() - new Date(lastSeen).getTime() < 15 * 60 * 1000
+function StatusBadge({ status }) {
+  const cfg = {
+    healthy:  'bg-green-100 text-green-700',
+    degraded: 'bg-yellow-100 text-yellow-700',
+    offline:  'bg-red-100 text-red-700',
+    unknown:  'bg-gray-100 text-gray-600',
+  }
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${cfg[status] || cfg.unknown}`}>
+      {status || 'unknown'}
+    </span>
+  )
 }
 
 export default function AdminAgentsPage() {
@@ -81,7 +90,7 @@ export default function AdminAgentsPage() {
   if (loading) return <div className="p-6 text-gray-500">Loading…</div>
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Scan Agents</h1>
         <button
@@ -126,7 +135,9 @@ export default function AdminAgentsPage() {
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Health Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Version</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Capabilities</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Last Seen</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -134,21 +145,30 @@ export default function AdminAgentsPage() {
           <tbody className="divide-y divide-gray-100">
             {agents.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">No scan agents configured.</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">No scan agents configured.</td>
               </tr>
             ) : (
               agents.map((agent) => (
                 <tr key={agent.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900 text-sm">{agent.name}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                      isOnline(agent.last_seen) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {isOnline(agent.last_seen) ? 'Online' : 'Offline'}
-                    </span>
+                    <StatusBadge status={agent.status} />
+                    {agent.lastError && (
+                      <p className="mt-0.5 text-xs text-red-500 max-w-xs truncate" title={agent.lastError}>
+                        {agent.lastError}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs font-mono">
+                    {agent.version || '—'}
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
-                    {agent.last_seen ? new Date(agent.last_seen).toLocaleString() : '—'}
+                    {agent.capabilities && agent.capabilities.length > 0
+                      ? agent.capabilities.join(', ')
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {agent.lastSeen ? new Date(agent.lastSeen).toLocaleString() : '—'}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button
