@@ -410,6 +410,26 @@ export default function Sidebar() {
             >
               Token Analytics
             </NavLink>
+            <NavLink
+              to="/admin/privacy/consent-report"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Privacy Consent
+            </NavLink>
+            <NavLink
+              to="/admin/system-health"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              System Health
+            </NavLink>
           </>
         )}
       </nav>

@@ -237,11 +237,18 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/webhooks/deliveries/:id", h.GetWebhookDelivery)
 	admin.Post("/webhooks/deliveries/:id/replay", h.ReplayWebhookDelivery)
 	admin.Get("/api-tokens/analytics", h.ListAPITokenAnalytics)
+
+	// Privacy policy version history and consent reporting (#446)
+	admin.Get("/privacy/versions", h.ListPrivacyVersions)
+	admin.Post("/privacy/versions", h.CreatePrivacyVersion)
+	admin.Get("/privacy/consent-report", h.GetConsentReport)
+
 	admin.Get("/automation/policies", h.ListAutomationPolicies)
 	admin.Post("/automation/policies", h.CreateAutomationPolicy)
 	admin.Put("/automation/policies/:id", h.UpdateAutomationPolicy)
 	admin.Delete("/automation/policies/:id", h.DeleteAutomationPolicy)
 	admin.Get("/integration-templates", h.ListIntegrationTemplates)
+	admin.Get("/system-health", h.GetSystemHealth)
 	admin.Get("/audit-logs", h.GetAuditLogs)
 	admin.Get("/audit-logs/export", h.ExportAuditLogs)
 	admin.Post("/audit-logs/purge", h.PurgeAuditLogs)

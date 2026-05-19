@@ -65,6 +65,8 @@ const TopologyHintsPage = lazy(() => import('./pages/TopologyHintsPage'))
 const APITokenAnalyticsPage = lazy(() => import('./pages/APITokenAnalyticsPage'))
 const IntegrationTemplatesPage = lazy(() => import('./pages/IntegrationTemplatesPage'))
 const AutomationPoliciesPage = lazy(() => import('./pages/AutomationPoliciesPage'))
+const DeploymentHealthPage = lazy(() => import('./pages/DeploymentHealthPage'))
+const PrivacyConsentReportPage = lazy(() => import('./pages/PrivacyConsentReportPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -197,6 +199,8 @@ export default function App() {
             <Route path="customers" element={gated('customers', <CustomersPage />)} />
             <Route path="autonomous-systems" element={gated('bgp', <AutonomousSystemsPage />)} />
             <Route path="admin/topology/hints" element={<TopologyHintsPage />} />
+            <Route path="admin/system-health" element={<DeploymentHealthPage />} />
+            <Route path="admin/privacy/consent-report" element={<PrivacyConsentReportPage />} />
           </Route>
         </Routes>
       </Suspense>
