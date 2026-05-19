@@ -530,13 +530,11 @@ func (r *Repository) UpdateScanRetentionSettings(ctx context.Context, rawHistory
 // Also deletes associated scan_run_changes via CASCADE.
 func (r *Repository) PruneScanHistory(ctx context.Context, olderThanDays int) (int64, error) {
 	cutoff := time.Now().AddDate(0, 0, -olderThanDays)
-	// Delete old scan_results
 	res, err := r.db.Exec(ctx, `DELETE FROM scan_results WHERE scanned_at < $1`, cutoff)
 	if err != nil {
 		return 0, err
 	}
 	pruned := res.RowsAffected()
-	// Delete old scan_runs (scan_run_changes cascade)
 	res2, err := r.db.Exec(ctx, `DELETE FROM scan_runs WHERE started_at < $1`, cutoff)
 	if err != nil {
 		return pruned, err
