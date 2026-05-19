@@ -324,6 +324,16 @@ export default function Sidebar() {
             >
               Audit Log
             </NavLink>
+            <NavLink
+              to="/admin/discovery/conflicts"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Discovery Conflicts
+            </NavLink>
             <div className="mt-2 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Discovery
             </div>
@@ -356,6 +366,16 @@ export default function Sidebar() {
               }
             >
               Scan Retention
+            </NavLink>
+            <NavLink
+              to="/admin/topology/hints"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              Topology Hints
             </NavLink>
           </>
         )}

@@ -428,3 +428,11 @@ export const setSubnetScanProfile = (subnetId, profileId) => api.put(`/admin/sub
 export const getScanRetention = () => api.get('/admin/scan-retention')
 export const updateScanRetention = (data) => api.put('/admin/scan-retention', data)
 export const runScanRetentionPrune = () => api.post('/admin/scan-retention/prune')
+
+// Discovery conflicts (#431)
+export const listDiscoveryConflicts = (status) => api.get('/admin/discovery/conflicts', { params: status ? { status } : {} })
+export const resolveDiscoveryConflict = (id, action) => api.post(`/admin/discovery/conflicts/${id}/resolve`, { action })
+
+// Topology hints (#434)
+export const listTopologyHints = (status) => api.get('/admin/topology/hints', { params: status ? { status } : {} })
+export const updateTopologyHintStatus = (id, status) => api.put(`/admin/topology/hints/${id}/status`, { status })

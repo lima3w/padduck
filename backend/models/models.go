@@ -966,3 +966,34 @@ type ScanRetentionSettings struct {
 	RollupAfterDays int       `json:"rollup_after_days"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
+
+// DiscoveryConflict represents a pending conflict between discovered and manually-entered data.
+type DiscoveryConflict struct {
+	ID              int64      `json:"id"`
+	DeviceID        int64      `json:"device_id"`
+	FieldName       string     `json:"field_name"`
+	CurrentValue    *string    `json:"current_value,omitempty"`
+	DiscoveredValue string     `json:"discovered_value"`
+	ConfidenceScore float64    `json:"confidence_score"`
+	Source          string     `json:"source"`
+	Status          string     `json:"status"`
+	ReviewedBy      *string    `json:"reviewed_by,omitempty"`
+	ReviewedAt      *time.Time `json:"reviewed_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+}
+
+// TopologyHint represents a suggested relationship between two inventory entities,
+// derived from discovery or inventory data.
+type TopologyHint struct {
+	ID              int64     `json:"id"`
+	SourceType      string    `json:"source_type"`
+	SourceID        int64     `json:"source_id"`
+	TargetType      string    `json:"target_type"`
+	TargetID        int64     `json:"target_id"`
+	HintType        string    `json:"hint_type"`
+	ConfidenceScore float64   `json:"confidence_score"`
+	Evidence        *string   `json:"evidence,omitempty"`
+	Status          string    `json:"status"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}

@@ -301,6 +301,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Put("/scan-retention", h.UpdateScanRetentionSettings)
 	admin.Post("/scan-retention/prune", h.RunScanRetentionPrune)
 
+	// Discovery conflicts (#431)
+	admin.Get("/discovery/conflicts", h.ListDiscoveryConflicts)
+	admin.Get("/discovery/conflicts/:id", h.GetDiscoveryConflict)
+	admin.Post("/discovery/conflicts/:id/resolve", h.ResolveDiscoveryConflict)
+
 	// Agent API routes (#212) — authenticated via Bearer token
 	scanAgent := api.Group("/scan-agent")
 	scanAgent.Use(h.AgentAuthMiddleware)
