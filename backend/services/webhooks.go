@@ -19,7 +19,11 @@ import (
 	"ipam-next/repository"
 )
 
-const maxWebhookRetries = 5
+const (
+	maxWebhookRetries         = 5
+	WebhookEventSchemaVersion = "2026-05-19"
+	webhookUserAgent          = "ipam-next-webhooks/1.0"
+)
 
 // WebhookService manages outbound webhook endpoints and deliveries.
 type WebhookService struct {
@@ -37,17 +41,18 @@ func NewWebhookService(repo *repository.Repository) *WebhookService {
 }
 
 type WebhookEvent struct {
-	EventType    string      `json:"event_type"`
-	Action       string      `json:"action"`
-	ResourceType string      `json:"resource_type"`
-	ResourceID   *int64      `json:"resource_id,omitempty"`
-	ResourceName string      `json:"resource_name,omitempty"`
-	UserID       *int64      `json:"user_id,omitempty"`
-	Username     string      `json:"username,omitempty"`
-	Status       string      `json:"status"`
-	OldValues    interface{} `json:"old_values,omitempty"`
-	NewValues    interface{} `json:"new_values,omitempty"`
-	OccurredAt   time.Time   `json:"occurred_at"`
+	SchemaVersion string      `json:"schema_version"`
+	EventType     string      `json:"event_type"`
+	Action        string      `json:"action"`
+	ResourceType  string      `json:"resource_type"`
+	ResourceID    *int64      `json:"resource_id,omitempty"`
+	ResourceName  string      `json:"resource_name,omitempty"`
+	UserID        *int64      `json:"user_id,omitempty"`
+	Username      string      `json:"username,omitempty"`
+	Status        string      `json:"status"`
+	OldValues     interface{} `json:"old_values,omitempty"`
+	NewValues     interface{} `json:"new_values,omitempty"`
+	OccurredAt    time.Time   `json:"occurred_at"`
 }
 
 func (w *WebhookService) ListEndpoints(ctx context.Context) ([]*models.WebhookEndpoint, error) {
@@ -107,6 +112,9 @@ func (w *WebhookService) Queue(ctx context.Context, event WebhookEvent) {
 	}
 	if event.EventType == "" {
 		event.EventType = strings.Trim(event.ResourceType+"."+event.Action, ".")
+	}
+	if event.SchemaVersion == "" {
+		event.SchemaVersion = WebhookEventSchemaVersion
 	}
 	if event.OccurredAt.IsZero() {
 		event.OccurredAt = time.Now().UTC()
@@ -206,9 +214,10 @@ func (w *WebhookService) deliver(ctx context.Context, endpoint *models.WebhookEn
 		return 0, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "ipam-next-webhooks/1.0")
+	req.Header.Set("User-Agent", webhookUserAgent)
 	req.Header.Set("X-IPAM-Event", delivery.EventType)
 	req.Header.Set("X-IPAM-Delivery", fmt.Sprintf("%d", delivery.ID))
+	req.Header.Set("X-IPAM-Event-Schema-Version", WebhookEventSchemaVersion)
 	if endpoint.Secret != "" {
 		req.Header.Set("X-IPAM-Signature-256", signWebhookPayload(endpoint.Secret, []byte(delivery.Payload)))
 	}
@@ -219,6 +228,50 @@ func (w *WebhookService) deliver(ctx context.Context, endpoint *models.WebhookEn
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode, nil
+}
+
+func SampleWebhookEventPayload(eventType string) WebhookEvent {
+	now := time.Date(2026, 5, 19, 12, 0, 0, 0, time.UTC)
+	resourceID := int64(1001)
+	userID := int64(42)
+	switch eventType {
+	case "device.created":
+		return WebhookEvent{
+			SchemaVersion: WebhookEventSchemaVersion,
+			EventType:     "device.created",
+			Action:        "created",
+			ResourceType:  "device",
+			ResourceID:    &resourceID,
+			ResourceName:  "core-router-01",
+			UserID:        &userID,
+			Username:      "admin",
+			Status:        "success",
+			NewValues: map[string]any{
+				"hostname": "core-router-01",
+				"vendor":   "Juniper",
+				"model":    "MX204",
+			},
+			OccurredAt: now,
+		}
+	default:
+		return WebhookEvent{
+			SchemaVersion: WebhookEventSchemaVersion,
+			EventType:     "ip_address.assigned",
+			Action:        "assigned",
+			ResourceType:  "ip_address",
+			ResourceID:    &resourceID,
+			ResourceName:  "10.0.0.10",
+			UserID:        &userID,
+			Username:      "admin",
+			Status:        "success",
+			NewValues: map[string]any{
+				"address":     "10.0.0.10",
+				"subnet_cidr": "10.0.0.0/24",
+				"assigned_to": "ops",
+			},
+			OccurredAt: now,
+		}
+	}
 }
 
 // isPrivateURL returns true if the URL resolves to a private, loopback, or link-local address.

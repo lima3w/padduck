@@ -17,6 +17,7 @@ func TestErrorCodeConstants(t *testing.T) {
 	assert.Equal(t, ErrorCode("FORBIDDEN"), ErrForbidden)
 	assert.Equal(t, ErrorCode("NOT_FOUND"), ErrNotFound)
 	assert.Equal(t, ErrorCode("CONFLICT"), ErrConflict)
+	assert.Equal(t, ErrorCode("VALIDATION_ERROR"), ErrValidation)
 	assert.Equal(t, ErrorCode("INTERNAL_SERVER_ERROR"), ErrInternalServer)
 	assert.Equal(t, ErrorCode("SERVICE_UNAVAILABLE"), ErrServiceUnavailable)
 }
@@ -28,8 +29,29 @@ func TestErrorCodeStringValues(t *testing.T) {
 	assert.Equal(t, "FORBIDDEN", string(ErrForbidden))
 	assert.Equal(t, "NOT_FOUND", string(ErrNotFound))
 	assert.Equal(t, "CONFLICT", string(ErrConflict))
+	assert.Equal(t, "VALIDATION_ERROR", string(ErrValidation))
 	assert.Equal(t, "INTERNAL_SERVER_ERROR", string(ErrInternalServer))
 	assert.Equal(t, "SERVICE_UNAVAILABLE", string(ErrServiceUnavailable))
+}
+
+func TestRespondValidationError(t *testing.T) {
+	app := fiber.New()
+	app.Get("/test", func(c *fiber.Ctx) error {
+		return RespondValidationError(c, "validation failed", []ValidationField{
+			{Field: "name", Message: "name is required"},
+		})
+	})
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnprocessableEntity, resp.StatusCode)
+
+	body := parseErrorResponse(t, resp.Body)
+	assert.Equal(t, "validation failed", body["error"])
+	assert.Equal(t, "VALIDATION_ERROR", body["code"])
+	fields := body["fields"].([]interface{})
+	assert.Len(t, fields, 1)
 }
 
 // parseErrorResponse is a helper that reads a response body and unmarshals it.

@@ -24,6 +24,13 @@ func TestWebhookRoutes_AuthRequired(t *testing.T) {
 			handler:     h.CreateWebhookEndpoint,
 		},
 		{
+			name:        "get sample webhook payload",
+			method:      http.MethodGet,
+			routePath:   "/webhooks/sample-payload",
+			requestPath: "/webhooks/sample-payload",
+			handler:     h.GetWebhookSamplePayload,
+		},
+		{
 			name:        "update webhook endpoint",
 			method:      http.MethodPut,
 			routePath:   "/webhooks/:id",
