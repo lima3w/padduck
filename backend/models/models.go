@@ -1070,3 +1070,11 @@ type BreakGlassSession struct {
 	CreatedAt         time.Time  `json:"created_at"`
 	IsActive          bool       `json:"is_active"`
 }
+
+// AuditRetentionSettings controls how long audit logs are retained.
+type AuditRetentionSettings struct {
+	ID             int64     `json:"id"`
+	RetentionDays  int       `json:"retention_days"`
+	ArchiveEnabled bool      `json:"archive_enabled"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
