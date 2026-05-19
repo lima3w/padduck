@@ -75,6 +75,33 @@ func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*
 	return tokens, rows.Err()
 }
 
+func (r *Repository) ListAPITokenAnalytics(ctx context.Context) ([]*models.APIToken, error) {
+	query := `SELECT t.id, t.user_id, COALESCE(u.username, ''), t.token_hash, t.name, t.scope,
+	                 t.usage_count, t.last_used_at, t.last_used_ip, t.expires_at,
+	                 t.rotation_grace_expires_at, t.created_at, t.updated_at
+	          FROM api_tokens t
+	          LEFT JOIN users u ON u.id = t.user_id
+	          ORDER BY t.usage_count DESC, t.last_used_at DESC NULLS LAST, t.created_at DESC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tokens := make([]*models.APIToken, 0)
+	for rows.Next() {
+		token := &models.APIToken{}
+		err := rows.Scan(&token.ID, &token.UserID, &token.Username, &token.TokenHash, &token.Name, &token.Scope,
+			&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, token)
+	}
+	return tokens, rows.Err()
+}
+
 func (r *Repository) UpdateAPITokenLastUsed(ctx context.Context, tokenID int64, ip string) error {
 	query := `UPDATE api_tokens SET last_used_at = CURRENT_TIMESTAMP, last_used_ip = $2, usage_count = usage_count + 1 WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, tokenID, nullableString(ip))

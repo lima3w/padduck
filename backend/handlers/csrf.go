@@ -74,6 +74,10 @@ func (h *Handler) CSRFMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
+	if strings.HasPrefix(c.Get("Authorization"), "Bearer ") {
+		return c.Next()
+	}
+
 	if !h.validCSRFToken(c.Cookies(CSRFCookieName), c.Get(CSRFHeaderName)) {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "csrf validation failed"})
 	}

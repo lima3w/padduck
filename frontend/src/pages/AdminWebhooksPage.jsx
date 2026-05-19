@@ -4,6 +4,8 @@ import {
   deleteWebhookEndpoint,
   getWebhookDeliveries,
   getWebhookEndpoints,
+  getWebhookFailureGroups,
+  replayWebhookDelivery,
   updateWebhookEndpoint,
 } from '../api/client'
 import Modal from '../components/Modal'
@@ -11,13 +13,36 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 
-const EMPTY_FORM = { name: '', url: '', secret: '', events: '*', isActive: true }
+const EMPTY_FORM = {
+  name: '',
+  url: '',
+  secret: '',
+  events: '*',
+  objectTypes: '',
+  tagFilters: '',
+  filterConditions: '',
+  isActive: true,
+}
 
 function eventList(value) {
   return value
     .split(',')
     .map(v => v.trim())
     .filter(Boolean)
+}
+
+function conditionMap(value) {
+  return Object.fromEntries(
+    value
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean)
+      .map(part => {
+        const [key, ...rest] = part.split('=')
+        return [key.trim(), rest.join('=').trim()]
+      })
+      .filter(([key, val]) => key && val)
+  )
 }
 
 function deliveryStatusClass(status) {
@@ -30,6 +55,7 @@ function deliveryStatusClass(status) {
 export default function AdminWebhooksPage() {
   const [endpoints, setEndpoints] = useState([])
   const [deliveries, setDeliveries] = useState([])
+  const [failureGroups, setFailureGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -43,12 +69,14 @@ export default function AdminWebhooksPage() {
   async function load() {
     try {
       setLoading(true)
-      const [endpointRes, deliveryRes] = await Promise.all([
+      const [endpointRes, deliveryRes, failureRes] = await Promise.all([
         getWebhookEndpoints(),
         getWebhookDeliveries(25),
+        getWebhookFailureGroups(25),
       ])
       setEndpoints(endpointRes.data || [])
       setDeliveries(deliveryRes.data || [])
+      setFailureGroups(failureRes.data || [])
     } catch {
       setError('Failed to load webhooks')
     } finally {
@@ -72,6 +100,9 @@ export default function AdminWebhooksPage() {
       url: endpoint.url || '',
       secret: '',
       events: (endpoint.events || []).join(', ') || '*',
+      objectTypes: (endpoint.objectTypes || []).join(', '),
+      tagFilters: (endpoint.tagFilters || []).join(', '),
+      filterConditions: Object.entries(endpoint.filterConditions || {}).map(([k, v]) => `${k}=${v}`).join(', '),
       isActive: endpoint.isActive !== false,
     })
     setModal({ edit: endpoint })
@@ -86,6 +117,9 @@ export default function AdminWebhooksPage() {
       url: form.url,
       secret: form.secret,
       events: eventList(form.events),
+      object_types: eventList(form.objectTypes),
+      tag_filters: eventList(form.tagFilters),
+      filter_conditions: conditionMap(form.filterConditions),
       is_active: form.isActive,
     }
     try {
@@ -116,6 +150,16 @@ export default function AdminWebhooksPage() {
     }
   }
 
+  async function handleReplay(id) {
+    try {
+      await replayWebhookDelivery(id)
+      showMessage('Webhook delivery queued for replay')
+      await load()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to replay webhook delivery')
+    }
+  }
+
   if (loading) return <PageSpinner message="Loading webhooks..." />
 
   return (
@@ -140,18 +184,23 @@ export default function AdminWebhooksPage() {
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">URL</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Events</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Filters</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y dark:divide-gray-700">
             {endpoints.length === 0 ? (
-              <EmptyRow colSpan={5} message="No webhook endpoints configured." />
+              <EmptyRow colSpan={6} message="No webhook endpoints configured." />
             ) : endpoints.map(endpoint => (
               <tr key={endpoint.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{endpoint.name}</td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs break-all">{endpoint.url}</td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{(endpoint.events || []).join(', ') || '*'}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                  <div>{(endpoint.objectTypes || []).join(', ') || 'all objects'}</div>
+                  <div>{(endpoint.tagFilters || []).join(', ') || 'all tags'}</div>
+                </td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${endpoint.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                     {endpoint.isActive ? 'Active' : 'Disabled'}
@@ -185,11 +234,12 @@ export default function AdminWebhooksPage() {
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Response</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Created</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y dark:divide-gray-700">
             {deliveries.length === 0 ? (
-              <EmptyRow colSpan={5} message="No deliveries yet." />
+              <EmptyRow colSpan={6} message="No deliveries yet." />
             ) : deliveries.map(delivery => (
               <tr key={delivery.id}>
                 <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{delivery.eventType}</td>
@@ -201,6 +251,41 @@ export default function AdminWebhooksPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.responseStatus || delivery.errorMsg || '-'}</td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{delivery.createdAt ? new Date(delivery.createdAt).toLocaleString() : '-'}</td>
+                <td className="px-4 py-3 text-right">
+                  <button onClick={() => handleReplay(delivery.id)} className="text-xs text-blue-600 hover:underline">Replay</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-8 mb-3">Failure Groups</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+            <tr>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Event</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Count</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Error</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y dark:divide-gray-700">
+            {failureGroups.length === 0 ? (
+              <EmptyRow colSpan={5} message="No failed or retrying deliveries." />
+            ) : failureGroups.map(group => (
+              <tr key={`${group.endpointId}-${group.eventType}-${group.status}-${group.lastDeliveryId}`}>
+                <td className="px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300">{group.eventType}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${deliveryStatusClass(group.status)}`}>
+                    {group.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{group.count}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{group.errorMsg || '-'}</td>
+                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{group.lastOccurredAt ? new Date(group.lastOccurredAt).toLocaleString() : '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -225,6 +310,18 @@ export default function AdminWebhooksPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Events</label>
               <input value={form.events} onChange={e => setForm({ ...form, events: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Object Types</label>
+              <input value={form.objectTypes} onChange={e => setForm({ ...form, objectTypes: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="ip_address, subnet, device" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tag Filters</label>
+              <input value={form.tagFilters} onChange={e => setForm({ ...form, tagFilters: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="production, 12" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Conditions</label>
+              <input value={form.filterConditions} onChange={e => setForm({ ...form, filterConditions: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" placeholder="status=assigned, resource_name=web-*" />
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} />

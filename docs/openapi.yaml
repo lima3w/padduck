@@ -42,6 +42,7 @@ tags:
   - name: RBAC
   - name: External Auth
   - name: GDPR
+  - name: Automation
 
 components:
   securitySchemes:
@@ -2049,6 +2050,152 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/webhooks/deliveries/failures:
+    get:
+      tags: [Admin]
+      summary: Group failed and retrying webhook deliveries by endpoint, event, and error
+      parameters:
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/webhooks/deliveries/{id}:
+    get:
+      tags: [Admin]
+      summary: Inspect a webhook delivery payload and response state
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/webhooks/deliveries/{id}/replay:
+    post:
+      tags: [Admin]
+      summary: Reset a webhook delivery to pending for manual replay
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/api-tokens/analytics:
+    get:
+      tags: [Admin, Automation]
+      summary: List API token usage counts, last use, and current rate-limit visibility
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/automation/policies:
+    get:
+      tags: [Admin, Automation]
+      summary: List automation approval and validation policies
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, Automation]
+      summary: Create an automation policy
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/automation/policies/{id}:
+    put:
+      tags: [Admin, Automation]
+      summary: Update an automation policy
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin, Automation]
+      summary: Delete an automation policy
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/automation/policies/evaluate:
+    post:
+      tags: [Automation]
+      summary: Evaluate an automation policy decision for a proposed action
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/automation/ip-addresses/allocate:
+    post:
+      tags: [Automation, IP Addresses]
+      summary: Controlled automation endpoint to allocate the next available IP
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/automation/ip-addresses/reserve:
+    post:
+      tags: [Automation, IP Addresses]
+      summary: Controlled automation endpoint to reserve a specific IP
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/automation/ip-addresses/{id}/release:
+    post:
+      tags: [Automation, IP Addresses]
+      summary: Controlled automation endpoint to release an IP address
+      security:
+        - bearerToken: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/automation/dns/update:
+    post:
+      tags: [Automation, DNS]
+      summary: Controlled automation endpoint to validate or accept DNS update requests
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/automation/devices/register:
+    post:
+      tags: [Automation, Devices]
+      summary: Controlled automation endpoint to register a device
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
 
   /api/v1/admin/audit-logs:
     get:

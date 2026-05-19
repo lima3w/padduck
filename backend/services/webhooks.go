@@ -61,6 +61,21 @@ func (w *WebhookService) ListDeliveries(ctx context.Context, limit int) ([]*mode
 	return w.repo.ListWebhookDeliveries(ctx, limit)
 }
 
+func (w *WebhookService) ListFailureGroups(ctx context.Context, limit int) ([]*models.WebhookFailureGroup, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	return w.repo.ListWebhookFailureGroups(ctx, limit)
+}
+
+func (w *WebhookService) GetDelivery(ctx context.Context, id int64) (*models.WebhookDelivery, error) {
+	return w.repo.GetWebhookDelivery(ctx, id)
+}
+
+func (w *WebhookService) ReplayDelivery(ctx context.Context, id int64) (*models.WebhookDelivery, error) {
+	return w.repo.ReplayWebhookDelivery(ctx, id)
+}
+
 func (w *WebhookService) CreateEndpoint(ctx context.Context, endpoint *models.WebhookEndpoint) (*models.WebhookEndpoint, error) {
 	if err := validateWebhookEndpoint(endpoint); err != nil {
 		return nil, err
@@ -110,6 +125,9 @@ func (w *WebhookService) Queue(ctx context.Context, event WebhookEvent) {
 	}
 	for _, endpoint := range endpoints {
 		if !endpointAllowsEvent(endpoint, event.EventType) {
+			continue
+		}
+		if !endpointAllowsResource(endpoint, event) {
 			continue
 		}
 		if _, err := w.repo.CreateWebhookDelivery(ctx, endpoint.ID, event.EventType, string(payload)); err != nil {
@@ -284,7 +302,23 @@ func validateWebhookEndpoint(endpoint *models.WebhookEndpoint) error {
 		}
 	}
 	endpoint.Events = cleanEvents
+	endpoint.ObjectTypes = cleanStringList(endpoint.ObjectTypes)
+	endpoint.TagFilters = cleanStringList(endpoint.TagFilters)
+	if endpoint.FilterConditions == nil {
+		endpoint.FilterConditions = map[string]string{}
+	}
 	return nil
+}
+
+func cleanStringList(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 func endpointAllowsEvent(endpoint *models.WebhookEndpoint, eventType string) bool {
@@ -300,6 +334,85 @@ func endpointAllowsEvent(endpoint *models.WebhookEndpoint, eventType string) boo
 		}
 	}
 	return false
+}
+
+func endpointAllowsResource(endpoint *models.WebhookEndpoint, event WebhookEvent) bool {
+	if len(endpoint.ObjectTypes) > 0 {
+		matched := false
+		for _, objectType := range endpoint.ObjectTypes {
+			if objectType == "*" || objectType == event.ResourceType {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	if len(endpoint.FilterConditions) == 0 && len(endpoint.TagFilters) == 0 {
+		return true
+	}
+	values := eventValues(event)
+	for key, expected := range endpoint.FilterConditions {
+		if expected == "" || expected == "*" {
+			continue
+		}
+		actual, ok := values[key]
+		if !ok {
+			return false
+		}
+		if strings.HasSuffix(expected, "*") {
+			if !strings.HasPrefix(actual, strings.TrimSuffix(expected, "*")) {
+				return false
+			}
+			continue
+		}
+		if actual != expected {
+			return false
+		}
+	}
+	if len(endpoint.TagFilters) > 0 {
+		tag := values["tag"]
+		tagID := values["tag_id"]
+		for _, allowed := range endpoint.TagFilters {
+			if allowed == "*" || allowed == tag || allowed == tagID {
+				return true
+			}
+		}
+		return false
+	}
+	return true
+}
+
+func eventValues(event WebhookEvent) map[string]string {
+	values := map[string]string{
+		"event_type":    event.EventType,
+		"action":        event.Action,
+		"resource_type": event.ResourceType,
+		"resource_name": event.ResourceName,
+		"username":      event.Username,
+	}
+	if event.ResourceID != nil {
+		values["resource_id"] = fmt.Sprintf("%d", *event.ResourceID)
+	}
+	if event.UserID != nil {
+		values["user_id"] = fmt.Sprintf("%d", *event.UserID)
+	}
+	mergeEventValues(values, event.NewValues)
+	return values
+}
+
+func mergeEventValues(values map[string]string, source interface{}) {
+	switch typed := source.(type) {
+	case map[string]string:
+		for k, v := range typed {
+			values[k] = v
+		}
+	case map[string]interface{}:
+		for k, v := range typed {
+			values[k] = fmt.Sprint(v)
+		}
+	}
 }
 
 func signWebhookPayload(secret string, payload []byte) string {

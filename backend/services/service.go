@@ -7,23 +7,24 @@ import (
 )
 
 type Service struct {
-	repository      *repository.Repository
-	encryptionKey   string
-	Config          *ConfigService
-	Email           *EmailService
-	Registration    *RegistrationService
-	MFA             *MFAService
-	Audit           *AuditService
-	Notification    *NotificationService
-	Discovery       *DiscoveryService
-	DNS             *DNSService
-	Reports         *ReportsService
-	Import          *ImportService
-	Webhooks        *WebhookService
-	LDAP            *LDAPService
-	OAuth2          *OAuth2Service
-	SAML            *SAMLService
-	Topology        *TopologyService
+	repository    *repository.Repository
+	encryptionKey string
+	Config        *ConfigService
+	Email         *EmailService
+	Registration  *RegistrationService
+	MFA           *MFAService
+	Audit         *AuditService
+	Notification  *NotificationService
+	Discovery     *DiscoveryService
+	DNS           *DNSService
+	Reports       *ReportsService
+	Import        *ImportService
+	Webhooks      *WebhookService
+	Automation    *AutomationService
+	LDAP          *LDAPService
+	OAuth2        *OAuth2Service
+	SAML          *SAMLService
+	Topology      *TopologyService
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -54,6 +55,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	svc.Reports = NewReportsService(repo, configSvc, emailSvc, svc.Audit)
 	svc.Import = NewImportService(repo)
 	svc.Webhooks = NewWebhookService(repo)
+	svc.Automation = NewAutomationService(svc)
 	svc.Topology = NewTopologyService(repo)
 	return svc
 }

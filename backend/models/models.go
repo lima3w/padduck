@@ -158,6 +158,7 @@ type Session struct {
 type APIToken struct {
 	ID                     int64      `json:"id"`
 	UserID                 int64      `json:"user_id"`
+	Username               string     `json:"username,omitempty"`
 	TokenHash              string     `json:"-"`
 	Name                   string     `json:"name"`
 	Scope                  string     `json:"scope"`
@@ -205,26 +206,26 @@ type Nameserver struct {
 
 // Subnet represents a network subnet
 type Subnet struct {
-	ID                  int64              `json:"id"`
-	SectionID           int64              `json:"section_id"`
-	NetworkAddress      string             `json:"network_address"`
-	PrefixLength        int                `json:"prefix_length"`
-	Description         string             `json:"description"`
-	Gateway             *string            `json:"gateway,omitempty"`
-	AutoReserveFirst    bool               `json:"auto_reserve_first"`
-	AutoReserveLast     bool               `json:"auto_reserve_last"`
-	LocationID          *int64             `json:"location_id,omitempty"`
-	NameserverID        *int64             `json:"nameserver_id,omitempty"`
-	Nameserver          *Nameserver        `json:"nameserver,omitempty"`
-	VLANID              *int64             `json:"vlan_id,omitempty"`
-	ParentSubnetID      *int64             `json:"parent_subnet_id,omitempty"`
-	IsContainer         bool               `json:"is_container"`
-	AlertThresholdPct   *int               `json:"alert_threshold_pct,omitempty"`
-	AlertEmailOverride  *string            `json:"alert_email_override,omitempty"`
-	CreatedAt           time.Time          `json:"created_at"`
-	UpdatedAt           time.Time          `json:"updated_at"`
-	CustomFields        map[string]*string `json:"custom_fields,omitempty"`
-	ScanProfileID       *int64             `json:"scan_profile_id,omitempty"`
+	ID                 int64              `json:"id"`
+	SectionID          int64              `json:"section_id"`
+	NetworkAddress     string             `json:"network_address"`
+	PrefixLength       int                `json:"prefix_length"`
+	Description        string             `json:"description"`
+	Gateway            *string            `json:"gateway,omitempty"`
+	AutoReserveFirst   bool               `json:"auto_reserve_first"`
+	AutoReserveLast    bool               `json:"auto_reserve_last"`
+	LocationID         *int64             `json:"location_id,omitempty"`
+	NameserverID       *int64             `json:"nameserver_id,omitempty"`
+	Nameserver         *Nameserver        `json:"nameserver,omitempty"`
+	VLANID             *int64             `json:"vlan_id,omitempty"`
+	ParentSubnetID     *int64             `json:"parent_subnet_id,omitempty"`
+	IsContainer        bool               `json:"is_container"`
+	AlertThresholdPct  *int               `json:"alert_threshold_pct,omitempty"`
+	AlertEmailOverride *string            `json:"alert_email_override,omitempty"`
+	CreatedAt          time.Time          `json:"created_at"`
+	UpdatedAt          time.Time          `json:"updated_at"`
+	CustomFields       map[string]*string `json:"custom_fields,omitempty"`
+	ScanProfileID      *int64             `json:"scan_profile_id,omitempty"`
 }
 
 // IPv6Delegation represents a delegated IPv6 prefix assigned to a device or description
@@ -377,12 +378,12 @@ type VLAN struct {
 
 // UserMFASettings tracks MFA status for a user
 type UserMFASettings struct {
-	ID                    int64
-	UserID                int64
-	TOTPEnabled           bool
+	ID                     int64
+	UserID                 int64
+	TOTPEnabled            bool
 	BackupCodesGeneratedAt *time.Time
-	CreatedAt             time.Time
-	UpdatedAt             time.Time
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 // UserTOTPSecret stores the encrypted TOTP secret
@@ -520,13 +521,13 @@ type ScanJob struct {
 
 // ScanRun records a single execution of a scan job
 type ScanRun struct {
-	ID          int64      `json:"id"`
-	ScanJobID   int64      `json:"scan_job_id"`
-	StartedAt   time.Time  `json:"started_at"`
-	FinishedAt  *time.Time `json:"finished_at,omitempty"`
-	NewCount    int        `json:"new_count"`
-	GoneCount   int        `json:"gone_count"`
-	ChangedCount int       `json:"changed_count"`
+	ID           int64      `json:"id"`
+	ScanJobID    int64      `json:"scan_job_id"`
+	StartedAt    time.Time  `json:"started_at"`
+	FinishedAt   *time.Time `json:"finished_at,omitempty"`
+	NewCount     int        `json:"new_count"`
+	GoneCount    int        `json:"gone_count"`
+	ChangedCount int        `json:"changed_count"`
 }
 
 // ScanRunChange records a single IP change detected during a scan run
@@ -583,36 +584,36 @@ type ScanResult struct {
 
 // DashboardSummary holds aggregate IPAM statistics for the dashboard
 type DashboardSummary struct {
-	TotalSections          int64               `json:"total_sections"`
-	TotalSubnets           int64               `json:"total_subnets"`
-	TotalIPs               int64               `json:"total_ips"`
-	UsedIPs                int64               `json:"used_ips"`
-	UtilisationPct         float64             `json:"utilisation_pct"`
-	TopSubnets             []SubnetUtilisation `json:"top_subnets"`
-	PendingSubnetRequests  int64               `json:"pending_subnet_requests"`
-	PendingIPRequests      int64               `json:"pending_ip_requests"`
+	TotalSections         int64               `json:"total_sections"`
+	TotalSubnets          int64               `json:"total_subnets"`
+	TotalIPs              int64               `json:"total_ips"`
+	UsedIPs               int64               `json:"used_ips"`
+	UtilisationPct        float64             `json:"utilisation_pct"`
+	TopSubnets            []SubnetUtilisation `json:"top_subnets"`
+	PendingSubnetRequests int64               `json:"pending_subnet_requests"`
+	PendingIPRequests     int64               `json:"pending_ip_requests"`
 }
 
 // SubnetUtilisation holds utilisation data for a single subnet
 type SubnetUtilisation struct {
-	ID              int64   `json:"id"`
-	CIDR            string  `json:"cidr"`
-	Description     string  `json:"description"`
-	Used            int64   `json:"used"`
-	Total           int64   `json:"total"`
-	UtilisationPct  float64 `json:"utilisation_pct"`
+	ID             int64   `json:"id"`
+	CIDR           string  `json:"cidr"`
+	Description    string  `json:"description"`
+	Used           int64   `json:"used"`
+	Total          int64   `json:"total"`
+	UtilisationPct float64 `json:"utilisation_pct"`
 }
 
 // DashboardActivity is a single recent activity entry from audit_logs
 type DashboardActivity struct {
-	ID          int64   `json:"id"`
-	Action      string  `json:"action"`
-	EntityType  string  `json:"entity_type"`
-	EntityID    *int64  `json:"entity_id,omitempty"`
-	UserID      *int64  `json:"user_id,omitempty"`
-	Username    string  `json:"username"`
-	Description string  `json:"description"`
-	CreatedAt   string  `json:"created_at"`
+	ID          int64  `json:"id"`
+	Action      string `json:"action"`
+	EntityType  string `json:"entity_type"`
+	EntityID    *int64 `json:"entity_id,omitempty"`
+	UserID      *int64 `json:"user_id,omitempty"`
+	Username    string `json:"username"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"created_at"`
 }
 
 // SubnetTreeNode represents a subnet in the tree hierarchy view
@@ -644,15 +645,18 @@ type NotificationQueue struct {
 
 // WebhookEndpoint configures an outbound webhook receiver.
 type WebhookEndpoint struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	URL       string    `json:"url"`
-	Secret    string    `json:"-"`
-	Events    []string  `json:"events"`
-	IsActive  bool      `json:"is_active"`
-	CreatedBy *int64    `json:"created_by,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID               int64             `json:"id"`
+	Name             string            `json:"name"`
+	URL              string            `json:"url"`
+	Secret           string            `json:"-"`
+	Events           []string          `json:"events"`
+	ObjectTypes      []string          `json:"object_types"`
+	TagFilters       []string          `json:"tag_filters"`
+	FilterConditions map[string]string `json:"filter_conditions,omitempty"`
+	IsActive         bool              `json:"is_active"`
+	CreatedBy        *int64            `json:"created_by,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
 }
 
 // WebhookDelivery is one queued outbound webhook delivery attempt.
@@ -671,6 +675,43 @@ type WebhookDelivery struct {
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
+// WebhookFailureGroup summarizes failed/retrying deliveries that share a cause.
+type WebhookFailureGroup struct {
+	EndpointID     int64      `json:"endpoint_id"`
+	EventType      string     `json:"event_type"`
+	Status         string     `json:"status"`
+	ErrorMsg       string     `json:"error_msg"`
+	Count          int64      `json:"count"`
+	LastOccurredAt time.Time  `json:"last_occurred_at"`
+	LastDeliveryID int64      `json:"last_delivery_id"`
+	ResponseStatus *int       `json:"response_status,omitempty"`
+	NextRetryAt    *time.Time `json:"next_retry_at,omitempty"`
+}
+
+// AutomationPolicy is a lightweight rule evaluated before automation writes.
+type AutomationPolicy struct {
+	ID         int64             `json:"id"`
+	Name       string            `json:"name"`
+	Workflow   string            `json:"workflow"`
+	Action     string            `json:"action"`
+	Effect     string            `json:"effect"`
+	Enabled    bool              `json:"enabled"`
+	Conditions map[string]string `json:"conditions,omitempty"`
+	Message    string            `json:"message,omitempty"`
+	CreatedAt  time.Time         `json:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at"`
+}
+
+// IntegrationTemplate documents an automation platform recipe.
+type IntegrationTemplate struct {
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Category    string   `json:"category"`
+	Description string   `json:"description"`
+	Steps       []string `json:"steps"`
+	Endpoints   []string `json:"endpoints"`
+}
+
 // DeviceType represents a category of network device
 type DeviceType struct {
 	ID          int64     `json:"id"`
@@ -683,17 +724,17 @@ type DeviceType struct {
 
 // Device represents a network device in the inventory
 type Device struct {
-	ID           int64              `json:"id"`
-	Hostname     string             `json:"hostname"`
-	Description  *string            `json:"description,omitempty"`
-	TypeID       *int64             `json:"type_id,omitempty"`
-	Type         *DeviceType        `json:"type,omitempty"`
-	SectionID    *int64             `json:"section_id,omitempty"`
-	Vendor       *string            `json:"vendor,omitempty"`
-	Model        *string            `json:"model,omitempty"`
-	OSVersion    *string            `json:"os_version,omitempty"`
-	IsOnline     bool               `json:"is_online"`
-	LastPingAt   *time.Time         `json:"last_ping_at,omitempty"`
+	ID            int64              `json:"id"`
+	Hostname      string             `json:"hostname"`
+	Description   *string            `json:"description,omitempty"`
+	TypeID        *int64             `json:"type_id,omitempty"`
+	Type          *DeviceType        `json:"type,omitempty"`
+	SectionID     *int64             `json:"section_id,omitempty"`
+	Vendor        *string            `json:"vendor,omitempty"`
+	Model         *string            `json:"model,omitempty"`
+	OSVersion     *string            `json:"os_version,omitempty"`
+	IsOnline      bool               `json:"is_online"`
+	LastPingAt    *time.Time         `json:"last_ping_at,omitempty"`
 	LocationID    *int64             `json:"location_id,omitempty"`
 	RackID        *int64             `json:"rack_id,omitempty"`
 	RackUnitStart *int               `json:"rack_unit_start,omitempty"`
@@ -742,16 +783,16 @@ type Rack struct {
 
 // Location represents a physical place in the location hierarchy (site, building, floor, room, cage, etc.)
 type Location struct {
-	ID          int64      `json:"id"`
-	ParentID    *int64     `json:"parent_id,omitempty"`
-	Name        string     `json:"name"`
-	Type        string     `json:"type"`
-	Address     *string    `json:"address,omitempty"`
-	Lat         *float64   `json:"lat,omitempty"`
-	Lng         *float64   `json:"lng,omitempty"`
-	Description *string    `json:"description,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          int64     `json:"id"`
+	ParentID    *int64    `json:"parent_id,omitempty"`
+	Name        string    `json:"name"`
+	Type        string    `json:"type"`
+	Address     *string   `json:"address,omitempty"`
+	Lat         *float64  `json:"lat,omitempty"`
+	Lng         *float64  `json:"lng,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // LocationTreeNode is a Location with nested children for tree responses
@@ -798,13 +839,13 @@ type IPRequest struct {
 
 // RequestComment represents a comment on a subnet or IP request
 type RequestComment struct {
-	ID          int64     `json:"id"`
-	RequestType string    `json:"request_type"`
-	RequestID   int64     `json:"request_id"`
-	AuthorID    int64     `json:"author_id"`
-	AuthorUsername string `json:"author_username,omitempty"`
-	Body        string    `json:"body"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID             int64     `json:"id"`
+	RequestType    string    `json:"request_type"`
+	RequestID      int64     `json:"request_id"`
+	AuthorID       int64     `json:"author_id"`
+	AuthorUsername string    `json:"author_username,omitempty"`
+	Body           string    `json:"body"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 // VLANUsageEntry holds per-VLAN metrics for the usage report
@@ -820,22 +861,22 @@ type VLANUsageEntry struct {
 
 // VLANUsageReport is the top-level report returned by the usage-report endpoint
 type VLANUsageReport struct {
-	Entries   []*VLANUsageEntry `json:"entries"`
-	GeneratedAt string          `json:"generated_at"`
+	Entries     []*VLANUsageEntry `json:"entries"`
+	GeneratedAt string            `json:"generated_at"`
 }
 
 // DeviceInterface represents a network interface on a device
 type DeviceInterface struct {
-	ID                     int64   `json:"id"`
-	DeviceID               int64   `json:"device_id"`
-	Name                   string  `json:"name"`
-	Description            *string `json:"description,omitempty"`
-	SpeedMbps              *int    `json:"speed_mbps,omitempty"`
-	MediaType              *string `json:"media_type,omitempty"`
-	VLANID                 *int64  `json:"vlan_id,omitempty"`
-	IPAddressID            *int64  `json:"ip_address_id,omitempty"`
-	ConnectedToDeviceID    *int64  `json:"connected_to_device_id,omitempty"`
-	ConnectedToInterfaceID *int64  `json:"connected_to_interface_id,omitempty"`
+	ID                     int64     `json:"id"`
+	DeviceID               int64     `json:"device_id"`
+	Name                   string    `json:"name"`
+	Description            *string   `json:"description,omitempty"`
+	SpeedMbps              *int      `json:"speed_mbps,omitempty"`
+	MediaType              *string   `json:"media_type,omitempty"`
+	VLANID                 *int64    `json:"vlan_id,omitempty"`
+	IPAddressID            *int64    `json:"ip_address_id,omitempty"`
+	ConnectedToDeviceID    *int64    `json:"connected_to_device_id,omitempty"`
+	ConnectedToInterfaceID *int64    `json:"connected_to_interface_id,omitempty"`
 	CreatedAt              time.Time `json:"created_at"`
 	UpdatedAt              time.Time `json:"updated_at"`
 }
@@ -905,12 +946,12 @@ type InactiveDeviceReport struct {
 
 // FailedScanJobReport describes a scan job that has never run or whose last run is overdue.
 type FailedScanJobReport struct {
-	JobID       int64      `json:"job_id"`
-	JobName     string     `json:"job_name"`
-	ScheduleCron string    `json:"schedule_cron"`
-	LastRunAt   *time.Time `json:"last_run_at,omitempty"`
-	DaysSinceRun int       `json:"days_since_run"`
-	IsActive    bool       `json:"is_active"`
+	JobID        int64      `json:"job_id"`
+	JobName      string     `json:"job_name"`
+	ScheduleCron string     `json:"schedule_cron"`
+	LastRunAt    *time.Time `json:"last_run_at,omitempty"`
+	DaysSinceRun int        `json:"days_since_run"`
+	IsActive     bool       `json:"is_active"`
 }
 
 // Customer represents an organisation that owns or uses IP space.

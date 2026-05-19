@@ -10,22 +10,28 @@ import (
 )
 
 type webhookEndpointRequest struct {
-	Name     string   `json:"name"`
-	URL      string   `json:"url"`
-	Secret   string   `json:"secret"`
-	Events   []string `json:"events"`
-	IsActive *bool    `json:"is_active"`
+	Name             string            `json:"name"`
+	URL              string            `json:"url"`
+	Secret           string            `json:"secret"`
+	Events           []string          `json:"events"`
+	ObjectTypes      []string          `json:"object_types"`
+	TagFilters       []string          `json:"tag_filters"`
+	FilterConditions map[string]string `json:"filter_conditions"`
+	IsActive         *bool             `json:"is_active"`
 }
 
 type webhookEndpointResponse struct {
-	ID        int64    `json:"id"`
-	Name      string   `json:"name"`
-	URL       string   `json:"url"`
-	Events    []string `json:"events"`
-	IsActive  bool     `json:"is_active"`
-	CreatedBy *int64   `json:"created_by,omitempty"`
-	CreatedAt string   `json:"created_at"`
-	UpdatedAt string   `json:"updated_at"`
+	ID               int64             `json:"id"`
+	Name             string            `json:"name"`
+	URL              string            `json:"url"`
+	Events           []string          `json:"events"`
+	ObjectTypes      []string          `json:"object_types"`
+	TagFilters       []string          `json:"tag_filters"`
+	FilterConditions map[string]string `json:"filter_conditions,omitempty"`
+	IsActive         bool              `json:"is_active"`
+	CreatedBy        *int64            `json:"created_by,omitempty"`
+	CreatedAt        string            `json:"created_at"`
+	UpdatedAt        string            `json:"updated_at"`
 }
 
 func (h *Handler) ListWebhookEndpoints(c *fiber.Ctx) error {
@@ -57,12 +63,15 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 	}
 	createdBy, username := auditUserFromCtx(c)
 	endpoint, err := h.service.Webhooks.CreateEndpoint(c.Context(), &models.WebhookEndpoint{
-		Name:      req.Name,
-		URL:       req.URL,
-		Secret:    req.Secret,
-		Events:    req.Events,
-		IsActive:  active,
-		CreatedBy: createdBy,
+		Name:             req.Name,
+		URL:              req.URL,
+		Secret:           req.Secret,
+		Events:           req.Events,
+		ObjectTypes:      req.ObjectTypes,
+		TagFilters:       req.TagFilters,
+		FilterConditions: req.FilterConditions,
+		IsActive:         active,
+		CreatedBy:        createdBy,
 	})
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -70,7 +79,7 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 	h.auditLog(c, services.AuditEntry{
 		UserID: createdBy, Username: username, Action: "created",
 		ResourceType: "webhook_endpoint", ResourceID: &endpoint.ID, ResourceName: endpoint.Name,
-		NewValues: map[string]interface{}{"name": endpoint.Name, "url": endpoint.URL, "events": endpoint.Events, "is_active": endpoint.IsActive},
+		NewValues: map[string]interface{}{"name": endpoint.Name, "url": endpoint.URL, "events": endpoint.Events, "object_types": endpoint.ObjectTypes, "tag_filters": endpoint.TagFilters, "is_active": endpoint.IsActive},
 	})
 	return c.Status(fiber.StatusCreated).JSON(formatWebhookEndpoint(endpoint))
 }
@@ -92,12 +101,15 @@ func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
 		active = *req.IsActive
 	}
 	endpoint, err := h.service.Webhooks.UpdateEndpoint(c.Context(), &models.WebhookEndpoint{
-		ID:       id,
-		Name:     req.Name,
-		URL:      req.URL,
-		Secret:   req.Secret,
-		Events:   req.Events,
-		IsActive: active,
+		ID:               id,
+		Name:             req.Name,
+		URL:              req.URL,
+		Secret:           req.Secret,
+		Events:           req.Events,
+		ObjectTypes:      req.ObjectTypes,
+		TagFilters:       req.TagFilters,
+		FilterConditions: req.FilterConditions,
+		IsActive:         active,
 	})
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -106,7 +118,7 @@ func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: username, Action: "updated",
 		ResourceType: "webhook_endpoint", ResourceID: &endpoint.ID, ResourceName: endpoint.Name,
-		NewValues: map[string]interface{}{"name": endpoint.Name, "url": endpoint.URL, "events": endpoint.Events, "is_active": endpoint.IsActive},
+		NewValues: map[string]interface{}{"name": endpoint.Name, "url": endpoint.URL, "events": endpoint.Events, "object_types": endpoint.ObjectTypes, "tag_filters": endpoint.TagFilters, "is_active": endpoint.IsActive},
 	})
 	return c.JSON(formatWebhookEndpoint(endpoint))
 }
@@ -142,15 +154,65 @@ func (h *Handler) ListWebhookDeliveries(c *fiber.Ctx) error {
 	return c.JSON(deliveries)
 }
 
+func (h *Handler) ListWebhookFailureGroups(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
+	limit := c.QueryInt("limit", 50)
+	groups, err := h.service.Webhooks.ListFailureGroups(c.Context(), limit)
+	if err != nil {
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load webhook failure groups")
+	}
+	return c.JSON(groups)
+}
+
+func (h *Handler) GetWebhookDelivery(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid webhook delivery ID")
+	}
+	delivery, err := h.service.Webhooks.GetDelivery(c.Context(), id)
+	if err != nil {
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "webhook delivery not found")
+	}
+	return c.JSON(delivery)
+}
+
+func (h *Handler) ReplayWebhookDelivery(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
+	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid webhook delivery ID")
+	}
+	delivery, err := h.service.Webhooks.ReplayDelivery(c.Context(), id)
+	if err != nil {
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "webhook delivery not found")
+	}
+	uid, username := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: username, Action: "webhook_replayed",
+		ResourceType: "webhook_delivery", ResourceID: &delivery.ID, ResourceName: delivery.EventType,
+	})
+	return c.JSON(delivery)
+}
+
 func formatWebhookEndpoint(endpoint *models.WebhookEndpoint) webhookEndpointResponse {
 	return webhookEndpointResponse{
-		ID:        endpoint.ID,
-		Name:      endpoint.Name,
-		URL:       endpoint.URL,
-		Events:    endpoint.Events,
-		IsActive:  endpoint.IsActive,
-		CreatedBy: endpoint.CreatedBy,
-		CreatedAt: endpoint.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: endpoint.UpdatedAt.Format(time.RFC3339),
+		ID:               endpoint.ID,
+		Name:             endpoint.Name,
+		URL:              endpoint.URL,
+		Events:           endpoint.Events,
+		ObjectTypes:      endpoint.ObjectTypes,
+		TagFilters:       endpoint.TagFilters,
+		FilterConditions: endpoint.FilterConditions,
+		IsActive:         endpoint.IsActive,
+		CreatedBy:        endpoint.CreatedBy,
+		CreatedAt:        endpoint.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        endpoint.UpdatedAt.Format(time.RFC3339),
 	}
 }

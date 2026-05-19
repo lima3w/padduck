@@ -132,6 +132,54 @@ Authorization: Bearer <token>
 | `write` | GET + POST + PUT + DELETE for IPAM resources |
 | `admin` | Full access including admin endpoints |
 
+Admins can review token usage from **Admin** → **Integrations**. The view shows
+usage counts, last-used details, and the active per-token rate limit so
+automation owners can see whether workflows are close to throttling.
+
+---
+
+## Automation and Integrations
+
+Use **Admin** → **Integrations** to create API tokens, review common platform
+templates, inspect token usage, and see active automation policies.
+
+### Webhook Delivery Controls
+
+Use **Admin** → **Webhooks** to configure outbound subscriptions. Each endpoint
+can subscribe by event wildcard, object type, tag filter, and simple
+`key=value` conditions. Recent deliveries include payload inspection data, and
+failed or retrying deliveries are grouped by endpoint, event, status, and error.
+Use **Replay** to reset a failed delivery to `pending` after the downstream
+system is healthy.
+
+### Inbound Automation Endpoints
+
+Bearer-token clients can use controlled automation endpoints for common
+workflows:
+
+| Workflow | Endpoint |
+|----------|----------|
+| Allocate next IP | `POST /api/v1/automation/ip-addresses/allocate` |
+| Reserve specific IP | `POST /api/v1/automation/ip-addresses/reserve` |
+| Release IP | `POST /api/v1/automation/ip-addresses/:id/release` |
+| Validate DNS update | `POST /api/v1/automation/dns/update` |
+| Register device | `POST /api/v1/automation/devices/register` |
+| Evaluate policy | `POST /api/v1/automation/policies/evaluate` |
+
+All automation write endpoints accept `dry_run: true` to evaluate policy
+decisions without committing the change.
+
+### Automation Policies
+
+Admins can create simple approval and validation policies with:
+
+| Field | Values |
+|-------|--------|
+| `workflow` | `ip_address`, `dns`, `device`, or `*` |
+| `action` | `allocate`, `reserve`, `release`, `update`, `register`, or `*` |
+| `effect` | `allow`, `deny`, or `manual_review` |
+| `conditions` | Exact or prefix fields such as `subnet_id=42` or `hostname=prod-*` |
+
 ---
 
 ## Multi-Factor Authentication (MFA)

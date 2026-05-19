@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react'
-import { generateTokenForMe, getAdminConfig, testDnsConnection, testTechnitiumConnection, testLdapConnection } from '../api/client'
+import {
+  generateTokenForMe,
+  getAdminConfig,
+  getApiTokenAnalytics,
+  getAutomationPolicies,
+  getIntegrationTemplates,
+  testDnsConnection,
+  testTechnitiumConnection,
+  testLdapConnection,
+} from '../api/client'
 
 const PLATFORMS = [
   {
@@ -142,6 +151,70 @@ function IntegrationHealthPanel() {
   )
 }
 
+function AutomationOverview() {
+  const [templates, setTemplates] = useState([])
+  const [tokens, setTokens] = useState([])
+  const [policies, setPolicies] = useState([])
+
+  useEffect(() => {
+    Promise.all([
+      getIntegrationTemplates(),
+      getApiTokenAnalytics(),
+      getAutomationPolicies(),
+    ]).then(([templateRes, tokenRes, policyRes]) => {
+      setTemplates(templateRes.data || [])
+      setTokens(tokenRes.data || [])
+      setPolicies(policyRes.data || [])
+    }).catch(() => {})
+  }, [])
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-base font-semibold text-gray-800">Automation Control Plane</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <div className="text-2xl font-semibold text-gray-900">{templates.length}</div>
+          <div className="text-xs text-gray-500">Integration templates</div>
+        </div>
+        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <div className="text-2xl font-semibold text-gray-900">{tokens.length}</div>
+          <div className="text-xs text-gray-500">API tokens tracked</div>
+        </div>
+        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <div className="text-2xl font-semibold text-gray-900">{policies.filter(p => p.enabled).length}</div>
+          <div className="text-xs text-gray-500">Active policies</div>
+        </div>
+      </div>
+      {tokens.length > 0 && (
+        <div className="rounded border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Token</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Owner</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Scope</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Usage</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Rate Limit</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {tokens.slice(0, 6).map(t => (
+                <tr key={t.id}>
+                  <td className="px-4 py-3 text-gray-800">{t.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{t.username || t.userId}</td>
+                  <td className="px-4 py-3 text-gray-600">{t.scope}</td>
+                  <td className="px-4 py-3 text-gray-600">{t.usageCount}</td>
+                  <td className="px-4 py-3 text-gray-600">{t.rateLimitPerMinute}/min</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
 export default function AdminIntegrationsPage() {
   const [token, setToken] = useState('')
   const [tokenName, setTokenName] = useState('automation-token')
@@ -176,6 +249,7 @@ export default function AdminIntegrationsPage() {
       </div>
 
       <IntegrationHealthPanel />
+      <AutomationOverview />
 
       <section className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">1. Generate an API Token</h2>
