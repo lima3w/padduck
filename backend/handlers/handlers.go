@@ -471,6 +471,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/devices/:id/fingerprint", h.GetDeviceFingerprint)
 	admin.Post("/devices/:id/fingerprint", h.BuildDeviceFingerprint)
 
+	// Topology hints (#434)
+	admin.Get("/topology/hints", h.ListTopologyHints)
+	admin.Get("/topology/hints/:id", h.GetTopologyHint)
+	admin.Put("/topology/hints/:id/status", h.UpdateTopologyHintStatus)
+
 	// Import & Export (v1.12.0 #225 #226 #227 #228)
 	admin.Post("/import/subnets", h.ImportSubnetsCSV)
 	admin.Post("/import/ips", h.ImportIPsCSV)
