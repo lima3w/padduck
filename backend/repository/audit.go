@@ -169,6 +169,43 @@ func (r *Repository) DeleteAuditLogsBefore(ctx context.Context, before time.Time
 	return result.RowsAffected(), nil
 }
 
+// GetAuditRetentionSettings returns the single retention settings row.
+func (r *Repository) GetAuditRetentionSettings(ctx context.Context) (*models.AuditRetentionSettings, error) {
+	s := &models.AuditRetentionSettings{}
+	err := r.db.QueryRow(ctx,
+		`SELECT id, retention_days, archive_enabled, updated_at FROM audit_retention_settings LIMIT 1`,
+	).Scan(&s.ID, &s.RetentionDays, &s.ArchiveEnabled, &s.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// UpdateAuditRetentionSettings updates the single retention settings row.
+func (r *Repository) UpdateAuditRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error) {
+	s := &models.AuditRetentionSettings{}
+	err := r.db.QueryRow(ctx,
+		`UPDATE audit_retention_settings SET retention_days = $1, archive_enabled = $2, updated_at = now()
+		 WHERE id = (SELECT id FROM audit_retention_settings LIMIT 1)
+		 RETURNING id, retention_days, archive_enabled, updated_at`,
+		retentionDays, archiveEnabled,
+	).Scan(&s.ID, &s.RetentionDays, &s.ArchiveEnabled, &s.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// PruneAuditLogs deletes audit_logs entries older than retentionDays. Returns count deleted.
+func (r *Repository) PruneAuditLogs(ctx context.Context, retentionDays int) (int64, error) {
+	before := time.Now().AddDate(0, 0, -retentionDays)
+	result, err := r.db.Exec(ctx, `DELETE FROM audit_logs WHERE created_at < $1`, before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 // scanNullString returns a pointer that scan can write into; empty DB nulls become ""
 func scanNullString(dest *string) *nullStringScanner {
 	return &nullStringScanner{dest: dest}

@@ -248,6 +248,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/break-glass/activate", h.ActivateBreakGlass)
 	admin.Post("/break-glass/end", h.EndBreakGlass)
 
+	// Identity policies and session risk (#444)
+	admin.Get("/identity-policies", h.GetIdentityPolicies)
+	admin.Put("/identity-policies", h.UpdateIdentityPolicies)
+	admin.Get("/session-risk", h.ListSessionRisk)
+
 	admin.Get("/automation/policies", h.ListAutomationPolicies)
 	admin.Post("/automation/policies", h.CreateAutomationPolicy)
 	admin.Put("/automation/policies/:id", h.UpdateAutomationPolicy)
