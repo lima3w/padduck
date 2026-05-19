@@ -233,6 +233,36 @@ func (r *Repository) DeleteExpiredSessions(ctx context.Context) error {
 	return err
 }
 
+// ListAllActiveSessions returns all non-expired sessions across all users,
+// joined with username from the users table for admin risk review.
+func (r *Repository) ListAllActiveSessions(ctx context.Context) ([]*models.Session, error) {
+	query := `SELECT s.id, s.user_id, COALESCE(u.username, ''), s.token_hash, s.device_name,
+	                 s.ip_address, s.user_agent, s.last_used_at, s.absolute_expires_at,
+	                 s.is_impersonation, s.impersonated_by, s.created_at, s.updated_at
+	          FROM sessions s
+	          LEFT JOIN users u ON u.id = s.user_id
+	          WHERE s.absolute_expires_at > CURRENT_TIMESTAMP
+	          ORDER BY s.last_used_at DESC`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sessions := make([]*models.Session, 0)
+	for rows.Next() {
+		s := &models.Session{}
+		err := rows.Scan(&s.ID, &s.UserID, &s.Username, &s.TokenHash, &s.DeviceName,
+			&s.IPAddress, &s.UserAgent, &s.LastUsedAt, &s.AbsoluteExpiresAt,
+			&s.IsImpersonation, &s.ImpersonatedBy, &s.CreatedAt, &s.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, s)
+	}
+	return sessions, rows.Err()
+}
+
 // CreateImpersonationSession creates a session flagged as impersonation
 func (r *Repository) CreateImpersonationSession(ctx context.Context, targetUserID, adminID int64, tokenHash, deviceName, ipAddress, userAgent string, absoluteExpiresAt time.Time) (*models.Session, error) {
 	query := `INSERT INTO sessions (user_id, token_hash, device_name, ip_address, user_agent, absolute_expires_at, is_impersonation, impersonated_by)
