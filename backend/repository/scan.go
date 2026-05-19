@@ -498,63 +498,48 @@ func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, p
 }
 
 // ---------------------------------------------------------------------------
-// Scan profiles (#432)
+// Scan retention (#435)
 // ---------------------------------------------------------------------------
 
-const scanProfileCols = `id, name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version, created_at, updated_at`
-
-func scanScanProfile(row interface{ Scan(dest ...any) error }) (*models.ScanProfile, error) {
-	p := &models.ScanProfile{}
-	return p, row.Scan(&p.ID, &p.Name, &p.Description, &p.ScanType, &p.PingConcurrency, &p.TCPPorts, &p.DNSLookup, &p.SNMPCommunity, &p.SNMPVersion, &p.CreatedAt, &p.UpdatedAt)
-}
-
-// CreateScanProfile inserts a new scan profile.
-func (r *Repository) CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
-	query := `INSERT INTO scan_profiles (name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING ` + scanProfileCols
-	return scanScanProfile(r.db.QueryRow(ctx, query, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
-}
-
-// ListScanProfiles returns all scan profiles ordered by name.
-func (r *Repository) ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error) {
-	rows, err := r.db.Query(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles ORDER BY name`)
-	if err != nil {
+// GetScanRetentionSettings returns the single retention settings row.
+func (r *Repository) GetScanRetentionSettings(ctx context.Context) (*models.ScanRetentionSettings, error) {
+	row := r.db.QueryRow(ctx, `SELECT id, raw_history_days, rollup_enabled, rollup_after_days, updated_at FROM scan_retention_settings ORDER BY id LIMIT 1`)
+	s := &models.ScanRetentionSettings{}
+	if err := row.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	result := make([]*models.ScanProfile, 0)
-	for rows.Next() {
-		p, err := scanScanProfile(rows)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, p)
+	return s, nil
+}
+
+// UpdateScanRetentionSettings upserts the single retention settings row.
+func (r *Repository) UpdateScanRetentionSettings(ctx context.Context, rawHistoryDays, rollupAfterDays int, rollupEnabled bool) (*models.ScanRetentionSettings, error) {
+	row := r.db.QueryRow(ctx, `
+		UPDATE scan_retention_settings
+		SET raw_history_days = $1, rollup_enabled = $2, rollup_after_days = $3, updated_at = now()
+		WHERE id = (SELECT id FROM scan_retention_settings ORDER BY id LIMIT 1)
+		RETURNING id, raw_history_days, rollup_enabled, rollup_after_days, updated_at`,
+		rawHistoryDays, rollupEnabled, rollupAfterDays)
+	s := &models.ScanRetentionSettings{}
+	if err := row.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt); err != nil {
+		return nil, err
 	}
-	return result, rows.Err()
+	return s, nil
 }
 
-// GetScanProfileByID retrieves a scan profile by primary key.
-func (r *Repository) GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error) {
-	return scanScanProfile(r.db.QueryRow(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles WHERE id=$1`, id))
-}
-
-// UpdateScanProfile updates a scan profile.
-func (r *Repository) UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
-	query := `UPDATE scan_profiles
-		SET name=$2, description=$3, scan_type=$4, ping_concurrency=$5, tcp_ports=$6, dns_lookup=$7, snmp_community=$8, snmp_version=$9, updated_at=now()
-		WHERE id=$1 RETURNING ` + scanProfileCols
-	return scanScanProfile(r.db.QueryRow(ctx, query, id, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
-}
-
-// DeleteScanProfile removes a scan profile by ID.
-func (r *Repository) DeleteScanProfile(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM scan_profiles WHERE id=$1`, id)
-	return err
-}
-
-// SetSubnetScanProfile sets or clears the scan_profile_id for a subnet.
-func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error {
-	_, err := r.db.Exec(ctx, `UPDATE subnets SET scan_profile_id=$2 WHERE id=$1`, subnetID, profileID)
-	return err
+// PruneScanHistory deletes scan_results and scan_runs older than the given number of days.
+// Also deletes associated scan_run_changes via CASCADE.
+func (r *Repository) PruneScanHistory(ctx context.Context, olderThanDays int) (int64, error) {
+	cutoff := time.Now().AddDate(0, 0, -olderThanDays)
+	// Delete old scan_results
+	res, err := r.db.Exec(ctx, `DELETE FROM scan_results WHERE scanned_at < $1`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	pruned := res.RowsAffected()
+	// Delete old scan_runs (scan_run_changes cascade)
+	res2, err := r.db.Exec(ctx, `DELETE FROM scan_runs WHERE started_at < $1`, cutoff)
+	if err != nil {
+		return pruned, err
+	}
+	return pruned + res2.RowsAffected(), nil
 }

@@ -296,6 +296,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/subnets/:id/scan-profile", h.GetSubnetScanProfile)
 	admin.Put("/subnets/:id/scan-profile", h.SetSubnetScanProfile)
 
+	// Scan retention (#435)
+	admin.Get("/scan-retention", h.GetScanRetentionSettings)
+	admin.Put("/scan-retention", h.UpdateScanRetentionSettings)
+	admin.Post("/scan-retention/prune", h.RunScanRetentionPrune)
+
 	// Agent API routes (#212) — authenticated via Bearer token
 	scanAgent := api.Group("/scan-agent")
 	scanAgent.Use(h.AgentAuthMiddleware)
@@ -456,6 +461,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	// Duplicate detection (#425)
 	admin.Get("/reports/duplicates", h.GetDuplicates)
+
+	// Device fingerprints (#430)
+	admin.Get("/devices/:id/fingerprint", h.GetDeviceFingerprint)
+	admin.Post("/devices/:id/fingerprint", h.BuildDeviceFingerprint)
 
 	// Import & Export (v1.12.0 #225 #226 #227 #228)
 	admin.Post("/import/subnets", h.ImportSubnetsCSV)

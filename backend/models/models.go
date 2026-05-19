@@ -567,21 +567,6 @@ type ScanProfile struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-// ScanProfile holds reusable scan configuration that can be referenced by scan jobs or subnets.
-type ScanProfile struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	Description     *string   `json:"description,omitempty"`
-	ScanType        string    `json:"scan_type"`
-	PingConcurrency int       `json:"ping_concurrency"`
-	TCPPorts        *string   `json:"tcp_ports,omitempty"`
-	DNSLookup       bool      `json:"dns_lookup"`
-	SNMPCommunity   *string   `json:"snmp_community,omitempty"`
-	SNMPVersion     string    `json:"snmp_version"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-}
-
 // ScanResult records the outcome of scanning a single IP address
 type ScanResult struct {
 	ID             int64     `json:"id"`
@@ -718,6 +703,18 @@ type Device struct {
 	UpdatedAt     time.Time          `json:"updated_at"`
 	CustomFields  map[string]*string `json:"custom_fields,omitempty"`
 	// NOTE: SNMP fields intentionally omitted — use DeviceSNMP for credentials endpoint
+}
+
+// DeviceFingerprint holds automatically derived identity data for a device.
+type DeviceFingerprint struct {
+	ID              int64     `json:"id"`
+	DeviceID        int64     `json:"device_id"`
+	OpenPorts       []int     `json:"open_ports"`
+	OSGuess         *string   `json:"os_guess,omitempty"`
+	VendorGuess     *string   `json:"vendor_guess,omitempty"`
+	ConfidenceScore float64   `json:"confidence_score"`
+	Evidence        []string  `json:"evidence"`
+	LastUpdatedAt   time.Time `json:"last_updated_at"`
 }
 
 // DeviceSNMP holds the SNMP credentials for a device (only returned via privileged endpoint)
@@ -959,4 +956,13 @@ type AutonomousSystem struct {
 	RIR         string    `json:"rir"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// ScanRetentionSettings controls how long raw scan history is kept.
+type ScanRetentionSettings struct {
+	ID              int64     `json:"id"`
+	RawHistoryDays  int       `json:"raw_history_days"`
+	RollupEnabled   bool      `json:"rollup_enabled"`
+	RollupAfterDays int       `json:"rollup_after_days"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }

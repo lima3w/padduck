@@ -380,6 +380,10 @@ export const updateDeviceInterface = (deviceId, ifaceId, data) =>
 export const deleteDeviceInterface = (deviceId, ifaceId) =>
   api.delete(`/devices/${deviceId}/interfaces/${ifaceId}`)
 
+// Device fingerprints (#430)
+export const getDeviceFingerprint = (deviceId) => api.get(`/admin/devices/${deviceId}/fingerprint`)
+export const buildDeviceFingerprint = (deviceId, data) => api.post(`/admin/devices/${deviceId}/fingerprint`, data)
+
 // Admin users & roles
 export const getAdminUsers = () => api.get('/admin/users')
 export const createUser = (data) => api.post('/users', data)
@@ -419,3 +423,8 @@ export const updateScanProfile = (id, data) => api.put(`/admin/scan-profiles/${i
 export const deleteScanProfile = (id) => api.delete(`/admin/scan-profiles/${id}`)
 export const getSubnetScanProfile = (subnetId) => api.get(`/admin/subnets/${subnetId}/scan-profile`)
 export const setSubnetScanProfile = (subnetId, profileId) => api.put(`/admin/subnets/${subnetId}/scan-profile`, { profile_id: profileId })
+
+// Scan retention (#435)
+export const getScanRetention = () => api.get('/admin/scan-retention')
+export const updateScanRetention = (data) => api.put('/admin/scan-retention', data)
+export const runScanRetentionPrune = () => api.post('/admin/scan-retention/prune')
