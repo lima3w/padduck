@@ -287,6 +287,15 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/scan-agents/:id/rotate-token", h.RotateScanAgentToken)
 	admin.Delete("/scan-agents/:id", h.DeleteScanAgent)
 
+	// Scan profiles (#432)
+	admin.Get("/scan-profiles", h.ListScanProfiles)
+	admin.Post("/scan-profiles", h.CreateScanProfile)
+	admin.Get("/scan-profiles/:id", h.GetScanProfile)
+	admin.Put("/scan-profiles/:id", h.UpdateScanProfile)
+	admin.Delete("/scan-profiles/:id", h.DeleteScanProfile)
+	admin.Get("/subnets/:id/scan-profile", h.GetSubnetScanProfile)
+	admin.Put("/subnets/:id/scan-profile", h.SetSubnetScanProfile)
+
 	// Agent API routes (#212) — authenticated via Bearer token
 	scanAgent := api.Group("/scan-agent")
 	scanAgent.Use(h.AgentAuthMiddleware)

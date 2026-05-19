@@ -324,6 +324,7 @@ export default function AdminSettingsPage() {
       links: [
         { to: '/admin/scan-jobs', title: 'Scan Jobs', description: 'Schedule and run network discovery scans' },
         { to: '/admin/scan-agents', title: 'Scan Agents', description: 'Manage remote discovery agents and tokens' },
+        { to: '/admin/scan-profiles', title: 'Scan Profiles', description: 'Reusable scan configurations with per-subnet overrides' },
         { to: '/admin/webhooks', title: 'Webhooks', description: 'Configure outbound event delivery' },
         { to: '/admin/integrations', title: 'Integrations', description: 'Integration setup notes and connection checks' },
         { to: '/admin/grafana', title: 'Grafana', description: 'Configure the Grafana datasource integration' },

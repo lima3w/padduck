@@ -224,6 +224,7 @@ type Subnet struct {
 	CreatedAt           time.Time          `json:"created_at"`
 	UpdatedAt           time.Time          `json:"updated_at"`
 	CustomFields        map[string]*string `json:"custom_fields,omitempty"`
+	ScanProfileID       *int64             `json:"scan_profile_id,omitempty"`
 }
 
 // IPv6Delegation represents a delegated IPv6 prefix assigned to a device or description
@@ -549,6 +550,21 @@ type ScanAgent struct {
 	Capabilities []string   `json:"capabilities,omitempty"`
 	Status       string     `json:"status"`
 	LastError    *string    `json:"last_error,omitempty"`
+}
+
+// ScanProfile holds reusable scan configuration that can be referenced by scan jobs or subnets.
+type ScanProfile struct {
+	ID              int64     `json:"id"`
+	Name            string    `json:"name"`
+	Description     *string   `json:"description,omitempty"`
+	ScanType        string    `json:"scan_type"`
+	PingConcurrency int       `json:"ping_concurrency"`
+	TCPPorts        *string   `json:"tcp_ports,omitempty"`
+	DNSLookup       bool      `json:"dns_lookup"`
+	SNMPCommunity   *string   `json:"snmp_community,omitempty"`
+	SNMPVersion     string    `json:"snmp_version"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 // ScanProfile holds reusable scan configuration that can be referenced by scan jobs or subnets.
