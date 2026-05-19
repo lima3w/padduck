@@ -1038,3 +1038,22 @@ type TopologyHint struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
+
+// PrivacyPolicyVersion represents a versioned privacy policy record.
+type PrivacyPolicyVersion struct {
+	ID            int64     `json:"id"`
+	Version       string    `json:"version"`
+	EffectiveDate string    `json:"effective_date"`
+	Summary       *string   `json:"summary,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// UserConsentStatus holds privacy consent info for a single user (admin report).
+type UserConsentStatus struct {
+	UserID             int64      `json:"user_id"`
+	Username           string     `json:"username"`
+	Email              string     `json:"email"`
+	PrivacyAcceptedAt  *time.Time `json:"privacy_accepted_at,omitempty"`
+	PrivacyAcceptedVer *string    `json:"privacy_accepted_version,omitempty"`
+	HasConsent         bool       `json:"has_consent"`
+}
