@@ -22,6 +22,7 @@ type Handler struct {
 	tokenLimiter *tokenRateLimiter
 	isProduction bool
 	csrfSecret   []byte // per-process CSRF signing key, generated at startup
+	idempotency  *idempotencyStore
 }
 
 func NewHandler(service *services.Service, isProduction bool) *Handler {
@@ -34,6 +35,7 @@ func NewHandler(service *services.Service, isProduction bool) *Handler {
 		tokenLimiter: newTokenRateLimiter(),
 		isProduction: isProduction,
 		csrfSecret:   secret,
+		idempotency:  newIdempotencyStore(),
 	}
 }
 
@@ -230,6 +232,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/notification-stats", h.GetNotificationStats)
 	admin.Get("/webhooks", h.ListWebhookEndpoints)
 	admin.Post("/webhooks", h.CreateWebhookEndpoint)
+	admin.Get("/webhooks/sample-payload", h.GetWebhookSamplePayload)
 	admin.Put("/webhooks/:id", h.UpdateWebhookEndpoint)
 	admin.Delete("/webhooks/:id", h.DeleteWebhookEndpoint)
 	admin.Get("/webhooks/deliveries", h.ListWebhookDeliveries)
@@ -426,6 +429,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	automation.Use(h.RequireBearerAuth)
 	automation.Post("/policies/evaluate", h.EvaluateAutomationPolicy)
 	automation.Get("/integration-templates", h.ListIntegrationTemplates)
+	automation.Use(h.IdempotencyMiddleware)
 	automation.Post("/ip-addresses/allocate", h.AutomationAllocateIPAddress)
 	automation.Post("/ip-addresses/reserve", h.AutomationReserveIPAddress)
 	automation.Post("/ip-addresses/:id/release", h.AutomationReleaseIPAddress)

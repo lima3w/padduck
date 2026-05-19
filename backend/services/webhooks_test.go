@@ -50,3 +50,10 @@ func TestSignWebhookPayload(t *testing.T) {
 	got := signWebhookPayload("secret", []byte(`{"event":"subnet.created"}`))
 	assert.Equal(t, "sha256=b2964d578374d13263f8f4ab7d4a4545a3b7c9ed0ae52cb63f88866f5882a5af", got)
 }
+
+func TestSampleWebhookEventPayloadIncludesSchemaVersion(t *testing.T) {
+	payload := SampleWebhookEventPayload("ip_address.assigned")
+	assert.Equal(t, WebhookEventSchemaVersion, payload.SchemaVersion)
+	assert.Equal(t, "ip_address.assigned", payload.EventType)
+	assert.False(t, payload.OccurredAt.IsZero())
+}

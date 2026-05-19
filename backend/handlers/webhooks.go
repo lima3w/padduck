@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,6 +35,24 @@ type webhookEndpointResponse struct {
 	UpdatedAt        string            `json:"updated_at"`
 }
 
+func (h *Handler) GetWebhookSamplePayload(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
+	eventType := c.Query("event_type", "ip_address.assigned")
+	return c.JSON(fiber.Map{
+		"schema_version": services.WebhookEventSchemaVersion,
+		"payload":        services.SampleWebhookEventPayload(eventType),
+		"headers": fiber.Map{
+			"Content-Type":                "application/json",
+			"User-Agent":                  "ipam-next-webhooks/1.0",
+			"X-IPAM-Event":                eventType,
+			"X-IPAM-Event-Schema-Version": services.WebhookEventSchemaVersion,
+			"X-IPAM-Signature-256":        "sha256=<hex-hmac-sha256>",
+		},
+	})
+}
+
 func (h *Handler) ListWebhookEndpoints(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
 		return nil
@@ -56,6 +75,9 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 	req := new(webhookEndpointRequest)
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if fields := validateWebhookEndpointRequest(req); len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
 	}
 	active := true
 	if req.IsActive != nil {
@@ -96,6 +118,9 @@ func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
+	if fields := validateWebhookEndpointRequest(req); len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
+	}
 	active := true
 	if req.IsActive != nil {
 		active = *req.IsActive
@@ -121,6 +146,17 @@ func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
 		NewValues: map[string]interface{}{"name": endpoint.Name, "url": endpoint.URL, "events": endpoint.Events, "object_types": endpoint.ObjectTypes, "tag_filters": endpoint.TagFilters, "is_active": endpoint.IsActive},
 	})
 	return c.JSON(formatWebhookEndpoint(endpoint))
+}
+
+func validateWebhookEndpointRequest(req *webhookEndpointRequest) []ValidationField {
+	fields := make([]ValidationField, 0)
+	if strings.TrimSpace(req.Name) == "" {
+		fields = append(fields, ValidationField{Field: "name", Message: "name is required"})
+	}
+	if strings.TrimSpace(req.URL) == "" {
+		fields = append(fields, ValidationField{Field: "url", Message: "url is required"})
+	}
+	return fields
 }
 
 func (h *Handler) DeleteWebhookEndpoint(c *fiber.Ctx) error {

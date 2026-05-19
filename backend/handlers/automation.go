@@ -52,6 +52,9 @@ func (h *Handler) saveAutomationPolicy(c *fiber.Ctx, id int64) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
+	if fields := validateAutomationPolicyRequest(req); len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
+	}
 	enabled := true
 	if req.Enabled != nil {
 		enabled = *req.Enabled
@@ -90,6 +93,9 @@ func (h *Handler) EvaluateAutomationPolicy(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
+	if fields := requiredFields(map[string]string{"workflow": req.Workflow, "action": req.Action}); len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
+	}
 	decision, err := h.service.Automation.Evaluate(c.Context(), services.AutomationRequest{
 		Workflow: req.Workflow, Action: req.Action, Values: req.Values, DryRun: req.DryRun,
 	})
@@ -115,6 +121,14 @@ func (h *Handler) AutomationAllocateIPAddress(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
+	fields := make([]ValidationField, 0)
+	if req.SubnetID <= 0 {
+		fields = append(fields, ValidationField{Field: "subnet_id", Message: "subnet_id must be greater than zero"})
+	}
+	fields = append(fields, requiredFields(map[string]string{"assigned_to": req.AssignedTo})...)
+	if len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
+	}
 	ip, decision, err := h.service.Automation.AllocateIPAddress(c.Context(), req.SubnetID, req.AssignedTo, req.DryRun)
 	return automationWriteResponse(c, ip, decision, err)
 }
@@ -128,6 +142,14 @@ func (h *Handler) AutomationReserveIPAddress(c *fiber.Ctx) error {
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	fields := make([]ValidationField, 0)
+	if req.SubnetID <= 0 {
+		fields = append(fields, ValidationField{Field: "subnet_id", Message: "subnet_id must be greater than zero"})
+	}
+	fields = append(fields, requiredFields(map[string]string{"address": req.Address})...)
+	if len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
 	}
 	ip, decision, err := h.service.Automation.ReserveIPAddress(c.Context(), req.SubnetID, req.Address, req.Hostname, req.DryRun)
 	return automationWriteResponse(c, ip, decision, err)
@@ -157,7 +179,7 @@ func (h *Handler) AutomationRegisterDevice(c *fiber.Ctx) error {
 	_ = c.BodyParser(&body)
 	req.Hostname = strings.TrimSpace(req.Hostname)
 	if req.Hostname == "" {
-		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "hostname is required")
+		return RespondValidationError(c, "validation failed", []ValidationField{{Field: "hostname", Message: "hostname is required"}})
 	}
 	device, decision, err := h.service.Automation.RegisterDevice(c.Context(), req, body.DryRun)
 	return automationWriteResponse(c, device, decision, err)
@@ -173,6 +195,9 @@ func (h *Handler) AutomationDNSUpdate(c *fiber.Ctx) error {
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if fields := requiredFields(map[string]string{"zone": req.Zone, "name": req.Name, "type": req.Type, "value": req.Value}); len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
 	}
 	decision, err := h.service.Automation.Evaluate(c.Context(), services.AutomationRequest{
 		Workflow: "dns",
@@ -193,6 +218,16 @@ func (h *Handler) AutomationDNSUpdate(c *fiber.Ctx) error {
 	})
 }
 
+func requiredFields(values map[string]string) []ValidationField {
+	fields := make([]ValidationField, 0)
+	for field, value := range values {
+		if strings.TrimSpace(value) == "" {
+			fields = append(fields, ValidationField{Field: field, Message: field + " is required"})
+		}
+	}
+	return fields
+}
+
 func automationWriteResponse(c *fiber.Ctx, data interface{}, decision *services.PolicyDecision, err error) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -207,6 +242,21 @@ func automationWriteResponse(c *fiber.Ctx, data interface{}, decision *services.
 		return c.JSON(fiber.Map{"policy": decision})
 	}
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"policy": decision, "data": data})
+}
+
+func validateAutomationPolicyRequest(req *automationPolicyRequest) []ValidationField {
+	fields := make([]ValidationField, 0)
+	if strings.TrimSpace(req.Name) == "" {
+		fields = append(fields, ValidationField{Field: "name", Message: "name is required"})
+	}
+	if req.Effect != "" {
+		switch strings.TrimSpace(req.Effect) {
+		case "allow", "deny", "manual_review":
+		default:
+			fields = append(fields, ValidationField{Field: "effect", Message: "effect must be allow, deny, or manual_review"})
+		}
+	}
+	return fields
 }
 
 func (h *Handler) ListIntegrationTemplates(c *fiber.Ctx) error {

@@ -6,21 +6,28 @@ import (
 
 // ErrorResponse is the standard error response format
 type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    string `json:"code"`
-	Details string `json:"details,omitempty"`
+	Error   string            `json:"error"`
+	Code    string            `json:"code"`
+	Details string            `json:"details,omitempty"`
+	Fields  []ValidationField `json:"fields,omitempty"`
+}
+
+type ValidationField struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 // ErrorCode represents standardized error codes
 type ErrorCode string
 
 const (
-	ErrBadRequest       ErrorCode = "BAD_REQUEST"
-	ErrUnauthorized     ErrorCode = "UNAUTHORIZED"
-	ErrForbidden        ErrorCode = "FORBIDDEN"
-	ErrNotFound         ErrorCode = "NOT_FOUND"
-	ErrConflict         ErrorCode = "CONFLICT"
-	ErrInternalServer   ErrorCode = "INTERNAL_SERVER_ERROR"
+	ErrBadRequest         ErrorCode = "BAD_REQUEST"
+	ErrUnauthorized       ErrorCode = "UNAUTHORIZED"
+	ErrForbidden          ErrorCode = "FORBIDDEN"
+	ErrNotFound           ErrorCode = "NOT_FOUND"
+	ErrConflict           ErrorCode = "CONFLICT"
+	ErrValidation         ErrorCode = "VALIDATION_ERROR"
+	ErrInternalServer     ErrorCode = "INTERNAL_SERVER_ERROR"
 	ErrServiceUnavailable ErrorCode = "SERVICE_UNAVAILABLE"
 )
 
@@ -47,6 +54,17 @@ func RespondError(c *fiber.Ctx, statusCode int, code ErrorCode, message string, 
 	})
 }
 
+func RespondValidationError(c *fiber.Ctx, message string, fields []ValidationField) error {
+	reqLogger(c).Warn("api validation error", "status", fiber.StatusUnprocessableEntity,
+		"code", ErrValidation, "message", message, "method", c.Method(), "path", c.Path())
+
+	return c.Status(fiber.StatusUnprocessableEntity).JSON(ErrorResponse{
+		Error:  message,
+		Code:   string(ErrValidation),
+		Fields: fields,
+	})
+}
+
 // StatusBadRequest returns a 400 error
 func (h *Handler) StatusBadRequest(c *fiber.Ctx, message string, details ...string) error {
 	return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, message, details...)
@@ -70,6 +88,10 @@ func (h *Handler) StatusNotFound(c *fiber.Ctx, message string, details ...string
 // StatusConflict returns a 409 error
 func (h *Handler) StatusConflict(c *fiber.Ctx, message string, details ...string) error {
 	return RespondError(c, fiber.StatusConflict, ErrConflict, message, details...)
+}
+
+func (h *Handler) StatusValidationError(c *fiber.Ctx, message string, fields []ValidationField) error {
+	return RespondValidationError(c, message, fields)
 }
 
 // StatusInternalServerError returns a 500 error

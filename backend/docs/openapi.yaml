@@ -2,7 +2,8 @@ openapi: 3.0.3
 info:
   title: IPAM Next API
   description: Route-complete REST API specification for the current backend.
-  version: 1.13.0
+  version: 1.26.0
+  x-api-contract: stable-v1
   contact:
     name: IPAM Next
 
@@ -144,10 +145,19 @@ components:
       schema:
         type: integer
         default: 0
+    idempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Optional client-generated key for retry-safe automation writes. Reusing a key with a different request returns 409.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
 
   schemas:
     Error:
       type: object
+      required: [error, code]
       properties:
         error:
           type: string
@@ -155,6 +165,59 @@ components:
           type: string
         details:
           type: string
+        fields:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    WebhookEvent:
+      type: object
+      required: [schema_version, event_type, action, resource_type, status, occurred_at]
+      properties:
+        schema_version:
+          type: string
+          example: "2026-05-19"
+        event_type:
+          type: string
+          example: ip_address.assigned
+        action:
+          type: string
+          example: assigned
+        resource_type:
+          type: string
+          example: ip_address
+        resource_id:
+          type: integer
+          nullable: true
+        resource_name:
+          type: string
+        user_id:
+          type: integer
+          nullable: true
+        username:
+          type: string
+        status:
+          type: string
+          example: success
+        old_values:
+          $ref: "#/components/schemas/GenericObject"
+        new_values:
+          $ref: "#/components/schemas/GenericObject"
+        occurred_at:
+          type: string
+          format: date-time
+    AutomationWriteResponse:
+      type: object
+      properties:
+        policy:
+          $ref: "#/components/schemas/GenericObject"
+        data:
+          $ref: "#/components/schemas/GenericObject"
     GenericObject:
       type: object
       additionalProperties: true
@@ -273,6 +336,12 @@ components:
             $ref: "#/components/schemas/Error"
     ValidationError:
       description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Conflict
       content:
         application/json:
           schema:
@@ -2020,6 +2089,33 @@ paths:
       responses:
         "201":
           $ref: "#/components/responses/Created"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/admin/webhooks/sample-payload:
+    get:
+      tags: [Admin]
+      summary: Get a versioned sample outbound webhook payload
+      parameters:
+        - name: event_type
+          in: query
+          schema:
+            type: string
+            default: ip_address.assigned
+      responses:
+        "200":
+          description: Versioned sample webhook payload and delivery headers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schema_version:
+                    type: string
+                  payload:
+                    $ref: "#/components/schemas/WebhookEvent"
+                  headers:
+                    $ref: "#/components/schemas/GenericObject"
 
   /api/v1/admin/webhooks/{id}:
     put:
@@ -2032,6 +2128,8 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/OK"
+        "422":
+          $ref: "#/components/responses/ValidationError"
     delete:
       tags: [Admin]
       summary: Delete outbound webhook endpoint
@@ -2136,6 +2234,8 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/OK"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /api/v1/automation/ip-addresses/allocate:
     post:
@@ -2143,11 +2243,26 @@ paths:
       summary: Controlled automation endpoint to allocate the next available IP
       security:
         - bearerToken: []
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
-          $ref: "#/components/responses/Created"
+          description: Created or replayed automation write response
+          headers:
+            X-Idempotent-Replay:
+              schema:
+                type: string
+              description: "true when the response was replayed from the idempotency cache"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomationWriteResponse"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /api/v1/automation/ip-addresses/reserve:
     post:
@@ -2155,11 +2270,17 @@ paths:
       summary: Controlled automation endpoint to reserve a specific IP
       security:
         - bearerToken: []
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
           $ref: "#/components/responses/Created"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /api/v1/automation/ip-addresses/{id}/release:
     post:
@@ -2169,9 +2290,12 @@ paths:
         - bearerToken: []
       parameters:
         - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/idempotencyKey"
       responses:
         "200":
           $ref: "#/components/responses/OK"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/v1/automation/dns/update:
     post:
@@ -2179,11 +2303,17 @@ paths:
       summary: Controlled automation endpoint to validate or accept DNS update requests
       security:
         - bearerToken: []
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
           $ref: "#/components/responses/OK"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /api/v1/automation/devices/register:
     post:
@@ -2191,11 +2321,17 @@ paths:
       summary: Controlled automation endpoint to register a device
       security:
         - bearerToken: []
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
           $ref: "#/components/responses/Created"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /api/v1/admin/audit-logs:
     get:
