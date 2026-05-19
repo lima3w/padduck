@@ -445,3 +445,11 @@ export const resolveDiscoveryConflict = (id, action) => api.post(`/admin/discove
 // Topology hints (#434)
 export const listTopologyHints = (status) => api.get('/admin/topology/hints', { params: status ? { status } : {} })
 export const updateTopologyHintStatus = (id, status) => api.put(`/admin/topology/hints/${id}/status`, { status })
+
+// Privacy policy version history and consent reporting (#446)
+export const listPrivacyVersions = () => api.get('/admin/privacy/versions')
+export const createPrivacyVersion = (data) => api.post('/admin/privacy/versions', data)
+export const getConsentReport = () => api.get('/admin/privacy/consent-report')
+
+// Deployment health (#447)
+export const getSystemHealth = () => api.get('/admin/system-health')
