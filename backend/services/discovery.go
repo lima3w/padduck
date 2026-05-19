@@ -80,6 +80,11 @@ type discoveryRepo interface {
 	// Device fingerprints (#430)
 	GetDeviceFingerprint(ctx context.Context, deviceID int64) (*models.DeviceFingerprint, error)
 	UpsertDeviceFingerprint(ctx context.Context, deviceID int64, openPorts []int, osGuess, vendorGuess *string, confidenceScore float64, evidence []string) (*models.DeviceFingerprint, error)
+	// Discovery conflicts (#431)
+	ListDiscoveryConflicts(ctx context.Context, status string) ([]*models.DiscoveryConflict, error)
+	GetDiscoveryConflict(ctx context.Context, id int64) (*models.DiscoveryConflict, error)
+	CreateDiscoveryConflict(ctx context.Context, deviceID int64, fieldName, discoveredValue string, currentValue *string, confidenceScore float64, source string) (*models.DiscoveryConflict, error)
+	ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error)
 }
 
 // maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
@@ -918,4 +923,31 @@ func (d *DiscoveryService) StartRetentionPruner(ctx context.Context) {
 			}
 		}
 	}()
+}
+
+// ---------------------------------------------------------------------------
+// Discovery conflicts (#431)
+// ---------------------------------------------------------------------------
+
+// ListDiscoveryConflicts returns all discovery conflicts, optionally filtered by status.
+func (d *DiscoveryService) ListDiscoveryConflicts(ctx context.Context, status string) ([]*models.DiscoveryConflict, error) {
+	return d.repository.ListDiscoveryConflicts(ctx, status)
+}
+
+// GetDiscoveryConflict retrieves a single discovery conflict by ID.
+func (d *DiscoveryService) GetDiscoveryConflict(ctx context.Context, id int64) (*models.DiscoveryConflict, error) {
+	return d.repository.GetDiscoveryConflict(ctx, id)
+}
+
+// CreateDiscoveryConflict records a new conflict between discovered and manual data.
+func (d *DiscoveryService) CreateDiscoveryConflict(ctx context.Context, deviceID int64, fieldName, discoveredValue string, currentValue *string, confidence float64, source string) (*models.DiscoveryConflict, error) {
+	return d.repository.CreateDiscoveryConflict(ctx, deviceID, fieldName, discoveredValue, currentValue, confidence, source)
+}
+
+// ResolveDiscoveryConflict accepts or rejects a pending conflict.
+func (d *DiscoveryService) ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error) {
+	if action != "accepted" && action != "rejected" {
+		return nil, fmt.Errorf("action must be 'accepted' or 'rejected'")
+	}
+	return d.repository.ResolveDiscoveryConflict(ctx, id, action, reviewedBy)
 }

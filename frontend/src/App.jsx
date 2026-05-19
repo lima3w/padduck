@@ -60,6 +60,7 @@ const AdminIntegrationsPage = lazy(() => import('./pages/AdminIntegrationsPage')
 const AdminGrafanaPage = lazy(() => import('./pages/AdminGrafanaPage'))
 const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const AutonomousSystemsPage = lazy(() => import('./pages/AutonomousSystemsPage'))
+const DiscoveryConflictsPage = lazy(() => import('./pages/DiscoveryConflictsPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -170,6 +171,7 @@ export default function App() {
             <Route path="admin/scan-jobs" element={<ScanJobsPage />} />
             <Route path="admin/scan-profiles" element={<ScanProfilesPage />} />
             <Route path="admin/scan-retention" element={<ScanRetentionPage />} />
+            <Route path="admin/discovery/conflicts" element={<DiscoveryConflictsPage />} />
             <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
             <Route path="admin/webhooks" element={<AdminWebhooksPage />} />
             <Route path="sections/:id/topology" element={<TopologyPage />} />
