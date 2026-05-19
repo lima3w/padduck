@@ -80,14 +80,9 @@ func (h *Handler) ListSections(c *fiber.Ctx) error {
 	limit := c.QueryInt("limit", 0)
 
 	// If pagination params are provided, use paginated version
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
-		sections, total, err := h.service.ListSectionsPaginated(c.Context(), page, limit)
+	if page > 0 || limit > 0 || c.Query("sort") != "" || c.Query("q") != "" || c.Query("search") != "" {
+		page, limit, opts := parseListOptions(c)
+		sections, total, err := h.service.ListSectionsPaginatedWithOptions(c.Context(), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing sections", "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

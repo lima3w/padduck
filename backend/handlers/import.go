@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
+	"io"
+
 	"github.com/gofiber/fiber/v2"
 	"ipam-next/services"
 )
@@ -40,6 +44,20 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 		return c.JSON(result)
 	}
 
+	if c.QueryBool("async") {
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot read uploaded file"})
+		}
+		job := h.service.Jobs.Enqueue("import", "Import subnets CSV", fiber.Map{"source": "subnets_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "importing subnets")
+			result, err := h.service.Import.ImportSubnetsCSV(ctx, bytes.NewReader(data))
+			reporter.Progress(1, 1, "import complete")
+			return result, err
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
+	}
+
 	result, err := h.service.Import.ImportSubnetsCSV(c.Context(), f)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -75,6 +93,20 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.JSON(result)
+	}
+
+	if c.QueryBool("async") {
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot read uploaded file"})
+		}
+		job := h.service.Jobs.Enqueue("import", "Import IPs CSV", fiber.Map{"source": "ips_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "importing IP addresses")
+			result, err := h.service.Import.ImportIPsCSV(ctx, bytes.NewReader(data))
+			reporter.Progress(1, 1, "import complete")
+			return result, err
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
 	result, err := h.service.Import.ImportIPsCSV(c.Context(), f)
@@ -127,6 +159,20 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 		return c.JSON(result)
 	}
 
+	if c.QueryBool("async") {
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot read uploaded file"})
+		}
+		job := h.service.Jobs.Enqueue("import", "Import phpIPAM "+kind, fiber.Map{"source": "phpipam", "kind": kind}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "importing phpIPAM "+kind)
+			result, err := h.service.Import.ImportFromPHPIpam(ctx, bytes.NewReader(data), kind)
+			reporter.Progress(1, 1, "import complete")
+			return result, err
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
+	}
+
 	result, err := h.service.Import.ImportFromPHPIpam(c.Context(), f, kind)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -147,6 +193,16 @@ func (h *Handler) ExportFullData(c *fiber.Ctx) error {
 	}
 
 	format := c.Query("format", "csv")
+
+	if c.QueryBool("async") {
+		job := h.service.Jobs.Enqueue("export", "Export full data", fiber.Map{"format": format}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "building export")
+			data, filename, contentType, err := h.service.Import.ExportFullData(ctx, format)
+			reporter.Progress(1, 1, "export complete")
+			return fiber.Map{"filename": filename, "content_type": contentType, "bytes": len(data)}, err
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
+	}
 
 	data, filename, contentType, err := h.service.Import.ExportFullData(c.Context(), format)
 	if err != nil {

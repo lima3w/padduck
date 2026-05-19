@@ -27,6 +27,7 @@ type Service struct {
 	OAuth2        *OAuth2Service
 	SAML          *SAMLService
 	Topology      *TopologyService
+	Jobs          *JobService
 
 	dashboardSummaryCache  *ttlCache[*models.DashboardSummary]
 	dashboardActivityCache *ttlCache[[]*models.DashboardActivity]
@@ -54,6 +55,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		LDAP:                   NewLDAPService(repo, mfaEncryptionKey),
 		OAuth2:                 NewOAuth2Service(repo, mfaEncryptionKey),
 		SAML:                   NewSAMLService(repo, mfaEncryptionKey),
+		Jobs:                   NewJobService(),
 		dashboardSummaryCache:  newTTLCache[*models.DashboardSummary](30 * time.Second),
 		dashboardActivityCache: newTTLCache[[]*models.DashboardActivity](15 * time.Second),
 	}

@@ -102,14 +102,9 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 0)
 	limit := c.QueryInt("limit", 0)
 
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
-		subnets, total, err := h.service.ListSubnetsPaginated(c.Context(), int64(sectionID), page, limit)
+	if page > 0 || limit > 0 || c.Query("sort") != "" || c.Query("q") != "" || c.Query("search") != "" {
+		page, limit, opts := parseListOptions(c)
+		subnets, total, err := h.service.ListSubnetsPaginatedWithOptions(c.Context(), int64(sectionID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing subnets", "section_id", sectionID, "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

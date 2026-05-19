@@ -94,14 +94,9 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 0)
 	limit := c.QueryInt("limit", 0)
 
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
-		ips, total, err := h.service.ListIPAddressesPaginated(c.Context(), int64(subnetID), page, limit)
+	if page > 0 || limit > 0 || c.Query("sort") != "" || c.Query("q") != "" || c.Query("search") != "" || c.Query("status") != "" {
+		page, limit, opts := parseListOptions(c)
+		ips, total, err := h.service.ListIPAddressesPaginatedWithOptions(c.Context(), int64(subnetID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

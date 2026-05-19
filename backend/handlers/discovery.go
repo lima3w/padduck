@@ -122,12 +122,16 @@ func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan job not found"})
 	}
-	go func() {
-		if err := h.service.Discovery.RunJob(context.Background(), job); err != nil {
+	bgJob := h.service.Jobs.Enqueue("scan", "Run scan job "+job.Name, fiber.Map{"scan_job_id": job.ID}, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		reporter.Progress(0, 1, "running scan")
+		if err := h.service.Discovery.RunJob(ctx, job); err != nil {
 			slog.Error("scan job run error", "job_id", id, "error", err)
+			return nil, err
 		}
-	}()
-	return c.JSON(fiber.Map{"message": "scan job started"})
+		reporter.Progress(1, 1, "scan complete")
+		return fiber.Map{"scan_job_id": job.ID}, nil
+	})
+	return c.Status(fiber.StatusAccepted).JSON(bgJob)
 }
 
 // GetScanJobResults handles GET /api/v1/admin/scan-jobs/:id/results

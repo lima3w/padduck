@@ -14,10 +14,13 @@ func (h *Handler) CheckAllDNS(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2AuditRead); err != nil {
 		return nil
 	}
-	go func() {
-		h.service.DNS.CheckAllDNS(context.Background())
-	}()
-	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{"message": "DNS check started"})
+	job := h.service.Jobs.Enqueue("dns_check", "Check all DNS records", nil, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		reporter.Progress(0, 1, "checking DNS records")
+		h.service.DNS.CheckAllDNS(ctx)
+		reporter.Progress(1, 1, "DNS check complete")
+		return fiber.Map{"message": "DNS check complete"}, nil
+	})
+	return c.Status(fiber.StatusAccepted).JSON(job)
 }
 
 // TestPowerDNSConnection handles POST /api/v1/admin/dns/test

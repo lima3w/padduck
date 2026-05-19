@@ -28,6 +28,15 @@ func (s *Service) ListDevices(ctx context.Context, limit, offset int) ([]*models
 	return s.repository.ListDevices(ctx, limit, offset)
 }
 
+func (s *Service) ListDevicesWithOptions(ctx context.Context, limit, offset int, opts repository.ListOptions) ([]*models.Device, int64, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	opts.Limit = limit
+	opts.Offset = offset
+	return s.repository.ListDevicesWithOptions(ctx, opts)
+}
+
 // ListAllDevices returns all devices without pagination.
 func (s *Service) ListAllDevices(ctx context.Context) ([]*models.Device, error) {
 	return s.repository.ListAllDevices(ctx)
@@ -366,4 +375,3 @@ type DeviceUpdateRequest = repository.DeviceParams
 
 // DeviceInterfaceRequest holds input for creating or updating a device interface.
 type DeviceInterfaceRequest = repository.DeviceInterfaceParams
-

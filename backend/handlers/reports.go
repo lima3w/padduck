@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
@@ -279,6 +280,18 @@ func (h *Handler) RunScheduledReportNow(c *fiber.Ctx) error {
 	report, err := h.service.Reports.GetScheduledReport(c.Context(), int64(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "report not found"})
+	}
+
+	if c.QueryBool("async") {
+		job := h.service.Jobs.Enqueue("report", "Run scheduled report "+report.Name, fiber.Map{"report_id": report.ID}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "running report")
+			if err := h.service.Reports.RunScheduledReport(ctx, report); err != nil {
+				return nil, err
+			}
+			reporter.Progress(1, 1, "report complete")
+			return fiber.Map{"report_id": report.ID}, nil
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
 	if err := h.service.Reports.RunScheduledReport(c.Context(), report); err != nil {

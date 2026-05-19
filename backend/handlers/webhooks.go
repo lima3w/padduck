@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -224,6 +225,15 @@ func (h *Handler) ReplayWebhookDelivery(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid webhook delivery ID")
+	}
+	if c.QueryBool("async") {
+		job := h.service.Jobs.Enqueue("webhook_replay", "Replay webhook delivery", fiber.Map{"delivery_id": id}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "replaying webhook delivery")
+			delivery, err := h.service.Webhooks.ReplayDelivery(ctx, id)
+			reporter.Progress(1, 1, "webhook replay complete")
+			return delivery, err
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 	delivery, err := h.service.Webhooks.ReplayDelivery(c.Context(), id)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"ipam-next/models"
+	"ipam-next/repository"
 )
 
 // GetDashboardSummary returns aggregate IPAM statistics.
@@ -161,18 +162,27 @@ func buildTree(flat []models.SubnetTreeNode) []models.SubnetTreeNode {
 
 // ListSectionsPaginated returns a paginated list of sections.
 func (s *Service) ListSectionsPaginated(ctx context.Context, page, limit int) ([]*models.Section, int64, error) {
+	return s.ListSectionsPaginatedWithOptions(ctx, page, limit, repository.ListOptions{})
+}
+
+func (s *Service) ListSectionsPaginatedWithOptions(ctx context.Context, page, limit int, opts repository.ListOptions) ([]*models.Section, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if limit < 1 || limit > 200 {
 		limit = 25
 	}
-	offset := (page - 1) * limit
-	return s.repository.ListSectionsPaginated(ctx, limit, offset)
+	opts.Limit = limit
+	opts.Offset = (page - 1) * limit
+	return s.repository.ListSectionsPaginatedWithOptions(ctx, opts)
 }
 
 // ListSubnetsPaginated returns a paginated list of subnets for a section.
 func (s *Service) ListSubnetsPaginated(ctx context.Context, sectionID int64, page, limit int) ([]*models.Subnet, int64, error) {
+	return s.ListSubnetsPaginatedWithOptions(ctx, sectionID, page, limit, repository.ListOptions{})
+}
+
+func (s *Service) ListSubnetsPaginatedWithOptions(ctx context.Context, sectionID int64, page, limit int, opts repository.ListOptions) ([]*models.Subnet, int64, error) {
 	if sectionID <= 0 {
 		return nil, 0, fmt.Errorf("invalid section ID")
 	}
@@ -182,12 +192,17 @@ func (s *Service) ListSubnetsPaginated(ctx context.Context, sectionID int64, pag
 	if limit < 1 || limit > 200 {
 		limit = 25
 	}
-	offset := (page - 1) * limit
-	return s.repository.ListSubnetsBySectionPaginated(ctx, sectionID, limit, offset)
+	opts.Limit = limit
+	opts.Offset = (page - 1) * limit
+	return s.repository.ListSubnetsBySectionPaginatedWithOptions(ctx, sectionID, opts)
 }
 
 // ListIPAddressesPaginated returns a paginated list of IP addresses for a subnet.
 func (s *Service) ListIPAddressesPaginated(ctx context.Context, subnetID int64, page, limit int) ([]*models.IPAddress, int64, error) {
+	return s.ListIPAddressesPaginatedWithOptions(ctx, subnetID, page, limit, repository.ListOptions{})
+}
+
+func (s *Service) ListIPAddressesPaginatedWithOptions(ctx context.Context, subnetID int64, page, limit int, opts repository.ListOptions) ([]*models.IPAddress, int64, error) {
 	if subnetID <= 0 {
 		return nil, 0, fmt.Errorf("invalid subnet ID")
 	}
@@ -197,8 +212,9 @@ func (s *Service) ListIPAddressesPaginated(ctx context.Context, subnetID int64, 
 	if limit < 1 || limit > 200 {
 		limit = 25
 	}
-	offset := (page - 1) * limit
-	return s.repository.ListIPAddressesBySubnetPaginated(ctx, subnetID, limit, offset)
+	opts.Limit = limit
+	opts.Offset = (page - 1) * limit
+	return s.repository.ListIPAddressesBySubnetPaginatedWithOptions(ctx, subnetID, opts)
 }
 
 // ListUsersPaginated returns a paginated list of users.

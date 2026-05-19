@@ -95,11 +95,24 @@ func scanDevice(row pgx.Row) (*models.Device, error) {
 
 // ListDevices returns a paginated list of devices with their type and IP count.
 func (r *Repository) ListDevices(ctx context.Context, limit, offset int) ([]*models.Device, int64, error) {
+	return r.ListDevicesWithOptions(ctx, ListOptions{Limit: limit, Offset: offset})
+}
+
+func (r *Repository) ListDevicesWithOptions(ctx context.Context, opts ListOptions) ([]*models.Device, int64, error) {
+	args := []interface{}{}
+	where := ""
+	if opts.Query != "" {
+		args = append(args, "%"+opts.Query+"%")
+		where = fmt.Sprintf(" WHERE d.hostname ILIKE $%d OR d.vendor ILIKE $%d OR d.model ILIKE $%d", len(args), len(args), len(args))
+	}
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM devices`).Scan(&total); err != nil {
+	countQuery := `SELECT COUNT(*) FROM devices d` + where
+	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
+	sortCol := sortExpr(opts.Sort, "d.hostname", map[string]string{"hostname": "d.hostname", "vendor": "d.vendor", "model": "d.model", "last_ping_at": "d.last_ping_at", "created_at": "d.created_at"})
+	args = append(args, opts.Limit, opts.Offset)
 	query := `
 		SELECT ` + deviceSelectCols + `,
 		       ` + deviceTypeSelectCols + `,
@@ -107,11 +120,12 @@ func (r *Repository) ListDevices(ctx context.Context, limit, offset int) ([]*mod
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
 		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
+		` + where + `
 		GROUP BY d.id, dt.id
-		ORDER BY d.hostname
-		LIMIT $1 OFFSET $2`
+		ORDER BY ` + sortCol + ` ` + orderDirection(opts.Order) + `
+		LIMIT $` + fmt.Sprint(len(args)-1) + ` OFFSET $` + fmt.Sprint(len(args))
 
-	rows, err := r.db.Query(ctx, query, limit, offset)
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}

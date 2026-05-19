@@ -106,13 +106,26 @@ func (r *Repository) GetDashboardRecentActivity(ctx context.Context) ([]*models.
 
 // ListSectionsPaginated returns sections with pagination.
 func (r *Repository) ListSectionsPaginated(ctx context.Context, limit, offset int) ([]*models.Section, int64, error) {
+	return r.ListSectionsPaginatedWithOptions(ctx, ListOptions{Limit: limit, Offset: offset})
+}
+
+func (r *Repository) ListSectionsPaginatedWithOptions(ctx context.Context, opts ListOptions) ([]*models.Section, int64, error) {
+	where := ""
+	args := []interface{}{}
+	if opts.Query != "" {
+		args = append(args, "%"+opts.Query+"%")
+		where = fmt.Sprintf(" WHERE name ILIKE $%d OR description ILIKE $%d", len(args), len(args))
+	}
+
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM sections`).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM sections`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := `SELECT id, name, description, created_by, created_at, updated_at FROM sections ORDER BY created_at DESC LIMIT $1 OFFSET $2`
-	rows, err := r.db.Query(ctx, query, limit, offset)
+	sortCol := sortExpr(opts.Sort, "created_at", map[string]string{"name": "name", "created_at": "created_at", "updated_at": "updated_at"})
+	args = append(args, opts.Limit, opts.Offset)
+	query := fmt.Sprintf(`SELECT id, name, description, created_by, created_at, updated_at FROM sections%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -131,13 +144,26 @@ func (r *Repository) ListSectionsPaginated(ctx context.Context, limit, offset in
 
 // ListSubnetsBySectionPaginated returns subnets for a section with pagination.
 func (r *Repository) ListSubnetsBySectionPaginated(ctx context.Context, sectionID int64, limit, offset int) ([]*models.Subnet, int64, error) {
+	return r.ListSubnetsBySectionPaginatedWithOptions(ctx, sectionID, ListOptions{Limit: limit, Offset: offset})
+}
+
+func (r *Repository) ListSubnetsBySectionPaginatedWithOptions(ctx context.Context, sectionID int64, opts ListOptions) ([]*models.Subnet, int64, error) {
+	args := []interface{}{sectionID}
+	where := ` WHERE section_id = $1`
+	if opts.Query != "" {
+		args = append(args, "%"+opts.Query+"%")
+		where += fmt.Sprintf(" AND (host(network_address) ILIKE $%d OR description ILIKE $%d)", len(args), len(args))
+	}
+
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets WHERE section_id = $1`, sectionID).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := `SELECT id, section_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets WHERE section_id = $1 ORDER BY network_address LIMIT $2 OFFSET $3`
-	rows, err := r.db.Query(ctx, query, sectionID, limit, offset)
+	sortCol := sortExpr(opts.Sort, "network_address", map[string]string{"network": "network_address", "prefix": "prefix_length", "created_at": "created_at", "updated_at": "updated_at"})
+	args = append(args, opts.Limit, opts.Offset)
+	query := fmt.Sprintf(`SELECT id, section_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -156,13 +182,30 @@ func (r *Repository) ListSubnetsBySectionPaginated(ctx context.Context, sectionI
 
 // ListIPAddressesBySubnetPaginated returns IP addresses for a subnet with pagination.
 func (r *Repository) ListIPAddressesBySubnetPaginated(ctx context.Context, subnetID int64, limit, offset int) ([]*models.IPAddress, int64, error) {
+	return r.ListIPAddressesBySubnetPaginatedWithOptions(ctx, subnetID, ListOptions{Limit: limit, Offset: offset})
+}
+
+func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Context, subnetID int64, opts ListOptions) ([]*models.IPAddress, int64, error) {
+	args := []interface{}{subnetID}
+	where := ` WHERE subnet_id = $1`
+	if opts.Status != "" {
+		args = append(args, opts.Status)
+		where += fmt.Sprintf(" AND status = $%d", len(args))
+	}
+	if opts.Query != "" {
+		args = append(args, "%"+opts.Query+"%")
+		where += fmt.Sprintf(" AND (address::text ILIKE $%d OR hostname ILIKE $%d OR assigned_to ILIKE $%d)", len(args), len(args), len(args))
+	}
+
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1`, subnetID).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := `SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses WHERE subnet_id = $1 ORDER BY address LIMIT $2 OFFSET $3`
-	rows, err := r.db.Query(ctx, query, subnetID, limit, offset)
+	sortCol := sortExpr(opts.Sort, "address", map[string]string{"address": "address", "hostname": "hostname", "status": "status", "created_at": "created_at", "updated_at": "updated_at"})
+	args = append(args, opts.Limit, opts.Offset)
+	query := fmt.Sprintf(`SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
