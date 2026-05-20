@@ -115,8 +115,8 @@ Results are stored per-IP with liveness status and response time. View them from
 
 Generate API tokens for programmatic access.
 
-1. **My Settings** → **API Tokens** → **+ New Token**
-2. Choose a name, scope (`read`, `write`, or `admin`), and optional expiry
+1. **My Settings** → **API Tokens** → **Create Token**
+2. Choose a descriptive token name
 3. Copy the token — it is only shown once
 
 Authenticate API requests with:
@@ -235,7 +235,13 @@ The `role` column is optional and defaults to `user`.
 
 ### Privacy policy
 
-Accept the current privacy policy via `POST /api/v1/auth/me/accept-privacy`. The current version is available at `GET /api/v1/privacy-policy/version`.
+Use **My Settings** → **Privacy** to review the current privacy policy version,
+the version recorded on your account, and accept the current policy if your
+recorded consent is out of date.
+
+API clients can accept the current privacy policy via
+`POST /api/v1/auth/me/accept-privacy`. The current version is available at
+`GET /api/v1/privacy-policy/version`.
 
 ---
 
