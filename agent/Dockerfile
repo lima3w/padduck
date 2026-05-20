@@ -1,8 +1,9 @@
+# syntax=docker/dockerfile:1
 FROM golang:1.26.2-alpine AS builder
 WORKDIR /build
-COPY go.mod ./
-COPY main.go ./
-RUN go build -ldflags="-s -w" -o ipam-agent .
+COPY go.mod main.go ./
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    go build -ldflags="-s -w" -o ipam-agent .
 
 FROM alpine:3.22
 RUN apk add --no-cache iputils

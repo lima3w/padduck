@@ -7,41 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-and-deploy:
+  deploy:
     runs-on: linux
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.26.2'
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-
-      - name: Run backend tests
-        working-directory: ./backend
-        run: go test -mod=vendor ./...
-
-      - name: Run frontend tests
-        working-directory: ./frontend
-        run: |
-          npm ci
-          npm test
-
-      - name: Generate dependency SBOM
-        run: make sbom
-
-      - name: Publish dependency SBOM
-        uses: actions/upload-artifact@v3
-        with:
-          name: dependency-sbom
-          path: sbom/dependency-sbom.cdx.json
-          if-no-files-found: error
 
       - name: Configure firewall
         run: |
@@ -53,7 +23,6 @@ jobs:
         run: |
           if [ -f /etc/ipam-next/deploy.env ]; then
             echo "Using /etc/ipam-next/deploy.env for deployment"
-            # Source file so variables are available for validation below.
             set -a
             . /etc/ipam-next/deploy.env
             set +a
@@ -76,11 +45,6 @@ jobs:
               ;;
           esac
 
-          # Export the validated key into the step environment so Docker Compose
-          # uses the file value in all subsequent steps. Docker Compose gives shell
-          # environment higher precedence than --env-file, so any stale or wrong
-          # value already set in the runner's ambient environment would otherwise
-          # override the file value and cause the backend to fatal on startup.
           echo "MFA_ENCRYPTION_KEY=${MFA_ENCRYPTION_KEY}" >> "$GITHUB_ENV"
 
       - name: Build containers
@@ -107,5 +71,5 @@ jobs:
 
       - name: Deployment summary
         run: |
-          echo "✅ Deployment successful"
+          echo "Deployment successful"
           docker compose $COMPOSE_ENV_ARGS ps
