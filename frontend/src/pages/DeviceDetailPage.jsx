@@ -5,6 +5,7 @@ import CustomFieldForm from '../components/CustomFieldForm'
 import ChangeHistory from '../components/ChangeHistory'
 import DataQualityBadge from '../components/DataQualityBadge'
 import FingerprintPanel from '../components/FingerprintPanel'
+import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
 import {
@@ -249,6 +250,33 @@ export default function DeviceDetailPage() {
 
   const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
   const typeObj = deviceTypes.find(t => t.id === device?.typeId)
+  const locationName = locations.find(l => l.id === device?.locationId)?.name
+  const relationshipItems = [
+    device?.locationId && {
+      label: 'Location',
+      value: locationName || `Location #${device.locationId}`,
+      to: `/locations/${device.locationId}`,
+      description: 'Physical assignment',
+    },
+    device?.rackId && {
+      label: 'Rack',
+      value: `Rack #${device.rackId}`,
+      to: `/racks/${device.rackId}`,
+      description: device.rackUnitStart != null ? `Mounted at U${device.rackUnitStart}-U${device.rackUnitStart + (device.rackUnitSize ?? 1) - 1}` : 'Rack assignment',
+    },
+    {
+      label: 'IP Addresses',
+      value: 'Associated IPs',
+      count: ipAddresses.length,
+      description: `${ipAddresses.length} address${ipAddresses.length === 1 ? '' : 'es'} linked to this device`,
+    },
+    {
+      label: 'Interfaces',
+      value: 'Device interfaces',
+      count: interfaces.length,
+      description: `${interfaces.length} interface${interfaces.length === 1 ? '' : 's'} defined`,
+    },
+  ]
 
   return (
     <div>
@@ -374,6 +402,8 @@ export default function DeviceDetailPage() {
           <FingerprintPanel deviceId={device.id} deviceIp={device.ipAddress || device.ip || ''} />
         </div>
       )}
+
+      <ObjectRelationshipsPanel relationships={relationshipItems} />
 
       <div className="flex border-b dark:border-gray-700 mb-4">
         <button

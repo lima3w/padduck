@@ -111,6 +111,15 @@ Results are stored per-IP with liveness status and response time. View them from
 
 ---
 
+## Object Relationships
+
+Detail pages for devices, racks, locations, and VLANs include a
+**Relationships** panel. Use it to jump between connected resources such as
+device locations, rack assignments, assigned subnets, installed devices, and
+related sections before drilling into the detailed tables below.
+
+---
+
 ## API Tokens
 
 Generate API tokens for programmatic access.

@@ -4,6 +4,7 @@ import { getLocation } from '../api/locations'
 import { getRacks, createRack, updateRack, deleteRack } from '../api/racks'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
+import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 
 const RACK_EMPTY_FORM = { name: '', size_u: '42', description: '' }
 
@@ -129,6 +130,34 @@ export default function LocationDetailPage() {
   if (loading) return <p className="text-gray-500">Loading location...</p>
   if (error && !location) return <p className="text-red-600">{error}</p>
 
+  const parent = breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 2] : null
+  const relationshipItems = [
+    parent && {
+      label: 'Parent Location',
+      value: parent.name,
+      to: `/locations/${parent.id}`,
+      description: 'Immediate parent in the location hierarchy',
+    },
+    {
+      label: 'Racks',
+      value: 'Assigned racks',
+      count: racks.length,
+      description: `${racks.length} rack${racks.length === 1 ? '' : 's'} in this location`,
+    },
+    {
+      label: 'Subnets',
+      value: 'Assigned subnets',
+      count: subnets.length,
+      description: `${subnets.length} subnet${subnets.length === 1 ? '' : 's'} mapped to this location`,
+    },
+    {
+      label: 'Devices',
+      value: 'Assigned devices',
+      count: devices.length,
+      description: `${devices.length} device${devices.length === 1 ? '' : 's'} mapped to this location`,
+    },
+  ]
+
   return (
     <div>
       {/* Breadcrumb */}
@@ -156,6 +185,8 @@ export default function LocationDetailPage() {
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+
+      <ObjectRelationshipsPanel relationships={relationshipItems} />
 
       {/* Location details */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
