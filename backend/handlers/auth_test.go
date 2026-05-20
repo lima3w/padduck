@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // setUserID injects a userID int64 into Locals (used by auth handlers instead of "user").

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (r *Repository) ListWebhookEndpoints(ctx context.Context) ([]*models.WebhookEndpoint, error) {

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // CreateIPAddress creates a new IP address record

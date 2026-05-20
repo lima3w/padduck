@@ -9,8 +9,8 @@ import (
 	"text/template"
 	"time"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // Template name constants

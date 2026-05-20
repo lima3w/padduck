@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"ipam-next/models"
-	"ipam-next/utils"
+	"padduck/models"
+	"padduck/utils"
 )
 
 const (

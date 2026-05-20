@@ -9,19 +9,19 @@ import (
 	"fmt"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 var (
-	ErrAccountLocked   = errors.New("account is temporarily locked due to too many failed login attempts")
+	ErrAccountLocked      = errors.New("account is temporarily locked due to too many failed login attempts")
 	ErrInvalidUnlockToken = errors.New("unlock token is invalid or expired")
 )
 
 const (
-	maxFailedAttempts   = 5
-	bruteForceWindow    = 15 * time.Minute
-	notifRateLimit      = 1 * time.Hour
-	ipFailureThreshold  = 3 // send notification after this many failures from same IP
+	maxFailedAttempts  = 5
+	bruteForceWindow   = 15 * time.Minute
+	notifRateLimit     = 1 * time.Hour
+	ipFailureThreshold = 3 // send notification after this many failures from same IP
 )
 
 // lockoutDuration returns the lockout duration based on how many times the account has been locked.
@@ -70,7 +70,7 @@ func (s *Service) ProcessFailedLogin(ctx context.Context, userID int64, username
 }
 
 const (
-	ipThrottleThreshold = 20             // max failed attempts per IP within the window
+	ipThrottleThreshold = 20 // max failed attempts per IP within the window
 	ipThrottleWindow    = 15 * time.Minute
 )
 

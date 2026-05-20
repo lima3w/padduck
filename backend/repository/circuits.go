@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (r *Repository) ListCircuitProviders(ctx context.Context) ([]*models.CircuitProvider, error) {

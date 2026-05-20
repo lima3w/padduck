@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 func TestNewHandler(t *testing.T) {

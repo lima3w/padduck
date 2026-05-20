@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	csvexport "ipam-next/internal/export"
-	"ipam-next/services"
+	csvexport "padduck/internal/export"
+	"padduck/services"
 )
 
 // ExportSectionsCSV handles GET /api/v1/admin/reports/export/sections

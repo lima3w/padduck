@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 // GetIdentityPolicies handles GET /api/v1/admin/identity-policies
@@ -47,10 +47,10 @@ func (h *Handler) GetIdentityPolicies(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"enforce_mfa":             enforceMFA,
-		"session_max_age_hours":   sessionMaxAgeHours,
-		"api_token_max_age_days":  apiTokenMaxAgeDays,
-		"inactive_user_days":      inactiveUserDays,
+		"enforce_mfa":            enforceMFA,
+		"session_max_age_hours":  sessionMaxAgeHours,
+		"api_token_max_age_days": apiTokenMaxAgeDays,
+		"inactive_user_days":     inactiveUserDays,
 	})
 }
 
@@ -62,10 +62,10 @@ func (h *Handler) UpdateIdentityPolicies(c *fiber.Ctx) error {
 	}
 
 	var req struct {
-		EnforceMFA            bool `json:"enforce_mfa"`
-		SessionMaxAgeHours    int  `json:"session_max_age_hours"`
-		APITokenMaxAgeDays    int  `json:"api_token_max_age_days"`
-		InactiveUserDays      int  `json:"inactive_user_days"`
+		EnforceMFA         bool `json:"enforce_mfa"`
+		SessionMaxAgeHours int  `json:"session_max_age_hours"`
+		APITokenMaxAgeDays int  `json:"api_token_max_age_days"`
+		InactiveUserDays   int  `json:"inactive_user_days"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
@@ -98,10 +98,10 @@ func (h *Handler) UpdateIdentityPolicies(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"enforce_mfa":             req.EnforceMFA,
-		"session_max_age_hours":   req.SessionMaxAgeHours,
-		"api_token_max_age_days":  req.APITokenMaxAgeDays,
-		"inactive_user_days":      req.InactiveUserDays,
+		"enforce_mfa":            req.EnforceMFA,
+		"session_max_age_hours":  req.SessionMaxAgeHours,
+		"api_token_max_age_days": req.APITokenMaxAgeDays,
+		"inactive_user_days":     req.InactiveUserDays,
 	})
 }
 
@@ -118,13 +118,13 @@ func (h *Handler) ListSessionRisk(c *fiber.Ctx) error {
 	}
 
 	type sessionRiskItem struct {
-		UserID          int64      `json:"user_id"`
-		Username        string     `json:"username"`
-		IPAddress       string     `json:"ip_address"`
-		LastUsedAt      time.Time  `json:"last_used_at"`
-		CreatedAt       time.Time  `json:"created_at"`
-		IsImpersonation bool       `json:"is_impersonation"`
-		RiskFlags       []string   `json:"risk_flags"`
+		UserID          int64     `json:"user_id"`
+		Username        string    `json:"username"`
+		IPAddress       string    `json:"ip_address"`
+		LastUsedAt      time.Time `json:"last_used_at"`
+		CreatedAt       time.Time `json:"created_at"`
+		IsImpersonation bool      `json:"is_impersonation"`
+		RiskFlags       []string  `json:"risk_flags"`
 	}
 
 	now := time.Now()

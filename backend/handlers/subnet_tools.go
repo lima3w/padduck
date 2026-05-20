@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 // SplitSubnetRequest is the body for POST /api/v1/admin/subnets/:id/split

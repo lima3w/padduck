@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // AuditService handles writing and querying audit logs.

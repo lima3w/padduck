@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // IPSearchFilter holds optional additional filters for IP search

@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
-	"ipam-next/repository"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/repository"
+	"padduck/services"
 )
 
 // GetReconciliationReport handles GET /api/v1/admin/reports/reconciliation

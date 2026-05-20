@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
-	"ipam-next/services"
-	"ipam-next/utils"
+	"padduck/models"
+	"padduck/services"
+	"padduck/utils"
 )
 
 type CreateUserRequest struct {

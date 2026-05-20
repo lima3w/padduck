@@ -7,7 +7,7 @@ import (
 	"math"
 	"net"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // SplitSubnet splits a subnet into 2^(newPrefixLen-currentPrefix) child subnets.

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"ipam-next/internal/netguard"
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/internal/netguard"
+	"padduck/models"
+	"padduck/repository"
 )
 
 const (

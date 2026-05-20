@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/services"
 )
 
 // PermissionPreset is a static named set of permissions that can be applied to a role.
@@ -364,4 +364,3 @@ func (h *Handler) GetRolePresetDiff(c *fiber.Ctx) error {
 		"unchanged": unchanged,
 	})
 }
-

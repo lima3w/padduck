@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 var (

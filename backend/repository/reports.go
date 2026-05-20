@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -634,11 +634,11 @@ func (r *Repository) GetVLANAssignment(ctx context.Context) ([]*VLANAssignmentRo
 
 // IPAgeRow holds IP address age data for the ip_age report.
 type IPAgeRow struct {
-	IPID        int64
-	Address     string
-	Status      string
-	AssignedTo  string
-	DaysOld     int
+	IPID          int64
+	Address       string
+	Status        string
+	AssignedTo    string
+	DaysOld       int
 	DaysSinceSeen int
 }
 

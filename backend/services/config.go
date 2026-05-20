@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 type ConfigService struct {

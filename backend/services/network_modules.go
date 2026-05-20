@@ -6,8 +6,8 @@ import (
 	"net"
 	"strings"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 func defaultString(value, fallback string) string {

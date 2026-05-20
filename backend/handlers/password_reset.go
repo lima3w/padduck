@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
-	"ipam-next/utils"
+	"padduck/services"
+	"padduck/utils"
 )
 
 type RequestPasswordResetRequest struct {

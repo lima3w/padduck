@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // GetActiveBreakGlassSession returns the current active session if one exists (not expired, not ended).

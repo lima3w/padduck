@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // LocationCreateRequest holds input for creating a location.

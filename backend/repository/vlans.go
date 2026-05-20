@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // VLAN operations

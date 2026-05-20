@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (r *Repository) ListAutomationPolicies(ctx context.Context) ([]*models.AutomationPolicy, error) {

@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ListPrivacyVersions returns all privacy policy versions ordered by created_at DESC.

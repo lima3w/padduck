@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"ipam-next/internal/export"
-	"ipam-next/models"
+	"padduck/internal/export"
+	"padduck/models"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

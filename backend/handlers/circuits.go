@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/repository"
-	"ipam-next/services"
+	"padduck/repository"
+	"padduck/services"
 )
 
 func (h *Handler) ListCircuitProviders(c *fiber.Ctx) error {

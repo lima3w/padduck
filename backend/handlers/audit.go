@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	csvexport "ipam-next/internal/export"
-	"ipam-next/models"
-	"ipam-next/services"
+	csvexport "padduck/internal/export"
+	"padduck/models"
+	"padduck/services"
 )
 
 // GetAuditLogs handles GET /api/v1/admin/audit-logs

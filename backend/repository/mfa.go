@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // MFA settings operations

@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 const (
-	DefaultIdleTimeoutMinutes    = 60
-	DefaultAbsoluteTimeoutHours  = 168 // 7 days
-	sessionTokenLength           = 32
+	DefaultIdleTimeoutMinutes   = 60
+	DefaultAbsoluteTimeoutHours = 168 // 7 days
+	sessionTokenLength          = 32
 )
 
 // parseDeviceName extracts a human-readable device name from a user agent string.

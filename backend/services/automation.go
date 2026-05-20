@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 type AutomationService struct {

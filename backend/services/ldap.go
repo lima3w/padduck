@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	ldap "github.com/go-ldap/ldap/v3"
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // LDAPService manages LDAP / Active Directory authentication.

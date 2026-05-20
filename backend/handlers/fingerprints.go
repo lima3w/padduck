@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 // GetDeviceFingerprint handles GET /api/v1/admin/devices/:id/fingerprint

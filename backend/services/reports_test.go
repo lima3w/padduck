@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"ipam-next/internal/export"
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/internal/export"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

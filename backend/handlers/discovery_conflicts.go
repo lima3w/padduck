@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 // ListDiscoveryConflicts handles GET /api/v1/admin/discovery/conflicts?status=pending

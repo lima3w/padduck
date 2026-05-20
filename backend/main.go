@@ -15,11 +15,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"ipam-next/config"
-	"ipam-next/db"
-	"ipam-next/handlers"
-	"ipam-next/repository"
-	"ipam-next/services"
+	"padduck/config"
+	"padduck/db"
+	"padduck/handlers"
+	"padduck/repository"
+	"padduck/services"
 )
 
 func initLogging() {

@@ -7,7 +7,7 @@ import (
 	"log"
 	"strings"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 var (
@@ -429,10 +429,10 @@ func (s *Service) notifyAdminsSubnetRequest(ctx context.Context, sr *models.Subn
 	}
 	for _, admin := range admins {
 		if err := s.Notification.Queue(ctx, admin.ID, NotifRequestSubmitted, map[string]interface{}{
-			"RequestType":  "Subnet",
-			"RequestID":    sr.ID,
-			"Purpose":      sr.Purpose,
-			"PrefixLen":    sr.RequestedPrefixLen,
+			"RequestType": "Subnet",
+			"RequestID":   sr.ID,
+			"Purpose":     sr.Purpose,
+			"PrefixLen":   sr.RequestedPrefixLen,
 		}); err != nil {
 			log.Printf("[requests] failed to notify admin %d: %v", admin.ID, err)
 		}
