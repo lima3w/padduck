@@ -436,5 +436,5 @@ func TestExportV2MigrationBundle_ReturnsZip(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/zip", resp.Header.Get("Content-Type"))
-	assert.Contains(t, resp.Header.Get("Content-Disposition"), "ipam-v2-migration-bundle")
+	assert.Contains(t, resp.Header.Get("Content-Disposition"), "padduck-v2-migration-bundle")
 }
