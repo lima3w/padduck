@@ -10,3 +10,14 @@ Compatibility rules:
 - Write-heavy automation endpoints support `Idempotency-Key` for retry-safe clients.
 - Validation errors use `code: VALIDATION_ERROR` with a `fields` array.
 - Outbound webhooks include `schema_version` in the payload and `X-IPAM-Event-Schema-Version` in delivery headers.
+
+## V2 Compatibility Warnings
+
+Administrators can review known v2 compatibility warnings at:
+
+- `GET /api/v1/admin/compatibility/v2-warnings`
+
+The response groups warnings by API, field, and workflow areas and includes
+recommended remediation work for v1 clients before a v2 upgrade. Clients should
+prefer top-level IP address endpoints, send idempotency keys for automation
+writes, and avoid depending solely on legacy role fields.
