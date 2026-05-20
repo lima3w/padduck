@@ -108,6 +108,8 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	h.setSessionCookie(c, token)
+
 	h.auditLog(c, services.AuditEntry{
 		UserID: &admin.ID, Username: admin.Username,
 		Action: "user.impersonate", ResourceType: "user",
@@ -208,7 +210,7 @@ func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
 		UserID: &admin.ID, Username: admin.Username,
 		Action: "user.bulk_delete", ResourceType: "user",
 		ResourceName: fmt.Sprintf("%d users", len(req.UserIDs)),
-		Status: "success",
+		Status:       "success",
 	})
 
 	return c.JSON(fiber.Map{"deleted": count})
@@ -227,12 +229,10 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field required"})
 	}
 
-
 	const maxBulkImportSize = 5 * 1024 * 1024 // 5 MB
 	if file.Size > maxBulkImportSize {
 		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
 	}
-
 
 	f, err := file.Open()
 	if err != nil {
@@ -291,7 +291,7 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 		UserID: &admin.ID, Username: admin.Username,
 		Action: "user.bulk_import", ResourceType: "user",
 		ResourceName: fmt.Sprintf("%d users", len(records)),
-		Status: "success",
+		Status:       "success",
 	})
 
 	return c.JSON(fiber.Map{"results": results})
