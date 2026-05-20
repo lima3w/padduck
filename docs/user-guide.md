@@ -120,6 +120,15 @@ related sections before drilling into the detailed tables below.
 
 ---
 
+## Keyboard and Accessibility
+
+The application includes a skip link for keyboard users, visible focus states
+on interactive controls, Escape-to-close modal behavior, and labeled dialogs
+and menus. Use `Ctrl+K` or `Cmd+K` to open global search, arrow keys to move
+through results, Enter to open a result, and Escape to close overlays.
+
+---
+
 ## API Tokens
 
 Generate API tokens for programmatic access.

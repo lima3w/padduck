@@ -98,6 +98,9 @@ export default function CommandPalette({ open, onClose }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command palette"
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/40 dark:bg-black/60"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
@@ -112,6 +115,12 @@ export default function CommandPalette({ open, onClose }) {
             value={query}
             onChange={handleInput}
             onKeyDown={handleKey}
+            aria-label="Search sections, subnets, and devices"
+            aria-controls="command-palette-results"
+            aria-activedescendant={items[cursor] ? `command-palette-item-${cursor}` : undefined}
+            role="combobox"
+            aria-expanded={items.length > 0}
+            aria-autocomplete="list"
             placeholder="Search sections, subnets, devices…"
             className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
           />
@@ -125,13 +134,14 @@ export default function CommandPalette({ open, onClose }) {
         </div>
 
         {items.length > 0 && (
-          <ul className="max-h-72 overflow-y-auto py-1">
+          <ul id="command-palette-results" role="listbox" className="max-h-72 overflow-y-auto py-1">
             {items.map((item, i) => (
-              <li key={i}>
+              <li key={i} id={`command-palette-item-${i}`} role="option" aria-selected={i === cursor}>
                 <button
+                  type="button"
                   onMouseEnter={() => setCursor(i)}
                   onMouseDown={() => select(item)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${
                     i === cursor ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                   }`}
                 >

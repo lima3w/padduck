@@ -3,8 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import Avatar from './Avatar'
 
-const STORAGE_KEY = 'ipam-color-scheme'
-
 export default function UserMenu({ darkMode }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -59,9 +57,11 @@ export default function UserMenu({ darkMode }) {
   return (
     <div className="relative" ref={menuRef}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded px-2 py-1 hover:bg-blue-600 dark:hover:bg-gray-700 transition focus:outline-none"
-        aria-haspopup="true"
+        className="flex items-center gap-2 rounded px-2 py-1 hover:bg-blue-600 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 dark:focus:ring-offset-gray-800"
+        aria-label="Open user menu"
+        aria-haspopup="menu"
         aria-expanded={open}
       >
         <Avatar
@@ -77,40 +77,50 @@ export default function UserMenu({ darkMode }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1">
+        <div
+          role="menu"
+          aria-label="User menu"
+          className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1"
+        >
           <Link
+            role="menuitem"
             to="/settings"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
           >
             <span>My Settings</span>
           </Link>
           <Link
+            role="menuitem"
             to="/requests"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
           >
             <span>My Requests</span>
           </Link>
           <Link
+            role="menuitem"
             to="/settings?tab=sessions"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
           >
             <span>Active Sessions</span>
           </Link>
           <Link
+            role="menuitem"
             to="/settings?tab=history"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
           >
             <span>Login History</span>
           </Link>
 
           {darkMode && (
             <button
+              type="button"
+              role="menuitem"
               onClick={toggleDarkMode}
-              className="w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
             >
               <span>Dark Mode</span>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -122,8 +132,10 @@ export default function UserMenu({ darkMode }) {
           <div className="my-1 border-t border-gray-200 dark:border-gray-600" />
 
           <button
+            type="button"
+            role="menuitem"
             onClick={handleLogout}
-            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
           >
             Logout
           </button>
