@@ -58,7 +58,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-        <p className="text-gray-600 mb-6">Register for IPAM Next</p>
+        <p className="text-gray-600 mb-6">Register for Padduck</p>
 
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">

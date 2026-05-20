@@ -8,7 +8,7 @@ export default function Header({ darkMode, onSearchClick }) {
   return (
     <header className="bg-blue-700 dark:bg-gray-800 text-white px-6 py-3 flex items-center justify-between shadow">
       <div className="flex items-center">
-        <span className="text-xl font-bold tracking-tight">IPAM Next</span>
+        <span className="text-xl font-bold tracking-tight">Padduck</span>
         <span className="ml-3 text-blue-300 dark:text-gray-400 text-sm hidden sm:inline">IP Address Management</span>
       </div>
       <div className="flex items-center gap-3">
