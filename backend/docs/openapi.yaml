@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
-  title: IPAM Next API
+  title: Padduck API
   description: Route-complete REST API specification for the current backend.
   version: 1.26.0
   x-api-contract: stable-v1
   contact:
-    name: IPAM Next
+    name: Padduck
 
 servers:
   - url: /

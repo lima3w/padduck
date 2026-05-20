@@ -1,5 +1,5 @@
 
-# IPAM Next
+# Padduck
 
 A modern IP Address Management (IPAM) platform built with Go, React, and PostgreSQL.
 

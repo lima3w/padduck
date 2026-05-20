@@ -1,8 +1,8 @@
-# IPAM Next — User Guide
+# Padduck — User Guide
 
 ## Overview
 
-IPAM Next is a web-based IP Address Management system. It lets you organize your network space into **Sections** → **Subnets** → **IP Addresses**, manage VRFs and VLANs, track discovery scans, and administer users.
+Padduck is a web-based IP Address Management system. It lets you organize your network space into **Sections** → **Subnets** → **IP Addresses**, manage VRFs and VLANs, track discovery scans, and administer users.
 
 ---
 
@@ -100,7 +100,7 @@ An IP can be assigned with an expiry date. When the lease expires the IP can be 
 
 ## Discovery (Network Scanning)
 
-IPAM Next can scan your subnets to detect live hosts using ICMP ping.
+Padduck can scan your subnets to detect live hosts using ICMP ping.
 
 ### Creating a Scan Job
 

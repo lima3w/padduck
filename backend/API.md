@@ -1,8 +1,8 @@
-# IPAM Next API Reference - v0.1.0
+# Padduck API Reference - v0.1.0
 
 ## Overview
 
-The IPAM Next API is RESTful and uses JSON for request/response bodies. All endpoints are prefixed with `/api/v1`.
+The Padduck API is RESTful and uses JSON for request/response bodies. All endpoints are prefixed with `/api/v1`.
 
 ## Base URL
 
