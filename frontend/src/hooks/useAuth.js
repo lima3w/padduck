@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as client from '../api/client'
+import { clearCachedUser, getCachedUser, setCachedUser } from '../utils/storageKeys'
 
 export function useAuth() {
   const [user, setUser] = useState(null)
@@ -7,27 +8,25 @@ export function useAuth() {
   const [error, setError] = useState(null)
 
   // On mount, verify the session cookie is still valid by calling /auth/me.
-  // Use the cached current_user for an optimistic initial render, then confirm with the server.
+  // Use the cached current user for an optimistic initial render, then confirm with the server.
   useEffect(() => {
-    const cached = localStorage.getItem('current_user')
-    if (cached) {
-      try { setUser(JSON.parse(cached)) } catch {}
-    }
+    const cached = getCachedUser()
+    if (cached) setUser(cached)
     client.getCurrentUser()
       .then((res) => {
         setUser(res.data)
-        localStorage.setItem('current_user', JSON.stringify(res.data))
+        setCachedUser(res.data)
       })
       .catch(() => {
         setUser(null)
-        localStorage.removeItem('current_user')
+        clearCachedUser()
       })
       .finally(() => setLoading(false))
   }, [])
 
   const login = (userData) => {
     setUser(userData)
-    if (userData) localStorage.setItem('current_user', JSON.stringify(userData))
+    if (userData) setCachedUser(userData)
   }
 
   const logout = async () => {
@@ -35,7 +34,7 @@ export function useAuth() {
       await client.logout()
     } catch {}
     setUser(null)
-    localStorage.removeItem('current_user')
+    clearCachedUser()
   }
 
   const generateToken = async (tokenName) => {

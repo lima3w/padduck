@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { getVrfs, createVrf, updateVrf, deleteVrf } from '../api/client'
 import { downloadFile } from '../utils/download'
+import { getCachedUser } from '../utils/storageKeys'
 
 // VRF model has no JSON tags — Go field names come through as PascalCase:
 //   ID, Name, RouteDistinguisher, Description, CreatedAt, UpdatedAt
@@ -19,7 +20,7 @@ export default function VRFsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [downloading, setDownloading] = useState(false)
 
-  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
+  const isAdmin = getCachedUser()?.role === 'admin'
 
   async function handleExport() {
     setDownloading(true)

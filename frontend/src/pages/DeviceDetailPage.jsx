@@ -14,6 +14,7 @@ import {
   getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface,
   getCustomFields, getDeviceSNMPCredentials,
 } from '../api/client'
+import { getCachedUser } from '../utils/storageKeys'
 
 const MEDIA_TYPES = ['copper', 'fiber', 'SFP', 'SFP+', 'QSFP', 'other']
 
@@ -248,7 +249,7 @@ export default function DeviceDetailPage() {
   if (loading) return <p className="text-gray-500">Loading device...</p>
   if (error && !device) return <p className="text-red-600">{error}</p>
 
-  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
+  const isAdmin = getCachedUser()?.role === 'admin'
   const typeObj = deviceTypes.find(t => t.id === device?.typeId)
   const locationName = locations.find(l => l.id === device?.locationId)?.name
   const relationshipItems = [

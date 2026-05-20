@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { getStoredItem, LEGACY_STORAGE_KEYS, setStoredItem, STORAGE_KEYS } from '../utils/storageKeys'
 
-const STORAGE_KEY = 'ipam-color-scheme'
+const STORAGE_KEY = STORAGE_KEYS.colorScheme
+const LEGACY_STORAGE_KEY = LEGACY_STORAGE_KEYS.colorScheme
 
 export function useDarkMode() {
   const [mode, setMode] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = getStoredItem(STORAGE_KEY, LEGACY_STORAGE_KEY)
     if (stored) return stored // 'dark' | 'light' | 'system'
     return 'system'
   })
@@ -25,7 +27,7 @@ export function useDarkMode() {
   }, [mode])
 
   function setPreference(pref) {
-    localStorage.setItem(STORAGE_KEY, pref)
+    setStoredItem(STORAGE_KEY, pref, LEGACY_STORAGE_KEY)
     setMode(pref)
   }
 

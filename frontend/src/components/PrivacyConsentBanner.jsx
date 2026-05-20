@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getPrivacyPolicyVersion, acceptPrivacyPolicy, getCurrentUser } from '../api/client'
+import { getCachedUser, setCachedUser } from '../utils/storageKeys'
 
 export default function PrivacyConsentBanner() {
   const [policyVersion, setPolicyVersion] = useState(null)
@@ -9,15 +10,9 @@ export default function PrivacyConsentBanner() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    const cached = localStorage.getItem('current_user')
-    if (!cached) return // not authenticated
-
-    try {
-      const u = JSON.parse(cached)
-      setUserAcceptedVersion(u.privacyAcceptedVersion || u.privacy_accepted_version || null)
-    } catch {
-      return
-    }
+    const user = getCachedUser()
+    if (!user) return // not authenticated
+    setUserAcceptedVersion(user.privacyAcceptedVersion || user.privacy_accepted_version || null)
 
     getPrivacyPolicyVersion()
       .then((res) => setPolicyVersion(res.data?.version || '1.0'))
@@ -33,16 +28,16 @@ export default function PrivacyConsentBanner() {
     setError(null)
     try {
       await acceptPrivacyPolicy()
-      const cached = JSON.parse(localStorage.getItem('current_user') || '{}')
-      localStorage.setItem('current_user', JSON.stringify({
+      const cached = getCachedUser() || {}
+      setCachedUser({
         ...cached,
         privacyAcceptedVersion: policyVersion,
         privacy_accepted_version: undefined,
-      }))
+      })
       setUserAcceptedVersion(policyVersion)
       setDismissed(true)
       getCurrentUser()
-        .then((res) => localStorage.setItem('current_user', JSON.stringify(res.data)))
+        .then((res) => setCachedUser(res.data))
         .catch(() => {})
     } catch (err) {
       setError('Failed to record consent. Please try again.')

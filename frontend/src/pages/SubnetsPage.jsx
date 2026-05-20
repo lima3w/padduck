@@ -24,9 +24,11 @@ import EmptyRow from '../components/EmptyRow'
 import { getLocations } from '../api/locations'
 import { downloadFile } from '../utils/download'
 import { loadPrefs, savePrefs } from '../utils/listPrefs'
+import { getCachedUser, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '../utils/storageKeys'
 
 const DEFAULT_LIMIT = 25
-const FILTER_KEY = 'ipam_filters_subnets'
+const FILTER_KEY = STORAGE_KEYS.subnetFilters
+const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.subnetFilters
 
 const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
 
@@ -71,11 +73,11 @@ export default function SubnetsPage() {
   const [cfDefs, setCfDefs] = useState([])
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [locations, setLocations] = useState([])
-  const [filterLocationId, setFilterLocationId] = useState(() => loadPrefs(FILTER_KEY, { filterLocationId: '' }).filterLocationId)
+  const [filterLocationId, setFilterLocationId] = useState(() => loadPrefs(FILTER_KEY, { filterLocationId: '' }, LEGACY_FILTER_KEY).filterLocationId)
   const [nameservers, setNameservers] = useState([])
   const [vlans, setVlans] = useState([])
 
-  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   // Split modal state
@@ -113,7 +115,7 @@ export default function SubnetsPage() {
   }, [sectionID])
 
   useEffect(() => {
-    savePrefs(FILTER_KEY, { filterLocationId })
+    savePrefs(FILTER_KEY, { filterLocationId }, LEGACY_FILTER_KEY)
   }, [filterLocationId])
 
   async function loadLocations() {

@@ -9,6 +9,7 @@ import {
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import TableActions from '../components/TableActions'
+import { getCachedUser } from '../utils/storageKeys'
 
 const EMPTY_FORM = { name: '', colour: '#6B7280', description: '' }
 
@@ -22,9 +23,7 @@ function GroupSwatch({ colour }) {
 }
 
 export default function VlanGroupsPage() {
-  const user = (() => {
-    try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null }
-  })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   const [groups, setGroups] = useState([])

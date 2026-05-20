@@ -8,6 +8,7 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import { downloadFile } from '../utils/download'
+import { getCachedUser } from '../utils/storageKeys'
 
 const DEFAULT_LIMIT = 25
 
@@ -15,7 +16,7 @@ const SUBNET_REQUEST_EMPTY = { section_id: '', prefix_length: '24', purpose: '',
 
 export default function SectionsPage() {
   const navigate = useNavigate()
-  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const user = getCachedUser()
   const canCreateSubnet = user?.role === 'admin'
 
   const [sections, setSections] = useState([])

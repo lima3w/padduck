@@ -3,11 +3,10 @@ import { useState, useEffect } from 'react'
 import { getPendingRequestCount } from '../api/requests'
 import { getDnsZones, getFeatures } from '../api/client'
 import { DEFAULT_FEATURES, normalizeFeatures } from '../utils/features'
+import { getCachedUser } from '../utils/storageKeys'
 
 export default function Sidebar() {
-  const user = (() => {
-    try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null }
-  })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   const [pendingCount, setPendingCount] = useState(0)
