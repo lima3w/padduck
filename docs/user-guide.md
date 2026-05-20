@@ -195,7 +195,11 @@ Enable TOTP-based MFA under **My Settings** → **Security**:
 
 ## User Management (Admin)
 
-Accessible via **Admin** → **Users**.
+Use **Admin** to open the unified admin overview. The overview groups identity
+and access, configuration, integrations and automation, discovery operations,
+audit, reports, data tools, and system health links in one place.
+
+User management is accessible via **Admin** → **Users**.
 
 ### Actions
 

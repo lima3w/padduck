@@ -26,7 +26,7 @@ export default function Header({ darkMode, onSearchClick }) {
         </button>
         {user?.role === 'admin' && (
           <Link
-            to="/admin/settings"
+            to="/admin"
             className="text-sm bg-blue-600 dark:bg-gray-700 hover:bg-blue-800 dark:hover:bg-gray-600 px-3 py-1 rounded transition"
           >
             Admin
