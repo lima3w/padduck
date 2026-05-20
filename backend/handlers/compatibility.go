@@ -304,12 +304,12 @@ func (h *Handler) v2MigrationReadinessChecks(ctx context.Context) []compatibilit
 	tokenCount := h.compatCount(ctx, "SELECT COUNT(*) FROM api_tokens")
 	tokensWithoutExpiry := h.compatCount(ctx, "SELECT COUNT(*) FROM api_tokens WHERE expires_at IS NULL")
 	tokenStatus := "pass"
-	tokenDetail := "API tokens have explicit expiry metadata."
+	tokenDetail := "API access records have explicit expiry metadata."
 	tokenWork := ""
 	if tokensWithoutExpiry > 0 {
 		tokenStatus = "warn"
-		tokenDetail = "Some API tokens have no expiration date."
-		tokenWork = "Rotate or extend tokens with an explicit expiry before migration."
+		tokenDetail = "Some API access records have no expiration date."
+		tokenWork = "Rotate or extend API access records with an explicit expiry before migration."
 	}
 	checks = append(checks, compatibilityCheck{
 		ID:              "tokens-expiring",

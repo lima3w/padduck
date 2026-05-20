@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.26.2-alpine AS builder
+FROM golang:1.26.3-alpine AS builder
 WORKDIR /build
 COPY go.mod main.go ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
