@@ -111,6 +111,15 @@ Results are stored per-IP with liveness status and response time. View them from
 
 ---
 
+## Keyboard and Accessibility
+
+The application includes a skip link for keyboard users, visible focus states
+on interactive controls, Escape-to-close modal behavior, and labeled dialogs
+and menus. Use `Ctrl+K` or `Cmd+K` to open global search, arrow keys to move
+through results, Enter to open a result, and Escape to close overlays.
+
+---
+
 ## API Tokens
 
 Generate API tokens for programmatic access.

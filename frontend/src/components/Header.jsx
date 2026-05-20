@@ -13,8 +13,10 @@ export default function Header({ darkMode, onSearchClick }) {
       </div>
       <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={onSearchClick}
-          className="flex items-center gap-2 text-sm bg-blue-600/60 dark:bg-gray-700/60 hover:bg-blue-600 dark:hover:bg-gray-700 text-blue-100 dark:text-gray-300 border border-blue-500/40 dark:border-gray-600 px-3 py-1 rounded-md transition"
+          aria-label="Search"
+          className="flex items-center gap-2 text-sm bg-blue-600/60 dark:bg-gray-700/60 hover:bg-blue-600 dark:hover:bg-gray-700 text-blue-100 dark:text-gray-300 border border-blue-500/40 dark:border-gray-600 px-3 py-1 rounded-md transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 dark:focus:ring-offset-gray-800"
           title="Search (Ctrl+K)"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
