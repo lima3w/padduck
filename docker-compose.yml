@@ -2,11 +2,11 @@ services:
   db:
     image: postgres:15.12
     environment:
-      POSTGRES_USER: "${POSTGRES_USER:-ipam}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-ipam}"
-      POSTGRES_DB: "${POSTGRES_DB:-ipam}"
+      POSTGRES_USER: "${POSTGRES_USER:-padduck}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-padduck}"
+      POSTGRES_DB: "${POSTGRES_DB:-padduck}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ipam} -d ${POSTGRES_DB:-ipam}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-padduck} -d ${POSTGRES_DB:-padduck}"]
       interval: 2s
       timeout: 5s
       retries: 10
@@ -20,7 +20,7 @@ services:
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILD_DATE: "${BUILD_DATE:-unknown}"
     environment:
-      DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER:-ipam}:${POSTGRES_PASSWORD:-ipam}@db:5432/${POSTGRES_DB:-ipam}}"
+      DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER:-padduck}:${POSTGRES_PASSWORD:-padduck}@db:5432/${POSTGRES_DB:-padduck}}"
       SERVER_PORT: "${SERVER_PORT:-8080}"
       ENVIRONMENT: "${ENVIRONMENT:-production}"
       MFA_ENCRYPTION_KEY: "${MFA_ENCRYPTION_KEY:-}"

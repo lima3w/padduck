@@ -21,7 +21,7 @@ import (
 const (
 	maxWebhookRetries         = 5
 	WebhookEventSchemaVersion = "2026-05-19"
-	webhookUserAgent          = "ipam-next-webhooks/1.0"
+	webhookUserAgent          = "padduck-webhooks/1.0"
 )
 
 // WebhookService manages outbound webhook endpoints and deliveries.

@@ -1,12 +1,12 @@
-// Package main is the IPAM Next remote scan agent binary.
-// It polls the IPAM server for assigned scan jobs, runs ping scans,
+// Package main is the Padduck remote scan agent binary.
+// It polls the Padduck server for assigned scan jobs, runs ping scans,
 // and posts results back.
 //
 // Configuration via environment variables:
 //
-//	IPAM_SERVER_URL  — base URL of the IPAM server (e.g. https://ipam.example.com)
-//	IPAM_AGENT_TOKEN — raw bearer token issued when creating the agent
-//	POLL_INTERVAL    — polling interval in seconds (default: 30)
+//	PADDUCK_SERVER_URL  — base URL of the Padduck server (e.g. https://padduck.example.com)
+//	PADDUCK_AGENT_TOKEN — raw bearer token issued when creating the agent
+//	POLL_INTERVAL       — polling interval in seconds (default: 30)
 package main
 
 import (
@@ -53,12 +53,12 @@ type ScanJob struct {
 }
 
 func main() {
-	serverURL := os.Getenv("IPAM_SERVER_URL")
-	agentToken := os.Getenv("IPAM_AGENT_TOKEN")
+	serverURL := os.Getenv("PADDUCK_SERVER_URL")
+	agentToken := os.Getenv("PADDUCK_AGENT_TOKEN")
 	pollIntervalStr := os.Getenv("POLL_INTERVAL")
 
 	if serverURL == "" || agentToken == "" {
-		log.Fatal("IPAM_SERVER_URL and IPAM_AGENT_TOKEN must be set")
+		log.Fatal("PADDUCK_SERVER_URL and PADDUCK_AGENT_TOKEN must be set")
 	}
 
 	pollInterval := 30 * time.Second
@@ -81,7 +81,7 @@ func main() {
 		cancel()
 	}()
 
-	log.Printf("IPAM scan agent started, server=%q poll_interval=%s", serverURL, pollInterval) // #nosec G706 -- operator-provided URL is quoted in a local startup log.
+	log.Printf("Padduck scan agent started, server=%q poll_interval=%s", serverURL, pollInterval) // #nosec G706 -- operator-provided URL is quoted in a local startup log.
 
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
