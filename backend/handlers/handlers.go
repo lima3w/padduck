@@ -566,6 +566,19 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	natRules.Put("/:id", h.UpdateNATRule)
 	natRules.Delete("/:id", h.DeleteNATRule)
 
+	firewallZones := protected.Group("/firewall-zones", h.requireFeature(featureFirewall))
+	firewallZones.Get("", h.ListFirewallZones)
+	firewallZones.Post("", h.CreateFirewallZone)
+	firewallZones.Get("/:id", h.GetFirewallZone)
+	firewallZones.Put("/:id", h.UpdateFirewallZone)
+	firewallZones.Delete("/:id", h.DeleteFirewallZone)
+
+	firewallMappings := protected.Group("/firewall-zone-mappings", h.requireFeature(featureFirewall))
+	firewallMappings.Get("", h.ListFirewallZoneMappings)
+	firewallMappings.Post("", h.CreateFirewallZoneMapping)
+	firewallMappings.Put("/:id", h.UpdateFirewallZoneMapping)
+	firewallMappings.Delete("/:id", h.DeleteFirewallZoneMapping)
+
 	dhcpServers := protected.Group("/dhcp-servers", h.requireFeature(featureDHCP))
 	dhcpServers.Get("", h.ListDHCPServers)
 	dhcpServers.Post("", h.CreateDHCPServer)

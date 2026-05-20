@@ -89,6 +89,23 @@ type CustomerAssociationParams struct {
 	Notes        string `json:"notes"`
 }
 
+type FirewallZoneParams struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Color       string `json:"color"`
+	Status      string `json:"status"`
+}
+
+type FirewallZoneMappingParams struct {
+	ZoneID      int64  `json:"zone_id"`
+	ObjectType  string `json:"object_type"`
+	ObjectID    *int64 `json:"object_id"`
+	CIDR        string `json:"cidr"`
+	Direction   string `json:"direction"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+}
+
 func (r *Repository) ListNATRules(ctx context.Context) ([]*models.NATRule, error) {
 	rows, err := r.db.Query(ctx, `SELECT n.id, n.name, n.type, n.internal_cidr, n.external_cidr, n.protocol, n.internal_port, n.external_port, n.device_id, n.customer_id, n.description, n.status, c.name, d.hostname, n.created_at, n.updated_at FROM nat_rules n LEFT JOIN customers c ON c.id=n.customer_id LEFT JOIN devices d ON d.id=n.device_id ORDER BY n.name`)
 	if err != nil {
@@ -134,6 +151,107 @@ func (r *Repository) UpdateNATRule(ctx context.Context, id int64, p *NATRulePara
 
 func (r *Repository) DeleteNATRule(ctx context.Context, id int64) error {
 	return deleteByID(ctx, r, "nat_rules", id)
+}
+
+func (r *Repository) ListFirewallZones(ctx context.Context) ([]*models.FirewallZone, error) {
+	rows, err := r.db.Query(ctx, `SELECT id, name, description, color, status, created_at, updated_at FROM firewall_zones ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*models.FirewallZone
+	for rows.Next() {
+		item := &models.FirewallZone{}
+		if err := rows.Scan(&item.ID, &item.Name, &item.Description, &item.Color, &item.Status, &item.CreatedAt, &item.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repository) GetFirewallZoneByID(ctx context.Context, id int64) (*models.FirewallZone, error) {
+	item := &models.FirewallZone{}
+	err := r.db.QueryRow(ctx, `SELECT id, name, description, color, status, created_at, updated_at FROM firewall_zones WHERE id=$1`, id).Scan(&item.ID, &item.Name, &item.Description, &item.Color, &item.Status, &item.CreatedAt, &item.UpdatedAt)
+	return item, err
+}
+
+func (r *Repository) CreateFirewallZone(ctx context.Context, p *FirewallZoneParams) (*models.FirewallZone, error) {
+	id := int64(0)
+	err := r.db.QueryRow(ctx, `INSERT INTO firewall_zones (name, description, color, status) VALUES ($1,$2,$3,$4) RETURNING id`, p.Name, p.Description, p.Color, p.Status).Scan(&id)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetFirewallZoneByID(ctx, id)
+}
+
+func (r *Repository) UpdateFirewallZone(ctx context.Context, id int64, p *FirewallZoneParams) (*models.FirewallZone, error) {
+	tag, err := r.db.Exec(ctx, `UPDATE firewall_zones SET name=$1, description=$2, color=$3, status=$4, updated_at=CURRENT_TIMESTAMP WHERE id=$5`, p.Name, p.Description, p.Color, p.Status, id)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() == 0 {
+		return nil, pgx.ErrNoRows
+	}
+	return r.GetFirewallZoneByID(ctx, id)
+}
+
+func (r *Repository) DeleteFirewallZone(ctx context.Context, id int64) error {
+	return deleteByID(ctx, r, "firewall_zones", id)
+}
+
+func (r *Repository) ListFirewallZoneMappings(ctx context.Context, zoneID int64) ([]*models.FirewallZoneMapping, error) {
+	query := `SELECT m.id, m.zone_id, m.object_type, m.object_id, COALESCE(m.cidr::text, ''), m.direction, m.description, m.status, z.name, m.created_at, m.updated_at FROM firewall_zone_mappings m JOIN firewall_zones z ON z.id=m.zone_id`
+	args := []any{}
+	if zoneID > 0 {
+		query += ` WHERE m.zone_id=$1`
+		args = append(args, zoneID)
+	}
+	query += ` ORDER BY z.name, m.object_type, m.object_id, m.cidr`
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*models.FirewallZoneMapping
+	for rows.Next() {
+		item := &models.FirewallZoneMapping{}
+		if err := rows.Scan(&item.ID, &item.ZoneID, &item.ObjectType, &item.ObjectID, &item.CIDR, &item.Direction, &item.Description, &item.Status, &item.ZoneName, &item.CreatedAt, &item.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (r *Repository) GetFirewallZoneMappingByID(ctx context.Context, id int64) (*models.FirewallZoneMapping, error) {
+	item := &models.FirewallZoneMapping{}
+	err := r.db.QueryRow(ctx, `SELECT m.id, m.zone_id, m.object_type, m.object_id, COALESCE(m.cidr::text, ''), m.direction, m.description, m.status, z.name, m.created_at, m.updated_at FROM firewall_zone_mappings m JOIN firewall_zones z ON z.id=m.zone_id WHERE m.id=$1`, id).Scan(&item.ID, &item.ZoneID, &item.ObjectType, &item.ObjectID, &item.CIDR, &item.Direction, &item.Description, &item.Status, &item.ZoneName, &item.CreatedAt, &item.UpdatedAt)
+	return item, err
+}
+
+func (r *Repository) CreateFirewallZoneMapping(ctx context.Context, p *FirewallZoneMappingParams) (*models.FirewallZoneMapping, error) {
+	id := int64(0)
+	err := r.db.QueryRow(ctx, `INSERT INTO firewall_zone_mappings (zone_id, object_type, object_id, cidr, direction, description, status) VALUES ($1,$2,$3,NULLIF($4, '')::cidr,$5,$6,$7) RETURNING id`, p.ZoneID, p.ObjectType, p.ObjectID, p.CIDR, p.Direction, p.Description, p.Status).Scan(&id)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetFirewallZoneMappingByID(ctx, id)
+}
+
+func (r *Repository) UpdateFirewallZoneMapping(ctx context.Context, id int64, p *FirewallZoneMappingParams) (*models.FirewallZoneMapping, error) {
+	tag, err := r.db.Exec(ctx, `UPDATE firewall_zone_mappings SET zone_id=$1, object_type=$2, object_id=$3, cidr=NULLIF($4, '')::cidr, direction=$5, description=$6, status=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8`, p.ZoneID, p.ObjectType, p.ObjectID, p.CIDR, p.Direction, p.Description, p.Status, id)
+	if err != nil {
+		return nil, err
+	}
+	if tag.RowsAffected() == 0 {
+		return nil, pgx.ErrNoRows
+	}
+	return r.GetFirewallZoneMappingByID(ctx, id)
+}
+
+func (r *Repository) DeleteFirewallZoneMapping(ctx context.Context, id int64) error {
+	return deleteByID(ctx, r, "firewall_zone_mappings", id)
 }
 
 func (r *Repository) ListDHCPServers(ctx context.Context) ([]*models.DHCPServer, error) {

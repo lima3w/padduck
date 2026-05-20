@@ -9,6 +9,7 @@ export const DEFAULT_FEATURES = {
   nat: true,
   dhcp: true,
   circuits: true,
+  firewall: true,
 }
 
 export function normalizeFeatures(data) {

@@ -46,6 +46,10 @@ const CONFIG_KEYS_BY_TAB = {
     'feature_locations_enabled',
     'feature_bgp_enabled',
     'feature_devices_enabled',
+    'feature_nat_enabled',
+    'feature_firewall_enabled',
+    'feature_dhcp_enabled',
+    'feature_circuits_enabled',
   ],
   updates: [
     'update_check_enabled',
@@ -89,6 +93,26 @@ const FEATURE_TOGGLES = [
     key: 'feature_devices_enabled',
     title: 'Devices',
     description: 'Device inventory, device types, interfaces, and device IP associations.',
+  },
+  {
+    key: 'feature_nat_enabled',
+    title: 'NAT Rules',
+    description: 'NAT mapping records and NAT navigation.',
+  },
+  {
+    key: 'feature_firewall_enabled',
+    title: 'Firewall Zones',
+    description: 'Firewall zone records, zone mappings, and firewall navigation.',
+  },
+  {
+    key: 'feature_dhcp_enabled',
+    title: 'DHCP',
+    description: 'DHCP server and lease records.',
+  },
+  {
+    key: 'feature_circuits_enabled',
+    title: 'Circuits',
+    description: 'Circuit providers, physical circuits, and logical circuits.',
   },
 ]
 

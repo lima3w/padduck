@@ -132,6 +132,11 @@ const (
 	PermV2CircuitRead   = "ipam:circuit:read"
 	PermV2CircuitWrite  = "ipam:circuit:write"
 	PermV2CircuitDelete = "ipam:circuit:delete"
+
+	PermV2FirewallList   = "ipam:firewall:list"
+	PermV2FirewallRead   = "ipam:firewall:read"
+	PermV2FirewallWrite  = "ipam:firewall:write"
+	PermV2FirewallDelete = "ipam:firewall:delete"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -154,6 +159,7 @@ var AllPermissions = []string{
 	PermV2NATList, PermV2NATRead, PermV2NATWrite, PermV2NATDelete,
 	PermV2DHCPList, PermV2DHCPRead, PermV2DHCPWrite, PermV2DHCPDelete,
 	PermV2CircuitList, PermV2CircuitRead, PermV2CircuitWrite, PermV2CircuitDelete,
+	PermV2FirewallList, PermV2FirewallRead, PermV2FirewallWrite, PermV2FirewallDelete,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -288,6 +294,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2NATWrite: true, PermV2NATDelete: true,
 			PermV2DHCPWrite: true, PermV2DHCPDelete: true,
 			PermV2CircuitWrite: true, PermV2CircuitDelete: true,
+			PermV2FirewallWrite: true, PermV2FirewallDelete: true,
 		}
 		return !adminOnly[permission]
 	case "viewer":
@@ -308,6 +315,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2NATList: true, PermV2NATRead: true,
 			PermV2DHCPList: true, PermV2DHCPRead: true,
 			PermV2CircuitList: true, PermV2CircuitRead: true,
+			PermV2FirewallList: true, PermV2FirewallRead: true,
 			// Viewers cannot submit or review requests
 		}
 		return readPerms[permission]

@@ -25,7 +25,7 @@ func respondCustomerASError(c *fiber.Ctx, err error, resourceName string) error 
 	}
 
 	msg := err.Error()
-	if strings.Contains(msg, "required") || strings.Contains(msg, "invalid") || strings.Contains(msg, "positive") {
+	if strings.Contains(msg, "required") || strings.Contains(msg, "invalid") || strings.Contains(msg, "positive") || strings.Contains(msg, "must") {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, msg)
 	}
 

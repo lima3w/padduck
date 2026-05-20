@@ -90,6 +90,145 @@ func (h *Handler) DeleteNATRule(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+func (h *Handler) ListFirewallZones(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2FirewallList); err != nil {
+		return nil
+	}
+	items, err := h.service.ListFirewallZones(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	if items == nil {
+		items = []*models.FirewallZone{}
+	}
+	return c.JSON(items)
+}
+
+func (h *Handler) GetFirewallZone(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2FirewallRead); err != nil {
+		return nil
+	}
+	id, err := parseID(c, "id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall zone ID"})
+	}
+	item, err := h.service.GetFirewallZone(c.Context(), id)
+	if err != nil {
+		return respondCustomerASError(c, err, "firewall zone")
+	}
+	return c.JSON(item)
+}
+
+func (h *Handler) CreateFirewallZone(c *fiber.Ctx) error {
+	req := new(repository.FirewallZoneParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+		return nil
+	}
+	item, err := h.service.CreateFirewallZone(c.Context(), req)
+	if err != nil {
+		return respondCustomerASError(c, err, "firewall zone")
+	}
+	return c.Status(fiber.StatusCreated).JSON(item)
+}
+
+func (h *Handler) UpdateFirewallZone(c *fiber.Ctx) error {
+	id, err := parseID(c, "id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall zone ID"})
+	}
+	req := new(repository.FirewallZoneParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+		return nil
+	}
+	item, err := h.service.UpdateFirewallZone(c.Context(), id, req)
+	if err != nil {
+		return respondCustomerASError(c, err, "firewall zone")
+	}
+	return c.JSON(item)
+}
+
+func (h *Handler) DeleteFirewallZone(c *fiber.Ctx) error {
+	id, err := parseID(c, "id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall zone ID"})
+	}
+	if err := h.permCheck(c, services.PermV2FirewallDelete); err != nil {
+		return nil
+	}
+	if err := h.service.DeleteFirewallZone(c.Context(), id); err != nil {
+		return respondCustomerASError(c, err, "firewall zone")
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (h *Handler) ListFirewallZoneMappings(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2FirewallList); err != nil {
+		return nil
+	}
+	items, err := h.service.ListFirewallZoneMappings(c.Context(), int64(c.QueryInt("zone_id", 0)))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+	if items == nil {
+		items = []*models.FirewallZoneMapping{}
+	}
+	return c.JSON(items)
+}
+
+func (h *Handler) CreateFirewallZoneMapping(c *fiber.Ctx) error {
+	req := new(repository.FirewallZoneMappingParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+		return nil
+	}
+	item, err := h.service.CreateFirewallZoneMapping(c.Context(), req)
+	if err != nil {
+		return respondCustomerASError(c, err, "firewall zone mapping")
+	}
+	return c.Status(fiber.StatusCreated).JSON(item)
+}
+
+func (h *Handler) UpdateFirewallZoneMapping(c *fiber.Ctx) error {
+	id, err := parseID(c, "id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall mapping ID"})
+	}
+	req := new(repository.FirewallZoneMappingParams)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+		return nil
+	}
+	item, err := h.service.UpdateFirewallZoneMapping(c.Context(), id, req)
+	if err != nil {
+		return respondCustomerASError(c, err, "firewall zone mapping")
+	}
+	return c.JSON(item)
+}
+
+func (h *Handler) DeleteFirewallZoneMapping(c *fiber.Ctx) error {
+	id, err := parseID(c, "id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall mapping ID"})
+	}
+	if err := h.permCheck(c, services.PermV2FirewallDelete); err != nil {
+		return nil
+	}
+	if err := h.service.DeleteFirewallZoneMapping(c.Context(), id); err != nil {
+		return respondCustomerASError(c, err, "firewall zone mapping")
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
 func (h *Handler) ListDHCPServers(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2DHCPList); err != nil {
 		return nil
