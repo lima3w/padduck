@@ -125,7 +125,7 @@ const (
 
 	PermV2DHCPList   = "ipam:dhcp:list"
 	PermV2DHCPRead   = "ipam:dhcp:read"
-	PermV2DHCPWrite  = "ipam:dhcp:write"
+	PermV2DHCPWrite  = "ipam:dhcp:write" // #nosec G101 -- permission string, not a credential.
 	PermV2DHCPDelete = "ipam:dhcp:delete"
 
 	PermV2CircuitList   = "ipam:circuit:list"
