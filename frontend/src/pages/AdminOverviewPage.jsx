@@ -54,6 +54,7 @@ export const ADMIN_SURFACE_SECTIONS = [
       { to: '/admin/reports/scheduled', title: 'Scheduled Reports', description: 'Manage recurring emailed reports.' },
       { to: '/admin/import', title: 'Data Import', description: 'Import subnets, IP addresses, or phpIPAM data.' },
       { to: '/admin/export', title: 'Data Export', description: 'Export a full data backup.' },
+      { to: '/admin/compatibility', title: 'V2 Compatibility', description: 'Review migration readiness and deprecation reporting.' },
       { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all sections.' },
       { to: '/admin/system-health', title: 'System Health', description: 'Review deployment, backup, and dependency health.' },
     ],

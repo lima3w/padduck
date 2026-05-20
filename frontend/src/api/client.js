@@ -461,6 +461,9 @@ export const getConsentReport = () => api.get('/admin/privacy/consent-report')
 
 // Deployment health (#447)
 export const getSystemHealth = () => api.get('/admin/system-health')
+export const getV2CompatibilityWarnings = () => api.get('/admin/compatibility/v2-warnings')
+export const getV2MigrationReadiness = () => api.get('/admin/compatibility/v2-readiness')
+export const getV2DeprecationReport = () => api.get('/admin/compatibility/deprecations')
 
 // Break-glass emergency access (#443)
 export const getBreakGlassStatus = () => api.get('/admin/break-glass')

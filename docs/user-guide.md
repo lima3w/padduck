@@ -219,6 +219,17 @@ audit, reports, data tools, and system health links in one place.
 
 User management is accessible via **Admin** → **Users**.
 
+## V2 Compatibility (Admin)
+
+Use **Admin** -> **V2 Compatibility** before planning a v2 migration. The page
+shows migration readiness checks, v1 deprecation reporting, and a v2 migration
+bundle export action.
+
+Readiness checks cover schema, runtime configuration, integrations, custom
+fields, roles, API tokens, and webhook subscriptions. Resolve any failed checks
+before exporting a migration bundle, and review warnings with the owning
+operations team.
+
 ### Actions
 
 | Action | Endpoint |

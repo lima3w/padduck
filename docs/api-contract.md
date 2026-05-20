@@ -16,12 +16,19 @@ Compatibility rules:
 Administrators can review known v2 compatibility warnings at:
 
 - `GET /api/v1/admin/compatibility/v2-warnings`
+- `GET /api/v1/admin/compatibility/v2-readiness`
+- `GET /api/v1/admin/compatibility/deprecations`
 - `GET /api/v1/admin/export/v2-migration-bundle`
 
-The response groups warnings by API, field, and workflow areas and includes
-recommended remediation work for v1 clients before a v2 upgrade. Clients should
-prefer top-level IP address endpoints, send idempotency keys for automation
-writes, and avoid depending solely on legacy role fields.
+The warning and deprecation responses group impacted APIs, fields, and workflows
+with recommended remediation work for v1 clients before a v2 upgrade. Clients
+should prefer top-level IP address endpoints, send idempotency keys for
+automation writes, and avoid depending solely on legacy role fields.
+
+The readiness endpoint evaluates migration blockers and warnings for schema,
+runtime configuration, integrations, custom fields, roles, API tokens, and
+webhook subscriptions. A `fail` status blocks readiness. A `warn` status should
+be reviewed before creating the migration bundle.
 
 The v2 migration bundle endpoint returns an `application/zip` archive containing
 `manifest.json`, `data/ipam-v1-export.json`, `data/ipam-v1-export.csv`, and a
