@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { clearCachedUser } from '../utils/storageKeys'
 
 function getCookie(name) {
   const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
@@ -87,7 +88,7 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      localStorage.removeItem('current_user')
+      clearCachedUser()
       const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/auth/']
       const onPublicPage = publicPaths.some(p => window.location.pathname.startsWith(p))
       if (!onPublicPage) {

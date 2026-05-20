@@ -14,6 +14,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import TableActions from '../components/TableActions'
 import { downloadFile } from '../utils/download'
+import { getCachedUser } from '../utils/storageKeys'
 
 const EMPTY_FORM = { vlanId: '', name: '', description: '', domainId: '', groupId: '' }
 
@@ -53,7 +54,7 @@ export default function VlansPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [downloading, setDownloading] = useState(false)
 
-  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
+  const isAdmin = getCachedUser()?.role === 'admin'
 
   async function handleExport() {
     setDownloading(true)

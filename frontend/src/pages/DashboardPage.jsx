@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { getDashboardSummary, getDashboardRecentActivity, api, getInactiveIPs } from '../api/client'
+import { getCachedUser } from '../utils/storageKeys'
 
 function formatRelativeTime(isoString) {
   const now = Date.now()
@@ -63,7 +64,7 @@ function SummaryCard({ label, value, sub, onClick, highlight }) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   const [summary, setSummary] = useState(null)

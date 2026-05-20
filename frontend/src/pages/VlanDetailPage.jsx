@@ -14,6 +14,7 @@ import {
   updateVlan,
 } from '../api/client'
 import Modal from '../components/Modal'
+import { getCachedUser } from '../utils/storageKeys'
 
 // VLAN model has no JSON tags — Go field names come through as PascalCase:
 //   ID, VlanID, DomainID, GroupID, VRFID, Name, Description, CreatedAt, UpdatedAt
@@ -200,7 +201,7 @@ export default function VlanDetailPage() {
   if (error && !vlan) return <p className="text-red-600">{error}</p>
   if (!vlan) return <p className="text-gray-500">VLAN not found.</p>
 
-  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
+  const isAdmin = getCachedUser()?.role === 'admin'
   const domain = getDomain(vlan.domainId)
   const group = getGroup(vlan.groupId)
   const sectionIds = new Set(subnets.map(s => s.sectionId).filter(Boolean))

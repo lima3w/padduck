@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import * as client from '../api/client'
+import { getCachedUser, setCachedUser } from '../utils/storageKeys'
 
 function ProfileTab({ user }) {
   return (
@@ -751,12 +752,12 @@ function PrivacyTab({ user }) {
     try {
       await client.acceptPrivacyPolicy()
       const nextVersion = policyVersion || '1.0'
-      const cached = JSON.parse(localStorage.getItem('current_user') || '{}')
-      localStorage.setItem('current_user', JSON.stringify({
+      const cached = getCachedUser() || {}
+      setCachedUser({
         ...cached,
         privacyAcceptedVersion: nextVersion,
         privacy_accepted_version: undefined,
-      }))
+      })
       setAcceptedVersion(nextVersion)
       setSaved(true)
     } catch {

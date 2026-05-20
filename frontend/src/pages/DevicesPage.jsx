@@ -11,9 +11,12 @@ import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import { downloadFile } from '../utils/download'
 import { loadPrefs, savePrefs, loadColPrefs, saveColPrefs } from '../utils/listPrefs'
+import { getCachedUser, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '../utils/storageKeys'
 
-const FILTER_KEY = 'ipam_filters_devices'
-const COL_KEY = 'ipam_cols_devices'
+const FILTER_KEY = STORAGE_KEYS.deviceFilters
+const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.deviceFilters
+const COL_KEY = STORAGE_KEYS.deviceColumns
+const LEGACY_COL_KEY = LEGACY_STORAGE_KEYS.deviceColumns
 const DEFAULT_COLS = { vendor_model: true, location: true, ips: true, status: true }
 
 const DEFAULT_LIMIT = 50
@@ -51,12 +54,12 @@ export default function DevicesPage() {
   const [deviceTypes, setDeviceTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [savedFilters] = useState(() => loadPrefs(FILTER_KEY, { filterHostname: '', filterTypeId: '', filterOnline: '', filterLocationId: '' }))
+  const [savedFilters] = useState(() => loadPrefs(FILTER_KEY, { filterHostname: '', filterTypeId: '', filterOnline: '', filterLocationId: '' }, LEGACY_FILTER_KEY))
   const [filterHostname, setFilterHostname] = useState(savedFilters.filterHostname)
   const [filterTypeId, setFilterTypeId] = useState(savedFilters.filterTypeId)
   const [filterOnline, setFilterOnline] = useState(savedFilters.filterOnline)
   const [isFiltered, setIsFiltered] = useState(false)
-  const [cols, setCols] = useState(() => loadColPrefs(COL_KEY, DEFAULT_COLS))
+  const [cols, setCols] = useState(() => loadColPrefs(COL_KEY, DEFAULT_COLS, LEGACY_COL_KEY))
   const col = (name) => cols[name] !== false
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -64,7 +67,7 @@ export default function DevicesPage() {
   const [saving, setSaving] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
-  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   async function handleExport() {
@@ -87,11 +90,11 @@ export default function DevicesPage() {
   }, [])
 
   useEffect(() => {
-    savePrefs(FILTER_KEY, { filterHostname, filterTypeId, filterOnline, filterLocationId })
+    savePrefs(FILTER_KEY, { filterHostname, filterTypeId, filterOnline, filterLocationId }, LEGACY_FILTER_KEY)
   }, [filterHostname, filterTypeId, filterOnline, filterLocationId])
 
   useEffect(() => {
-    saveColPrefs(COL_KEY, cols)
+    saveColPrefs(COL_KEY, cols, LEGACY_COL_KEY)
   }, [cols])
 
   async function loadLocations() {
@@ -202,7 +205,7 @@ export default function DevicesPage() {
     setFilterLocationId('')
     setCfFilterRows([])
     setIsFiltered(false)
-    savePrefs(FILTER_KEY, { filterHostname: '', filterTypeId: '', filterOnline: '', filterLocationId: '' })
+    savePrefs(FILTER_KEY, { filterHostname: '', filterTypeId: '', filterOnline: '', filterLocationId: '' }, LEGACY_FILTER_KEY)
     load(1)
   }
 

@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { getFeatures } from './api/client'
 import { normalizeFeatures } from './utils/features'
+import { getStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
@@ -81,7 +82,7 @@ const AdminCompatibilityPage = lazy(() => import('./pages/AdminCompatibilityPage
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
   useEffect(() => {
-    const stored = localStorage.getItem('ipam-color-scheme')
+    const stored = getStoredItem(STORAGE_KEYS.colorScheme, LEGACY_STORAGE_KEYS.colorScheme)
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const html = document.documentElement
     if (!stored || stored === 'system') {

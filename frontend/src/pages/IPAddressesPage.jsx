@@ -12,6 +12,7 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import DataQualityBadge from '../components/DataQualityBadge'
+import { getCachedUser, getStoredItem, LEGACY_STORAGE_KEYS, setStoredItem, STORAGE_KEYS } from '../utils/storageKeys'
 
 function DelegationsTab({ subnetId }) {
   const [delegations, setDelegations] = useState([])
@@ -226,11 +227,12 @@ const COLUMN_LABELS = {
 }
 const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'assigned_to']
 
-const LS_KEY = 'ipam_ip_columns'
+const LS_KEY = STORAGE_KEYS.ipColumns
+const LEGACY_LS_KEY = LEGACY_STORAGE_KEYS.ipColumns
 
 function loadColumnVisibility() {
   try {
-    const saved = JSON.parse(localStorage.getItem(LS_KEY))
+    const saved = JSON.parse(getStoredItem(LS_KEY, LEGACY_LS_KEY))
     if (saved && Array.isArray(saved)) return saved
   } catch {}
   return DEFAULT_VISIBLE
@@ -305,7 +307,7 @@ function UtilisationHistorySection({ subnetId }) {
 
 export default function IPAddressesPage() {
   const { subnetID } = useParams()
-  const user = (() => { try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null } })()
+  const user = getCachedUser()
   const canAssignIP = user?.role === 'admin'
   const isAdmin = canAssignIP
 
@@ -388,7 +390,7 @@ export default function IPAddressesPage() {
     // always keep address
     const final = next.includes('address') ? next : ['address', ...next]
     setVisibleCols(final)
-    localStorage.setItem(LS_KEY, JSON.stringify(final))
+    setStoredItem(LS_KEY, JSON.stringify(final), LEGACY_LS_KEY)
   }
 
   const searchableFields = cfDefs.filter(d => d.isSearchable)

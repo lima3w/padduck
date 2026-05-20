@@ -3,13 +3,12 @@ import Modal from '../components/Modal'
 import { getNameservers, createNameserver, updateNameserver, deleteNameserver } from '../api/client'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
+import { getCachedUser } from '../utils/storageKeys'
 
 const EMPTY_FORM = { name: '', server1: '', server2: '', server3: '', description: '' }
 
 export default function NameserversPage() {
-  const user = (() => {
-    try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null }
-  })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   const [nameservers, setNameservers] = useState([])

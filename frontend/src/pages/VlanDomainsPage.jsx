@@ -9,13 +9,12 @@ import {
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import TableActions from '../components/TableActions'
+import { getCachedUser } from '../utils/storageKeys'
 
 const EMPTY_FORM = { name: '', description: '' }
 
 export default function VlanDomainsPage() {
-  const user = (() => {
-    try { return JSON.parse(localStorage.getItem('current_user')) } catch { return null }
-  })()
+  const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
   const [domains, setDomains] = useState([])
