@@ -548,16 +548,16 @@ func TestExportV2MigrationBundle_ZipContents(t *testing.T) {
 	}
 
 	assert.Contains(t, files, "manifest.json")
-	assert.Contains(t, files, "data/ipam-v1-export.json")
-	assert.Contains(t, files, "data/ipam-v1-export.csv")
+	assert.Contains(t, files, "data/padduck-v1-export.json")
+	assert.Contains(t, files, "data/padduck-v1-export.csv")
 	assert.Contains(t, files, "README.md")
-	assert.Contains(t, files["data/ipam-v1-export.json"], "10.0.0.10")
-	assert.Contains(t, files["data/ipam-v1-export.csv"], "10.0.0.0/24")
+	assert.Contains(t, files["data/padduck-v1-export.json"], "10.0.0.10")
+	assert.Contains(t, files["data/padduck-v1-export.csv"], "10.0.0.0/24")
 
 	var manifest migrationBundleManifest
 	require.NoError(t, json.Unmarshal([]byte(files["manifest.json"]), &manifest))
 	assert.Equal(t, "v1-pre-v2", manifest.BundleVersion)
-	assert.Equal(t, "ipam-next-v2", manifest.Target)
+	assert.Equal(t, "padduck-v2", manifest.Target)
 	require.Len(t, manifest.Files, 3)
 	assert.Equal(t, "data/ipam-v1-export.json", manifest.Files[0].Path)
 	assert.NotEmpty(t, manifest.Files[0].SHA256)

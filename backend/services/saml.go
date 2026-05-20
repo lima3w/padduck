@@ -73,7 +73,7 @@ func generateSelfSignedCert() (keyPEM, certPEM string, err error) {
 
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "IPAM Next SAML SP"},
+		Subject:      pkix.Name{CommonName: "Padduck SAML SP"},
 		NotBefore:    time.Now().Add(-time.Minute),
 		NotAfter:     time.Now().Add(10 * 365 * 24 * time.Hour),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,

@@ -46,7 +46,7 @@ func (h *Handler) GetWebhookSamplePayload(c *fiber.Ctx) error {
 		"payload":        services.SampleWebhookEventPayload(eventType),
 		"headers": fiber.Map{
 			"Content-Type":                "application/json",
-			"User-Agent":                  "ipam-next-webhooks/1.0",
+			"User-Agent":                  "padduck-webhooks/1.0",
 			"X-IPAM-Event":                eventType,
 			"X-IPAM-Event-Schema-Version": services.WebhookEventSchemaVersion,
 			"X-IPAM-Signature-256":        "sha256=<hex-hmac-sha256>",

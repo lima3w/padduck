@@ -308,7 +308,7 @@ Creates a gzip-compressed SQL dump in `./backups/`. Backups older than 30 days a
 ### Restore
 
 ```bash
-DATABASE_URL=postgres://user:pass@host/db ./scripts/restore.sh ./backups/ipam_backup_20260507_120000.sql.gz
+DATABASE_URL=postgres://user:pass@host/db ./scripts/restore.sh ./backups/padduck_backup_20260507_120000.sql.gz
 ```
 
 Prompts for confirmation before overwriting the database.

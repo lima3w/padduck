@@ -21,20 +21,20 @@ jobs:
 
       - name: Validate deployment environment
         run: |
-          if [ -f /etc/ipam-next/deploy.env ]; then
-            echo "Using /etc/ipam-next/deploy.env for deployment"
+          if [ -f /etc/padduck/deploy.env ]; then
+            echo "Using /etc/padduck/deploy.env for deployment"
             set -a
-            . /etc/ipam-next/deploy.env
+            . /etc/padduck/deploy.env
             set +a
-            echo "COMPOSE_ENV_ARGS=--env-file /etc/ipam-next/deploy.env" >> "$GITHUB_ENV"
+            echo "COMPOSE_ENV_ARGS=--env-file /etc/padduck/deploy.env" >> "$GITHUB_ENV"
           else
-            echo "No /etc/ipam-next/deploy.env found; using runner/job environment"
+            echo "No /etc/padduck/deploy.env found; using runner/job environment"
             echo "COMPOSE_ENV_ARGS=" >> "$GITHUB_ENV"
           fi
 
           key_len=$(printf "%s" "${MFA_ENCRYPTION_KEY:-}" | wc -c)
           if [ "$key_len" -ne 64 ]; then
-            echo "MFA_ENCRYPTION_KEY must be set to a 64-character hex string in /etc/ipam-next/deploy.env"
+            echo "MFA_ENCRYPTION_KEY must be set to a 64-character hex string in /etc/padduck/deploy.env"
             echo "Current MFA_ENCRYPTION_KEY length: $key_len"
             exit 1
           fi

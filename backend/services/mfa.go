@@ -33,7 +33,7 @@ var (
 )
 
 const (
-	totpIssuer    = "IPAM Next"
+	totpIssuer    = "Padduck"
 	backupCodeLen = 10
 	challengeTTL  = 5 * time.Minute
 )
