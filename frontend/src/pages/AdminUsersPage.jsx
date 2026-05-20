@@ -15,6 +15,20 @@ import PermissionDenied from '../components/PermissionDenied'
 const ASSIGN_EMPTY_FORM = { role_id: '', location_id: '' }
 const CREATE_EMPTY_FORM = { username: '', email: '', password: '', role: 'user' }
 
+function normalizeRole(role) {
+  if (!role || typeof role !== 'object') return role
+  return {
+    ...role,
+    id: role.id ?? role.ID,
+    name: role.name ?? role.Name,
+    description: role.description ?? role.Description,
+  }
+}
+
+function normalizeRoles(data) {
+  return Array.isArray(data) ? data.map(normalizeRole) : []
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState([])
   const [roles, setRoles] = useState([])
@@ -61,7 +75,7 @@ export default function AdminUsersPage() {
       const usersData = usersRes.data
       setUsers(Array.isArray(usersData) ? usersData : (usersData?.users ?? []))
       const rolesData = rolesRes.data
-      setRoles(Array.isArray(rolesData) ? rolesData : [])
+      setRoles(normalizeRoles(rolesData))
       const locsData = await getLocations().catch(() => [])
       setLocations(Array.isArray(locsData) ? locsData : (locsData?.locations ?? []))
     } catch (err) {
@@ -78,7 +92,7 @@ export default function AdminUsersPage() {
   async function loadUserRoles(userId) {
     try {
       const res = await getUserRoles(userId)
-      setUserRoles(prev => ({ ...prev, [userId]: Array.isArray(res.data) ? res.data : [] }))
+      setUserRoles(prev => ({ ...prev, [userId]: normalizeRoles(res.data) }))
     } catch {}
   }
 
