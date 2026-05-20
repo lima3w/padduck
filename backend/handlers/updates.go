@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/internal/netguard"
 	"ipam-next/models"
 	"ipam-next/version"
 )
@@ -41,6 +42,9 @@ func (h *Handler) CheckForUpdates(c *fiber.Ctx) error {
 	if strings.TrimSpace(url) == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "update_check_url is not configured"})
 	}
+	if err := netguard.ValidateURL(c.Context(), url); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid update_check_url"})
+	}
 	token, _ := h.service.Config.GetCtx(c.Context(), "update_check_token")
 
 	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, url, nil) // #nosec G107 -- admin-configured update endpoint.
@@ -52,7 +56,7 @@ func (h *Handler) CheckForUpdates(c *fiber.Ctx) error {
 		req.Header.Set("Authorization", "token "+token)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := netguard.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "update check failed"})

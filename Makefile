@@ -22,7 +22,7 @@ test:
 	@echo "→ backend tests"
 	cd $(BACKEND_DIR) && go test -mod=vendor -race -count=1 ./...
 
-## check-migrations: verify every migration file has the required sql-migrate annotation
+## check-migrations: verify migration files use paired, single-direction sql-migrate annotations
 check-migrations:
 	@echo "→ migration annotations"
 	@bad_up=$$(grep -rL '^\-\- +migrate Up' $(MIGRATIONS_DIR)/*.up.sql 2>/dev/null); \
@@ -30,6 +30,13 @@ check-migrations:
 	if [ -n "$$bad_up" ] || [ -n "$$bad_down" ]; then \
 		echo "ERROR: missing sql-migrate annotation in:"; \
 		echo "$$bad_up $$bad_down" | tr ' ' '\n' | grep -v '^$$'; \
+		exit 1; \
+	fi; \
+	mixed_up=$$(grep -l '^\-\- +migrate Down' $(MIGRATIONS_DIR)/*.up.sql 2>/dev/null); \
+	mixed_down=$$(grep -l '^\-\- +migrate Up' $(MIGRATIONS_DIR)/*.down.sql 2>/dev/null); \
+	if [ -n "$$mixed_up" ] || [ -n "$$mixed_down" ]; then \
+		echo "ERROR: migration files must not mix up/down sections:"; \
+		echo "$$mixed_up $$mixed_down" | tr ' ' '\n' | grep -v '^$$'; \
 		exit 1; \
 	fi
 

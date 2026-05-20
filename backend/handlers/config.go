@@ -19,10 +19,11 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 	}
 
 	sensitiveKeys := map[string]bool{
-		"smtp_password":      true,
-		"pdns_api_key":       true,
-		"technitium_token":   true,
-		"update_check_token": true,
+		"smtp_password":          true,
+		"pdns_api_key":           true,
+		"technitium_token":       true,
+		"update_check_token":     true,
+		"scanner_snmp_community": true,
 	}
 
 	result := make(map[string]string)
@@ -100,10 +101,11 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	}
 
 	sensitiveConfigKeys := map[string]bool{
-		"smtp_password":      true,
-		"pdns_api_key":       true,
-		"technitium_token":   true,
-		"update_check_token": true,
+		"smtp_password":          true,
+		"pdns_api_key":           true,
+		"technitium_token":       true,
+		"update_check_token":     true,
+		"scanner_snmp_community": true,
 	}
 
 	// Validate all keys first (before writing anything) to ensure atomicity.

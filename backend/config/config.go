@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"log"
 	"net/url"
@@ -34,18 +35,20 @@ func Load() *Config {
 	}
 }
 
-const devFallbackKey = "0000000000000000000000000000000000000000000000000000000000000000"
-
 // validateMFAKey checks that the key is a valid 64-char hex string with sufficient
 // entropy. In production, it fatals on any violation. In development/test it falls
-// back to an insecure all-zero key with a warning.
+// back to a random per-process key with a warning.
 func validateMFAKey(key string, isProd bool) string {
 	fail := func(msg string) string {
 		if isProd {
 			log.Fatalf("FATAL: %s", msg)
 		}
-		log.Printf("WARNING: %s Using insecure default — never use in production.", msg)
-		return devFallbackKey
+		fallback, err := generateEphemeralMFAKey()
+		if err != nil {
+			log.Fatalf("FATAL: failed to generate development MFA key: %v", err)
+		}
+		log.Printf("WARNING: %s Generated an ephemeral development MFA key. Set MFA_ENCRYPTION_KEY to preserve MFA secrets across restarts.", msg)
+		return fallback
 	}
 
 	if len(key) != 64 {
@@ -57,11 +60,19 @@ func validateMFAKey(key string, isProd bool) string {
 		return fail("MFA_ENCRYPTION_KEY is not valid hex.")
 	}
 
-	if isProd && isWeakKey(b) {
+	if isWeakKey(b) {
 		return fail("MFA_ENCRYPTION_KEY appears to be a weak or default value (all identical bytes). Set a random key.")
 	}
 
 	return key
+}
+
+func generateEphemeralMFAKey() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // isWeakKey returns true if all bytes are identical (e.g. all zeros).

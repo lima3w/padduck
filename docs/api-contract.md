@@ -10,6 +10,13 @@ Compatibility rules:
 - Write-heavy automation endpoints support `Idempotency-Key` for retry-safe clients.
 - Validation errors use `code: VALIDATION_ERROR` with a `fields` array.
 - Outbound webhooks include `schema_version` in the payload and `X-IPAM-Event-Schema-Version` in delivery headers.
+- Outbound webhooks and update checks reject URLs that resolve to private,
+  loopback, link-local, multicast, or unspecified addresses, including
+  redirects to those addresses.
+- CSV exports escape spreadsheet formula prefixes in cell values.
+- Sensitive values in audit payloads and admin configuration responses are
+  redacted, including SNMP communities, passwords, API keys, tokens, and
+  secrets.
 
 ## V2 Compatibility Warnings
 

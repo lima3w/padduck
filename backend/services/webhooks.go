@@ -9,12 +9,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
+	"ipam-next/internal/netguard"
 	"ipam-next/models"
 	"ipam-next/repository"
 )
@@ -33,10 +32,8 @@ type WebhookService struct {
 
 func NewWebhookService(repo *repository.Repository) *WebhookService {
 	return &WebhookService{
-		repo: repo,
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		repo:   repo,
+		client: netguard.NewHTTPClient(10 * time.Second),
 	}
 }
 
@@ -206,8 +203,8 @@ func (w *WebhookService) StartWorker(ctx context.Context) {
 }
 
 func (w *WebhookService) deliver(ctx context.Context, endpoint *models.WebhookEndpoint, delivery *models.WebhookDelivery) (int, error) {
-	if isPrivateURL(endpoint.URL) {
-		return 0, fmt.Errorf("webhook endpoint URL resolves to a private or reserved address")
+	if err := netguard.ValidateURL(ctx, endpoint.URL); err != nil {
+		return 0, fmt.Errorf("unsafe webhook endpoint URL: %w", err)
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.URL, bytes.NewBufferString(delivery.Payload))
 	if err != nil {
@@ -274,60 +271,6 @@ func SampleWebhookEventPayload(eventType string) WebhookEvent {
 	}
 }
 
-// isPrivateURL returns true if the URL resolves to a private, loopback, or link-local address.
-// Hosts that fail to resolve are also considered unsafe (fail-closed).
-func isPrivateURL(rawURL string) bool {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return true // treat unparseable URLs as unsafe
-	}
-	host := u.Hostname()
-	ips, err := net.LookupHost(host)
-	if err != nil || len(ips) == 0 {
-		return true
-	}
-	for _, ipStr := range ips {
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			return true
-		}
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
-			return true
-		}
-	}
-	return false
-}
-
-// resolvesToPrivateIP returns true only if the URL's host is an IP literal or resolves
-// via DNS to a private, loopback, or link-local address. Unlike isPrivateURL, DNS
-// resolution failures are not treated as a block — only confirmed private addresses are.
-func resolvesToPrivateIP(rawURL string) bool {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return false
-	}
-	host := u.Hostname()
-	// If the host is an IP literal, check it directly.
-	if ip := net.ParseIP(host); ip != nil {
-		return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()
-	}
-	// For hostnames, only block if DNS resolves and every address is private.
-	ips, err := net.LookupHost(host)
-	if err != nil || len(ips) == 0 {
-		return false // can't confirm — allow creation
-	}
-	for _, ipStr := range ips {
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			continue
-		}
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
-			return true
-		}
-	}
-	return false
-}
-
 func validateWebhookEndpoint(endpoint *models.WebhookEndpoint) error {
 	endpoint.Name = strings.TrimSpace(endpoint.Name)
 	endpoint.URL = strings.TrimSpace(endpoint.URL)
@@ -337,15 +280,8 @@ func validateWebhookEndpoint(endpoint *models.WebhookEndpoint) error {
 	if endpoint.URL == "" {
 		return fmt.Errorf("url is required")
 	}
-	u, err := url.Parse(endpoint.URL)
-	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("url must be absolute")
-	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return fmt.Errorf("url must use http or https")
-	}
-	if resolvesToPrivateIP(endpoint.URL) {
-		return fmt.Errorf("url must not resolve to a private or reserved address")
+	if err := netguard.ValidateURL(context.Background(), endpoint.URL); err != nil {
+		return err
 	}
 	cleanEvents := make([]string, 0, len(endpoint.Events))
 	for _, event := range endpoint.Events {

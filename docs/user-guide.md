@@ -31,6 +31,15 @@ most common deployment variables are `POSTGRES_USER`, `POSTGRES_PASSWORD`,
 `POSTGRES_DB`, `DATABASE_URL`, `ADMIN_PASSWORD`, `RESET_ADMIN_PASSWORD`, and
 `MFA_ENCRYPTION_KEY`.
 
+`MFA_ENCRYPTION_KEY` must be a random 64-character hex string for persistent
+MFA secrets. Development and test runs without a valid key generate a temporary
+per-process key, which avoids a shared default but means MFA secrets created in
+that process cannot be decrypted after restart.
+
+Admin configuration responses redact sensitive values such as SMTP passwords,
+DNS provider tokens, update-check tokens, and scanner SNMP communities. Reusing
+the redaction placeholder in an update leaves the stored value unchanged.
+
 ---
 
 ## Sections

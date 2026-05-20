@@ -21,6 +21,9 @@ deployment behavior during the v2 transition.
   change.
 - Additive optional fields, new endpoints, and new warnings are allowed.
 - Database migrations must be forward-safe and preserve existing data.
+- Paired SQL migration files must keep up/down sections separate; `.up.sql`
+  files may not contain `-- +migrate Down` blocks and `.down.sql` files may not
+  contain `-- +migrate Up` blocks.
 - Configuration defaults must remain safe for existing deployments.
 - Deprecated v1 surfaces remain available until v2 provides a documented
   migration path.

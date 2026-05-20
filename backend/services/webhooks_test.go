@@ -32,7 +32,7 @@ func TestEndpointAllowsEvent(t *testing.T) {
 func TestValidateWebhookEndpoint(t *testing.T) {
 	endpoint := &models.WebhookEndpoint{
 		Name:   "  integrations ",
-		URL:    "https://example.test/webhook",
+		URL:    "https://8.8.8.8/webhook",
 		Events: []string{" subnet.created ", "", "ip_address.*"},
 	}
 	err := validateWebhookEndpoint(endpoint)
@@ -43,6 +43,11 @@ func TestValidateWebhookEndpoint(t *testing.T) {
 
 func TestValidateWebhookEndpointRejectsBadURL(t *testing.T) {
 	err := validateWebhookEndpoint(&models.WebhookEndpoint{Name: "bad", URL: "ftp://example.test/hook"})
+	assert.Error(t, err)
+}
+
+func TestValidateWebhookEndpointRejectsPrivateURL(t *testing.T) {
+	err := validateWebhookEndpoint(&models.WebhookEndpoint{Name: "bad", URL: "http://127.0.0.1/hook"})
 	assert.Error(t, err)
 }
 
