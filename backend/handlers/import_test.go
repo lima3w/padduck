@@ -395,3 +395,46 @@ func TestExportFullData_JSON_Returns200(t *testing.T) {
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 }
+
+func TestExportV2MigrationBundle_NoUser_Returns401(t *testing.T) {
+	h := &Handler{service: nil}
+	app := fiber.New()
+	app.Get("/admin/export/v2-migration-bundle", h.ExportV2MigrationBundle)
+
+	req := httptest.NewRequest("GET", "/admin/export/v2-migration-bundle", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestExportV2MigrationBundle_LowPrivilege_Returns403(t *testing.T) {
+	h := &Handler{service: nil}
+	app := buildImportApp(&models.User{ID: 0, Role: "viewer"}, "GET", "/admin/export/v2-migration-bundle", h.ExportV2MigrationBundle)
+
+	req := httptest.NewRequest("GET", "/admin/export/v2-migration-bundle", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestExportV2MigrationBundle_ReturnsZip(t *testing.T) {
+	app := buildImportHandlerApp("GET", "/admin/export/v2-migration-bundle",
+		func(h *Handler) fiber.Handler {
+			return func(c *fiber.Ctx) error {
+				data, filename, ct, err := h.service.Import.ExportV2MigrationBundle(c.Context())
+				if err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+				}
+				c.Set("Content-Type", ct)
+				c.Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+				return c.Send(data)
+			}
+		})
+
+	req := httptest.NewRequest("GET", "/admin/export/v2-migration-bundle", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+	assert.Equal(t, "application/zip", resp.Header.Get("Content-Type"))
+	assert.Contains(t, resp.Header.Get("Content-Disposition"), "ipam-v2-migration-bundle")
+}

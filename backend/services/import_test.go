@@ -1,7 +1,11 @@
 package services
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"strings"
 	"testing"
 
@@ -512,6 +516,51 @@ func TestExportFullData_EmptyDatabase(t *testing.T) {
 	assert.NotEmpty(t, data)
 	assert.NotEmpty(t, filename)
 	assert.Equal(t, "text/csv", ct)
+}
+
+func TestExportV2MigrationBundle_ZipContents(t *testing.T) {
+	repo := newStubImportRepo()
+	repo.subnets = []*models.Subnet{
+		{ID: 1, SectionID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24, Description: "Corp"},
+	}
+	repo.ips[1] = []*models.IPAddress{
+		{ID: 1, SubnetID: 1, Address: "10.0.0.10", Hostname: "server1", Status: "active"},
+	}
+	svc := newTestImportService(repo)
+
+	data, filename, ct, err := svc.ExportV2MigrationBundle(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "application/zip", ct)
+	assert.Contains(t, filename, "ipam-v2-migration-bundle")
+	assert.Contains(t, filename, ".zip")
+
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	require.NoError(t, err)
+
+	files := map[string]string{}
+	for _, f := range zr.File {
+		rc, err := f.Open()
+		require.NoError(t, err)
+		body, err := io.ReadAll(rc)
+		require.NoError(t, err)
+		require.NoError(t, rc.Close())
+		files[f.Name] = string(body)
+	}
+
+	assert.Contains(t, files, "manifest.json")
+	assert.Contains(t, files, "data/ipam-v1-export.json")
+	assert.Contains(t, files, "data/ipam-v1-export.csv")
+	assert.Contains(t, files, "README.md")
+	assert.Contains(t, files["data/ipam-v1-export.json"], "10.0.0.10")
+	assert.Contains(t, files["data/ipam-v1-export.csv"], "10.0.0.0/24")
+
+	var manifest migrationBundleManifest
+	require.NoError(t, json.Unmarshal([]byte(files["manifest.json"]), &manifest))
+	assert.Equal(t, "v1-pre-v2", manifest.BundleVersion)
+	assert.Equal(t, "ipam-next-v2", manifest.Target)
+	require.Len(t, manifest.Files, 3)
+	assert.Equal(t, "data/ipam-v1-export.json", manifest.Files[0].Path)
+	assert.NotEmpty(t, manifest.Files[0].SHA256)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

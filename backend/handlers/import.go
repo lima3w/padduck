@@ -214,3 +214,30 @@ func (h *Handler) ExportFullData(c *fiber.Ctx) error {
 	c.Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 	return c.Send(data)
 }
+
+// ExportV2MigrationBundle handles GET /api/v1/admin/export/v2-migration-bundle.
+func (h *Handler) ExportV2MigrationBundle(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+		return nil
+	}
+
+	if c.QueryBool("async") {
+		job := h.service.Jobs.Enqueue("export", "Export v2 migration bundle", fiber.Map{"target": "v2.0"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+			reporter.Progress(0, 1, "building v2 migration bundle")
+			data, filename, contentType, err := h.service.Import.ExportV2MigrationBundle(ctx)
+			reporter.Progress(1, 1, "migration bundle export complete")
+			return fiber.Map{"filename": filename, "content_type": contentType, "bytes": len(data)}, err
+		})
+		return c.Status(fiber.StatusAccepted).JSON(job)
+	}
+
+	data, filename, contentType, err := h.service.Import.ExportV2MigrationBundle(c.Context())
+	if err != nil {
+		reqLogger(c).Error("export v2 migration bundle failed", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	c.Set("Content-Type", contentType)
+	c.Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+	return c.Send(data)
+}

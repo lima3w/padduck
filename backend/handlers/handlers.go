@@ -529,6 +529,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/import/ips", h.ImportIPsCSV)
 	admin.Post("/import/phpipam", h.ImportFromPHPIpam)
 	admin.Get("/export/full", h.ExportFullData)
+	admin.Get("/export/v2-migration-bundle", h.ExportV2MigrationBundle)
 
 	// LDAP & SSO (v1.13.0 #229 #230 #231 #232)
 	h.RegisterExternalAuthAdminRoutes(admin)
