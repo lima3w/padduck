@@ -16,8 +16,14 @@ Compatibility rules:
 Administrators can review known v2 compatibility warnings at:
 
 - `GET /api/v1/admin/compatibility/v2-warnings`
+- `GET /api/v1/admin/export/v2-migration-bundle`
 
 The response groups warnings by API, field, and workflow areas and includes
 recommended remediation work for v1 clients before a v2 upgrade. Clients should
 prefer top-level IP address endpoints, send idempotency keys for automation
 writes, and avoid depending solely on legacy role fields.
+
+The v2 migration bundle endpoint returns an `application/zip` archive containing
+`manifest.json`, `data/ipam-v1-export.json`, `data/ipam-v1-export.csv`, and a
+short README. The JSON export is the canonical migration input; the CSV export is
+included for inspection and fallback workflows.
