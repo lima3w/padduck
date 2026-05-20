@@ -1,6 +1,6 @@
 # V1 Long-Term Maintenance Policy
 
-IPAM Next v1 remains the stable production line while v2 is developed. The v1
+Padduck v1 remains the stable production line while v2 is developed. The v1
 line is maintained for operators who need predictable APIs, migrations, and
 deployment behavior during the v2 transition.
 

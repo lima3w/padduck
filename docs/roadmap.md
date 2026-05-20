@@ -1,4 +1,4 @@
-# IPAM Next Roadmap
+# Padduck Roadmap
 
 This roadmap assumes the v1.19.0 cleanup milestone has shipped. At that point
 the product has closed the known frontend/backend gaps around password reset,
@@ -6,7 +6,7 @@ sessions, notification preferences, VRF/rack management, lease workflows, DNS
 IPv6/Technitium parity, SNMP configuration, admin user lifecycle actions,
 custom roles, scheduled reports, privacy consent, and integration health.
 
-The goal for the remaining v1 line is to make IPAM Next dependable for daily
+The goal for the remaining v1 line is to make Padduck dependable for daily
 operations without forcing a breaking architecture change. The goal for v2 is
 to turn that stable product into a larger network source-of-truth platform.
 
@@ -201,7 +201,7 @@ Focus: model the network as a graph, not just lists.
 
 ### v2.4.0 Automation Engine
 
-Focus: let teams build controlled workflows inside IPAM Next.
+Focus: let teams build controlled workflows inside Padduck.
 
 - Add a rule builder for conditions, approvals, actions, and notifications.
 - Add built-in actions for allocation, reservation, release, DNS sync, webhook
@@ -223,7 +223,7 @@ Focus: support production environments with high availability expectations.
 
 ### v2.6.0 Ecosystem And Extensibility
 
-Focus: make IPAM Next easier to extend without patching core code.
+Focus: make Padduck easier to extend without patching core code.
 
 - Add plugin-style integration points for discovery sources, DNS providers,
   notification channels, importers, exporters, and automation actions.
