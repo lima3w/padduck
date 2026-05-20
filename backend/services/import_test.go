@@ -531,7 +531,7 @@ func TestExportV2MigrationBundle_ZipContents(t *testing.T) {
 	data, filename, ct, err := svc.ExportV2MigrationBundle(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, "application/zip", ct)
-	assert.Contains(t, filename, "ipam-v2-migration-bundle")
+	assert.Contains(t, filename, "padduck-v2-migration-bundle")
 	assert.Contains(t, filename, ".zip")
 
 	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
@@ -559,7 +559,7 @@ func TestExportV2MigrationBundle_ZipContents(t *testing.T) {
 	assert.Equal(t, "v1-pre-v2", manifest.BundleVersion)
 	assert.Equal(t, "padduck-v2", manifest.Target)
 	require.Len(t, manifest.Files, 3)
-	assert.Equal(t, "data/ipam-v1-export.json", manifest.Files[0].Path)
+	assert.Equal(t, "data/padduck-v1-export.json", manifest.Files[0].Path)
 	assert.NotEmpty(t, manifest.Files[0].SHA256)
 }
 
