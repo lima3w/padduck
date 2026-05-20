@@ -23,6 +23,9 @@ func (s *Service) CreateLocation(ctx context.Context, req *LocationCreateRequest
 	if req.Type == "" {
 		req.Type = "other"
 	}
+	if req.Status == "" {
+		req.Status = "active"
+	}
 	return s.repository.CreateLocation(ctx, req)
 }
 
@@ -56,6 +59,9 @@ func (s *Service) UpdateLocation(ctx context.Context, id int64, req *LocationUpd
 	}
 	if req.Type == "" {
 		req.Type = "other"
+	}
+	if req.Status == "" {
+		req.Status = "active"
 	}
 	loc, err := s.repository.UpdateLocation(ctx, id, req)
 	if err != nil {

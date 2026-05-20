@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { createCustomer, deleteCustomer, getCustomers, updateCustomer } from '../api/client'
+import { createCustomer, createCustomerAssociation, deleteCustomer, deleteCustomerAssociation, getCustomerAssociations, getCustomers, updateCustomer } from '../api/client'
 import Modal from '../components/Modal'
 
 const EMPTY_FORM = { name: '', description: '', email: '', phone: '', notes: '' }
+const EMPTY_ASSOC = { customer_id: '', object_type: 'subnet', object_id: '', relationship: 'owner', notes: '' }
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([])
@@ -14,6 +15,8 @@ export default function CustomersPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [associations, setAssociations] = useState([])
+  const [assocForm, setAssocForm] = useState(EMPTY_ASSOC)
 
   useEffect(() => { load() }, [])
 
@@ -21,7 +24,9 @@ export default function CustomersPage() {
     try {
       setLoading(true)
       const res = await getCustomers()
+      const assocRes = await getCustomerAssociations()
       setCustomers(res.data || [])
+      setAssociations(assocRes.data || [])
     } catch {
       setError('Failed to load customers')
     } finally {
@@ -76,6 +81,21 @@ export default function CustomersPage() {
       await load()
     } catch {
       setError('Delete failed')
+    }
+  }
+
+  async function handleAssociationSave(e) {
+    e.preventDefault()
+    try {
+      await createCustomerAssociation({
+        ...assocForm,
+        customer_id: Number(assocForm.customer_id),
+        object_id: Number(assocForm.object_id),
+      })
+      setAssocForm(EMPTY_ASSOC)
+      await load()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save association')
     }
   }
 
@@ -145,6 +165,33 @@ export default function CustomersPage() {
           </table>
         </div>
       )}
+
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Customer Associations</h2>
+        <form onSubmit={handleAssociationSave} className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+          <select required value={assocForm.customer_id} onChange={e => setAssocForm(f => ({ ...f, customer_id: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm">
+            <option value="">Customer</option>
+            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select value={assocForm.object_type} onChange={e => setAssocForm(f => ({ ...f, object_type: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm">
+            {['section', 'subnet', 'ip_address', 'device', 'rack', 'location', 'vlan', 'vrf', 'nat_rule', 'dhcp_server', 'dhcp_lease', 'physical_circuit', 'logical_circuit'].map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input required type="number" min="1" placeholder="Object ID" value={assocForm.object_id} onChange={e => setAssocForm(f => ({ ...f, object_id: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm" />
+          <select value={assocForm.relationship} onChange={e => setAssocForm(f => ({ ...f, relationship: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm">
+            {['owner', 'consumer', 'billing', 'technical', 'stakeholder'].map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded text-sm">Add Association</button>
+        </form>
+        <div className="overflow-x-auto rounded border border-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50"><tr><th className="px-4 py-3 text-left font-medium text-gray-600">Customer</th><th className="px-4 py-3 text-left font-medium text-gray-600">Object</th><th className="px-4 py-3 text-left font-medium text-gray-600">Relationship</th><th /></tr></thead>
+            <tbody className="divide-y divide-gray-100 bg-white">
+              {associations.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-gray-500">No associations yet.</td></tr>}
+              {associations.map(a => <tr key={a.id}><td className="px-4 py-3">{a.customerName || a.customerId}</td><td className="px-4 py-3 font-mono">{a.objectType} #{a.objectId}</td><td className="px-4 py-3">{a.relationship}</td><td className="px-4 py-3 text-right"><button onClick={async () => { await deleteCustomerAssociation(a.id); load() }} className="text-red-600 text-xs">Delete</button></td></tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {modal && (
         <Modal onClose={closeModal}>

@@ -8,7 +8,7 @@ import TableActions from '../components/TableActions'
 
 const LOCATION_TYPES = ['site', 'building', 'floor', 'room', 'cage', 'other']
 
-const EMPTY_FORM = { name: '', type: 'site', parent_id: '', address: '', description: '' }
+const EMPTY_FORM = { name: '', type: 'site', parent_id: '', address: '', city: '', region: '', country: '', facility_code: '', time_zone: '', contact_name: '', contact_email: '', contact_phone: '', status: 'active', description: '' }
 
 function LocationRow({ node, allNodes, depth, onEdit, onDelete, deleteConfirm, setDeleteConfirm }) {
   const [expanded, setExpanded] = useState(true)
@@ -36,7 +36,9 @@ function LocationRow({ node, allNodes, depth, onEdit, onDelete, deleteConfirm, s
           </div>
         </td>
         <td className="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">{node.type}</td>
-        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{node.address || '—'}</td>
+        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{[node.city, node.region, node.country].filter(Boolean).join(', ') || node.address || '—'}</td>
+        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{node.facilityCode || '—'}</td>
+        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">{node.status || 'active'}</td>
         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{node.description || '—'}</td>
         <td className="px-4 py-3 text-right">
           <TableActions
@@ -106,6 +108,15 @@ export default function LocationsPage() {
       type: loc.type || 'site',
       parent_id: loc.parentId ? String(loc.parentId) : '',
       address: loc.address || '',
+      city: loc.city || '',
+      region: loc.region || '',
+      country: loc.country || '',
+      facility_code: loc.facilityCode || '',
+      time_zone: loc.timeZone || '',
+      contact_name: loc.contactName || '',
+      contact_email: loc.contactEmail || '',
+      contact_phone: loc.contactPhone || '',
+      status: loc.status || 'active',
       description: loc.description || '',
     })
     setModal({ edit: loc })
@@ -120,6 +131,15 @@ export default function LocationsPage() {
         type: form.type,
         parent_id: form.parent_id ? parseInt(form.parent_id) : null,
         address: form.address || null,
+        city: form.city || null,
+        region: form.region || null,
+        country: form.country || null,
+        facility_code: form.facility_code || null,
+        time_zone: form.time_zone || null,
+        contact_name: form.contact_name || null,
+        contact_email: form.contact_email || null,
+        contact_phone: form.contact_phone || null,
+        status: form.status || 'active',
         description: form.description || null,
       }
       if (modal === 'create') {
@@ -165,7 +185,9 @@ export default function LocationsPage() {
             <tr>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Place</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Facility</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -173,7 +195,7 @@ export default function LocationsPage() {
           <tbody>
             {tree.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
                   No locations yet. Add your first location to get started.
                 </td>
               </tr>
@@ -211,6 +233,39 @@ export default function LocationsPage() {
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 required
               />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                ['city', 'City'],
+                ['region', 'Region'],
+                ['country', 'Country'],
+                ['facility_code', 'Facility Code'],
+                ['time_zone', 'Time Zone'],
+                ['contact_name', 'Contact Name'],
+                ['contact_email', 'Contact Email'],
+                ['contact_phone', 'Contact Phone'],
+              ].map(([field, label]) => (
+                <div key={field}>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+                  <input
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    value={form[field]}
+                    onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={form.status}
+                onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+              >
+                <option value="active">Active</option>
+                <option value="planned">Planned</option>
+                <option value="retired">Retired</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>

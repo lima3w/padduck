@@ -63,6 +63,9 @@ const AdminIntegrationsPage = lazy(() => import('./pages/AdminIntegrationsPage')
 const AdminGrafanaPage = lazy(() => import('./pages/AdminGrafanaPage'))
 const CustomersPage = lazy(() => import('./pages/CustomersPage'))
 const AutonomousSystemsPage = lazy(() => import('./pages/AutonomousSystemsPage'))
+const NATRulesPage = lazy(() => import('./pages/NATRulesPage'))
+const DHCPPage = lazy(() => import('./pages/DHCPPage'))
+const CircuitsPage = lazy(() => import('./pages/CircuitsPage'))
 const DiscoveryConflictsPage = lazy(() => import('./pages/DiscoveryConflictsPage'))
 const TopologyHintsPage = lazy(() => import('./pages/TopologyHintsPage'))
 const APITokenAnalyticsPage = lazy(() => import('./pages/APITokenAnalyticsPage'))
@@ -207,6 +210,9 @@ export default function App() {
             <Route path="admin/grafana" element={<AdminGrafanaPage />} />
             <Route path="customers" element={gated('customers', <CustomersPage />)} />
             <Route path="autonomous-systems" element={gated('bgp', <AutonomousSystemsPage />)} />
+            <Route path="nat-rules" element={gated('nat', <NATRulesPage />)} />
+            <Route path="dhcp" element={gated('dhcp', <DHCPPage />)} />
+            <Route path="circuits" element={gated('circuits', <CircuitsPage />)} />
             <Route path="admin/topology/hints" element={<TopologyHintsPage />} />
             <Route path="admin/system-health" element={<DeploymentHealthPage />} />
             <Route path="admin/privacy/consent-report" element={<PrivacyConsentReportPage />} />
