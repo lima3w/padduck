@@ -84,6 +84,98 @@ func (s *Service) DeleteNATRule(ctx context.Context, id int64) error {
 	return s.repository.DeleteNATRule(ctx, id)
 }
 
+func (s *Service) ListFirewallZones(ctx context.Context) ([]*models.FirewallZone, error) {
+	return s.repository.ListFirewallZones(ctx)
+}
+
+func (s *Service) GetFirewallZone(ctx context.Context, id int64) (*models.FirewallZone, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid firewall zone ID")
+	}
+	return s.repository.GetFirewallZoneByID(ctx, id)
+}
+
+func (s *Service) CreateFirewallZone(ctx context.Context, req *repository.FirewallZoneParams) (*models.FirewallZone, error) {
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, fmt.Errorf("firewall zone name is required")
+	}
+	req.Color = defaultString(req.Color, "#2563eb")
+	req.Status = defaultString(req.Status, "active")
+	return s.repository.CreateFirewallZone(ctx, req)
+}
+
+func (s *Service) UpdateFirewallZone(ctx context.Context, id int64, req *repository.FirewallZoneParams) (*models.FirewallZone, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid firewall zone ID")
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		return nil, fmt.Errorf("firewall zone name is required")
+	}
+	req.Color = defaultString(req.Color, "#2563eb")
+	req.Status = defaultString(req.Status, "active")
+	return s.repository.UpdateFirewallZone(ctx, id, req)
+}
+
+func (s *Service) DeleteFirewallZone(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("invalid firewall zone ID")
+	}
+	return s.repository.DeleteFirewallZone(ctx, id)
+}
+
+func (s *Service) ListFirewallZoneMappings(ctx context.Context, zoneID int64) ([]*models.FirewallZoneMapping, error) {
+	return s.repository.ListFirewallZoneMappings(ctx, zoneID)
+}
+
+func (s *Service) CreateFirewallZoneMapping(ctx context.Context, req *repository.FirewallZoneMappingParams) (*models.FirewallZoneMapping, error) {
+	if err := validateFirewallZoneMapping(req); err != nil {
+		return nil, err
+	}
+	req.Direction = defaultString(req.Direction, "both")
+	req.Status = defaultString(req.Status, "active")
+	return s.repository.CreateFirewallZoneMapping(ctx, req)
+}
+
+func (s *Service) UpdateFirewallZoneMapping(ctx context.Context, id int64, req *repository.FirewallZoneMappingParams) (*models.FirewallZoneMapping, error) {
+	if id <= 0 {
+		return nil, fmt.Errorf("invalid firewall mapping ID")
+	}
+	if err := validateFirewallZoneMapping(req); err != nil {
+		return nil, err
+	}
+	req.Direction = defaultString(req.Direction, "both")
+	req.Status = defaultString(req.Status, "active")
+	return s.repository.UpdateFirewallZoneMapping(ctx, id, req)
+}
+
+func validateFirewallZoneMapping(req *repository.FirewallZoneMappingParams) error {
+	if req.ZoneID <= 0 {
+		return fmt.Errorf("firewall zone is required")
+	}
+	if strings.TrimSpace(req.ObjectType) == "" {
+		return fmt.Errorf("object type is required")
+	}
+	if req.ObjectType == "cidr" && strings.TrimSpace(req.CIDR) == "" {
+		return fmt.Errorf("CIDR is required for CIDR mappings")
+	}
+	if req.ObjectID == nil && strings.TrimSpace(req.CIDR) == "" {
+		return fmt.Errorf("object ID or CIDR is required")
+	}
+	if strings.TrimSpace(req.CIDR) != "" {
+		if _, _, err := net.ParseCIDR(req.CIDR); err != nil {
+			return fmt.Errorf("CIDR must be valid")
+		}
+	}
+	return nil
+}
+
+func (s *Service) DeleteFirewallZoneMapping(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("invalid firewall mapping ID")
+	}
+	return s.repository.DeleteFirewallZoneMapping(ctx, id)
+}
+
 func (s *Service) ListDHCPServers(ctx context.Context) ([]*models.DHCPServer, error) {
 	return s.repository.ListDHCPServers(ctx)
 }

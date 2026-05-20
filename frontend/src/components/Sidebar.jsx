@@ -146,7 +146,7 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        {(features.nat || features.dhcp || features.circuits) && (
+        {(features.nat || features.firewall || features.dhcp || features.circuits) && (
           <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Network Services
           </div>
@@ -161,6 +161,18 @@ export default function Sidebar() {
             }
           >
             NAT Rules
+          </NavLink>
+        )}
+        {features.firewall && (
+          <NavLink
+            to="/firewall-zones"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            Firewall Zones
           </NavLink>
         )}
         {features.dhcp && (

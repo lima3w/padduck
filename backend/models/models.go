@@ -1097,6 +1097,32 @@ type CustomerAssociation struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+// FirewallZone represents a documented network security zone.
+type FirewallZone struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Color       string    `json:"color"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// FirewallZoneMapping links a security zone to an IPAM object or CIDR.
+type FirewallZoneMapping struct {
+	ID          int64     `json:"id"`
+	ZoneID      int64     `json:"zone_id"`
+	ObjectType  string    `json:"object_type"`
+	ObjectID    *int64    `json:"object_id,omitempty"`
+	CIDR        string    `json:"cidr"`
+	Direction   string    `json:"direction"`
+	Description string    `json:"description"`
+	Status      string    `json:"status"`
+	ZoneName    *string   `json:"zone_name,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // DuplicateHostname describes a hostname that appears on more than one device.
 type DuplicateHostname struct {
 	Hostname  string  `json:"hostname"`

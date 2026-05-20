@@ -49,4 +49,5 @@ Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/d
 - docs/roadmap.md
 - docs/user-guide.md
 - docs/v1.29-network-modules.md
+- docs/v1.30-optional-tools.md
 - docs/v1-maintenance-policy.md
