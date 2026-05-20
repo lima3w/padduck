@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getRack, getRackDevices } from '../api/racks'
 import { getLocation } from '../api/locations'
+import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 
 const DEVICE_COLORS = [
   'bg-blue-200 dark:bg-blue-800 border-blue-400 dark:border-blue-600 text-blue-900 dark:text-blue-100',
@@ -80,6 +81,27 @@ export default function RackDetailPage() {
 
   const usedU = rackDevices.reduce((acc, d) => acc + (d.rackUnitSize ?? 1), 0)
   const freeU = sizeU - usedU
+  const location = locationBreadcrumb[locationBreadcrumb.length - 1]
+  const relationshipItems = [
+    location && {
+      label: 'Location',
+      value: location.name,
+      to: `/locations/${location.id}`,
+      description: 'Rack parent location',
+    },
+    {
+      label: 'Devices',
+      value: 'Installed devices',
+      count: rackDevices.length,
+      description: `${rackDevices.length} device${rackDevices.length === 1 ? '' : 's'} mounted in this rack`,
+    },
+    {
+      label: 'Capacity',
+      value: `${usedU}U used`,
+      count: `${freeU}U free`,
+      description: `${sizeU}U total rack capacity`,
+    },
+  ]
 
   return (
     <div>
@@ -106,6 +128,8 @@ export default function RackDetailPage() {
       </div>
 
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
+
+      <ObjectRelationshipsPanel relationships={relationshipItems} />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">

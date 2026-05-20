@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ChangeHistory from '../components/ChangeHistory'
+import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import {
   assignSubnetToVlan,
   getSections,
@@ -202,6 +203,31 @@ export default function VlanDetailPage() {
   const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('current_user'))?.role === 'admin' } catch { return false } })()
   const domain = getDomain(vlan.domainId)
   const group = getGroup(vlan.groupId)
+  const sectionIds = new Set(subnets.map(s => s.sectionId).filter(Boolean))
+  const relationshipItems = [
+    domain && {
+      label: 'Domain',
+      value: domain.name,
+      description: 'VLAN namespace boundary',
+    },
+    group && {
+      label: 'Group',
+      value: group.name,
+      description: 'VLAN grouping',
+    },
+    {
+      label: 'Subnets',
+      value: 'Assigned subnets',
+      count: subnets.length,
+      description: `${subnets.length} subnet${subnets.length === 1 ? '' : 's'} assigned to this VLAN`,
+    },
+    {
+      label: 'Sections',
+      value: 'Related sections',
+      count: sectionIds.size,
+      description: `${sectionIds.size} section${sectionIds.size === 1 ? '' : 's'} represented by assigned subnets`,
+    },
+  ]
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -265,6 +291,8 @@ export default function VlanDetailPage() {
           )}
         </div>
       </div>
+
+      <ObjectRelationshipsPanel relationships={relationshipItems} />
 
       {/* Subnets in this VLAN */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
