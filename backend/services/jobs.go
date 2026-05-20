@@ -91,10 +91,11 @@ func (s *JobService) Enqueue(kind, name string, metadata map[string]interface{},
 
 	s.mu.Lock()
 	s.jobs[job.ID] = job
+	out := publicJob(job)
 	s.mu.Unlock()
 
 	go s.run(job.ID)
-	return publicJob(job)
+	return out
 }
 
 func (s *JobService) List() []*BackgroundJob {
@@ -162,6 +163,7 @@ func (s *JobService) Retry(id int64) (*BackgroundJob, error) {
 	job.Progress = JobProgress{}
 	job.StartedAt = nil
 	job.FinishedAt = nil
+	job.runID++
 	out := publicJob(job)
 	s.mu.Unlock()
 	go s.run(id)
