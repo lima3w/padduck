@@ -319,6 +319,10 @@ func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 		PermV2CustomerList, PermV2CustomerRead, PermV2CustomerWrite, PermV2CustomerDelete,
 		// v1.14.0 BGP autonomous system permissions
 		PermV2ASList, PermV2ASRead, PermV2ASWrite, PermV2ASDelete,
+		// v1.29.0 network module permissions
+		PermV2NATList, PermV2NATRead, PermV2NATWrite, PermV2NATDelete,
+		PermV2DHCPList, PermV2DHCPRead, PermV2DHCPWrite, PermV2DHCPDelete,
+		PermV2CircuitList, PermV2CircuitRead, PermV2CircuitWrite, PermV2CircuitDelete,
 	}
 	assert.Equal(t, len(expected), len(AllPermissions))
 	for _, p := range expected {
@@ -631,6 +635,12 @@ func TestLegacyUserRole_DoesNotGrantCustomerOrASMutation(t *testing.T) {
 		PermV2CustomerDelete,
 		PermV2ASWrite,
 		PermV2ASDelete,
+		PermV2NATWrite,
+		PermV2NATDelete,
+		PermV2DHCPWrite,
+		PermV2DHCPDelete,
+		PermV2CircuitWrite,
+		PermV2CircuitDelete,
 	}
 	for _, perm := range denied {
 		t.Run(perm, func(t *testing.T) {
@@ -645,6 +655,12 @@ func TestLegacyUserRole_GrantsCustomerAndASRead(t *testing.T) {
 		PermV2CustomerRead,
 		PermV2ASList,
 		PermV2ASRead,
+		PermV2NATList,
+		PermV2NATRead,
+		PermV2DHCPList,
+		PermV2DHCPRead,
+		PermV2CircuitList,
+		PermV2CircuitRead,
 	}
 	for _, perm := range granted {
 		t.Run(perm, func(t *testing.T) {
@@ -659,6 +675,12 @@ func TestLegacyViewerRole_GrantsCustomerAndASRead(t *testing.T) {
 		PermV2CustomerRead,
 		PermV2ASList,
 		PermV2ASRead,
+		PermV2NATList,
+		PermV2NATRead,
+		PermV2DHCPList,
+		PermV2DHCPRead,
+		PermV2CircuitList,
+		PermV2CircuitRead,
 	}
 	for _, perm := range granted {
 		t.Run(perm, func(t *testing.T) {

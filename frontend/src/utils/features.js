@@ -6,6 +6,9 @@ export const DEFAULT_FEATURES = {
   locations: true,
   bgp: true,
   devices: true,
+  nat: true,
+  dhcp: true,
+  circuits: true,
 }
 
 export function normalizeFeatures(data) {

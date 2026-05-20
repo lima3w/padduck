@@ -10,6 +10,9 @@ const (
 	featureLocations = "feature_locations_enabled"
 	featureBgp       = "feature_bgp_enabled"
 	featureDevices   = "feature_devices_enabled"
+	featureNAT       = "feature_nat_enabled"
+	featureDHCP      = "feature_dhcp_enabled"
+	featureCircuits  = "feature_circuits_enabled"
 )
 
 var featureResponseKeys = map[string]string{
@@ -20,6 +23,9 @@ var featureResponseKeys = map[string]string{
 	featureLocations: "locations",
 	featureBgp:       "bgp",
 	featureDevices:   "devices",
+	featureNAT:       "nat",
+	featureDHCP:      "dhcp",
+	featureCircuits:  "circuits",
 }
 
 // GetFeatures handles GET /api/v1/features.

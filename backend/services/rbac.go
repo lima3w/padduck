@@ -117,6 +117,21 @@ const (
 	PermV2ASRead   = "ipam:autonomous_system:read"
 	PermV2ASWrite  = "ipam:autonomous_system:write"
 	PermV2ASDelete = "ipam:autonomous_system:delete"
+
+	PermV2NATList   = "ipam:nat:list"
+	PermV2NATRead   = "ipam:nat:read"
+	PermV2NATWrite  = "ipam:nat:write"
+	PermV2NATDelete = "ipam:nat:delete"
+
+	PermV2DHCPList   = "ipam:dhcp:list"
+	PermV2DHCPRead   = "ipam:dhcp:read"
+	PermV2DHCPWrite  = "ipam:dhcp:write"
+	PermV2DHCPDelete = "ipam:dhcp:delete"
+
+	PermV2CircuitList   = "ipam:circuit:list"
+	PermV2CircuitRead   = "ipam:circuit:read"
+	PermV2CircuitWrite  = "ipam:circuit:write"
+	PermV2CircuitDelete = "ipam:circuit:delete"
 )
 
 // AllPermissions is the authoritative list of valid permission strings.
@@ -136,6 +151,9 @@ var AllPermissions = []string{
 	PermV2AdminRead, PermV2AdminWrite,
 	PermV2CustomerList, PermV2CustomerRead, PermV2CustomerWrite, PermV2CustomerDelete,
 	PermV2ASList, PermV2ASRead, PermV2ASWrite, PermV2ASDelete,
+	PermV2NATList, PermV2NATRead, PermV2NATWrite, PermV2NATDelete,
+	PermV2DHCPList, PermV2DHCPRead, PermV2DHCPWrite, PermV2DHCPDelete,
+	PermV2CircuitList, PermV2CircuitRead, PermV2CircuitWrite, PermV2CircuitDelete,
 }
 
 // IsValidPermission returns true if the given string is a known permission.
@@ -267,6 +285,9 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2SubnetRequestReview: true, PermV2AdminRead: true, PermV2AdminWrite: true,
 			PermV2CustomerWrite: true, PermV2CustomerDelete: true,
 			PermV2ASWrite: true, PermV2ASDelete: true,
+			PermV2NATWrite: true, PermV2NATDelete: true,
+			PermV2DHCPWrite: true, PermV2DHCPDelete: true,
+			PermV2CircuitWrite: true, PermV2CircuitDelete: true,
 		}
 		return !adminOnly[permission]
 	case "viewer":
@@ -284,6 +305,9 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2VLANGroupList: true, PermV2VLANGroupRead: true,
 			PermV2CustomerList: true, PermV2CustomerRead: true,
 			PermV2ASList: true, PermV2ASRead: true,
+			PermV2NATList: true, PermV2NATRead: true,
+			PermV2DHCPList: true, PermV2DHCPRead: true,
+			PermV2CircuitList: true, PermV2CircuitRead: true,
 			// Viewers cannot submit or review requests
 		}
 		return readPerms[permission]

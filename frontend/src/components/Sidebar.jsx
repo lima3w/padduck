@@ -146,6 +146,48 @@ export default function Sidebar() {
           </NavLink>
         )}
 
+        {(features.nat || features.dhcp || features.circuits) && (
+          <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Network Services
+          </div>
+        )}
+        {features.nat && (
+          <NavLink
+            to="/nat-rules"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            NAT Rules
+          </NavLink>
+        )}
+        {features.dhcp && (
+          <NavLink
+            to="/dhcp"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            DHCP
+          </NavLink>
+        )}
+        {features.circuits && (
+          <NavLink
+            to="/circuits"
+            className={({ isActive }) =>
+              `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 dark:hover:bg-gray-700'
+              }`
+            }
+          >
+            Circuits
+          </NavLink>
+        )}
+
         {features.customers && (
           <>
             <div className="mt-4 mb-1 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">

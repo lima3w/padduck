@@ -9,11 +9,11 @@ import (
 
 // ---- Location management (v1.5.0) ----
 
-const locationSelectCols = `id, parent_id, name, type, address, lat, lng, description, created_at, updated_at`
+const locationSelectCols = `id, parent_id, name, type, address, city, region, country, facility_code, time_zone, contact_name, contact_email, contact_phone, status, lat, lng, description, created_at, updated_at`
 
 func scanLocation(row interface{ Scan(dest ...any) error }) (*models.Location, error) {
 	l := &models.Location{}
-	err := row.Scan(&l.ID, &l.ParentID, &l.Name, &l.Type, &l.Address, &l.Lat, &l.Lng, &l.Description, &l.CreatedAt, &l.UpdatedAt)
+	err := row.Scan(&l.ID, &l.ParentID, &l.Name, &l.Type, &l.Address, &l.City, &l.Region, &l.Country, &l.FacilityCode, &l.TimeZone, &l.ContactName, &l.ContactEmail, &l.ContactPhone, &l.Status, &l.Lat, &l.Lng, &l.Description, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -22,21 +22,30 @@ func scanLocation(row interface{ Scan(dest ...any) error }) (*models.Location, e
 
 // LocationParams holds fields for creating or updating a location.
 type LocationParams struct {
-	ParentID    *int64   `json:"parent_id"`
-	Name        string   `json:"name"`
-	Type        string   `json:"type"`
-	Address     *string  `json:"address"`
-	Lat         *float64 `json:"lat"`
-	Lng         *float64 `json:"lng"`
-	Description *string  `json:"description"`
+	ParentID     *int64   `json:"parent_id"`
+	Name         string   `json:"name"`
+	Type         string   `json:"type"`
+	Address      *string  `json:"address"`
+	City         *string  `json:"city"`
+	Region       *string  `json:"region"`
+	Country      *string  `json:"country"`
+	FacilityCode *string  `json:"facility_code"`
+	TimeZone     *string  `json:"time_zone"`
+	ContactName  *string  `json:"contact_name"`
+	ContactEmail *string  `json:"contact_email"`
+	ContactPhone *string  `json:"contact_phone"`
+	Status       string   `json:"status"`
+	Lat          *float64 `json:"lat"`
+	Lng          *float64 `json:"lng"`
+	Description  *string  `json:"description"`
 }
 
 // CreateLocation inserts a new location record.
 func (r *Repository) CreateLocation(ctx context.Context, p *LocationParams) (*models.Location, error) {
-	query := `INSERT INTO locations (parent_id, name, type, address, lat, lng, description)
-	          VALUES ($1,$2,$3,$4,$5,$6,$7)
+	query := `INSERT INTO locations (parent_id, name, type, address, city, region, country, facility_code, time_zone, contact_name, contact_email, contact_phone, status, lat, lng, description)
+	          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 	          RETURNING ` + locationSelectCols
-	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.Lat, p.Lng, p.Description)
+	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.City, p.Region, p.Country, p.FacilityCode, p.TimeZone, p.ContactName, p.ContactEmail, p.ContactPhone, p.Status, p.Lat, p.Lng, p.Description)
 	return scanLocation(row)
 }
 
@@ -101,10 +110,10 @@ func (r *Repository) ListLocationsPaginated(ctx context.Context, limit, offset i
 
 // UpdateLocation updates an existing location.
 func (r *Repository) UpdateLocation(ctx context.Context, id int64, p *LocationParams) (*models.Location, error) {
-	query := `UPDATE locations SET parent_id=$1, name=$2, type=$3, address=$4, lat=$5, lng=$6, description=$7, updated_at=now()
-	          WHERE id=$8
+	query := `UPDATE locations SET parent_id=$1, name=$2, type=$3, address=$4, city=$5, region=$6, country=$7, facility_code=$8, time_zone=$9, contact_name=$10, contact_email=$11, contact_phone=$12, status=$13, lat=$14, lng=$15, description=$16, updated_at=now()
+	          WHERE id=$17
 	          RETURNING ` + locationSelectCols
-	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.Lat, p.Lng, p.Description, id)
+	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.City, p.Region, p.Country, p.FacilityCode, p.TimeZone, p.ContactName, p.ContactEmail, p.ContactPhone, p.Status, p.Lat, p.Lng, p.Description, id)
 	l, err := scanLocation(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -131,13 +140,13 @@ func (r *Repository) DeleteLocation(ctx context.Context, id int64) error {
 func (r *Repository) GetLocationTree(ctx context.Context) ([]*models.Location, error) {
 	query := `
 		WITH RECURSIVE loc_tree AS (
-			SELECT id, parent_id, name, type, address, lat, lng, description, created_at, updated_at, 0 AS depth
+			SELECT id, parent_id, name, type, address, city, region, country, facility_code, time_zone, contact_name, contact_email, contact_phone, status, lat, lng, description, created_at, updated_at, 0 AS depth
 			FROM locations WHERE parent_id IS NULL
 			UNION ALL
-			SELECT l.id, l.parent_id, l.name, l.type, l.address, l.lat, l.lng, l.description, l.created_at, l.updated_at, lt.depth + 1
+			SELECT l.id, l.parent_id, l.name, l.type, l.address, l.city, l.region, l.country, l.facility_code, l.time_zone, l.contact_name, l.contact_email, l.contact_phone, l.status, l.lat, l.lng, l.description, l.created_at, l.updated_at, lt.depth + 1
 			FROM locations l JOIN loc_tree lt ON l.parent_id = lt.id
 		)
-		SELECT id, parent_id, name, type, address, lat, lng, description, created_at, updated_at FROM loc_tree ORDER BY depth, name`
+		SELECT ` + locationSelectCols + ` FROM loc_tree ORDER BY depth, name`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, err

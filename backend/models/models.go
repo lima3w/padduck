@@ -784,16 +784,25 @@ type Rack struct {
 
 // Location represents a physical place in the location hierarchy (site, building, floor, room, cage, etc.)
 type Location struct {
-	ID          int64     `json:"id"`
-	ParentID    *int64    `json:"parent_id,omitempty"`
-	Name        string    `json:"name"`
-	Type        string    `json:"type"`
-	Address     *string   `json:"address,omitempty"`
-	Lat         *float64  `json:"lat,omitempty"`
-	Lng         *float64  `json:"lng,omitempty"`
-	Description *string   `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           int64     `json:"id"`
+	ParentID     *int64    `json:"parent_id,omitempty"`
+	Name         string    `json:"name"`
+	Type         string    `json:"type"`
+	Address      *string   `json:"address,omitempty"`
+	City         *string   `json:"city,omitempty"`
+	Region       *string   `json:"region,omitempty"`
+	Country      *string   `json:"country,omitempty"`
+	FacilityCode *string   `json:"facility_code,omitempty"`
+	TimeZone     *string   `json:"time_zone,omitempty"`
+	ContactName  *string   `json:"contact_name,omitempty"`
+	ContactEmail *string   `json:"contact_email,omitempty"`
+	ContactPhone *string   `json:"contact_phone,omitempty"`
+	Status       string    `json:"status"`
+	Lat          *float64  `json:"lat,omitempty"`
+	Lng          *float64  `json:"lng,omitempty"`
+	Description  *string   `json:"description,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // LocationTreeNode is a Location with nested children for tree responses
@@ -965,6 +974,127 @@ type Customer struct {
 	Notes       string    `json:"notes"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// NATRule represents a first-class NAT mapping between internal and external addresses.
+type NATRule struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Type         string    `json:"type"`
+	InternalCIDR string    `json:"internal_cidr"`
+	ExternalCIDR string    `json:"external_cidr"`
+	Protocol     string    `json:"protocol"`
+	InternalPort *int      `json:"internal_port,omitempty"`
+	ExternalPort *int      `json:"external_port,omitempty"`
+	DeviceID     *int64    `json:"device_id,omitempty"`
+	CustomerID   *int64    `json:"customer_id,omitempty"`
+	Description  string    `json:"description"`
+	Status       string    `json:"status"`
+	CustomerName *string   `json:"customer_name,omitempty"`
+	DeviceName   *string   `json:"device_name,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// DHCPServer tracks DHCP service ownership and operational metadata.
+type DHCPServer struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	Address      string    `json:"address"`
+	Vendor       string    `json:"vendor"`
+	Version      string    `json:"version"`
+	LocationID   *int64    `json:"location_id,omitempty"`
+	Description  string    `json:"description"`
+	Status       string    `json:"status"`
+	LocationName *string   `json:"location_name,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// DHCPLease records a DHCP lease observed from, or managed by, a DHCP server.
+type DHCPLease struct {
+	ID           int64      `json:"id"`
+	ServerID     int64      `json:"server_id"`
+	IPAddress    string     `json:"ip_address"`
+	MACAddress   string     `json:"mac_address"`
+	Hostname     string     `json:"hostname"`
+	SubnetID     *int64     `json:"subnet_id,omitempty"`
+	IPID         *int64     `json:"ip_id,omitempty"`
+	CustomerID   *int64     `json:"customer_id,omitempty"`
+	StartsAt     *time.Time `json:"starts_at,omitempty"`
+	EndsAt       *time.Time `json:"ends_at,omitempty"`
+	State        string     `json:"state"`
+	ServerName   *string    `json:"server_name,omitempty"`
+	CustomerName *string    `json:"customer_name,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+// CircuitProvider represents a carrier or internal circuit provider.
+type CircuitProvider struct {
+	ID           int64     `json:"id"`
+	Name         string    `json:"name"`
+	AccountNo    string    `json:"account_no"`
+	SupportEmail string    `json:"support_email"`
+	SupportPhone string    `json:"support_phone"`
+	PortalURL    string    `json:"portal_url"`
+	Notes        string    `json:"notes"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// PhysicalCircuit represents an installed physical circuit.
+type PhysicalCircuit struct {
+	ID            int64      `json:"id"`
+	ProviderID    int64      `json:"provider_id"`
+	CircuitID     string     `json:"circuit_id"`
+	Name          string     `json:"name"`
+	Type          string     `json:"type"`
+	Status        string     `json:"status"`
+	BandwidthMbps *int       `json:"bandwidth_mbps,omitempty"`
+	LocationAID   *int64     `json:"location_a_id,omitempty"`
+	LocationBID   *int64     `json:"location_b_id,omitempty"`
+	CustomerID    *int64     `json:"customer_id,omitempty"`
+	InstallDate   *time.Time `json:"install_date,omitempty"`
+	ProviderName  *string    `json:"provider_name,omitempty"`
+	LocationAName *string    `json:"location_a_name,omitempty"`
+	LocationBName *string    `json:"location_b_name,omitempty"`
+	CustomerName  *string    `json:"customer_name,omitempty"`
+	Notes         string     `json:"notes"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+}
+
+// LogicalCircuit represents an overlay or service carried over physical circuits.
+type LogicalCircuit struct {
+	ID                  int64     `json:"id"`
+	PhysicalCircuitID   *int64    `json:"physical_circuit_id,omitempty"`
+	Name                string    `json:"name"`
+	ServiceID           string    `json:"service_id"`
+	Type                string    `json:"type"`
+	Status              string    `json:"status"`
+	VLANID              *int64    `json:"vlan_id,omitempty"`
+	VRFID               *int64    `json:"vrf_id,omitempty"`
+	CustomerID          *int64    `json:"customer_id,omitempty"`
+	BandwidthMbps       *int      `json:"bandwidth_mbps,omitempty"`
+	PhysicalCircuitName *string   `json:"physical_circuit_name,omitempty"`
+	CustomerName        *string   `json:"customer_name,omitempty"`
+	Notes               string    `json:"notes"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// CustomerAssociation links a customer to another IPAM object.
+type CustomerAssociation struct {
+	ID           int64     `json:"id"`
+	CustomerID   int64     `json:"customer_id"`
+	ObjectType   string    `json:"object_type"`
+	ObjectID     int64     `json:"object_id"`
+	Relationship string    `json:"relationship"`
+	Notes        string    `json:"notes"`
+	CustomerName *string   `json:"customer_name,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // DuplicateHostname describes a hostname that appears on more than one device.
