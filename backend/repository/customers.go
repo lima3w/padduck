@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (r *Repository) CreateCustomer(ctx context.Context, name, description, email, phone, notes string) (*models.Customer, error) {

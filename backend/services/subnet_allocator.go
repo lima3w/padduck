@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // findFirstFreeBlock finds the first network address that fits /<prefixLen>

@@ -8,8 +8,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/services"
 )
 
 // buildRolesApp creates a minimal Fiber app that injects the given user into

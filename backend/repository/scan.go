@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // scanJobCols is the column list for scan_jobs SELECT queries.

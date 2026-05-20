@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"ipam-next/internal/pdns"
-	"ipam-next/internal/technitium"
-	"ipam-next/models"
+	"padduck/internal/pdns"
+	"padduck/internal/technitium"
+	"padduck/models"
 )
 
 // ZoneInfo is a provider-agnostic zone summary used by the DNS zones UI.

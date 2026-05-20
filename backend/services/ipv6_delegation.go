@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ListDelegations returns all IPv6 delegations for a given subnet.

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // GlobalSearchResult holds results from a cross-entity search.
@@ -32,9 +32,9 @@ func (s *Service) GlobalSearch(ctx context.Context, query string, limit int64) (
 	}
 
 	var (
-		wg      sync.WaitGroup
-		mu      sync.Mutex
-		result  = empty
+		wg     sync.WaitGroup
+		mu     sync.Mutex
+		result = empty
 	)
 
 	wg.Add(3)

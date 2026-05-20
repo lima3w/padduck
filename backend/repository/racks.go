@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ---- Rack management (v1.5.0) ----

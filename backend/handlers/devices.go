@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
-	"ipam-next/repository"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/repository"
+	"padduck/services"
 )
 
 // ListDeviceTypes handles GET /api/v1/device-types

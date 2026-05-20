@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 type NATRuleParams struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ---- Legacy permission constants (kept for backward compatibility) ----

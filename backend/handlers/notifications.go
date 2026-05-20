@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // GetNotificationPreferences handles GET /api/v1/user/notification-preferences

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // SplitSubnet atomically: creates child subnets with parent_subnet_id set,

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/internal/netguard"
-	"ipam-next/models"
-	"ipam-next/version"
+	"padduck/internal/netguard"
+	"padduck/models"
+	"padduck/version"
 )
 
 type releaseInfo struct {

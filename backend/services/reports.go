@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"ipam-next/internal/export"
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/internal/export"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // reportsRepo lists the repository methods used by ReportsService.

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"ipam-next/models"
-	"ipam-next/repository"
-	"ipam-next/utils"
+	"padduck/models"
+	"padduck/repository"
+	"padduck/utils"
 )
 
 var (

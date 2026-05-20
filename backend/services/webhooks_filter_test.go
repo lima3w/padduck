@@ -3,7 +3,7 @@ package services
 import (
 	"testing"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func TestEndpointAllowsResource(t *testing.T) {

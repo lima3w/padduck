@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // CreateSection creates a new section

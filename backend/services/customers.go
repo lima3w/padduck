@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (s *Service) CreateCustomer(ctx context.Context, name, description, email, phone, notes string) (*models.Customer, error) {

@@ -9,7 +9,7 @@ COPY vendor ./vendor
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux go build -mod=vendor -trimpath \
-    -ldflags="-s -w -X ipam-next/version.Version=${APP_VERSION} -X ipam-next/version.Commit=${GIT_COMMIT} -X ipam-next/version.BuildDate=${BUILD_DATE}" \
+    -ldflags="-s -w -X padduck/version.Version=${APP_VERSION} -X padduck/version.Commit=${GIT_COMMIT} -X padduck/version.BuildDate=${BUILD_DATE}" \
     -o app .
 
 FROM alpine:3.22

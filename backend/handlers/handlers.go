@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/services"
 )
 
 // errResponseWritten is a sentinel returned by permCheck after it has already

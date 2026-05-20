@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 type Service struct {

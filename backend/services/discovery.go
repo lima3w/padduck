@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"ipam-next/internal/scanner"
-	"ipam-next/models"
+	"padduck/internal/scanner"
+	"padduck/models"
 )
 
 // DiscoveryService handles network scanning and IP detection

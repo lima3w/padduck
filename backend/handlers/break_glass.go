@@ -5,8 +5,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/services"
 )
 
 // GetBreakGlassStatus handles GET /api/v1/admin/break-glass

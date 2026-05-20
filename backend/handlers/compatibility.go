@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 type compatibilityWarning struct {

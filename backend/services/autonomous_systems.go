@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (s *Service) CreateAutonomousSystem(ctx context.Context, asn int64, name, description, asType, rir string) (*models.AutonomousSystem, error) {

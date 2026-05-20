@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // Custom field operations

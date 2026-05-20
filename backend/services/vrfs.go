@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (s *Service) CreateVRF(ctx context.Context, name, rd, description string) (*models.VRF, error) {

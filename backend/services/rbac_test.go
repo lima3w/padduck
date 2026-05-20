@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // newTestService returns a zero-value Service sufficient for pure RBAC logic

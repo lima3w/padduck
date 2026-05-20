@@ -13,23 +13,23 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"ipam-next/models"
-	"ipam-next/repository"
-	"ipam-next/utils"
+	"padduck/models"
+	"padduck/repository"
+	"padduck/utils"
 )
 
 var (
-	ErrRegistrationDisabled  = errors.New("registration is not open")
-	ErrUsernameTaken         = errors.New("username already taken")
-	ErrEmailTaken            = errors.New("email already in use")
-	ErrInvalidUsername       = errors.New("username must be 3-32 characters, letters/numbers/underscore/hyphen only")
-	ErrInvalidEmail          = errors.New("invalid email address")
-	ErrPasswordTooShort      = errors.New("password must be at least 8 characters")
-	ErrEmailNotVerified      = errors.New("email address not verified")
-	ErrPendingApproval       = errors.New("account pending admin approval")
-	ErrAccountRejected       = errors.New("account registration was rejected")
-	ErrAccountDisabled       = errors.New("account has been disabled")
-	ErrVerificationInvalid   = errors.New("verification token is invalid or expired")
+	ErrRegistrationDisabled    = errors.New("registration is not open")
+	ErrUsernameTaken           = errors.New("username already taken")
+	ErrEmailTaken              = errors.New("email already in use")
+	ErrInvalidUsername         = errors.New("username must be 3-32 characters, letters/numbers/underscore/hyphen only")
+	ErrInvalidEmail            = errors.New("invalid email address")
+	ErrPasswordTooShort        = errors.New("password must be at least 8 characters")
+	ErrEmailNotVerified        = errors.New("email address not verified")
+	ErrPendingApproval         = errors.New("account pending admin approval")
+	ErrAccountRejected         = errors.New("account registration was rejected")
+	ErrAccountDisabled         = errors.New("account has been disabled")
+	ErrVerificationInvalid     = errors.New("verification token is invalid or expired")
 	ErrVerificationAlreadyUsed = errors.New("verification token already used")
 )
 

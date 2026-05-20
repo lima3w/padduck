@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"ipam-next/models"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/services"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

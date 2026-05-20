@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // adminUser is a user with the admin role — used to test that admin-only

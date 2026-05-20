@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ListDiscoveryConflicts returns all discovery conflicts, optionally filtered by status.

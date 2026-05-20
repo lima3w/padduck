@@ -9,8 +9,8 @@ import (
 	"net/mail"
 	"time"
 
-	"ipam-next/models"
-	"ipam-next/utils"
+	"padduck/models"
+	"padduck/utils"
 )
 
 // CreateUser creates a new user with validation

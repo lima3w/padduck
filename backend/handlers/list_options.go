@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/repository"
+	"padduck/repository"
 )
 
 func parseListOptions(c *fiber.Ctx) (page int, limit int, opts repository.ListOptions) {

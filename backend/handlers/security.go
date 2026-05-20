@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 type RequestUnlockRequest struct {

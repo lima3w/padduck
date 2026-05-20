@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"ipam-next/repository"
+	"padduck/repository"
 )
 
 func TestNewService(t *testing.T) {

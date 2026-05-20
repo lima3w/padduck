@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // GetDeviceFingerprint returns the fingerprint for a device, or nil if none exists.

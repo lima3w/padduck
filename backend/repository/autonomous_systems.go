@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 func (r *Repository) CreateAutonomousSystem(ctx context.Context, asn int64, name, description, asType, rir string) (*models.AutonomousSystem, error) {

@@ -1,4 +1,4 @@
-module ipam-next
+module padduck
 
 go 1.26.2
 

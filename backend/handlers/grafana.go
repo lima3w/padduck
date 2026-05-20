@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/services"
+	"padduck/services"
 )
 
 // GrafanaHealth handles GET /api/grafana/ — required by the SimpleJSON datasource.
@@ -40,9 +40,9 @@ type grafanaQueryRequest struct {
 
 // grafanaTableResponse is a Grafana SimpleJSON table response for one metric.
 type grafanaTableResponse struct {
-	Type    string                   `json:"type"`
-	Columns []grafanaColumn          `json:"columns"`
-	Rows    [][]interface{}          `json:"rows"`
+	Type    string          `json:"type"`
+	Columns []grafanaColumn `json:"columns"`
+	Rows    [][]interface{} `json:"rows"`
 }
 
 type grafanaColumn struct {

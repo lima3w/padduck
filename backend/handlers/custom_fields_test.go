@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ---------------------------------------------------------------------------
@@ -182,4 +182,3 @@ func TestReorderCustomFieldDefinitions_NoPermission_Returns403(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
-

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // ---- LDAP config ----

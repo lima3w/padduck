@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/repository"
-	"ipam-next/services"
+	"padduck/repository"
+	"padduck/services"
 )
 
 // ListCustomFieldDefinitions handles GET /api/v1/admin/custom-fields

@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
-	"ipam-next/services"
+	"padduck/models"
+	"padduck/services"
 )
 
 // ListTopologyHints handles GET /api/v1/admin/topology/hints?status=suggested

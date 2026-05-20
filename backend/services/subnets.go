@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // SubnetOverlapError is returned when a new subnet overlaps an existing one

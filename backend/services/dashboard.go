@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 // GetDashboardSummary returns aggregate IPAM statistics.

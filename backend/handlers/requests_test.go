@@ -7,7 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // unprivReq is a viewer user that lacks request permissions.

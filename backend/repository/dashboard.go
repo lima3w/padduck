@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // Dashboard operations

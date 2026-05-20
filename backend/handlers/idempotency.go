@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 const idempotencyTTL = 24 * time.Hour

@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"ipam-next/repository"
-	"ipam-next/services"
+	"padduck/repository"
+	"padduck/services"
 )
 
 // ListRacks handles GET /api/v1/racks

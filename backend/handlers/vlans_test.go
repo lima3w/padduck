@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"ipam-next/models"
+	"padduck/models"
 )
 
 // unprivVLAN is a user with ID=0 — permCheck denies without touching the nil repo.

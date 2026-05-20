@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"ipam-next/repository"
+	"padduck/repository"
 )
 
 func (s *Service) GrafanaSubnetUtilisation(ctx context.Context) ([]repository.GrafanaSubnetRow, error) {

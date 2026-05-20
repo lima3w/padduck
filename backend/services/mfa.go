@@ -18,8 +18,8 @@ import (
 	"github.com/pquerna/otp/totp"
 	qrcode "github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
-	"ipam-next/models"
-	"ipam-next/repository"
+	"padduck/models"
+	"padduck/repository"
 )
 
 var (
