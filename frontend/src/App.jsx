@@ -12,6 +12,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const SectionsPage = lazy(() => import('./pages/SectionsPage'))
 const SubnetsPage = lazy(() => import('./pages/SubnetsPage'))
 const IPAddressesPage = lazy(() => import('./pages/IPAddressesPage'))
+const AdminOverviewPage = lazy(() => import('./pages/AdminOverviewPage'))
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'))
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'))
 const AuditRetentionPage = lazy(() => import('./pages/AuditRetentionPage'))
@@ -153,6 +154,7 @@ export default function App() {
             <Route path="sections" element={<SectionsPage />} />
             <Route path="sections/:sectionID/subnets" element={<SubnetsPage />} />
             <Route path="subnets/:subnetID/ip-addresses" element={<IPAddressesPage />} />
+            <Route path="admin" element={<AdminOverviewPage />} />
             <Route path="admin/settings" element={<AdminSettingsPage />} />
             <Route path="admin/audit-log" element={<AuditLogPage />} />
             <Route path="admin/audit/retention" element={<AuditRetentionPage />} />
