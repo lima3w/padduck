@@ -8,6 +8,7 @@ import {
 } from '../api/client'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
+import TableActions from '../components/TableActions'
 
 const EMPTY_FORM = { name: '', colour: '#6B7280', description: '' }
 
@@ -167,37 +168,14 @@ export default function VlanGroupsPage() {
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{group.name}</td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{group.description || '—'}</td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button
-                    onClick={() => openEdit(group)}
-                    className="text-gray-400 hover:text-blue-600 text-xs"
-                  >
-                    Edit
-                  </button>
-                  {deleteConfirm === group.id ? (
-                    <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
-                      <button
-                        onClick={() => handleDelete(group.id)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium"
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(null)}
-                        className="text-gray-400 hover:text-gray-600 text-xs"
-                      >
-                        No
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirm(group.id)}
-                      className="text-gray-400 hover:text-red-600 text-xs"
-                    >
-                      Delete
-                    </button>
-                  )}
+                <td className="px-4 py-3 text-right">
+                  <TableActions
+                    onEdit={() => openEdit(group)}
+                    onDelete={() => handleDelete(group.id)}
+                    confirming={deleteConfirm === group.id}
+                    onRequestDelete={() => setDeleteConfirm(group.id)}
+                    onCancelDelete={() => setDeleteConfirm(null)}
+                  />
                 </td>
               </tr>
             ))}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import TableActions from './TableActions'
 
 function UtilBar({ pct }) {
   const colour =
@@ -56,21 +57,14 @@ function SubnetRow({ node, depth, onEdit, onDelete, deleteConfirm, setDeleteConf
         <td className="px-4 py-2.5">
           <UtilBar pct={node.utilisationPct} />
         </td>
-        <td className="px-4 py-2.5 text-right text-xs space-x-2 whitespace-nowrap">
-          {onEdit && (
-            <button onClick={() => onEdit(node)} className="text-gray-400 hover:text-blue-600">Edit</button>
-          )}
-          {onDelete && (
-            deleteConfirm === node.id ? (
-              <>
-                <span className="text-red-600">Confirm?</span>
-                <button onClick={() => onDelete(node.id)} className="text-red-600 hover:text-red-800 font-medium">Yes</button>
-                <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600">No</button>
-              </>
-            ) : (
-              <button onClick={() => setDeleteConfirm(node.id)} className="text-gray-400 hover:text-red-600">Delete</button>
-            )
-          )}
+        <td className="px-4 py-2.5 text-right">
+          <TableActions
+            onEdit={onEdit ? () => onEdit(node) : undefined}
+            onDelete={onDelete ? () => onDelete(node.id) : undefined}
+            confirming={deleteConfirm === node.id}
+            onRequestDelete={onDelete ? () => setDeleteConfirm(node.id) : undefined}
+            onCancelDelete={() => setDeleteConfirm(null)}
+          />
         </td>
       </tr>
       {hasChildren && expanded && node.children.map(child => (

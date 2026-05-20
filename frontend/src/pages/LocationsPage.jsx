@@ -4,6 +4,7 @@ import Modal from '../components/Modal'
 import { getLocationTree, getLocations, createLocation, updateLocation, deleteLocation } from '../api/locations'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
+import TableActions from '../components/TableActions'
 
 const LOCATION_TYPES = ['site', 'building', 'floor', 'room', 'cage', 'other']
 
@@ -37,17 +38,14 @@ function LocationRow({ node, allNodes, depth, onEdit, onDelete, deleteConfirm, s
         <td className="px-4 py-3 text-gray-500 dark:text-gray-400 capitalize">{node.type}</td>
         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{node.address || '—'}</td>
         <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{node.description || '—'}</td>
-        <td className="px-4 py-3 text-right space-x-2">
-          <button onClick={() => onEdit(node)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
-          {deleteConfirm === node.id ? (
-            <>
-              <span className="text-red-600 text-xs">Confirm?</span>
-              <button onClick={() => onDelete(node.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-              <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
-            </>
-          ) : (
-            <button onClick={() => setDeleteConfirm(node.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
-          )}
+        <td className="px-4 py-3 text-right">
+          <TableActions
+            onEdit={() => onEdit(node)}
+            onDelete={() => onDelete(node.id)}
+            confirming={deleteConfirm === node.id}
+            onRequestDelete={() => setDeleteConfirm(node.id)}
+            onCancelDelete={() => setDeleteConfirm(null)}
+          />
         </td>
       </tr>
       {hasChildren && expanded && node.children.map(child => (

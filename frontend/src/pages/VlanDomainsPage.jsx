@@ -8,6 +8,7 @@ import {
 } from '../api/client'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
+import TableActions from '../components/TableActions'
 
 const EMPTY_FORM = { name: '', description: '' }
 
@@ -152,37 +153,14 @@ export default function VlanDomainsPage() {
                     {domain.vlanCount ?? domain.vlan_count ?? 0}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <button
-                    onClick={() => openEdit(domain)}
-                    className="text-gray-400 hover:text-blue-600 text-xs"
-                  >
-                    Edit
-                  </button>
-                  {deleteConfirm === domain.id ? (
-                    <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
-                      <button
-                        onClick={() => handleDelete(domain.id)}
-                        className="text-red-600 hover:text-red-800 text-xs font-medium"
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(null)}
-                        className="text-gray-400 hover:text-gray-600 text-xs"
-                      >
-                        No
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteConfirm(domain.id)}
-                      className="text-gray-400 hover:text-red-600 text-xs"
-                    >
-                      Delete
-                    </button>
-                  )}
+                <td className="px-4 py-3 text-right">
+                  <TableActions
+                    onEdit={() => openEdit(domain)}
+                    onDelete={() => handleDelete(domain.id)}
+                    confirming={deleteConfirm === domain.id}
+                    onRequestDelete={() => setDeleteConfirm(domain.id)}
+                    onCancelDelete={() => setDeleteConfirm(null)}
+                  />
                 </td>
               </tr>
             ))}
