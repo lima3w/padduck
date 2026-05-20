@@ -3,7 +3,7 @@
 
 A modern IP Address Management (IPAM) platform built with Go, React, and PostgreSQL.
 
-![CI Test Suite](https://gitea.lima3.dev/Lima3-Automations/ipam-next/actions/workflows/ci.yml/badge.svg)
+![CI Test Suite](https://gitea.lima3.dev/Lima3-Automations/padduck/actions/workflows/ci.yml/badge.svg)
 
 ## Purpose
 Replace spreadsheet-based IP tracking with a structured, API-first system.
