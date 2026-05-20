@@ -25,7 +25,3 @@ CREATE TABLE custom_field_values (
 
 CREATE INDEX idx_cfv_entity ON custom_field_values(entity_type, entity_id);
 CREATE INDEX idx_cfv_definition ON custom_field_values(definition_id);
-
--- +migrate Down
-DROP TABLE IF EXISTS custom_field_values;
-DROP TABLE IF EXISTS custom_field_definitions;

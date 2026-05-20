@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	csvexport "ipam-next/internal/export"
 	"ipam-next/services"
 )
 
@@ -30,8 +31,8 @@ func (h *Handler) ExportSectionsCSV(c *fiber.Ctx) error {
 	for _, s := range sections {
 		_ = w.Write([]string{
 			fmt.Sprintf("%d", s.ID),
-			s.Name,
-			s.Description,
+			csvexport.EscapeCSVCell(s.Name),
+			csvexport.EscapeCSVCell(s.Description),
 		})
 	}
 	w.Flush()
@@ -81,11 +82,11 @@ func (h *Handler) ExportDevicesCSV(c *fiber.Ctx) error {
 		}
 		_ = w.Write([]string{
 			fmt.Sprintf("%d", d.ID),
-			d.Hostname,
-			description,
-			vendor,
-			model,
-			osVersion,
+			csvexport.EscapeCSVCell(d.Hostname),
+			csvexport.EscapeCSVCell(description),
+			csvexport.EscapeCSVCell(vendor),
+			csvexport.EscapeCSVCell(model),
+			csvexport.EscapeCSVCell(osVersion),
 			strconv.FormatBool(d.IsOnline),
 			fmt.Sprintf("%d", d.IPCount),
 		})
@@ -122,8 +123,8 @@ func (h *Handler) ExportVLANsCSV(c *fiber.Ctx) error {
 		_ = w.Write([]string{
 			fmt.Sprintf("%d", v.ID),
 			fmt.Sprintf("%d", v.VlanID),
-			v.Name,
-			v.Description,
+			csvexport.EscapeCSVCell(v.Name),
+			csvexport.EscapeCSVCell(v.Description),
 		})
 	}
 	w.Flush()
@@ -157,9 +158,9 @@ func (h *Handler) ExportVRFsCSV(c *fiber.Ctx) error {
 	for _, v := range vrfs {
 		_ = w.Write([]string{
 			fmt.Sprintf("%d", v.ID),
-			v.Name,
-			v.RouteDistinguisher,
-			v.Description,
+			csvexport.EscapeCSVCell(v.Name),
+			csvexport.EscapeCSVCell(v.RouteDistinguisher),
+			csvexport.EscapeCSVCell(v.Description),
 		})
 	}
 	w.Flush()

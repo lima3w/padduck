@@ -48,3 +48,19 @@ func TestGenerateCSV_ColumnOrder(t *testing.T) {
 	// Data row should follow same order
 	assert.Contains(t, content, "beta,alpha,gamma")
 }
+
+func TestGenerateCSV_EscapesFormulaCells(t *testing.T) {
+	headers := []string{"name", "description"}
+	rows := []map[string]string{
+		{"name": "=cmd|'/C calc'!A0", "description": "\t@hidden"},
+		{"name": "ordinary", "description": "safe"},
+	}
+
+	data, err := GenerateCSV(headers, rows)
+	require.NoError(t, err)
+
+	content := string(data[3:])
+	assert.Contains(t, content, "'=cmd|'/C calc'!A0")
+	assert.Contains(t, content, "'\t@hidden")
+	assert.Contains(t, content, "ordinary,safe")
+}

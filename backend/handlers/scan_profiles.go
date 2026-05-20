@@ -2,8 +2,27 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"ipam-next/models"
 	"ipam-next/services"
 )
+
+func redactScanProfile(profile *models.ScanProfile) *models.ScanProfile {
+	if profile == nil || profile.SNMPCommunity == nil || *profile.SNMPCommunity == "" {
+		return profile
+	}
+	clone := *profile
+	redacted := "***"
+	clone.SNMPCommunity = &redacted
+	return &clone
+}
+
+func redactScanProfiles(profiles []*models.ScanProfile) []*models.ScanProfile {
+	out := make([]*models.ScanProfile, 0, len(profiles))
+	for _, profile := range profiles {
+		out = append(out, redactScanProfile(profile))
+	}
+	return out
+}
 
 // ListScanProfiles handles GET /api/v1/admin/scan-profiles
 func (h *Handler) ListScanProfiles(c *fiber.Ctx) error {
@@ -15,7 +34,7 @@ func (h *Handler) ListScanProfiles(c *fiber.Ctx) error {
 		reqLogger(c).Error("error listing scan profiles", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
-	return c.JSON(profiles)
+	return c.JSON(redactScanProfiles(profiles))
 }
 
 // CreateScanProfile handles POST /api/v1/admin/scan-profiles
@@ -40,7 +59,7 @@ func (h *Handler) CreateScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.Status(fiber.StatusCreated).JSON(profile)
+	return c.Status(fiber.StatusCreated).JSON(redactScanProfile(profile))
 }
 
 // GetScanProfile handles GET /api/v1/admin/scan-profiles/:id
@@ -56,7 +75,7 @@ func (h *Handler) GetScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan profile not found"})
 	}
-	return c.JSON(profile)
+	return c.JSON(redactScanProfile(profile))
 }
 
 // UpdateScanProfile handles PUT /api/v1/admin/scan-profiles/:id
@@ -85,7 +104,7 @@ func (h *Handler) UpdateScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(profile)
+	return c.JSON(redactScanProfile(profile))
 }
 
 // DeleteScanProfile handles DELETE /api/v1/admin/scan-profiles/:id
@@ -123,7 +142,7 @@ func (h *Handler) GetSubnetScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan profile not found"})
 	}
-	return c.JSON(fiber.Map{"profile": profile})
+	return c.JSON(fiber.Map{"profile": redactScanProfile(profile)})
 }
 
 // SetSubnetScanProfile handles PUT /api/v1/admin/subnets/:id/scan-profile

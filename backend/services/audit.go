@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"ipam-next/models"
@@ -55,14 +57,14 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 	}
 
 	if e.OldValues != nil {
-		b, err := json.Marshal(e.OldValues)
+		b, err := json.Marshal(redactSensitiveValue(e.OldValues))
 		if err == nil {
 			s := string(b)
 			entry.OldValues = &s
 		}
 	}
 	if e.NewValues != nil {
-		b, err := json.Marshal(e.NewValues)
+		b, err := json.Marshal(redactSensitiveValue(e.NewValues))
 		if err == nil {
 			s := string(b)
 			entry.NewValues = &s
@@ -82,11 +84,92 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 			UserID:       e.UserID,
 			Username:     e.Username,
 			Status:       e.Status,
-			OldValues:    e.OldValues,
-			NewValues:    e.NewValues,
+			OldValues:    redactSensitiveValue(e.OldValues),
+			NewValues:    redactSensitiveValue(e.NewValues),
 			OccurredAt:   time.Now().UTC(),
 		})
 	}
+}
+
+const redactedValue = "***REDACTED***"
+
+var sensitiveFieldFragments = []string{
+	"snmp_community",
+	"community",
+	"password",
+	"pass",
+	"secret",
+	"token",
+	"api_key",
+	"apikey",
+	"private_key",
+	"certificate",
+}
+
+func isSensitiveField(name string) bool {
+	name = strings.ToLower(name)
+	for _, fragment := range sensitiveFieldFragments {
+		if strings.Contains(name, fragment) {
+			return true
+		}
+	}
+	return false
+}
+
+func redactSensitiveValue(value interface{}) interface{} {
+	if value == nil {
+		return nil
+	}
+	switch typed := value.(type) {
+	case map[string]string:
+		out := make(map[string]string, len(typed))
+		for k, v := range typed {
+			if isSensitiveField(k) {
+				out[k] = redactedValue
+			} else {
+				out[k] = v
+			}
+		}
+		return out
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(typed))
+		for k, v := range typed {
+			if isSensitiveField(k) {
+				out[k] = redactedValue
+			} else {
+				out[k] = redactSensitiveValue(v)
+			}
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(typed))
+		for i, v := range typed {
+			out[i] = redactSensitiveValue(v)
+		}
+		return out
+	}
+
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Pointer && !rv.IsNil() {
+		return redactSensitiveValue(rv.Elem().Interface())
+	}
+	return value
+}
+
+func RedactSensitiveJSON(value *string) *string {
+	if value == nil || strings.TrimSpace(*value) == "" {
+		return value
+	}
+	var decoded interface{}
+	if err := json.Unmarshal([]byte(*value), &decoded); err != nil {
+		return value
+	}
+	redacted, err := json.Marshal(redactSensitiveValue(decoded))
+	if err != nil {
+		return value
+	}
+	out := string(redacted)
+	return &out
 }
 
 // ListAuditLogs returns audit log entries matching the filter.

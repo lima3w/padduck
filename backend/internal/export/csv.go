@@ -3,6 +3,7 @@ package export
 import (
 	"bytes"
 	"encoding/csv"
+	"strings"
 )
 
 // GenerateCSV converts a slice of maps (column->value) to CSV bytes with UTF-8 BOM.
@@ -21,7 +22,7 @@ func GenerateCSV(headers []string, rows []map[string]string) ([]byte, error) {
 	for _, row := range rows {
 		record := make([]string, len(headers))
 		for i, h := range headers {
-			record[i] = row[h]
+			record[i] = EscapeCSVCell(row[h])
 		}
 		if err := w.Write(record); err != nil {
 			return nil, err
@@ -34,4 +35,22 @@ func GenerateCSV(headers []string, rows []map[string]string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// EscapeCSVCell neutralizes spreadsheet formula prefixes while preserving the
+// displayed value for ordinary CSV consumers.
+func EscapeCSVCell(value string) string {
+	if value == "" {
+		return value
+	}
+	trimmed := strings.TrimLeft(value, " \t\r\n")
+	if trimmed == "" {
+		return value
+	}
+	switch trimmed[0] {
+	case '=', '+', '-', '@':
+		return "'" + value
+	default:
+		return value
+	}
 }

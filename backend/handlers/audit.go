@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	csvexport "ipam-next/internal/export"
 	"ipam-next/models"
 	"ipam-next/services"
 )
@@ -67,14 +68,14 @@ func (h *Handler) ExportAuditLogs(c *fiber.Ctx) error {
 		_ = w.Write([]string{
 			strconv.FormatInt(l.ID, 10),
 			l.CreatedAt.Format(time.RFC3339),
-			l.Username,
-			l.Action,
-			l.ResourceType,
+			csvexport.EscapeCSVCell(l.Username),
+			csvexport.EscapeCSVCell(l.Action),
+			csvexport.EscapeCSVCell(l.ResourceType),
 			rid,
-			l.ResourceName,
-			l.IPAddress,
-			l.Status,
-			l.ErrorMessage,
+			csvexport.EscapeCSVCell(l.ResourceName),
+			csvexport.EscapeCSVCell(l.IPAddress),
+			csvexport.EscapeCSVCell(l.Status),
+			csvexport.EscapeCSVCell(l.ErrorMessage),
 		})
 	}
 	w.Flush()
@@ -181,8 +182,8 @@ func formatAuditLogs(logs []*models.AuditLog) []auditLogResponse {
 			ResourceType: l.ResourceType,
 			ResourceID:   l.ResourceID,
 			ResourceName: l.ResourceName,
-			OldValues:    l.OldValues,
-			NewValues:    l.NewValues,
+			OldValues:    services.RedactSensitiveJSON(l.OldValues),
+			NewValues:    services.RedactSensitiveJSON(l.NewValues),
 			IPAddress:    l.IPAddress,
 			Status:       l.Status,
 			ErrorMessage: l.ErrorMessage,

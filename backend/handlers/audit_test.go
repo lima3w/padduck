@@ -3,9 +3,11 @@ package handlers
 import (
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"ipam-next/models"
 )
 
 // All three audit handlers use a direct user.Role == "admin" check.
@@ -86,4 +88,21 @@ func TestPurgeAuditLogs_NonAdmin_Returns403(t *testing.T) {
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/audit-logs/purge", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestFormatAuditLogsRedactsSensitiveValues(t *testing.T) {
+	raw := `{"snmp_community":"public","name":"scan"}`
+	logs := []*models.AuditLog{{
+		ID:        1,
+		CreatedAt: time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC),
+		Username:  "admin",
+		Action:    "updated",
+		Status:    "success",
+		NewValues: &raw,
+	}}
+
+	formatted := formatAuditLogs(logs)
+	assert.Len(t, formatted, 1)
+	assert.NotContains(t, *formatted[0].NewValues, "public")
+	assert.Contains(t, *formatted[0].NewValues, "***REDACTED***")
 }
