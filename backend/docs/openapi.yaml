@@ -308,6 +308,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/GenericObject"
+    BinaryDownload:
+      description: Binary download
+      content:
+        application/zip:
+          schema:
+            type: string
+            format: binary
     Redirect:
       description: Browser redirect
     BadRequest:
@@ -2970,6 +2977,38 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/JSONDownload"
+
+  /api/v1/admin/export/v2-migration-bundle:
+    get:
+      tags: [Admin, Import Export]
+      summary: Export v2 migration bundle
+      responses:
+        "200":
+          $ref: "#/components/responses/BinaryDownload"
+
+  /api/v1/admin/compatibility/v2-warnings:
+    get:
+      tags: [Admin]
+      summary: List v2 compatibility warnings
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/compatibility/v2-readiness:
+    get:
+      tags: [Admin]
+      summary: Run v2 migration readiness checks
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/compatibility/deprecations:
+    get:
+      tags: [Admin]
+      summary: List admin-visible v2 deprecation report
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
 
   /api/v1/admin/auth/ldap:
     get:

@@ -72,6 +72,7 @@ const DeploymentHealthPage = lazy(() => import('./pages/DeploymentHealthPage'))
 const PrivacyConsentReportPage = lazy(() => import('./pages/PrivacyConsentReportPage'))
 const BreakGlassPage = lazy(() => import('./pages/BreakGlassPage'))
 const IdentityPoliciesPage = lazy(() => import('./pages/IdentityPoliciesPage'))
+const AdminCompatibilityPage = lazy(() => import('./pages/AdminCompatibilityPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -211,6 +212,7 @@ export default function App() {
             <Route path="admin/privacy/consent-report" element={<PrivacyConsentReportPage />} />
             <Route path="admin/break-glass" element={<BreakGlassPage />} />
             <Route path="admin/identity-policies" element={<IdentityPoliciesPage />} />
+            <Route path="admin/compatibility" element={<AdminCompatibilityPage />} />
           </Route>
         </Routes>
       </Suspense>
