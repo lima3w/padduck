@@ -41,17 +41,41 @@ Padduck gives infrastructure teams a single source of truth for IP address space
 
 ---
 
-## Quick Links
+## Wiki Navigation
+
+**Getting Started**
+- [Installation Guide](Installation-Guide) — deploy with Docker Compose
+- [Configuration](Configuration) — environment variables, LDAP, OAuth2, SAML, backups
+- [User Guide](User-Guide) — day-to-day usage of the UI and API
+
+**Reference**
+- [Core Concepts](Core-Concepts) — Sections, Subnets, IPs, VRFs, VLANs, RBAC model
+- [API Documentation](API-Documentation) — REST API overview, authentication, examples
+- [Glossary](Glossary) — terminology reference
+- [Security](Security) — RBAC, MFA, session management, audit logging
+- [Integrations](Integrations) — DNS, monitoring, SIEM, webhooks, automation
+
+**Administration**
+- [Administration Guide](Administration-Guide) — user management, roles, system settings
+- [Troubleshooting](Troubleshooting) — common errors and fixes
+- [FAQ](FAQ) — frequently asked questions
+- [Changelog](Changelog) — release history
+
+**Project**
+- [Product Vision](Product-Vision) — goals and direction
+- [Why Padduck Exists](Why-Padduck-Exists) — motivation and background
+- [Automation First Design](Automation-First-Design) — automation-first philosophy
+- [Data Ownership Philosophy](Data-Ownership-Philosophy) — data portability and ownership
+- [Comparison With NetBox](Comparison-With-NetBox) — how Padduck compares to NetBox
+- [Licensing and Legal](Licensing-and-Legal) — GPL-3.0 license details
+
+**External**
 
 | Resource | Link |
 |----------|------|
 | Repository | [github.com/lima3w/padduck](https://github.com/lima3w/padduck) |
 | OpenAPI Spec | `GET /api/openapi.yaml` on your instance |
-| Installation | [Installation Guide](Installation-Guide) |
-| User Guide | [User Guide](User-Guide) |
-| API Docs | [API Documentation](API-Documentation) |
-| FAQ | [FAQ](FAQ) |
-| Troubleshooting | [Troubleshooting](Troubleshooting) |
+| Issues | [GitHub Issues](https://github.com/lima3w/padduck/issues) |
 
 ---
 
@@ -88,7 +112,6 @@ See [CONTRIBUTING.md](https://github.com/lima3w/padduck/blob/main/README.md) in 
 
 ---
 
-## Community & Support
+## License
 
-- **Issues**: [GitHub Issues](https://github.com/lima3w/padduck/issues)
-- **License**: [GPL-3.0](https://github.com/lima3w/padduck/blob/main/LICENSE)
+[GPL-3.0](https://github.com/lima3w/padduck/blob/main/LICENSE)

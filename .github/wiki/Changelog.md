@@ -65,7 +65,7 @@ Backward-compatible additions (new optional fields, new endpoints) are allowed i
 ## Migration Notes
 
 Before any major upgrade:
-1. Read the [[Changelog]] for breaking changes
+1. Read the Changelog (this page) for breaking changes
 2. Back up the database
 3. Check v2 compatibility at **Admin → V2 Compatibility** (if planning a major version jump)
 
