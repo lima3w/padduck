@@ -22,26 +22,30 @@ jobs:
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git config --global init.defaultBranch master
 
-          # Clone or init the wiki repo
-          if git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki-repo 2>/dev/null; then
-            echo "Cloned existing wiki"
-          else
-            echo "Initializing new wiki repo"
-            mkdir wiki-repo
-            cd wiki-repo
-            git init
-            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git"
-            cd ..
+          WIKI_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git"
+
+          # Clone the wiki repo — fail clearly if it hasn't been initialized yet
+          if ! git clone "$WIKI_URL" wiki-repo; then
+            echo ""
+            echo "ERROR: The wiki repository does not exist yet."
+            echo "Please visit https://github.com/${{ github.repository }}/wiki"
+            echo "and create the first page to initialize it, then re-run this workflow."
+            exit 1
           fi
 
           # Sync pages
           cp .github/wiki/*.md wiki-repo/
           cd wiki-repo
+
+          # Detect the default branch (master on fresh wikis, main on older ones)
+          DEFAULT_BRANCH=$(git symbolic-ref --short HEAD)
+
           git add -A
           if git diff --cached --quiet; then
             echo "No wiki changes to push"
           else
             git commit -m "Sync wiki from main repo"
-            git push origin HEAD:main
+            git push origin HEAD:"$DEFAULT_BRANCH"
           fi
