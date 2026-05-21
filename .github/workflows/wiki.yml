@@ -1,0 +1,47 @@
+name: Sync Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/wiki/**'
+  workflow_dispatch:
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Push wiki pages
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+          # Clone or init the wiki repo
+          if git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki-repo 2>/dev/null; then
+            echo "Cloned existing wiki"
+          else
+            echo "Initializing new wiki repo"
+            mkdir wiki-repo
+            cd wiki-repo
+            git init
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git"
+            cd ..
+          fi
+
+          # Sync pages
+          cp .github/wiki/*.md wiki-repo/
+          cd wiki-repo
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No wiki changes to push"
+          else
+            git commit -m "Sync wiki from main repo"
+            git push origin HEAD:main
+          fi
