@@ -24,7 +24,7 @@ Open `http://localhost:3000` and log in as `admin`. The generated password is pr
 
 ## Configuration
 
-Configuration is read from environment variables. Docker Compose will also read a local `.env` file for variable interpolation.
+Configuration is read from environment variables. Docker Compose will also read a local `.env` file for variable interpolation if one is present — it is not created automatically.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -38,7 +38,11 @@ Configuration is read from environment variables. Docker Compose will also read 
 | `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
 | `IMAGE_TAG` | `latest` | Pin to a specific release tag (e.g. `v1.30.0`) |
 
-Private repository update checks can be configured under **Admin Settings → Updates**. Use a read-only GitHub API token and the latest-release API URL; the token is stored server-side and is never sent to the browser.
+Update checks can be configured under **Admin Settings → Updates**. Set the URL to the GitHub releases API endpoint — no token is required since the repository is public:
+
+```
+https://api.github.com/repos/lima3w/padduck/releases/latest
+```
 
 ## Documentation
 
