@@ -36,7 +36,7 @@ Configuration is read from environment variables. Docker Compose will also read 
 | `RESET_ADMIN_PASSWORD` | `false` | Force-reset the admin password on next boot |
 | `MFA_ENCRYPTION_KEY` | _(required in production)_ | 64 hex characters; generate with `openssl rand -hex 32` |
 | `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
-| `IMAGE_TAG` | `latest` | Pin to a specific release tag (e.g. `v1.30.0`) |
+| `IMAGE_TAG` | `latest` | Pin to a specific release (e.g. `v1.30.0`) |
 
 Update checks can be enabled under **Admin Settings → Updates**. The backend checks the GitHub releases API automatically — no configuration required.
 
