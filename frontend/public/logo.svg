@@ -1,201 +1,205 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Padduck IPAM">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img" aria-label="Padduck IPAM">
   <defs>
-    <!-- Subtle background glow around the duck -->
-    <radialGradient id="bgGlow" cx="50%" cy="43%" r="42%">
+    <radialGradient id="bgGlow" cx="50%" cy="44%" r="44%">
       <stop offset="0%" stop-color="#0C2040"/>
       <stop offset="100%" stop-color="#020B1A"/>
     </radialGradient>
-    <!-- Unified duck gradient (userSpaceOnUse so head+body share same lighting) -->
-    <radialGradient id="duckFill" cx="190" cy="148" r="125" gradientUnits="userSpaceOnUse">
-      <stop offset="0%"   stop-color="#FFE040"/>
-      <stop offset="42%"  stop-color="#FDB908"/>
-      <stop offset="100%" stop-color="#C98000"/>
+    <!-- Duck lit from upper-right (head/chest area) -->
+    <radialGradient id="duckFill" cx="308" cy="155" r="205" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#FFE84A"/>
+      <stop offset="32%"  stop-color="#FDBB10"/>
+      <stop offset="100%" stop-color="#A86800"/>
     </radialGradient>
-    <!-- Darker gradient for tail -->
-    <radialGradient id="tailFill" cx="50%" cy="40%" r="65%">
-      <stop offset="0%"   stop-color="#FDB908"/>
-      <stop offset="100%" stop-color="#9E6400"/>
+    <radialGradient id="tailFill" cx="50%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#FDBB10"/>
+      <stop offset="100%" stop-color="#7A4800"/>
     </radialGradient>
   </defs>
 
-  <!-- ── Background ─────────────────────────────────────────────── -->
-  <rect width="400" height="400" fill="#020B1A"/>
-  <rect width="400" height="400" fill="url(#bgGlow)"/>
+  <!-- Background -->
+  <rect width="500" height="500" fill="#020B1A"/>
+  <rect width="500" height="500" fill="url(#bgGlow)"/>
 
-  <!-- ── Network topology ───────────────────────────────────────── -->
-  <g stroke="#FDB908" stroke-width="1.4" fill="none" opacity="0.72" stroke-linecap="round">
-    <line x1="200" y1="27"  x2="155" y2="52"/>
-    <line x1="200" y1="27"  x2="245" y2="52"/>
-    <line x1="155" y1="52"  x2="110" y2="88"/>
-    <line x1="245" y1="52"  x2="290" y2="88"/>
-    <line x1="110" y1="88"  x2="130" y2="130"/>
-    <line x1="290" y1="88"  x2="270" y2="130"/>
-    <line x1="155" y1="52"  x2="200" y2="100"/>
-    <line x1="245" y1="52"  x2="200" y2="100"/>
-    <line x1="130" y1="130" x2="200" y2="100"/>
-    <line x1="270" y1="130" x2="200" y2="100"/>
+  <!-- ── Network topology dome ───────────────────────────────── -->
+  <g stroke="#FDB908" stroke-width="1.3" fill="none" opacity="0.72" stroke-linecap="round">
+    <!-- Top center to level 2 -->
+    <line x1="250" y1="22"  x2="180" y2="56"/>
+    <line x1="250" y1="22"  x2="320" y2="56"/>
+    <!-- Level 2 cross-connect -->
+    <line x1="180" y1="56"  x2="252" y2="84"/>
+    <line x1="320" y1="56"  x2="252" y2="84"/>
+    <!-- Level 2 outward -->
+    <line x1="180" y1="56"  x2="118" y2="102"/>
+    <line x1="320" y1="56"  x2="382" y2="102"/>
+    <!-- Level 3 cross-connects -->
+    <line x1="118" y1="102" x2="252" y2="84"/>
+    <line x1="382" y1="102" x2="252" y2="84"/>
+    <!-- Level 3 to leaf -->
+    <line x1="118" y1="102" x2="82"  y2="147"/>
+    <line x1="118" y1="102" x2="190" y2="138"/>
+    <line x1="252" y1="84"  x2="190" y2="138"/>
+    <line x1="252" y1="84"  x2="314" y2="138"/>
+    <line x1="382" y1="102" x2="314" y2="138"/>
+    <line x1="382" y1="102" x2="418" y2="147"/>
   </g>
   <g fill="#FDB908">
-    <circle cx="200" cy="27"  r="6.5"/>
-    <circle cx="155" cy="52"  r="5.5"/>
-    <circle cx="245" cy="52"  r="5.5"/>
-    <circle cx="110" cy="88"  r="5"/>
-    <circle cx="290" cy="88"  r="5"/>
-    <circle cx="130" cy="130" r="4.5"/>
-    <circle cx="270" cy="130" r="4.5"/>
-    <circle cx="200" cy="100" r="8"/>
+    <circle cx="250" cy="22"  r="7"/>
+    <circle cx="180" cy="56"  r="5.5"/>
+    <circle cx="320" cy="56"  r="5.5"/>
+    <circle cx="118" cy="102" r="5"/>
+    <circle cx="252" cy="84"  r="6.5"/>
+    <circle cx="382" cy="102" r="5"/>
+    <circle cx="82"  cy="147" r="4.5"/>
+    <circle cx="190" cy="138" r="4.5"/>
+    <circle cx="314" cy="138" r="4.5"/>
+    <circle cx="418" cy="147" r="4.5"/>
   </g>
-  <!-- Hub node centre dot -->
-  <circle cx="200" cy="100" r="3" fill="#020B1A"/>
+  <!-- Hub inner ring -->
+  <circle cx="252" cy="84" r="2.5" fill="#020B1A"/>
 
-  <!-- ── Duck ────────────────────────────────────────────────────── -->
-  <!-- Tail (back-left upturned bump) -->
-  <ellipse cx="142" cy="195" rx="17" ry="11" fill="url(#tailFill)" transform="rotate(-28 142 195)"/>
-  <ellipse cx="142" cy="195" rx="12"  ry="7.5" fill="url(#duckFill)" transform="rotate(-28 142 195)"/>
+  <!-- ── Duck (drawn BEFORE fence so fence overlaps lower body) ── -->
 
-  <!-- Body -->
-  <ellipse cx="200" cy="200" rx="62" ry="52" fill="url(#duckFill)"/>
+  <!-- Tail — small upturned bump on upper-left of body -->
+  <ellipse cx="148" cy="217" rx="24" ry="15" fill="url(#tailFill)" transform="rotate(-22 148 217)"/>
+  <ellipse cx="148" cy="217" rx="17" ry="10" fill="url(#duckFill)" transform="rotate(-22 148 217)"/>
+
+  <!-- Body — large, round -->
+  <ellipse cx="252" cy="252" rx="114" ry="100" fill="url(#duckFill)"/>
   <!-- Chest highlight -->
-  <ellipse cx="184" cy="193" rx="30" ry="24" fill="#FFEA60" opacity="0.18"/>
+  <ellipse cx="232" cy="240" rx="62" ry="50" fill="#FFEA60" opacity="0.14"/>
 
-  <!-- Head (overlaps body to form neck naturally) -->
-  <circle cx="230" cy="156" r="44" fill="url(#duckFill)"/>
+  <!-- Head — sits upper-right, overlapping body for natural neck -->
+  <circle cx="310" cy="166" r="56" fill="url(#duckFill)"/>
   <!-- Head highlight -->
-  <ellipse cx="215" cy="143" rx="20" ry="15" fill="#FFEA60" opacity="0.2"/>
+  <ellipse cx="292" cy="150" rx="28" ry="22" fill="#FFEA60" opacity="0.18"/>
 
-  <!-- Beak (teardrop pointing right) -->
-  <path d="M272 151 Q289 157 272 164 Z" fill="#E07200"/>
+  <!-- Beak — teardrop pointing right -->
+  <path d="M362 160 Q386 169 362 178 Z" fill="#CC6600"/>
 
   <!-- Eye -->
-  <circle cx="248" cy="146" r="6.5" fill="#020B1A"/>
-  <circle cx="246" cy="144" r="2.2" fill="white" opacity="0.9"/>
+  <circle cx="336" cy="154" r="8"   fill="#020B1A"/>
+  <circle cx="333" cy="151" r="2.7" fill="white" opacity="0.9"/>
 
   <!-- Wing arc -->
-  <path d="M158 198 Q200 180 238 200" fill="none" stroke="#B07800" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M185 252 Q252 230 322 252" fill="none" stroke="#9A6A00" stroke-width="3" stroke-linecap="round"/>
 
-  <!-- ── Fence & gate ────────────────────────────────────────────── -->
+  <!-- ── Fence (drawn OVER duck) ─────────────────────────────── -->
   <!-- Ground strip -->
-  <rect x="58" y="258" width="284" height="14" rx="3" fill="#0D1A08"/>
+  <rect x="60" y="305" width="380" height="18" rx="3" fill="#0B1707"/>
 
-  <!-- Left section: rails (draw before posts so posts sit on top) -->
-  <rect x="68" y="213" width="116" height="9" rx="2" fill="#121808"/>
-  <rect x="68" y="237" width="116" height="9" rx="2" fill="#121808"/>
+  <!-- ─ Left section rails ─ -->
+  <rect x="68" y="234" width="140" height="11" rx="2" fill="#0D1807"/>
+  <rect x="68" y="263" width="140" height="11" rx="2" fill="#0D1807"/>
 
-  <!-- Left section: posts with angled caps -->
-  <polygon points="68,196  75,187  82,196"  fill="#1A2610"/>
-  <rect     x="68"  y="196" width="14" height="72" rx="2" fill="#1A2610"/>
+  <!-- Left posts (3 regular posts; polygon cap + shaft) -->
+  <polygon points="66,211  76,198  86,211"  fill="#162010"/>
+  <rect     x="66"  y="211" width="20" height="112" rx="2" fill="#162010"/>
 
-  <polygon points="104,198  111,189  118,198" fill="#1A2610"/>
-  <rect     x="104" y="198" width="14" height="70" rx="2" fill="#1A2610"/>
+  <polygon points="112,212 122,199 132,212" fill="#162010"/>
+  <rect     x="112" y="212" width="20" height="111" rx="2" fill="#162010"/>
 
-  <polygon points="140,196  147,187  154,196" fill="#1A2610"/>
-  <rect     x="140" y="196" width="14" height="72" rx="2" fill="#1A2610"/>
+  <polygon points="158,211 168,198 178,211" fill="#162010"/>
+  <rect     x="158" y="211" width="20" height="112" rx="2" fill="#162010"/>
 
-  <polygon points="168,194  175.5,184  183,194" fill="#1A2610"/>
-  <rect     x="168" y="194" width="15" height="74" rx="2" fill="#1A2610"/>
+  <!-- Gate left post (taller, slightly lighter) -->
+  <polygon points="193,199 204,184 215,199" fill="#213018"/>
+  <rect     x="193" y="199" width="22" height="124" rx="2" fill="#213018"/>
 
-  <!-- Gate X-brace (drawn before gate posts) -->
-  <line x1="183" y1="193" x2="217" y2="270" stroke="#182E10" stroke-width="6" stroke-linecap="round"/>
-  <line x1="217" y1="193" x2="183" y2="270" stroke="#182E10" stroke-width="6" stroke-linecap="round"/>
+  <!-- Gate X-brace -->
+  <line x1="215" y1="199" x2="302" y2="305" stroke="#162810" stroke-width="8" stroke-linecap="round"/>
+  <line x1="302" y1="199" x2="215" y2="305" stroke="#162810" stroke-width="8" stroke-linecap="round"/>
 
-  <!-- Gate posts (taller, slightly lighter colour) -->
-  <polygon points="183,184  190.5,173  198,184" fill="#243A18"/>
-  <rect     x="183" y="184" width="15" height="90" rx="2" fill="#243A18"/>
+  <!-- Gate right post -->
+  <polygon points="280,199 291,184 302,199" fill="#213018"/>
+  <rect     x="280" y="199" width="22" height="124" rx="2" fill="#213018"/>
 
-  <polygon points="202,184  209.5,173  217,184" fill="#243A18"/>
-  <rect     x="202" y="184" width="15" height="90" rx="2" fill="#243A18"/>
+  <!-- Gate horizontal beams (3 rails across gate) -->
+  <rect x="193" y="197" width="109" height="11" rx="2" fill="#294020"/>
+  <rect x="193" y="232" width="109" height="11" rx="2" fill="#294020"/>
+  <rect x="193" y="263" width="109" height="11" rx="2" fill="#294020"/>
 
-  <!-- Gate horizontal beams -->
-  <rect x="183" y="184" width="34" height="8"  rx="2" fill="#2B4820"/>
-  <rect x="183" y="210" width="34" height="8"  rx="2" fill="#2B4820"/>
-  <rect x="183" y="235" width="34" height="8"  rx="2" fill="#2B4820"/>
+  <!-- ─ Right section rails ─ -->
+  <rect x="292" y="234" width="140" height="11" rx="2" fill="#0D1807"/>
+  <rect x="292" y="263" width="140" height="11" rx="2" fill="#0D1807"/>
 
-  <!-- Right section: rails -->
-  <rect x="216" y="213" width="116" height="9" rx="2" fill="#121808"/>
-  <rect x="216" y="237" width="116" height="9" rx="2" fill="#121808"/>
+  <!-- Right posts -->
+  <polygon points="307,212 317,199 327,212" fill="#162010"/>
+  <rect     x="307" y="212" width="20" height="111" rx="2" fill="#162010"/>
 
-  <!-- Right section: posts -->
-  <polygon points="217,194  224.5,184  232,194" fill="#1A2610"/>
-  <rect     x="217" y="194" width="15" height="74" rx="2" fill="#1A2610"/>
+  <polygon points="352,211 362,198 372,211" fill="#162010"/>
+  <rect     x="352" y="211" width="20" height="112" rx="2" fill="#162010"/>
 
-  <polygon points="252,196  259,187  266,196" fill="#1A2610"/>
-  <rect     x="252" y="196" width="14" height="72" rx="2" fill="#1A2610"/>
-
-  <polygon points="288,198  295,189  302,198" fill="#1A2610"/>
-  <rect     x="288" y="198" width="14" height="70" rx="2" fill="#1A2610"/>
-
-  <polygon points="318,196  325,187  332,196" fill="#1A2610"/>
-  <rect     x="318" y="196" width="14" height="72" rx="2" fill="#1A2610"/>
+  <polygon points="396,212 406,199 416,212" fill="#162010"/>
+  <rect     x="396" y="212" width="20" height="111" rx="2" fill="#162010"/>
 
   <!-- Grass tufts -->
-  <g fill="none" stroke="#1E3A12" stroke-linecap="round" stroke-width="1.5">
-    <path d="M76 258 L80 247 L84 258"/>
-    <path d="M91 259 L96 248 L101 259"/>
-    <path d="M151 259 L156 248 L161 259"/>
-    <path d="M242 259 L247 249 L252 259"/>
-    <path d="M307 259 L312 248 L317 259"/>
-    <path d="M323 259 L328 249 L333 259"/>
+  <g fill="none" stroke="#1A3810" stroke-linecap="round" stroke-width="2">
+    <path d="M76  305 L82  291 L88  305"/>
+    <path d="M104 306 L110 292 L116 306"/>
+    <path d="M168 305 L174 292 L180 305"/>
+    <path d="M322 305 L328 292 L334 305"/>
+    <path d="M370 305 L376 292 L382 305"/>
+    <path d="M408 305 L414 292 L420 305"/>
   </g>
 
-  <!-- ── Text section ───────────────────────────────────────────── -->
-  <line x1="44" y1="278" x2="356" y2="278" stroke="#FDB908" stroke-width="0.8" opacity="0.35"/>
+  <!-- ── Text section ──────────────────────────────────────────── -->
+  <line x1="42" y1="330" x2="458" y2="330" stroke="#FDB908" stroke-width="0.8" opacity="0.35"/>
 
   <!-- PADDUCK wordmark -->
-  <text x="200" y="321"
+  <text x="250" y="388"
         font-family="'Inter','Arial Black',Impact,system-ui,sans-serif"
-        font-weight="900" font-size="65" text-anchor="middle" letter-spacing="-1">
+        font-weight="900" font-size="80" text-anchor="middle" letter-spacing="-2">
     <tspan fill="white">PAD</tspan><tspan fill="#FDB908">DUCK</tspan>
   </text>
 
   <!-- IPAM -->
-  <text x="200" y="341"
+  <text x="250" y="412"
         font-family="'Inter','Helvetica Neue',Arial,system-ui,sans-serif"
-        font-weight="600" font-size="17" text-anchor="middle"
-        fill="white" letter-spacing="9">IPAM</text>
+        font-weight="600" font-size="21" text-anchor="middle"
+        fill="white" letter-spacing="12">IPAM</text>
 
-  <!-- Thin divider -->
-  <line x1="44" y1="353" x2="356" y2="353" stroke="white" stroke-width="0.5" opacity="0.18"/>
+  <line x1="42" y1="428" x2="458" y2="428" stroke="white" stroke-width="0.5" opacity="0.18"/>
 
-  <!-- ── Bottom icons ────────────────────────────────────────────── -->
-  <!-- DISCOVER: table grid icon -->
-  <g fill="none" stroke="white" stroke-width="1.4">
-    <rect x="40" y="359" width="20" height="13" rx="1.5"/>
-    <line x1="40" y1="365" x2="60" y2="365"/>
-    <line x1="50" y1="359" x2="50" y2="372"/>
+  <!-- ── Bottom icons ───────────────────────────────────────────── -->
+  <!-- DISCOVER: table grid -->
+  <g fill="none" stroke="white" stroke-width="1.5">
+    <rect x="38" y="436" width="26" height="17" rx="1.5"/>
+    <line x1="38" y1="445" x2="64" y2="445"/>
+    <line x1="51" y1="436" x2="51" y2="453"/>
   </g>
-  <text x="50"  y="382" font-family="system-ui,sans-serif" font-size="7" fill="white" text-anchor="middle" letter-spacing="0.4">DISCOVER</text>
+  <text x="51"  y="465" font-family="system-ui,sans-serif" font-size="8" fill="white" text-anchor="middle" letter-spacing="0.4">DISCOVER</text>
 
   <!-- MANAGE: location pin -->
-  <path d="M150 358 A7 7 0 0 1 157 365 Q157 371 150 378 Q143 371 143 365 A7 7 0 0 1 150 358 Z"
-        fill="none" stroke="white" stroke-width="1.4"/>
-  <circle cx="150" cy="365" r="2.5" fill="white"/>
-  <text x="150" y="382" font-family="system-ui,sans-serif" font-size="7" fill="white" text-anchor="middle" letter-spacing="0.4">MANAGE</text>
+  <path d="M172 434 A9 9 0 0 1 181 443 Q181 452 172 460 Q163 452 163 443 A9 9 0 0 1 172 434 Z"
+        fill="none" stroke="white" stroke-width="1.5"/>
+  <circle cx="172" cy="443" r="3" fill="white"/>
+  <text x="172" y="465" font-family="system-ui,sans-serif" font-size="8" fill="white" text-anchor="middle" letter-spacing="0.4">MANAGE</text>
 
   <!-- AUTOMATE: gear -->
-  <circle cx="250" cy="364" r="5.5" fill="none" stroke="white" stroke-width="1.4"/>
-  <circle cx="250" cy="364" r="2"   fill="white"/>
-  <g stroke="white" stroke-width="1.8" stroke-linecap="round">
-    <line x1="250" y1="357"   x2="250" y2="355"/>
-    <line x1="250" y1="371"   x2="250" y2="373"/>
-    <line x1="243" y1="364"   x2="241" y2="364"/>
-    <line x1="257" y1="364"   x2="259" y2="364"/>
-    <line x1="245.1" y1="359.1" x2="243.7" y2="357.7"/>
-    <line x1="254.9" y1="359.1" x2="256.3" y2="357.7"/>
-    <line x1="245.1" y1="368.9" x2="243.7" y2="370.3"/>
-    <line x1="254.9" y1="368.9" x2="256.3" y2="370.3"/>
+  <circle cx="315" cy="443" r="7" fill="none" stroke="white" stroke-width="1.5"/>
+  <circle cx="315" cy="443" r="2.5" fill="white"/>
+  <g stroke="white" stroke-width="2" stroke-linecap="round">
+    <line x1="315" y1="434" x2="315" y2="432"/>
+    <line x1="315" y1="452" x2="315" y2="454"/>
+    <line x1="306" y1="443" x2="304" y2="443"/>
+    <line x1="324" y1="443" x2="326" y2="443"/>
+    <line x1="309" y1="437" x2="307.5" y2="435.5"/>
+    <line x1="321" y1="437" x2="322.5" y2="435.5"/>
+    <line x1="309" y1="449" x2="307.5" y2="450.5"/>
+    <line x1="321" y1="449" x2="322.5" y2="450.5"/>
   </g>
-  <text x="250" y="382" font-family="system-ui,sans-serif" font-size="7" fill="white" text-anchor="middle" letter-spacing="0.4">AUTOMATE</text>
+  <text x="315" y="465" font-family="system-ui,sans-serif" font-size="8" fill="white" text-anchor="middle" letter-spacing="0.4">AUTOMATE</text>
 
   <!-- TRUST: shield + checkmark -->
-  <path d="M350 357 L359 361 L359 367 Q359 375 350 379 Q341 375 341 367 L341 361 Z"
-        fill="none" stroke="white" stroke-width="1.4"/>
-  <path d="M346 367 L349 372 L355 363"
-        fill="none" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="350" y="382" font-family="system-ui,sans-serif" font-size="7" fill="white" text-anchor="middle" letter-spacing="0.4">TRUST</text>
+  <path d="M437 433 L449 438 L449 447 Q449 458 437 464 Q425 458 425 447 L425 438 Z"
+        fill="none" stroke="white" stroke-width="1.5"/>
+  <path d="M432 448 L436 454 L443 442"
+        fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="437" y="465" font-family="system-ui,sans-serif" font-size="8" fill="white" text-anchor="middle" letter-spacing="0.4">TRUST</text>
 
-  <!-- ── Tagline ─────────────────────────────────────────────────── -->
-  <text x="200" y="395"
+  <!-- ── Tagline ────────────────────────────────────────────────── -->
+  <text x="250" y="485"
         font-family="system-ui,sans-serif"
-        font-size="6.5" fill="white" text-anchor="middle"
+        font-size="7.5" fill="white" text-anchor="middle"
         letter-spacing="2" opacity="0.45">NETWORK INTELLIGENCE. KEPT IN ORDER.</text>
 </svg>
