@@ -38,23 +38,13 @@ func (h *Handler) CheckForUpdates(c *fiber.Ctx) error {
 		})
 	}
 
-	url, _ := h.service.Config.GetCtx(c.Context(), "update_check_url")
-	if strings.TrimSpace(url) == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "update_check_url is not configured"})
-	}
-	if err := netguard.ValidateURL(c.Context(), url); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid update_check_url"})
-	}
-	token, _ := h.service.Config.GetCtx(c.Context(), "update_check_token")
+	const url = "https://api.github.com/repos/lima3w/padduck/releases/latest"
 
-	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, url, nil) // #nosec G107 -- admin-configured update endpoint.
+	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, url, nil)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid update_check_url"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to build update request"})
 	}
-	req.Header.Set("Accept", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "token "+token)
-	}
+	req.Header.Set("Accept", "application/vnd.github+json")
 
 	client := netguard.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)

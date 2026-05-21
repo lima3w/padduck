@@ -247,7 +247,6 @@ func (h *Handler) v2MigrationReadinessChecks(ctx context.Context) []compatibilit
 	pdnsEnabled, _ := h.compatConfig(ctx, "pdns_enabled")
 	pdnsURL, _ := h.compatConfig(ctx, "pdns_api_url")
 	technitiumURL, _ := h.compatConfig(ctx, "technitium_url")
-	updateURL, _ := h.compatConfig(ctx, "update_check_url")
 	integrationStatus := "pass"
 	integrationDetail := "No incomplete enabled integration configuration was detected."
 	integrationWork := ""
@@ -267,7 +266,7 @@ func (h *Handler) v2MigrationReadinessChecks(ctx context.Context) []compatibilit
 			fmt.Sprintf("pdns_enabled=%t", pdnsEnabled == "true"),
 			fmt.Sprintf("pdns_url_configured=%t", strings.TrimSpace(pdnsURL) != ""),
 			fmt.Sprintf("technitium_configured=%t", strings.TrimSpace(technitiumURL) != ""),
-			fmt.Sprintf("update_check_configured=%t", strings.TrimSpace(updateURL) != ""),
+			"update_check_configured=true",
 		},
 	})
 

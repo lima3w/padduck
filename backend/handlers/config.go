@@ -22,7 +22,6 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 		"smtp_password":          true,
 		"pdns_api_key":           true,
 		"technitium_token":       true,
-		"update_check_token":     true,
 		"scanner_snmp_community": true,
 	}
 
@@ -96,15 +95,12 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"feature_dhcp_enabled":        true,
 		"feature_circuits_enabled":    true,
 		"update_check_enabled":        true,
-		"update_check_url":            true,
-		"update_check_token":          true,
 	}
 
 	sensitiveConfigKeys := map[string]bool{
 		"smtp_password":          true,
 		"pdns_api_key":           true,
 		"technitium_token":       true,
-		"update_check_token":     true,
 		"scanner_snmp_community": true,
 	}
 

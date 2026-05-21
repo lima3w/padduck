@@ -38,11 +38,7 @@ Configuration is read from environment variables. Docker Compose will also read 
 | `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
 | `IMAGE_TAG` | `latest` | Pin to a specific release tag (e.g. `v1.30.0`) |
 
-Update checks can be configured under **Admin Settings → Updates**. Set the URL to the GitHub releases API endpoint — no token is required since the repository is public:
-
-```
-https://api.github.com/repos/lima3w/padduck/releases/latest
-```
+Update checks can be enabled under **Admin Settings → Updates**. The backend checks the GitHub releases API automatically — no configuration required.
 
 ## Documentation
 

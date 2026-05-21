@@ -53,8 +53,6 @@ const CONFIG_KEYS_BY_TAB = {
   ],
   updates: [
     'update_check_enabled',
-    'update_check_url',
-    'update_check_token',
   ],
 }
 
@@ -1022,39 +1020,9 @@ export default function AdminSettingsPage() {
               />
               <span className="text-sm text-gray-700">
                 <strong>Enable update checks</strong>
-                <span className="block text-gray-500">Checks run from the backend using the private repository token below.</span>
+                <span className="block text-gray-500">Checks the GitHub releases API for new versions of Padduck.</span>
               </span>
             </label>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Latest release API URL</label>
-                <input
-                  type="url"
-                  value={config.update_check_url || ''}
-                  onChange={(e) => handleConfigChange('update_check_url', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="https://gitea.example.com/api/v1/repos/org/ipam-next/releases/latest"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Use the private repository API endpoint that returns a latest release object with a tag_name field.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Repository API token</label>
-                <input
-                  type="password"
-                  value={config.update_check_token || ''}
-                  onChange={(e) => handleConfigChange('update_check_token', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  placeholder="••••••••"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Store a read-only token that can access release metadata. Saved tokens are redacted after reload.
-                </p>
-              </div>
-            </div>
           </div>
 
           {updateStatus && (

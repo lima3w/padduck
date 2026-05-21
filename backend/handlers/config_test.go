@@ -134,8 +134,6 @@ var allFrontendConfigKeys = []string{
 	"feature_devices_enabled",
 	// updates tab
 	"update_check_enabled",
-	"update_check_url",
-	"update_check_token",
 }
 
 func TestUpdateConfig_AllFrontendKeys_AreAllowed(t *testing.T) {
