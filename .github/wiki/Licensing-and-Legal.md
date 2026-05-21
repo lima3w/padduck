@@ -6,7 +6,7 @@
 
 Padduck is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
 
-[Full license text](https://github.com/lima3w/padduck/src/branch/main/LICENSE)
+[Full license text](https://github.com/lima3w/padduck/blob/main/LICENSE)
 
 ### Key Terms
 

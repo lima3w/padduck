@@ -84,11 +84,11 @@ See the [Installation Guide](Installation-Guide) for the full walkthrough.
 
 ## Contributing
 
-See [CONTRIBUTING.md](https://github.com/lima3w/padduck/src/branch/main/README.md) in the repository for local setup, coding standards, and PR workflow.
+See [CONTRIBUTING.md](https://github.com/lima3w/padduck/blob/main/README.md) in the repository for local setup, coding standards, and PR workflow.
 
 ---
 
 ## Community & Support
 
 - **Issues**: [GitHub Issues](https://github.com/lima3w/padduck/issues)
-- **License**: [GPL-3.0](https://github.com/lima3w/padduck/src/branch/main/LICENSE)
+- **License**: [GPL-3.0](https://github.com/lima3w/padduck/blob/main/LICENSE)
