@@ -1,6 +1,6 @@
 # Changelog
 
-This page summarizes major releases. For the full detailed changelog, see [CHANGELOG.md](https://github.com/lima3w/padduck/blob/main/CHANGELOG.md) in the repository.
+This page summarizes major releases. The full `CHANGELOG.md` is in the [repository](https://github.com/lima3w/padduck).
 
 ---
 
