@@ -101,7 +101,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-[#07162b] flex items-center justify-center p-4">
         <div className="bg-white dark:bg-[#0a1f3a] rounded-lg shadow-xl p-8 max-w-md w-full border border-transparent dark:border-[#25364a]">
           <div className="flex justify-center mb-6">
-            <img src="/logo.png" alt="Padduck" className="w-48 h-auto" />
+            <img src="/logo.svg" alt="Padduck" className="w-48 h-auto" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-[#f4f7fa] mb-1 text-center">Two-Factor Authentication</h1>
           <p className="text-gray-600 dark:text-[#a8b8cb] mb-6 text-center">Enter the 6-digit code from your authenticator app, or a backup code.</p>
@@ -155,7 +155,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#07162b] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#0a1f3a] rounded-lg shadow-xl p-8 max-w-md w-full border border-transparent dark:border-[#25364a]">
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="Padduck" className="w-48 h-auto mb-1" />
+          <img src="/logo.svg" alt="Padduck" className="w-48 h-auto mb-1" />
           <p className="text-gray-600 dark:text-[#a8b8cb] text-sm">Sign in to continue</p>
         </div>
 
