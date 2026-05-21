@@ -1,4 +1,3 @@
-
 # Padduck
 
 A modern IP Address Management (IPAM) platform built with Go, React, and PostgreSQL.
@@ -12,43 +11,41 @@ Replace spreadsheet-based IP tracking with a structured, API-first system.
 - Backend: Go (Fiber)
 - Frontend: React (Vite)
 - Database: PostgreSQL
-- Deployment: Docker Compose
+- Deployment: Docker Compose + GitHub Container Registry
 
-## Run
-docker compose up --build
+## Quick Start
 
-Configuration is read from environment variables first. Docker Compose will
-also read a local `.env` file for variable interpolation. Common deployment
-variables:
+```bash
+docker compose pull
+docker compose up -d
+```
 
-- `POSTGRES_USER` (default `ipam`)
-- `POSTGRES_PASSWORD` (default `ipam`)
-- `POSTGRES_DB` (default `ipam`)
-- `DATABASE_URL` (default derived from the PostgreSQL variables)
-- `ADMIN_PASSWORD` (empty means generate on first boot)
-- `RESET_ADMIN_PASSWORD` (default `false`)
-- `MFA_ENCRYPTION_KEY` (required in production; 64 hex characters)
-- `SESSION_COOKIE_SECURE` (`auto`, `true`, or `false`; unset/`auto` marks
-  session cookies secure only when the request is HTTPS or forwarded as HTTPS)
-- `APP_VERSION`, `GIT_COMMIT`, `BUILD_DATE` (optional build metadata used by
-  admin update checks)
+Open `http://localhost:3000` and log in as `admin`. The generated password is printed to the backend log on first boot.
 
-Private repository update checks can be configured under **Admin Settings →
-Updates**. Use a read-only repository API token and the latest-release API URL
-for your Gitea/GitHub repository; the token is stored server-side and is never
-sent to the browser after save.
+## Configuration
 
-## Deployment
-Automated deployment is configured via `.github/workflows/deploy.yml` and runs on a self-hosted GitHub Actions runner.
-- Deploys on all pushes to `main`
-- Builds and deploys both backend and frontend services
-- Verifies health endpoint before marking deployment successful
+Configuration is read from environment variables. Docker Compose will also read a local `.env` file for variable interpolation.
 
-## Docs
-- docs/index.md
-- docs/getting-started.md
-- docs/user-guide.md
-- docs/api-contract.md
-- docs/api-client-examples.md
-- docs/troubleshooting.md
-- docs/openapi.yaml
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `POSTGRES_USER` | `padduck` | PostgreSQL username |
+| `POSTGRES_PASSWORD` | `padduck` | PostgreSQL password |
+| `POSTGRES_DB` | `padduck` | PostgreSQL database name |
+| `DATABASE_URL` | derived | Overrides the individual PostgreSQL variables |
+| `ADMIN_PASSWORD` | _(generated)_ | Initial admin password; printed to logs on first boot if unset |
+| `RESET_ADMIN_PASSWORD` | `false` | Force-reset the admin password on next boot |
+| `MFA_ENCRYPTION_KEY` | _(required in production)_ | 64 hex characters; generate with `openssl rand -hex 32` |
+| `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
+| `IMAGE_TAG` | `latest` | Pin to a specific release tag (e.g. `v1.30.0`) |
+
+Private repository update checks can be configured under **Admin Settings → Updates**. Use a read-only GitHub API token and the latest-release API URL; the token is stored server-side and is never sent to the browser.
+
+## Documentation
+
+Full documentation is on the [GitHub Wiki](https://github.com/lima3w/padduck/wiki), including:
+
+- [Installation Guide](https://github.com/lima3w/padduck/wiki/Installation-Guide)
+- [Configuration](https://github.com/lima3w/padduck/wiki/Configuration)
+- [User Guide](https://github.com/lima3w/padduck/wiki/User-Guide)
+- [API Documentation](https://github.com/lima3w/padduck/wiki/API-Documentation)
+- [Troubleshooting](https://github.com/lima3w/padduck/wiki/Troubleshooting)
