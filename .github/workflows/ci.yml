@@ -4,7 +4,13 @@ on:
   push:
     branches-ignore:
       - main
+    paths-ignore:
+      - '.github/wiki/**'
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '.github/wiki/**'
+      - '**.md'
   workflow_dispatch:
 
 jobs:
