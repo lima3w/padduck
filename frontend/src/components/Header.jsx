@@ -6,17 +6,18 @@ export default function Header({ darkMode, onSearchClick }) {
   const { user } = useAuth()
 
   return (
-    <header className="bg-blue-700 dark:bg-gray-800 text-white px-6 py-3 flex items-center justify-between shadow">
-      <div className="flex items-center">
+    <header className="bg-[#07162b] text-white px-6 py-3 flex items-center justify-between shadow border-b border-[#25364a]">
+      <div className="flex items-center gap-3">
+        <img src="/favicon.svg" alt="Padduck" className="w-8 h-8" />
         <span className="text-xl font-bold tracking-tight">Padduck</span>
-        <span className="ml-3 text-blue-300 dark:text-gray-400 text-sm hidden sm:inline">IP Address Management</span>
+        <span className="text-[#a8b8cb] text-sm hidden sm:inline">IP Address Management</span>
       </div>
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onSearchClick}
           aria-label="Search"
-          className="flex items-center gap-2 text-sm bg-blue-600/60 dark:bg-gray-700/60 hover:bg-blue-600 dark:hover:bg-gray-700 text-blue-100 dark:text-gray-300 border border-blue-500/40 dark:border-gray-600 px-3 py-1 rounded-md transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 dark:focus:ring-offset-gray-800"
+          className="flex items-center gap-2 text-sm bg-[#0a1f3a] hover:bg-[#25364a] text-[#a8b8cb] border border-[#25364a] px-3 py-1 rounded-md transition focus:outline-none focus:ring-2 focus:ring-[#f5b800] focus:ring-offset-2 focus:ring-offset-[#07162b]"
           title="Search (Ctrl+K)"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,12 +25,12 @@ export default function Header({ darkMode, onSearchClick }) {
             <path d="m21 21-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
           </svg>
           <span className="hidden md:inline">Search</span>
-          <kbd className="hidden md:inline-flex items-center text-xs text-blue-300 dark:text-gray-500 font-mono">⌘K</kbd>
+          <kbd className="hidden md:inline-flex items-center text-xs text-[#3a4f65] font-mono">⌘K</kbd>
         </button>
         {user?.role === 'admin' && (
           <Link
             to="/admin"
-            className="text-sm bg-blue-600 dark:bg-gray-700 hover:bg-blue-800 dark:hover:bg-gray-600 px-3 py-1 rounded transition"
+            className="text-sm bg-[#0a1f3a] hover:bg-[#25364a] px-3 py-1 rounded transition border border-[#25364a]"
           >
             Admin
           </Link>
