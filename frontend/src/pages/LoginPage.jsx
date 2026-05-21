@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import * as client from '../api/client'
+import PadduckLogo from '../components/PadduckLogo'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -101,7 +102,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-[#07162b] flex items-center justify-center p-4">
         <div className="bg-white dark:bg-[#0a1f3a] rounded-lg shadow-xl p-8 max-w-md w-full border border-transparent dark:border-[#25364a]">
           <div className="flex justify-center mb-6">
-            <img src="/favicon.svg" alt="Padduck" className="w-12 h-12" />
+            <PadduckLogo className="h-14 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-[#f4f7fa] mb-1 text-center">Two-Factor Authentication</h1>
           <p className="text-gray-600 dark:text-[#a8b8cb] mb-6 text-center">Enter the 6-digit code from your authenticator app, or a backup code.</p>
@@ -155,7 +156,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#07162b] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#0a1f3a] rounded-lg shadow-xl p-8 max-w-md w-full border border-transparent dark:border-[#25364a]">
         <div className="flex flex-col items-center mb-6">
-          <img src="/logo.png" alt="Padduck" className="h-12 w-auto mb-2" />
+          <PadduckLogo className="h-14 w-auto mb-3" />
           <p className="text-gray-600 dark:text-[#a8b8cb] text-sm">Sign in to continue</p>
         </div>
 
