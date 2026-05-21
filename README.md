@@ -3,7 +3,7 @@
 
 A modern IP Address Management (IPAM) platform built with Go, React, and PostgreSQL.
 
-![CI Test Suite](https://gitea.lima3.dev/Lima3-Automations/padduck/actions/workflows/ci.yml/badge.svg)
+[![CI Test Suite](https://github.com/lima3w/padduck/actions/workflows/ci.yml/badge.svg)](https://github.com/lima3w/padduck/actions/workflows/ci.yml)
 
 ## Purpose
 Replace spreadsheet-based IP tracking with a structured, API-first system.
@@ -39,15 +39,16 @@ for your Gitea/GitHub repository; the token is stored server-side and is never
 sent to the browser after save.
 
 ## Deployment
-Automated deployment to `gitea-runner.lab` is configured via `.gitea/workflows/deploy.yml`.
-- Runs tests on all pushes to `main`
+Automated deployment is configured via `.github/workflows/deploy.yml` and runs on a self-hosted GitHub Actions runner.
+- Deploys on all pushes to `main`
 - Builds and deploys both backend and frontend services
 - Verifies health endpoint before marking deployment successful
 
 ## Docs
-- docs/openapi.yaml
-- docs/roadmap.md
+- docs/index.md
+- docs/getting-started.md
 - docs/user-guide.md
-- docs/v1.29-network-modules.md
-- docs/v1.30-optional-tools.md
-- docs/v1-maintenance-policy.md
+- docs/api-contract.md
+- docs/api-client-examples.md
+- docs/troubleshooting.md
+- docs/openapi.yaml
