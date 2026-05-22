@@ -94,6 +94,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"feature_nat_enabled":         true,
 		"feature_dhcp_enabled":        true,
 		"feature_circuits_enabled":    true,
+		"feature_firewall_enabled":    true,
 		"update_check_enabled":        true,
 	}
 
