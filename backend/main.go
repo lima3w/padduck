@@ -102,7 +102,7 @@ func writePasswordFile(password string) (string, error) {
 		return "", fmt.Errorf("creating data directory %s: %w", dir, err)
 	}
 	path := filepath.Join(dir, "admin-password")
-	if err := os.WriteFile(path, []byte(password), 0600); err != nil { // #nosec G306 -- intentionally user-readable only.
+	if err := os.WriteFile(path, []byte(password), 0600); err != nil { // #nosec G703 -- path is os.Getwd()+fixed suffix, not user input.
 		return "", fmt.Errorf("writing password file %s: %w", path, err)
 	}
 	return path, nil
