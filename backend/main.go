@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -55,10 +56,10 @@ func initAdminPassword(ctx context.Context, svc *services.Service) error {
 		}
 		log.Printf("========================================")
 		if generated {
-			if err := writePasswordFile(password); err != nil {
+			if p, err := writePasswordFile(password); err != nil {
 				slog.Warn("could not write admin password file; set ADMIN_PASSWORD explicitly", "error", err)
 			} else {
-				log.Printf("  Generated admin password written to /run/ipam/admin-password (mode 0600).")
+				log.Printf("  Generated admin password written to %s (mode 0600).", p)
 			}
 		} else {
 			log.Printf("  Admin password reset from ADMIN_PASSWORD env var.")
@@ -75,10 +76,10 @@ func initAdminPassword(ctx context.Context, svc *services.Service) error {
 
 	if set && generated {
 		log.Printf("========================================")
-		if err := writePasswordFile(password); err != nil {
+		if p, err := writePasswordFile(password); err != nil {
 			slog.Warn("could not write admin password file; set ADMIN_PASSWORD explicitly", "error", err)
 		} else {
-			log.Printf("  Generated admin password written to /run/ipam/admin-password (mode 0600).")
+			log.Printf("  Generated admin password written to %s (mode 0600).", p)
 		}
 		log.Printf("  Set ADMIN_PASSWORD env var to override.")
 		log.Printf("========================================")
@@ -87,17 +88,24 @@ func initAdminPassword(ctx context.Context, svc *services.Service) error {
 	return nil
 }
 
-// writePasswordFile writes the admin password to /run/ipam/admin-password with mode 0600.
-func writePasswordFile(password string) error {
-	const dir = "/run/ipam"
-	const path = "/run/ipam/admin-password"
+// writePasswordFile writes the admin password to data/admin-password relative to
+// the working directory with mode 0600. Using a local data subdirectory avoids
+// requiring write access to system paths like /run/ipam when the process runs as
+// a non-root user, and the directory can be bind-mounted from the host.
+func writePasswordFile(password string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = "."
+	}
+	dir := filepath.Join(wd, "data")
 	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("creating directory %s: %w", dir, err)
+		return "", fmt.Errorf("creating data directory %s: %w", dir, err)
 	}
-	if err := os.WriteFile(path, []byte(password), 0600); err != nil { // #nosec G703 -- fixed path under /run/ipam.
-		return fmt.Errorf("writing password file %s: %w", path, err)
+	path := filepath.Join(dir, "admin-password")
+	if err := os.WriteFile(path, []byte(password), 0600); err != nil { // #nosec G306 -- intentionally user-readable only.
+		return "", fmt.Errorf("writing password file %s: %w", path, err)
 	}
-	return nil
+	return path, nil
 }
 
 // parseTrustedProxies splits a comma-separated list of CIDRs/IPs and returns it.

@@ -33,6 +33,7 @@ sbom/
 
 # ---> Project-specific files
 CLAUDE.md
+data/
 
 # Catalog and reference files (auto-generated documentation)
 .claude/

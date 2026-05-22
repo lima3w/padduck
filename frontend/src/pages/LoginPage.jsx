@@ -98,20 +98,23 @@ export default function LoginPage() {
 
   if (mfaChallenge) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Two-Factor Authentication</h1>
-          <p className="text-gray-600 mb-6">Enter the 6-digit code from your authenticator app, or a backup code.</p>
+      <div className="min-h-screen bg-[#07162b] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-[#0a1f3a] rounded-lg shadow-xl p-8 max-w-md w-full border border-transparent dark:border-[#25364a]">
+          <div className="flex justify-center mb-6">
+            <img src="/logo.svg" alt="Padduck" className="w-48 h-auto" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-[#f4f7fa] mb-1 text-center">Two-Factor Authentication</h1>
+          <p className="text-gray-600 dark:text-[#a8b8cb] mb-6 text-center">Enter the 6-digit code from your authenticator app, or a backup code.</p>
 
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleMFASubmit}>
             <div className="mb-6">
-              <label htmlFor="mfaCode" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="mfaCode" className="block text-sm font-medium text-gray-700 dark:text-[#a8b8cb] mb-2">
                 Authentication Code
               </label>
               <input
@@ -119,7 +122,7 @@ export default function LoginPage() {
                 id="mfaCode"
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\s/g, ''))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-xl tracking-widest font-mono"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-[#25364a] rounded-lg focus:ring-2 focus:ring-[#f5b800] focus:border-transparent text-center text-xl tracking-widest font-mono"
                 placeholder="000000"
                 maxLength={12}
                 autoFocus
@@ -130,7 +133,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !mfaCode}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+              className="w-full bg-[#f5b800] text-[#07162b] py-2 px-4 rounded-lg hover:bg-[#ffcf33] disabled:opacity-50 transition font-semibold"
             >
               {loading ? 'Verifying…' : 'Verify'}
             </button>
@@ -139,7 +142,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => { setMfaChallenge(null); setMfaCode(''); setError(''); }}
-            className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition"
+            className="w-full mt-3 text-sm text-[#a8b8cb] hover:text-[#f4f7fa] transition"
           >
             Back to sign in
           </button>
@@ -149,24 +152,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Padduck</h1>
-        <p className="text-gray-600 mb-6">Sign in to continue</p>
+    <div className="min-h-screen bg-[#07162b] flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-[#0a1f3a] rounded-lg shadow-xl p-8 max-w-md w-full border border-transparent dark:border-[#25364a]">
+        <div className="flex flex-col items-center mb-6">
+          <img src="/logo.svg" alt="Padduck" className="w-48 h-auto mb-1" />
+          <p className="text-gray-600 dark:text-[#a8b8cb] text-sm">Sign in to continue</p>
+        </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
 
         {showResend && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-sm">
-            <p className="text-yellow-800 font-medium mb-2">Need a new verification link?</p>
+          <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-sm">
+            <p className="text-yellow-800 dark:text-yellow-300 font-medium mb-2">Need a new verification link?</p>
             {resendStatus === 'sent' ? (
-              <p className="text-green-700">Verification email sent — check your inbox.</p>
+              <p className="text-green-700 dark:text-green-400">Verification email sent — check your inbox.</p>
             ) : resendStatus === 'error' ? (
-              <p className="text-red-700">Failed to send email. Try again later.</p>
+              <p className="text-red-700 dark:text-red-400">Failed to send email. Try again later.</p>
             ) : (
               <div className="flex gap-2">
                 <input
@@ -174,13 +179,13 @@ export default function LoginPage() {
                   value={resendEmail}
                   onChange={(e) => setResendEmail(e.target.value)}
                   placeholder="Your email address"
-                  className="flex-1 px-3 py-1.5 border border-yellow-300 rounded text-gray-800 text-sm focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                  className="flex-1 px-3 py-1.5 border border-yellow-300 dark:border-yellow-700 rounded text-gray-800 dark:text-[#f4f7fa] text-sm focus:ring-2 focus:ring-[#f5b800] focus:border-transparent"
                 />
                 <button
                   type="button"
                   onClick={handleResendVerification}
                   disabled={resendStatus === 'sending' || !resendEmail}
-                  className="px-3 py-1.5 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 disabled:opacity-50 transition whitespace-nowrap"
+                  className="px-3 py-1.5 bg-[#f5b800] text-[#07162b] rounded text-sm hover:bg-[#ffcf33] disabled:opacity-50 transition whitespace-nowrap font-semibold"
                 >
                   {resendStatus === 'sending' ? 'Sending…' : 'Resend'}
                 </button>
@@ -191,12 +196,12 @@ export default function LoginPage() {
 
         {providers.ldap && (
           <div className="mb-4">
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-[#a8b8cb] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={useLdap}
                 onChange={(e) => setUseLdap(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded"
+                className="w-4 h-4 rounded accent-[#f5b800]"
               />
               Sign in with LDAP / Active Directory
             </label>
@@ -205,7 +210,7 @@ export default function LoginPage() {
 
         <form onSubmit={handlePasswordLogin}>
           <div className="mb-4">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-[#a8b8cb] mb-2">
               Username
             </label>
             <input
@@ -213,7 +218,7 @@ export default function LoginPage() {
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-[#25364a] rounded-lg focus:ring-2 focus:ring-[#f5b800] focus:border-transparent"
               placeholder="username"
               autoFocus
               autoComplete="username"
@@ -221,7 +226,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-[#a8b8cb] mb-2">
               Password
             </label>
             <input
@@ -229,7 +234,7 @@ export default function LoginPage() {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-[#25364a] rounded-lg focus:ring-2 focus:ring-[#f5b800] focus:border-transparent"
               placeholder="••••••••"
               autoComplete="current-password"
             />
@@ -238,7 +243,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+            className="w-full bg-[#f5b800] text-[#07162b] py-2 px-4 rounded-lg hover:bg-[#ffcf33] disabled:opacity-50 transition font-semibold"
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
@@ -246,27 +251,27 @@ export default function LoginPage() {
 
         <div className="mt-4 text-center space-y-2">
           <div>
-            <span className="text-gray-600 text-sm">Don&apos;t have an account? </span>
-            <Link to="/register" className="text-blue-600 text-sm hover:underline font-medium">
+            <span className="text-gray-600 dark:text-[#a8b8cb] text-sm">Don&apos;t have an account? </span>
+            <Link to="/register" className="text-[#f5b800] text-sm hover:underline font-medium">
               Register
             </Link>
           </div>
           <div>
-            <Link to="/forgot-password" className="text-blue-600 text-sm hover:underline">
+            <Link to="/forgot-password" className="text-[#f5b800] text-sm hover:underline">
               Forgot password?
             </Link>
           </div>
         </div>
 
         {(providers.oauth2 || providers.saml) && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">Or continue with</p>
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-[#25364a]">
+            <p className="text-xs text-gray-500 dark:text-[#a8b8cb]/60 text-center mb-3">Or continue with</p>
             <div className="flex flex-col gap-2">
               {providers.oauth2 && (
                 <button
                   type="button"
                   onClick={() => { window.location.href = '/api/v1/auth/oauth2/login' }}
-                  className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                  className="w-full border border-gray-300 dark:border-[#25364a] text-gray-700 dark:text-[#a8b8cb] py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-[#0d2848] transition font-medium text-sm"
                 >
                   Sign in with SSO
                 </button>
@@ -275,7 +280,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { window.location.href = '/api/v1/auth/saml/login' }}
-                  className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                  className="w-full border border-gray-300 dark:border-[#25364a] text-gray-700 dark:text-[#a8b8cb] py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-[#0d2848] transition font-medium text-sm"
                 >
                   Sign in with SAML
                 </button>
@@ -285,8 +290,8 @@ export default function LoginPage() {
         )}
 
         {!providers.oauth2 && !providers.saml && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-[#25364a]">
+            <p className="text-xs text-gray-500 dark:text-[#a8b8cb]/60">
               Your password is securely hashed and never transmitted in plain text.
             </p>
           </div>

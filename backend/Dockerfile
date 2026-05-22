@@ -13,11 +13,17 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o app .
 
 FROM alpine:3.22
-RUN addgroup -S app && adduser -S app -G app
+RUN addgroup -S app && adduser -S app -G app && \
+    apk add --no-cache su-exec
 WORKDIR /app
 COPY --from=builder /app/app .
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/docs ./docs
-USER app
+RUN chown app:app /app && mkdir -p /app/data
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+# No USER directive — entrypoint runs as root to fix bind-mount ownership,
+# then drops to the unprivileged app user via su-exec before exec'ing the binary.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD wget -qO- "http://127.0.0.1:${SERVER_PORT:-8080}/health" | grep -q '"status":"ok"' || exit 1
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["./app"]
