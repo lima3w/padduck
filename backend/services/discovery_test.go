@@ -73,7 +73,7 @@ func TestDiscoveryService_UpdateJobFull_ValidScanTypes(t *testing.T) {
 
 func TestDiscoveryService_CreateAgent_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
-	_, _, err := svc.Discovery.CreateAgent(context.Background(), "")
+	_, _, err := svc.Discovery.CreateAgent(context.Background(), "", 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "agent name is required")
 }
