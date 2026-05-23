@@ -11,12 +11,14 @@ import (
 
 type CreateScanJobRequest struct {
 	Name         string  `json:"name"`
+	Subnet       string  `json:"subnet,omitempty"`
 	SubnetIDs    []int64 `json:"subnet_ids"`
 	ScheduleCron *string `json:"schedule_cron,omitempty"`
 }
 
 type UpdateScanJobRequest struct {
 	Name            string  `json:"name"`
+	Subnet          string  `json:"subnet,omitempty"`
 	SubnetIDs       []int64 `json:"subnet_ids"`
 	ScheduleCron    *string `json:"schedule_cron,omitempty"`
 	IsActive        bool    `json:"is_active"`
@@ -49,6 +51,15 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 	var req CreateScanJobRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	// If subnet_ids is empty but a CIDR string was provided, resolve it.
+	if len(req.SubnetIDs) == 0 && req.Subnet != "" {
+		sn, snErr := h.service.GetRepository().GetSubnetByCIDR(c.Context(), req.Subnet)
+		if snErr != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "subnet not found for CIDR: " + req.Subnet})
+		}
+		req.SubnetIDs = []int64{sn.ID}
 	}
 
 	job, err := h.service.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID)
@@ -86,6 +97,13 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 	var req UpdateScanJobRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if len(req.SubnetIDs) == 0 && req.Subnet != "" {
+		sn, snErr := h.service.GetRepository().GetSubnetByCIDR(c.Context(), req.Subnet)
+		if snErr != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "subnet not found for CIDR: " + req.Subnet})
+		}
+		req.SubnetIDs = []int64{sn.ID}
 	}
 	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID)
 	if err != nil {

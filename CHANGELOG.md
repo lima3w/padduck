@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.31.3
+
+### Navigation
+- Removed Admin Overview sidebar item.
+- Consolidated Users, Roles, and Permission Presets into a single "Users & Roles" page with tabs. Old routes redirect automatically.
+
+### Admin Settings
+- "Test PowerDNS Connection" button moved inside the PowerDNS section card.
+- Feature toggle rows now render correctly in dark mode (hover no longer obscures text).
+- Feature toggles that are absent from the database now default to enabled, preventing a save from accidentally disabling them.
+
+### System Health
+- Removed Quick Links section.
+- Removed "Requires pg_dump to be installed in the backend container" note — pg_dump is now included in the backend Docker image.
+
+### Backup
+- `postgresql17-client` added to the backend Docker image so pg_dump works out of the box.
+
+### Discovery
+- Scan job creation now accepts a network address / CIDR (e.g. `192.168.1.0/24`) and resolves it to the matching subnet automatically. No more "at least one subnet id is required" error.
+
+### Bug Fixes
+- Audit retention settings no longer return a 500 error when the default row doesn't exist yet — the row is now created reliably without relying on `RETURNING` from a no-op insert.
+- Subnet IP addresses page: removed Data Quality section. Utilization History no longer shows an error on empty data — it shows a friendly empty state instead.
+
 ## v1.31.2
 
 ### UI / UX

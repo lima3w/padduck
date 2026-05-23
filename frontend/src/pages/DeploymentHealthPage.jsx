@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { getSystemHealth, downloadBackup } from '../api/client'
 
 function StatusBadge({ status }) {
@@ -164,7 +163,7 @@ export default function DeploymentHealthPage() {
               {backingUp ? 'Generating...' : 'Download Backup (.sql)'}
             </button>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Downloads a full pg_dump of the database. Requires pg_dump to be installed in the backend container.
+              Downloads a full pg_dump of the database.
             </p>
           </div>
           {loading && !health ? (
@@ -193,32 +192,6 @@ export default function DeploymentHealthPage() {
         </Card>
       </section>
 
-      {/* Panel 3: Quick Links */}
-      <section>
-        <SectionHeading>Quick Links</SectionHeading>
-        <Card>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/admin/audit-log"
-              className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              Audit Log
-            </Link>
-            <Link
-              to="/admin/scan-jobs"
-              className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              Scan Jobs
-            </Link>
-            <Link
-              to="/admin/settings"
-              className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              Settings
-            </Link>
-          </div>
-        </Card>
-      </section>
     </div>
   )
 }

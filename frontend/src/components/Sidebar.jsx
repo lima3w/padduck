@@ -337,17 +337,6 @@ export default function Sidebar() {
               Admin
             </div>
             <NavLink
-              to="/admin"
-              end
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Overview
-            </NavLink>
-            <NavLink
               to="/admin/requests"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-between ${
@@ -363,35 +352,14 @@ export default function Sidebar() {
               )}
             </NavLink>
             <NavLink
-              to="/admin/users"
+              to="/admin/users-roles"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
+                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'text-[#c8d8e8] hover:bg-[#0d2848]'
                 }`
               }
             >
               Users &amp; Roles
-            </NavLink>
-            <NavLink
-              to="/admin/roles"
-              end
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Role Management
-            </NavLink>
-            <NavLink
-              to="/admin/roles/presets"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Permission Presets
             </NavLink>
             <NavLink
               to="/admin/settings"

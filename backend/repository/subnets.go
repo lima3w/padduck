@@ -90,6 +90,13 @@ func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subne
 	return scanSubnet(row)
 }
 
+// GetSubnetByCIDR looks up a subnet by CIDR notation (e.g. "192.168.1.0/24").
+func (r *Repository) GetSubnetByCIDR(ctx context.Context, cidr string) (*models.Subnet, error) {
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.network_address = $1::inet`
+	row := r.db.QueryRow(ctx, query, cidr)
+	return scanSubnet(row)
+}
+
 func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error) {
 	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.section_id = $1 ORDER BY s.network_address`
 	rows, err := r.db.Query(ctx, query, sectionID)
