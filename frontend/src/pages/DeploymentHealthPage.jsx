@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getSystemHealth, downloadBackup } from '../api/client'
+import { getSystemHealth } from '../api/client'
 
 function StatusBadge({ status }) {
   const s = (status || '').toLowerCase()
@@ -34,8 +34,6 @@ export default function DeploymentHealthPage() {
   const [health, setHealth] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [backingUp, setBackingUp] = useState(false)
-
   const fetchHealth = useCallback(() => {
     setLoading(true)
     setError(null)
@@ -52,25 +50,6 @@ export default function DeploymentHealthPage() {
   useEffect(() => {
     fetchHealth()
   }, [fetchHealth])
-
-  async function handleDownloadBackup() {
-    setBackingUp(true)
-    try {
-      const res = await downloadBackup()
-      const url = URL.createObjectURL(new Blob([res.data]))
-      const a = document.createElement('a')
-      const cd = res.headers['content-disposition'] || ''
-      const match = cd.match(/filename="([^"]+)"/)
-      a.href = url
-      a.download = match ? match[1] : 'padduck-backup.sql'
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (err) {
-      alert('Backup failed: ' + (err?.response?.data?.error || err.message))
-    } finally {
-      setBackingUp(false)
-    }
-  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -120,20 +99,20 @@ export default function DeploymentHealthPage() {
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
                 Scan Agents
               </div>
-              {health.scan_agents?.total != null ? (
-                health.scan_agents.total === 0 ? (
+              {health.scanAgents?.total != null ? (
+                health.scanAgents.total === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400">No agents registered.</p>
                 ) : (
                   <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                    <div>Total: <span className="font-medium">{health.scan_agents.total}</span></div>
+                    <div>Total: <span className="font-medium">{health.scanAgents.total}</span></div>
                     <div className="flex items-center gap-1">
-                      Healthy: <StatusBadge status={health.scan_agents.healthy > 0 ? 'healthy' : 'ok'} />
-                      <span className="font-medium ml-1">{health.scan_agents.healthy}</span>
+                      Healthy: <StatusBadge status={health.scanAgents.healthy > 0 ? 'healthy' : 'ok'} />
+                      <span className="font-medium ml-1">{health.scanAgents.healthy}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       Offline:
-                      <span className={`ml-1 font-medium ${health.scan_agents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                        {health.scan_agents.offline}
+                      <span className={`ml-1 font-medium ${health.scanAgents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                        {health.scanAgents.offline}
                       </span>
                     </div>
                   </div>
@@ -144,52 +123,6 @@ export default function DeploymentHealthPage() {
             </Card>
           </div>
         ) : null}
-      </section>
-
-      {/* Panel 2: Backup & Restore */}
-      <section>
-        <SectionHeading>Backup &amp; Restore</SectionHeading>
-        <Card>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Follow these steps when conducting a restore rehearsal to verify backup integrity
-            and validate your recovery procedure.
-          </p>
-          <div className="mb-4">
-            <button
-              onClick={handleDownloadBackup}
-              disabled={backingUp}
-              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {backingUp ? 'Generating...' : 'Download Backup (.sql)'}
-            </button>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Downloads a full pg_dump of the database.
-            </p>
-          </div>
-          {loading && !health ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
-          ) : health?.backup_notes ? (
-            <ol className="space-y-3">
-              {health.backup_notes.map((note) => (
-                <li key={note.step} className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">
-                    {note.step}
-                  </span>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {note.action}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {note.detail}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <div className="text-sm text-gray-500 dark:text-gray-400">No backup notes available.</div>
-          )}
-        </Card>
       </section>
 
     </div>

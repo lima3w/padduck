@@ -12,7 +12,7 @@ export default function PrivacyConsentBanner() {
   useEffect(() => {
     const user = getCachedUser()
     if (!user) return // not authenticated
-    setUserAcceptedVersion(user.privacyAcceptedVersion || user.privacy_accepted_version || null)
+    setUserAcceptedVersion(user.privacyAcceptedVersion || null)
 
     getPrivacyPolicyVersion()
       .then((res) => setPolicyVersion(res.data?.version || '1.0'))

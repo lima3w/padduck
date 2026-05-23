@@ -124,7 +124,7 @@ export default function AdminTagsPage() {
                 <td className="px-4 py-3 font-mono text-xs text-gray-500">{tag.colour}</td>
                 <td className="px-4 py-3 text-gray-500">{tag.description || '—'}</td>
                 <td className="px-4 py-3">
-                  {tag.is_system ? (
+                  {tag.isSystem ? (
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">System</span>
                   ) : (
                     <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Custom</span>
@@ -132,7 +132,7 @@ export default function AdminTagsPage() {
                 </td>
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openEdit(tag)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
-                  {!tag.is_system && (
+                  {!tag.isSystem && (
                     deleteConfirm === tag.id ? (
                       <>
                         <span className="text-red-600 text-xs">Confirm?</span>

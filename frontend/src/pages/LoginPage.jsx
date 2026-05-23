@@ -44,8 +44,8 @@ export default function LoginPage() {
         : await client.login(username, password)
       const data = response.data
 
-      if (data.mfa_required) {
-        setMfaChallenge(data.mfa_challenge)
+      if (data.mfaRequired) {
+        setMfaChallenge(data.mfaChallenge)
         setLoading(false)
         return
       }

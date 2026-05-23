@@ -97,7 +97,7 @@ export default function AdminRequestsPage() {
   const allRequests = [
     ...subnetRequests.map(r => ({ ...r, _type: 'subnets' })),
     ...ipRequests.map(r => ({ ...r, _type: 'ips' })),
-  ].sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at))
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 
   function getDisplayRequests() {
     if (tab === 'subnets') return subnetRequests.map(r => ({ ...r, _type: 'subnets' }))
@@ -207,11 +207,11 @@ export default function AdminRequestsPage() {
                   <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-300">
                     {r._type === 'subnets'
                       ? (r.prefixLength ? `/${r.prefixLength}` : '—')
-                      : (r.specificIp || r.specific_ip || 'auto-assign')}
+                      : (r.specificIp || 'auto-assign')}
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 max-w-xs truncate">{r.purpose || '—'}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
-                    {formatDate(r.createdAt || r.created_at)}
+                    {formatDate(r.createdAt)}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={r.status} />
@@ -301,11 +301,11 @@ export default function AdminRequestsPage() {
               ) : (
                 <>
                   <span className="font-medium text-gray-600 dark:text-gray-400">Specific IP</span>
-                  <span className="font-mono text-gray-800 dark:text-gray-200">{detailModal.request.specificIp || detailModal.request.specific_ip || 'auto-assign'}</span>
-                  {(detailModal.request.dnsName || detailModal.request.dns_name) && (
+                  <span className="font-mono text-gray-800 dark:text-gray-200">{detailModal.request.specificIp || 'auto-assign'}</span>
+                  {detailModal.request.dnsName && (
                     <>
                       <span className="font-medium text-gray-600 dark:text-gray-400">DNS Name</span>
-                      <span className="text-gray-800 dark:text-gray-200">{detailModal.request.dnsName || detailModal.request.dns_name}</span>
+                      <span className="text-gray-800 dark:text-gray-200">{detailModal.request.dnsName}</span>
                     </>
                   )}
                 </>
@@ -313,7 +313,7 @@ export default function AdminRequestsPage() {
               <span className="font-medium text-gray-600 dark:text-gray-400">Purpose</span>
               <span className="text-gray-800 dark:text-gray-200">{detailModal.request.purpose || '—'}</span>
               <span className="font-medium text-gray-600 dark:text-gray-400">Submitted</span>
-              <span className="text-gray-500 dark:text-gray-400">{formatDate(detailModal.request.createdAt || detailModal.request.created_at)}</span>
+              <span className="text-gray-500 dark:text-gray-400">{formatDate(detailModal.request.createdAt)}</span>
               {detailModal.request.reviewerNote && (
                 <>
                   <span className="font-medium text-gray-600 dark:text-gray-400">Reviewer Note</span>

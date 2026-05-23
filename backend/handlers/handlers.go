@@ -98,6 +98,18 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// CSRF token endpoint
 	api.Get("/csrf-token", h.GetCSRFToken)
 
+	// Public info endpoint (no auth)
+	api.Get("/public-info", h.GetPublicInfo)
+
+	// Agent binary download (no auth — token is embedded in the install command)
+	api.Get("/agent/download", h.DownloadAgentBinary)
+	api.Get("/agent/version", h.GetAgentBinaryVersion)
+
+	// Anonymous IP query endpoint — uses AnonymousAPIMiddleware (may require auth depending on config)
+	anonQuery := api.Group("/query")
+	anonQuery.Use(h.AnonymousAPIMiddleware)
+	anonQuery.Get("/ip", h.SearchIPAddressesGlobal)
+
 	// Protected routes (require authentication)
 	protected := api.Group("")
 	protected.Use(h.AuthMiddleware)

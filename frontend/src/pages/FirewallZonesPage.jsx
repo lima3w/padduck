@@ -76,9 +76,9 @@ export default function FirewallZonesPage() {
 
   function editMapping(mapping) {
     setForm({
-      zone_id: mapping.zone_id,
-      object_type: mapping.object_type || 'cidr',
-      object_id: mapping.object_id || '',
+      zone_id: mapping.zoneId,
+      object_type: mapping.objectType || 'cidr',
+      object_id: mapping.objectId || '',
       cidr: mapping.cidr || '',
       direction: mapping.direction || 'both',
       description: mapping.description || '',
@@ -129,8 +129,8 @@ export default function FirewallZonesPage() {
                   {mappings.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">No firewall zone mappings yet.</td></tr>}
                   {mappings.map(mapping => (
                     <tr key={mapping.id}>
-                      <td className="px-4 py-3 font-medium">{mapping.zone_name || mapping.zone_id}</td>
-                      <td className="px-4 py-3 font-mono">{mapping.cidr || `${mapping.object_type}:${mapping.object_id}`}</td>
+                      <td className="px-4 py-3 font-medium">{mapping.zoneName || mapping.zoneId}</td>
+                      <td className="px-4 py-3 font-mono">{mapping.cidr || `${mapping.objectType}:${mapping.objectId}`}</td>
                       <td className="px-4 py-3 text-gray-600">{mapping.direction}</td>
                       <td className="px-4 py-3 text-gray-600">{mapping.status}</td>
                       <td className="px-4 py-3 text-right space-x-2"><button className="text-blue-600 text-xs" onClick={() => editMapping(mapping)}>Edit</button><button className="text-red-600 text-xs" onClick={async () => { await deleteFirewallZoneMapping(mapping.id); load() }}>Delete</button></td>

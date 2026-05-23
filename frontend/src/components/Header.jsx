@@ -1,17 +1,30 @@
 import { useAuth } from '../hooks/useAuth'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import UserMenu from './UserMenu'
+import { api } from '../api/client'
 
 export default function Header({ darkMode, onSearchClick }) {
   const { user } = useAuth()
+  const [appUrl, setAppUrl] = useState(null)
+
+  useEffect(() => {
+    api.get('/public-info').then(res => {
+      if (res.data?.appUrl) setAppUrl(res.data.appUrl)
+    }).catch(() => {})
+  }, [])
 
   return (
     <header className="bg-[#07162b] text-white px-6 py-3 flex items-center justify-between shadow border-b border-[#25364a]">
-      <div className="flex items-center gap-3">
+      <a
+        href={appUrl || '/'}
+        className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+        title={appUrl || 'Dashboard'}
+      >
         <img src="/favicon.svg" alt="Padduck" className="w-8 h-8" />
         <span className="text-xl font-bold tracking-tight">Padduck</span>
         <span className="text-[#a8b8cb] text-sm hidden sm:inline">IP Address Management</span>
-      </div>
+      </a>
       <div className="flex items-center gap-3">
         <button
           type="button"

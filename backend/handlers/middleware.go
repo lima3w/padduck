@@ -7,6 +7,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// AnonymousAPIMiddleware allows unauthenticated read-only access when the
+// anonymous_api_enabled config key is "true"; otherwise requires normal auth.
+func (h *Handler) AnonymousAPIMiddleware(c *fiber.Ctx) error {
+	val, _ := h.service.Config.GetCtx(c.Context(), "anonymous_api_enabled")
+	if val == "true" {
+		return h.OptionalAuthMiddleware(c)
+	}
+	return h.AuthMiddleware(c)
+}
+
 // AuthMiddleware validates session cookies (web) or Bearer API tokens (scripts).
 func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	// Try session cookie first (web browser requests)

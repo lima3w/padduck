@@ -286,7 +286,7 @@ function SecurityTab() {
     setSetupError('')
     try {
       const res = await client.confirmTOTP(confirmCode)
-      setBackupCodes(res.data.backup_codes)
+      setBackupCodes(res.data.backupCodes)
       setSetupData(null)
       await loadStatus()
     } catch (err) {
@@ -304,7 +304,7 @@ function SecurityTab() {
       await client.disableTOTP(disableCode)
       setShowDisable(false)
       setDisableCode('')
-      setStatus({ totp_enabled: false, backup_codes_left: 0 })
+      setStatus({ totpEnabled: false, backupCodesLeft: 0 })
     } catch (err) {
       setDisableError(err.response?.data?.error || 'Failed to disable MFA')
     } finally {
@@ -318,7 +318,7 @@ function SecurityTab() {
     setRegenError('')
     try {
       const res = await client.regenerateBackupCodes(regenCode)
-      setRegenResult(res.data.backup_codes)
+      setRegenResult(res.data.backupCodes)
       setRegenCode('')
       setShowRegen(false)
       await loadStatus()
@@ -341,17 +341,17 @@ function SecurityTab() {
           Protect your account with a TOTP authenticator app (e.g. Google Authenticator, Authy).
         </p>
 
-        {status?.totp_enabled ? (
+        {status?.totpEnabled ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded">
               <span className="text-green-600 text-lg">✓</span>
               <div>
                 <p className="text-sm font-medium text-green-800">MFA is enabled</p>
-                <p className="text-xs text-green-700">{status.backup_codes_left} backup code{status.backup_codes_left !== 1 ? 's' : ''} remaining</p>
+                <p className="text-xs text-green-700">{status.backupCodesLeft} backup code{status.backupCodesLeft !== 1 ? 's' : ''} remaining</p>
               </div>
             </div>
 
-            {status.backup_codes_left <= 2 && (
+            {status.backupCodesLeft <= 2 && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
                 You&apos;re running low on backup codes. Consider regenerating them.
               </div>
@@ -466,7 +466,7 @@ function SecurityTab() {
             ) : setupData ? (
               <div className="space-y-4">
                 <p className="text-sm text-gray-700">Scan this QR code with your authenticator app:</p>
-                <img src={setupData.qr_code} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded bg-white" />
+                <img src={setupData.qrCode} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded bg-white" />
                 <details className="text-sm">
                   <summary className="text-gray-500 cursor-pointer">Can&apos;t scan? Enter the secret manually</summary>
                   <code className="block mt-2 p-2 bg-gray-100 rounded font-mono text-xs break-all">{setupData.secret}</code>
@@ -619,8 +619,8 @@ function TokensTab() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">{t.name}</p>
                   <p className="text-xs text-gray-500">
-                    Created {new Date(t.created_at).toLocaleDateString()}
-                    {t.last_used_at ? ` · Last used ${new Date(t.last_used_at).toLocaleDateString()}` : ' · Never used'}
+                    Created {new Date(t.createdAt).toLocaleDateString()}
+                    {t.lastUsedAt ? ` · Last used ${new Date(t.lastUsedAt).toLocaleDateString()}` : ' · Never used'}
                   </p>
                 </div>
                 <button

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAuditRetention, updateAuditRetention, pruneAuditLogs, exportAuditLog } from '../api/client'
+import { getAuditRetention, updateAuditRetention, pruneAuditLogs } from '../api/client'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
@@ -8,11 +8,9 @@ export default function AuditRetentionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pruning, setPruning] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const [error, setError] = useState(null)
   const [message, setMessage] = useState(null)
   const [form, setForm] = useState({ retentionDays: 365, archiveEnabled: false })
-  const [exportForm, setExportForm] = useState({ since: '', until: '', format: 'json' })
 
   function showMsg(text, type = 'success') {
     setMessage({ text, type })
@@ -34,8 +32,8 @@ export default function AuditRetentionPage() {
 
   async function handleSave(e) {
     e.preventDefault()
-    if (form.retentionDays < 30) {
-      setError('Retention period must be at least 30 days')
+    if (form.retentionDays < 1) {
+      setError('Retention period must be at least 1 day')
       return
     }
     setSaving(true)
@@ -66,33 +64,7 @@ export default function AuditRetentionPage() {
     }
   }
 
-  async function handleExport(e) {
-    e.preventDefault()
-    setExporting(true)
-    try {
-      const params = { format: exportForm.format }
-      if (exportForm.since) params.since = new Date(exportForm.since).toISOString()
-      if (exportForm.until) {
-        // include full day for "until"
-        const d = new Date(exportForm.until)
-        d.setHours(23, 59, 59, 999)
-        params.until = d.toISOString()
-      }
-      const res = await exportAuditLog(params)
-      const url = URL.createObjectURL(res.data)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = exportForm.format === 'csv' ? 'audit-export.csv' : 'audit-export.json'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    } catch {
-      setError('Export failed')
-    } finally {
-      setExporting(false)
-    }
-  }
+
 
   if (loading) return <PageSpinner message="Loading audit retention settings..." />
 
@@ -122,12 +94,12 @@ export default function AuditRetentionPage() {
             </label>
             <input
               type="number"
-              min="30"
+              min="1"
               className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
               value={form.retentionDays}
-              onChange={e => setForm(f => ({ ...f, retentionDays: parseInt(e.target.value) || 30 }))}
+              onChange={e => setForm(f => ({ ...f, retentionDays: parseInt(e.target.value) || 1 }))}
             />
-            <p className="text-xs text-gray-500 mt-1">Audit log entries older than this will be deleted when pruning. Minimum 30 days.</p>
+            <p className="text-xs text-gray-500 mt-1">Audit log entries older than this will be deleted when pruning. Minimum 1 day.</p>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -161,58 +133,6 @@ export default function AuditRetentionPage() {
         </form>
       </div>
 
-      {/* Export Audit Log Panel */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-lg">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Export Audit Log</h2>
-        <form onSubmit={handleExport} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Since (optional)
-              </label>
-              <input
-                type="date"
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={exportForm.since}
-                onChange={e => setExportForm(f => ({ ...f, since: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Until (optional)
-              </label>
-              <input
-                type="date"
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={exportForm.until}
-                onChange={e => setExportForm(f => ({ ...f, until: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Format
-            </label>
-            <select
-              className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-              value={exportForm.format}
-              onChange={e => setExportForm(f => ({ ...f, format: e.target.value }))}
-            >
-              <option value="json">JSON</option>
-              <option value="csv">CSV</option>
-            </select>
-          </div>
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={exporting}
-              className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {exporting ? 'Exporting...' : 'Export'}
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   )
 }

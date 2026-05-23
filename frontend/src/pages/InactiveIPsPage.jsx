@@ -132,7 +132,7 @@ export default function InactiveIPsPage() {
   }
 
   return (
-    <div>
+    <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Inactive IPs</h1>

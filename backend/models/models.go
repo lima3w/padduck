@@ -553,6 +553,7 @@ type ScanAgent struct {
 	Capabilities []string   `json:"capabilities,omitempty"`
 	Status       string     `json:"status"`
 	LastError    *string    `json:"last_error,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }
 
 // ScanProfile holds reusable scan configuration that can be referenced by scan jobs or subnets.

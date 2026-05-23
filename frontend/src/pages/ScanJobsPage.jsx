@@ -122,10 +122,10 @@ export default function ScanJobsPage() {
     setJobForm({
       name: job.name || '',
       subnet: job.subnet || '',
-      schedule_cron: job.schedule_cron || '',
-      is_active: job.is_active !== false,
-      scan_type: job.scan_type || 'ping',
-      notify_on_change: job.notify_on_change || false,
+      schedule_cron: job.scheduleCron || '',
+      is_active: job.isActive !== false,
+      scan_type: job.scanType || 'ping',
+      notify_on_change: job.notifyOnChange || false,
     })
     setJobModal({ edit: job })
   }
@@ -206,12 +206,12 @@ export default function ScanJobsPage() {
                     >
                       <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{job.name}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {job.schedule_cron || 'Manual only'} &middot;{' '}
-                        <span className={`font-medium ${job.is_active ? 'text-green-600' : 'text-gray-400'}`}>
-                          {job.is_active ? 'Active' : 'Inactive'}
+                        {job.scheduleCron || 'Manual only'} &middot;{' '}
+                        <span className={`font-medium ${job.isActive ? 'text-green-600' : 'text-gray-400'}`}>
+                          {job.isActive ? 'Active' : 'Inactive'}
                         </span>
-                        {job.scan_type && job.scan_type !== 'ping' && (
-                          <span className="ml-1 text-blue-500">&middot; {SCAN_TYPE_LABELS[job.scan_type]}</span>
+                        {job.scanType && job.scanType !== 'ping' && (
+                          <span className="ml-1 text-blue-500">&middot; {SCAN_TYPE_LABELS[job.scanType]}</span>
                         )}
                       </p>
                     </button>
@@ -297,18 +297,18 @@ export default function ScanJobsPage() {
                       ) : (
                         results.map((r) => (
                           <tr key={r.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 font-mono text-xs text-gray-900">{r.ip_address}</td>
+                            <td className="px-4 py-2 font-mono text-xs text-gray-900">{r.ipAddress}</td>
                             <td className="px-4 py-2">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${r.is_alive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                {r.is_alive ? 'Alive' : 'Down'}
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${r.isAlive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {r.isAlive ? 'Alive' : 'Down'}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-gray-600 text-xs">{r.response_time_ms ?? '—'}</td>
+                            <td className="px-4 py-2 text-gray-600 text-xs">{r.responseTimeMs ?? '—'}</td>
                             <td className="px-4 py-2 font-mono text-xs">
-                              {r.ptr_record ? (
-                                <span className={r.fwd_rev_mismatch ? 'text-amber-600' : 'text-gray-700'}>
-                                  {r.ptr_record}
-                                  {r.fwd_rev_mismatch && (
+                              {r.ptrRecord ? (
+                                <span className={r.fwdRevMismatch ? 'text-amber-600' : 'text-gray-700'}>
+                                  {r.ptrRecord}
+                                  {r.fwdRevMismatch && (
                                     <span className="ml-1 text-amber-500" title="Forward/reverse DNS mismatch">⚠</span>
                                   )}
                                 </span>
@@ -316,7 +316,7 @@ export default function ScanJobsPage() {
                                 <span className="text-gray-300">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-2 text-gray-500 text-xs">{formatDate(r.scanned_at)}</td>
+                            <td className="px-4 py-2 text-gray-500 text-xs">{formatDate(r.scannedAt)}</td>
                           </tr>
                         ))
                       )}
@@ -349,18 +349,18 @@ export default function ScanJobsPage() {
                                 onClick={() => selectRun(run)}
                                 className="hover:bg-blue-50 cursor-pointer"
                               >
-                                <td className="px-4 py-2 text-xs text-gray-700">{formatDate(run.started_at)}</td>
+                                <td className="px-4 py-2 text-xs text-gray-700">{formatDate(run.startedAt)}</td>
                                 <td className="px-4 py-2 text-xs text-gray-700">
-                                  {run.finished_at ? formatDate(run.finished_at) : <span className="text-gray-400">—</span>}
+                                  {run.finishedAt ? formatDate(run.finishedAt) : <span className="text-gray-400">—</span>}
                                 </td>
                                 <td className="px-4 py-2 text-xs">
-                                  <span className="text-green-700 font-medium">+{run.new_count}</span>
+                                  <span className="text-green-700 font-medium">+{run.newCount}</span>
                                 </td>
                                 <td className="px-4 py-2 text-xs">
-                                  <span className="text-red-700 font-medium">-{run.gone_count}</span>
+                                  <span className="text-red-700 font-medium">-{run.goneCount}</span>
                                 </td>
                                 <td className="px-4 py-2 text-xs">
-                                  <span className="text-yellow-700 font-medium">~{run.changed_count}</span>
+                                  <span className="text-yellow-700 font-medium">~{run.changedCount}</span>
                                 </td>
                               </tr>
                             ))
@@ -378,11 +378,11 @@ export default function ScanJobsPage() {
                           ← Back to history
                         </button>
                         <span className="text-xs text-gray-500">
-                          Run {formatDate(runDetail.started_at)}
+                          Run {formatDate(runDetail.startedAt)}
                         </span>
-                        <span className="text-xs text-green-700 font-medium">+{runDetail.new_count} new</span>
-                        <span className="text-xs text-red-700 font-medium">-{runDetail.gone_count} gone</span>
-                        <span className="text-xs text-yellow-700 font-medium">~{runDetail.changed_count} changed</span>
+                        <span className="text-xs text-green-700 font-medium">+{runDetail.newCount} new</span>
+                        <span className="text-xs text-red-700 font-medium">-{runDetail.goneCount} gone</span>
+                        <span className="text-xs text-yellow-700 font-medium">~{runDetail.changedCount} changed</span>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
@@ -399,9 +399,9 @@ export default function ScanJobsPage() {
                               </tr>
                             ) : (
                               runDetail.changes.map((c, i) => (
-                                <tr key={i} className={CHANGE_COLORS[c.change_type] || ''}>
-                                  <td className="px-4 py-2 font-mono text-xs">{c.ip_address}</td>
-                                  <td className="px-4 py-2 text-xs capitalize font-medium">{c.change_type}</td>
+                                <tr key={i} className={CHANGE_COLORS[c.changeType] || ''}>
+                                  <td className="px-4 py-2 font-mono text-xs">{c.ipAddress}</td>
+                                  <td className="px-4 py-2 text-xs capitalize font-medium">{c.changeType}</td>
                                 </tr>
                               ))
                             )}

@@ -53,6 +53,7 @@ const CONFIG_KEYS_BY_TAB = {
     'feature_firewall_enabled',
     'feature_dhcp_enabled',
     'feature_circuits_enabled',
+    'anonymous_api_enabled',
   ],
   updates: [
     'update_check_enabled',
@@ -114,6 +115,11 @@ const FEATURE_TOGGLES = [
     key: 'feature_circuits_enabled',
     title: 'Circuits',
     description: 'Circuit providers, physical circuits, and logical circuits.',
+  },
+  {
+    key: 'anonymous_api_enabled',
+    title: 'Anonymous API Access',
+    description: 'Allow unauthenticated read-only IP queries via GET /api/v1/query/ip. Additive — no existing behavior changes.',
   },
 ]
 
@@ -373,6 +379,7 @@ export default function AdminSettingsPage() {
         { to: '/admin/auth/ldap', title: 'LDAP / AD', description: 'Configure LDAP authentication and group mappings' },
         { to: '/admin/auth/oauth2', title: 'OAuth2 / OIDC', description: 'Configure OAuth2 or OpenID Connect login' },
         { to: '/admin/auth/saml', title: 'SAML SSO', description: 'Configure SAML single sign-on' },
+        { to: '/admin/identity-policies', title: 'Identity Policies', description: 'Manage IP-based access control and identity rules' },
       ],
     },
   ]
@@ -1005,20 +1012,20 @@ export default function AdminSettingsPage() {
       {activeTab === 'tools' && (
         <div className="space-y-4">
           {toolSections.map((section) => (
-            <div key={section.title} className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">{section.title}</h2>
+            <div key={section.title} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{section.title}</h2>
               <div className="space-y-3">
                 {section.links.map((link) => (
                   <Link
                     key={link.to}
                     to={link.to}
-                    className="flex items-center gap-3 p-3 rounded border hover:bg-gray-50 transition"
+                    className="flex items-center gap-3 p-3 rounded border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{link.title}</p>
-                      <p className="text-sm text-gray-500">{link.description}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{link.title}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{link.description}</p>
                     </div>
-                    <span className="ml-auto shrink-0 text-blue-600 text-sm">Open →</span>
+                    <span className="ml-auto shrink-0 text-blue-600 dark:text-blue-400 text-sm">Open →</span>
                   </Link>
                 ))}
               </div>
@@ -1198,7 +1205,7 @@ export default function AdminSettingsPage() {
                     <p className="font-medium text-gray-900">{approval.username}</p>
                     <p className="text-sm text-gray-500">{approval.email}</p>
                     <p className="text-xs text-gray-400">
-                      Registered {new Date(approval.created_at).toLocaleDateString()}
+                      Registered {new Date(approval.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2">
