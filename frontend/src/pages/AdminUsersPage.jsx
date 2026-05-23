@@ -37,14 +37,14 @@ function bgFormatDuration(startStr, endStr) {
 }
 
 function BgSessionStatus({ session }) {
-  if (session.is_active) {
+  if (session.isActive) {
     return (
       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
         Active
       </span>
     )
   }
-  if (session.ended_at) {
+  if (session.endedAt) {
     return (
       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
         Ended
@@ -187,11 +187,11 @@ function BreakGlassTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="font-medium text-gray-700 dark:text-gray-300">Activated by user ID:</span>{' '}
-                <span className="text-gray-900 dark:text-gray-100">{active.initiated_by_user_id}</span>
+                <span className="text-gray-900 dark:text-gray-100">{active.initiatedByUserId}</span>
               </div>
               <div>
                 <span className="font-medium text-gray-700 dark:text-gray-300">Started:</span>{' '}
-                <span className="text-gray-900 dark:text-gray-100">{bgFormatDatetime(active.created_at)}</span>
+                <span className="text-gray-900 dark:text-gray-100">{bgFormatDatetime(active.createdAt)}</span>
               </div>
               <div className="sm:col-span-2">
                 <span className="font-medium text-gray-700 dark:text-gray-300">Justification:</span>{' '}
@@ -199,7 +199,7 @@ function BreakGlassTab() {
               </div>
               <div>
                 <span className="font-medium text-gray-700 dark:text-gray-300">Time remaining:</span>{' '}
-                <BgTimeRemaining expiresAt={active.expires_at} />
+                <BgTimeRemaining expiresAt={active.expiresAt} />
               </div>
             </div>
             <div className="pt-2">
@@ -275,16 +275,16 @@ function BreakGlassTab() {
                   {history.map(s => (
                     <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                        {bgFormatDatetime(s.created_at)}
+                        {bgFormatDatetime(s.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        User {s.initiated_by_user_id}
+                        User {s.initiatedByUserId}
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-xs truncate" title={s.justification}>
                         {s.justification}
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                        {bgFormatDuration(s.created_at, s.ended_at || (s.is_active ? null : s.expires_at))}
+                        {bgFormatDuration(s.createdAt, s.endedAt || (s.isActive ? null : s.expiresAt))}
                       </td>
                       <td className="px-4 py-3">
                         <BgSessionStatus session={s} />

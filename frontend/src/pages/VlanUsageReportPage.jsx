@@ -81,39 +81,37 @@ export default function VlanUsageReportPage() {
             </thead>
             <tbody>
               {rows.map((row, idx) => {
-                const pct = row.utilisationPct ?? row.utilisation_pct ?? row.utilization_pct ?? 0
-                const groupColour = row.groupColour || row.group_colour
                 return (
                   <tr key={row.id ?? idx} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">
-                      {row.vlanId ?? row.vlan_id}
+                      {row.vlanId}
                     </td>
                     <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
                       {row.name}
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                      {row.domainName || row.domain_name || '—'}
+                      {row.domainName || '—'}
                     </td>
                     <td className="px-4 py-3">
-                      {row.groupName || row.group_name ? (
+                      {row.groupName ? (
                         <span
                           className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
-                          style={{ backgroundColor: groupColour || '#6B7280' }}
+                          style={{ backgroundColor: row.groupColour || '#6B7280' }}
                         >
-                          {row.groupName || row.group_name}
+                          {row.groupName}
                         </span>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                      {row.subnetCount ?? row.subnet_count ?? 0}
+                      {row.subnetCount ?? 0}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                      {row.ipCount ?? row.ip_count ?? 0}
+                      {row.ipCount ?? 0}
                     </td>
                     <td className="px-4 py-3">
-                      <UtilBar pct={pct} />
+                      <UtilBar pct={row.utilisationPct ?? 0} />
                     </td>
                   </tr>
                 )

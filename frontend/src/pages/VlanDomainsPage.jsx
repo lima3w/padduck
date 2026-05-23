@@ -149,7 +149,7 @@ export default function VlanDomainsPage() {
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{domain.description || '—'}</td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                    {domain.vlanCount ?? domain.vlan_count ?? 0}
+                    {domain.vlanCount ?? 0}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">

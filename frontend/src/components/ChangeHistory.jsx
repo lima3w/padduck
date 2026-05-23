@@ -38,7 +38,7 @@ export default function ChangeHistory({ resourceType, resourceId }) {
             <span className="flex-1 text-gray-700 dark:text-gray-300">
               <span className="font-medium">{e.username || 'system'}</span>
               {' '}{e.action.replace(/_/g, ' ')}
-              {e.resource_name ? <span className="text-gray-500"> &mdash; {e.resource_name}</span> : null}
+              {e.resourceName ? <span className="text-gray-500"> &mdash; {e.resourceName}</span> : null}
             </span>
           </div>
         ))}

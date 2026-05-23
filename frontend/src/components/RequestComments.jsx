@@ -82,7 +82,7 @@ export default function RequestComments({ type, id }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{c.username}</span>
-                  <span className="text-xs text-gray-400">{formatRelativeTime(c.createdAt || c.created_at)}</span>
+                  <span className="text-xs text-gray-400">{formatRelativeTime(c.createdAt)}</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5 whitespace-pre-wrap">{c.body}</p>
               </div>

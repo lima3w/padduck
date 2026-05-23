@@ -43,8 +43,20 @@ export default function AdminLdapPage() {
       ])
       if (cfgRes) {
         const c = cfgRes.data
-        setPasswordSet(c.bind_password === '****')
-        setConfig({ ...defaultConfig, ...c, bind_password: '' })
+        setPasswordSet(c.bindPassword === '****')
+        setConfig({
+          enabled: c.enabled ?? defaultConfig.enabled,
+          host: c.host ?? defaultConfig.host,
+          port: c.port ?? defaultConfig.port,
+          tls_mode: c.tlsMode ?? defaultConfig.tls_mode,
+          skip_cert_verify: c.skipCertVerify ?? defaultConfig.skip_cert_verify,
+          bind_dn: c.bindDn ?? defaultConfig.bind_dn,
+          bind_password: '',
+          base_dn: c.baseDn ?? defaultConfig.base_dn,
+          user_filter: c.userFilter ?? defaultConfig.user_filter,
+          username_attr: c.usernameAttr ?? defaultConfig.username_attr,
+          email_attr: c.emailAttr ?? defaultConfig.email_attr,
+        })
       }
       setMappings(mappingsRes.data || [])
       setRoles(rolesRes.data || [])

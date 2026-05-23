@@ -1205,7 +1205,7 @@ export default function AdminSettingsPage() {
                     <p className="font-medium text-gray-900">{approval.username}</p>
                     <p className="text-sm text-gray-500">{approval.email}</p>
                     <p className="text-xs text-gray-400">
-                      Registered {new Date(approval.created_at).toLocaleDateString()}
+                      Registered {new Date(approval.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex gap-2">

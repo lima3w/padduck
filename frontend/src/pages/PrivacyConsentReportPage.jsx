@@ -141,7 +141,7 @@ export default function PrivacyConsentReportPage() {
       .then(([vRes, cRes]) => {
         setVersions(vRes.data?.versions ?? [])
         setUsers(cRes.data?.users ?? [])
-        setNoConsentCount(cRes.data?.no_consent_count ?? 0)
+        setNoConsentCount(cRes.data?.noConsentCount ?? 0)
       })
       .catch(() => setError('Failed to load privacy data'))
       .finally(() => setLoading(false))
@@ -220,12 +220,12 @@ export default function PrivacyConsentReportPage() {
                   {versions.map(v => (
                     <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                       <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">{v.version}</td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(v.effective_date)}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(v.effectiveDate)}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-md">
                         {v.summary || <span className="text-gray-400 dark:text-gray-600">—</span>}
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {formatDate(v.created_at)}
+                        {formatDate(v.createdAt)}
                       </td>
                     </tr>
                   ))}
@@ -271,15 +271,15 @@ export default function PrivacyConsentReportPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {users.map(u => (
-                    <tr key={u.user_id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                    <tr key={u.userId} className="hover:bg-gray-50 dark:hover:bg-gray-750">
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{u.username}</td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{u.email}</td>
-                      <td className="px-4 py-3">{consentBadge(u.has_consent)}</td>
+                      <td className="px-4 py-3">{consentBadge(u.hasConsent)}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                        {u.privacy_accepted_version || <span className="text-gray-400 dark:text-gray-600">—</span>}
+                        {u.privacyAcceptedVersion || <span className="text-gray-400 dark:text-gray-600">—</span>}
                       </td>
                       <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                        {u.privacy_accepted_at ? formatDate(u.privacy_accepted_at) : <span className="text-gray-400 dark:text-gray-600">—</span>}
+                        {u.privacyAcceptedAt ? formatDate(u.privacyAcceptedAt) : <span className="text-gray-400 dark:text-gray-600">—</span>}
                       </td>
                     </tr>
                   ))}

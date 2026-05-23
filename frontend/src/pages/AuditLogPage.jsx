@@ -283,15 +283,15 @@ export default function AuditLogPage() {
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-gray-600">
-                    {log.resource_type && (
+                    {log.resourceType && (
                       <span>
-                        <span className="text-gray-400">{log.resource_type}</span>
-                        {log.resource_name && <> · <span className="font-mono text-xs">{log.resource_name}</span></>}
-                        {log.resource_id && !log.resource_name && <> #{log.resource_id}</>}
+                        <span className="text-gray-400">{log.resourceType}</span>
+                        {log.resourceName && <> · <span className="font-mono text-xs">{log.resourceName}</span></>}
+                        {log.resourceId && !log.resourceName && <> #{log.resourceId}</>}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{log.ip_address}</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{log.ipAddress}</td>
                   <td className="px-4 py-2.5">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                       log.status === 'failure' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
@@ -354,25 +354,25 @@ export default function AuditLogPage() {
               <Row label="Timestamp" value={formatTimestamp(selectedLog.timestamp)} />
               <Row label="User" value={selectedLog.username || '(system)'} />
               <Row label="Action" value={selectedLog.action} />
-              <Row label="Resource Type" value={selectedLog.resource_type} />
-              {selectedLog.resource_id && <Row label="Resource ID" value={selectedLog.resource_id} />}
-              {selectedLog.resource_name && <Row label="Resource Name" value={selectedLog.resource_name} />}
-              <Row label="IP Address" value={selectedLog.ip_address} mono />
+              <Row label="Resource Type" value={selectedLog.resourceType} />
+              {selectedLog.resourceId && <Row label="Resource ID" value={selectedLog.resourceId} />}
+              {selectedLog.resourceName && <Row label="Resource Name" value={selectedLog.resourceName} />}
+              <Row label="IP Address" value={selectedLog.ipAddress} mono />
               <Row label="Status" value={selectedLog.status} />
-              {selectedLog.error_message && <Row label="Error" value={selectedLog.error_message} />}
-              {selectedLog.new_values && (
+              {selectedLog.errorMessage && <Row label="Error" value={selectedLog.errorMessage} />}
+              {selectedLog.newValues && (
                 <div>
                   <span className="font-medium text-gray-600">New Values</span>
                   <pre className="mt-1 bg-gray-50 rounded p-2 text-xs overflow-auto">
-                    {JSON.stringify(JSON.parse(selectedLog.new_values), null, 2)}
+                    {JSON.stringify(JSON.parse(selectedLog.newValues), null, 2)}
                   </pre>
                 </div>
               )}
-              {selectedLog.old_values && (
+              {selectedLog.oldValues && (
                 <div>
                   <span className="font-medium text-gray-600">Old Values</span>
                   <pre className="mt-1 bg-gray-50 rounded p-2 text-xs overflow-auto">
-                    {JSON.stringify(JSON.parse(selectedLog.old_values), null, 2)}
+                    {JSON.stringify(JSON.parse(selectedLog.oldValues), null, 2)}
                   </pre>
                 </div>
               )}

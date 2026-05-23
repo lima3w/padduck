@@ -932,9 +932,9 @@ export default function IPAddressesPage() {
                 )}
                 {col('device') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {ip.device_id ? (
-                      <Link to={`/devices/${ip.device_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {ip.device?.hostname || `#${ip.device_id}`}
+                    {ip.deviceId ? (
+                      <Link to={`/devices/${ip.deviceId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                        {ip.device?.hostname || `#${ip.deviceId}`}
                       </Link>
                     ) : '—'}
                   </td>
@@ -963,7 +963,7 @@ export default function IPAddressesPage() {
                 )}
                 {col('services') && (
                   <td className="px-4 py-3">
-                    <PortBadges portOpen={ip.port_open} />
+                    <PortBadges portOpen={ip.portOpen} />
                   </td>
                 )}
                 {searchableFields.map(d => {
@@ -1255,10 +1255,10 @@ export default function IPAddressesPage() {
                 onChange={e => setForm(f => ({ ...f, dns_name: e.target.value }))}
               />
             </div>
-            {modal.meta.port_open && Object.values(modal.meta.port_open).some(Boolean) && (
+            {modal.meta.portOpen && Object.values(modal.meta.portOpen).some(Boolean) && (
               <div className="border-t pt-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Open Ports (read-only)</p>
-                <PortBadges portOpen={modal.meta.port_open} />
+                <PortBadges portOpen={modal.meta.portOpen} />
               </div>
             )}
             {(modal.meta.dnsLastChecked) && (

@@ -99,20 +99,20 @@ export default function DeploymentHealthPage() {
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
                 Scan Agents
               </div>
-              {health.scan_agents?.total != null ? (
-                health.scan_agents.total === 0 ? (
+              {health.scanAgents?.total != null ? (
+                health.scanAgents.total === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400">No agents registered.</p>
                 ) : (
                   <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                    <div>Total: <span className="font-medium">{health.scan_agents.total}</span></div>
+                    <div>Total: <span className="font-medium">{health.scanAgents.total}</span></div>
                     <div className="flex items-center gap-1">
-                      Healthy: <StatusBadge status={health.scan_agents.healthy > 0 ? 'healthy' : 'ok'} />
-                      <span className="font-medium ml-1">{health.scan_agents.healthy}</span>
+                      Healthy: <StatusBadge status={health.scanAgents.healthy > 0 ? 'healthy' : 'ok'} />
+                      <span className="font-medium ml-1">{health.scanAgents.healthy}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       Offline:
-                      <span className={`ml-1 font-medium ${health.scan_agents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                        {health.scan_agents.offline}
+                      <span className={`ml-1 font-medium ${health.scanAgents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                        {health.scanAgents.offline}
                       </span>
                     </div>
                   </div>
