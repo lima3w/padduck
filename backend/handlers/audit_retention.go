@@ -36,8 +36,8 @@ func (h *Handler) UpdateAuditRetention(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if body.RetentionDays < 30 {
-		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "retention_days must be >= 30")
+	if body.RetentionDays < 1 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "retention_days must be >= 1")
 	}
 	s, err := h.service.Audit.UpdateRetentionSettings(c.Context(), body.RetentionDays, body.ArchiveEnabled)
 	if err != nil {

@@ -240,7 +240,7 @@ export default function AdminIntegrationsPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8">
+    <div className="p-6 max-w-6xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Automation Integrations</h1>
         <p className="text-sm text-gray-500">

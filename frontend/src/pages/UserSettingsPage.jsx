@@ -466,7 +466,7 @@ function SecurityTab() {
             ) : setupData ? (
               <div className="space-y-4">
                 <p className="text-sm text-gray-700">Scan this QR code with your authenticator app:</p>
-                <img src={setupData.qr_code} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded bg-white" />
+                <img src={setupData.qrCode} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded bg-white" />
                 <details className="text-sm">
                   <summary className="text-gray-500 cursor-pointer">Can&apos;t scan? Enter the secret manually</summary>
                   <code className="block mt-2 p-2 bg-gray-100 rounded font-mono text-xs break-all">{setupData.secret}</code>

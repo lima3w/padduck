@@ -29,12 +29,16 @@ func (h *Handler) CreateScanAgent(c *fiber.Ctx) error {
 		return nil
 	}
 	var req struct {
-		Name string `json:"name"`
+		Name    string `json:"name"`
+		TTLDays int    `json:"ttl_days"` // 0 = no expiry
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
-	agent, rawToken, err := h.service.Discovery.CreateAgent(c.Context(), req.Name)
+	if req.TTLDays < 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ttl_days must be >= 0 (0 = no expiry)"})
+	}
+	agent, rawToken, err := h.service.Discovery.CreateAgent(c.Context(), req.Name, req.TTLDays)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -69,7 +73,15 @@ func (h *Handler) RotateScanAgentToken(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid agent ID"})
 	}
-	agent, rawToken, err := h.service.Discovery.RotateToken(c.Context(), int64(id))
+	var req struct {
+		TTLDays *int `json:"ttl_days"` // nil = preserve existing expiry, 0 = clear expiry
+	}
+	_ = c.BodyParser(&req)
+	ttlDays := -1 // preserve existing
+	if req.TTLDays != nil {
+		ttlDays = *req.TTLDays
+	}
+	agent, rawToken, err := h.service.Discovery.RotateToken(c.Context(), int64(id), ttlDays)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to rotate token"})
 	}

@@ -1,10 +1,12 @@
 import { useSearchParams } from 'react-router-dom'
 import AuditLogPage from './AuditLogPage'
 import AuditRetentionPage from './AuditRetentionPage'
+import AuditExportPage from './AuditExportPage'
 
 const TABS = [
   { id: 'log', label: 'Audit Log' },
   { id: 'retention', label: 'Retention' },
+  { id: 'export', label: 'Export' },
 ]
 
 const VALID_TABS = new Set(TABS.map((t) => t.id))
@@ -43,6 +45,7 @@ export default function AuditPage() {
 
       {tab === 'log' && <AuditLogPage />}
       {tab === 'retention' && <AuditRetentionPage />}
+      {tab === 'export' && <AuditExportPage />}
     </div>
   )
 }

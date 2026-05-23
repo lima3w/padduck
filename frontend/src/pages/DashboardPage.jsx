@@ -129,7 +129,7 @@ export default function DashboardPage() {
     )
   }
 
-  const utilPct = summary?.utilisation_pct ?? 0
+  const utilPct = summary?.utilisationPct ?? 0
 
   return (
     <div className="space-y-6">
@@ -145,11 +145,11 @@ export default function DashboardPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard label="Sections" value={summary?.total_sections ?? 0} />
-        <SummaryCard label="Subnets" value={summary?.total_subnets ?? 0} />
+        <SummaryCard label="Sections" value={summary?.totalSections ?? 0} />
+        <SummaryCard label="Subnets" value={summary?.totalSubnets ?? 0} />
         <SummaryCard
           label="IP Addresses"
-          value={`${summary?.used_ips ?? 0} / ${summary?.total_ips ?? 0}`}
+          value={`${summary?.usedIps ?? 0} / ${summary?.totalIps ?? 0}`}
           sub="assigned / total"
         />
         <SummaryCard
@@ -161,7 +161,7 @@ export default function DashboardPage() {
 
       {/* Pending Requests card (admin) */}
       {isAdmin && (() => {
-        const pendingCount = (summary?.pending_subnet_requests ?? 0) + (summary?.pending_ip_requests ?? 0)
+        const pendingCount = (summary?.pendingSubnetRequests ?? 0) + (summary?.pendingIpRequests ?? 0)
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <SummaryCard
@@ -236,13 +236,13 @@ export default function DashboardPage() {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {driftedIPs.map(ip => (
-                  <tr key={ip.ip_id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="py-1.5 font-mono text-gray-800 dark:text-gray-200">{ip.ip_address}</td>
+                  <tr key={ip.ipId} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                    <td className="py-1.5 font-mono text-gray-800 dark:text-gray-200">{ip.ipAddress}</td>
                     <td className="py-1.5 text-gray-600 dark:text-gray-400">{ip.hostname || '—'}</td>
-                    <td className="py-1.5 text-gray-500 dark:text-gray-500 font-mono">{ip.subnet_cidr}</td>
+                    <td className="py-1.5 text-gray-500 dark:text-gray-500 font-mono">{ip.subnetCidr}</td>
                     <td className="py-1.5 text-right">
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${ip.days_inactive > 90 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'}`}>
-                        {ip.days_inactive}d
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${ip.daysInactive > 90 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'}`}>
+                        {ip.daysInactive}d
                       </span>
                     </td>
                   </tr>

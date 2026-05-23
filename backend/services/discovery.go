@@ -57,13 +57,13 @@ type discoveryRepo interface {
 	UpdateIPFromSNMP(ctx context.Context, ipID int64, macAddress, hostname string) error
 	GetDeviceSNMPByIPID(ctx context.Context, ipID int64) (*models.DeviceSNMP, error)
 	// Scan agents (#212)
-	CreateScanAgent(ctx context.Context, name, tokenHash string) (*models.ScanAgent, error)
+	CreateScanAgent(ctx context.Context, name, tokenHash string, ttlDays int) (*models.ScanAgent, error)
 	GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error)
 	GetScanAgentByID(ctx context.Context, id int64) (*models.ScanAgent, error)
 	ListScanAgents(ctx context.Context) ([]*models.ScanAgent, error)
 	HeartbeatAgent(ctx context.Context, id int64, version *string, capabilities []string, status string, lastError *string) error
 	UpdateScanAgentActive(ctx context.Context, id int64, isActive bool) (*models.ScanAgent, error)
-	UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string) (*models.ScanAgent, error)
+	UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string, ttlDays int) (*models.ScanAgent, error)
 	DeleteScanAgent(ctx context.Context, id int64) error
 	ListScanJobsForAgent(ctx context.Context, agentID int64) ([]*models.ScanJob, error)
 	// Scan profiles (#432)
@@ -353,7 +353,27 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 		for _, ip := range ips {
 			existingIPs[ip.Address] = ip.ID
 		}
-		_, n, g, ch, err := d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, concurrency, runID, prevAlive, job)
+
+		// Apply scan profile overrides: if the subnet has a profile assigned, use its settings
+		// as the base; the job's own settings act as the fallback when no profile is set.
+		effectiveConcurrency := concurrency
+		effectiveJob := job
+		if subnet.ScanProfileID != nil {
+			if profile, profileErr := d.repository.GetScanProfileByID(ctx, *subnet.ScanProfileID); profileErr == nil {
+				effectiveConcurrency = profile.PingConcurrency
+				if effectiveConcurrency <= 0 {
+					effectiveConcurrency = concurrency
+				}
+				// Build a shallow copy of job with profile-derived scan type
+				jobCopy := *job
+				jobCopy.ScanType = profile.ScanType
+				effectiveJob = &jobCopy
+			} else {
+				log.Printf("scan job %d: load profile %d for subnet %d error: %v", job.ID, *subnet.ScanProfileID, subnetID, profileErr)
+			}
+		}
+
+		_, n, g, ch, err := d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, effectiveConcurrency, runID, prevAlive, effectiveJob)
 		if err != nil {
 			log.Printf("scan job %d: subnet %d scan error: %v", job.ID, subnetID, err)
 		}
@@ -583,7 +603,8 @@ func enumerateCIDR(networkAddr string, prefixLen int) ([]string, error) {
 // ---------------------------------------------------------------------------
 
 // CreateAgent creates a new scan agent and returns the raw token (shown once).
-func (d *DiscoveryService) CreateAgent(ctx context.Context, name string) (*models.ScanAgent, string, error) {
+// ttlDays == 0 means the token never expires.
+func (d *DiscoveryService) CreateAgent(ctx context.Context, name string, ttlDays int) (*models.ScanAgent, string, error) {
 	if name == "" {
 		return nil, "", fmt.Errorf("agent name is required")
 	}
@@ -591,7 +612,7 @@ func (d *DiscoveryService) CreateAgent(ctx context.Context, name string) (*model
 	if err != nil {
 		return nil, "", fmt.Errorf("generate token: %w", err)
 	}
-	agent, err := d.repository.CreateScanAgent(ctx, name, tokenHash)
+	agent, err := d.repository.CreateScanAgent(ctx, name, tokenHash, ttlDays)
 	if err != nil {
 		return nil, "", err
 	}
@@ -609,12 +630,13 @@ func (d *DiscoveryService) GetAgent(ctx context.Context, id int64) (*models.Scan
 }
 
 // RotateToken issues a new token for an agent and returns the raw token.
-func (d *DiscoveryService) RotateToken(ctx context.Context, id int64) (*models.ScanAgent, string, error) {
+// ttlDays == 0 clears the expiry; ttlDays < 0 preserves the existing expiry.
+func (d *DiscoveryService) RotateToken(ctx context.Context, id int64, ttlDays int) (*models.ScanAgent, string, error) {
 	rawToken, tokenHash, err := generateAgentToken()
 	if err != nil {
 		return nil, "", fmt.Errorf("generate token: %w", err)
 	}
-	agent, err := d.repository.UpdateScanAgentToken(ctx, id, tokenHash)
+	agent, err := d.repository.UpdateScanAgentToken(ctx, id, tokenHash, ttlDays)
 	if err != nil {
 		return nil, "", err
 	}

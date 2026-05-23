@@ -298,21 +298,30 @@ func (r *Repository) UpdateIPFromSNMP(ctx context.Context, ipID int64, macAddres
 }
 
 // scanAgentCols is the column list for scan_agents SELECT queries.
-const scanAgentCols = `id, name, token_hash, last_seen, is_active, created_at, version, capabilities, status, last_error`
+const scanAgentCols = `id, name, token_hash, last_seen, is_active, created_at, version, capabilities, status, last_error, expires_at`
 
-// CreateScanAgent inserts a new scan agent record.
-func (r *Repository) CreateScanAgent(ctx context.Context, name, tokenHash string) (*models.ScanAgent, error) {
-	row := r.db.QueryRow(ctx,
-		`INSERT INTO scan_agents (name, token_hash) VALUES ($1, $2) RETURNING `+scanAgentCols,
-		name, tokenHash,
-	)
+// CreateScanAgent inserts a new scan agent record with an optional TTL.
+// If ttlDays is 0 the token never expires; otherwise expires_at is set to now() + ttlDays days.
+func (r *Repository) CreateScanAgent(ctx context.Context, name, tokenHash string, ttlDays int) (*models.ScanAgent, error) {
+	var row interface{ Scan(dest ...any) error }
+	if ttlDays > 0 {
+		row = r.db.QueryRow(ctx,
+			`INSERT INTO scan_agents (name, token_hash, expires_at) VALUES ($1, $2, now() + ($3 * INTERVAL '1 day')) RETURNING `+scanAgentCols,
+			name, tokenHash, ttlDays,
+		)
+	} else {
+		row = r.db.QueryRow(ctx,
+			`INSERT INTO scan_agents (name, token_hash) VALUES ($1, $2) RETURNING `+scanAgentCols,
+			name, tokenHash,
+		)
+	}
 	return scanScanAgent(row)
 }
 
-// GetScanAgentByToken retrieves an active scan agent by token hash.
+// GetScanAgentByToken retrieves an active, non-expired scan agent by token hash.
 func (r *Repository) GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT `+scanAgentCols+` FROM scan_agents WHERE token_hash=$1 AND is_active=true`,
+		`SELECT `+scanAgentCols+` FROM scan_agents WHERE token_hash=$1 AND is_active=true AND (expires_at IS NULL OR expires_at > now())`,
 		tokenHash,
 	)
 	return scanScanAgent(row)
@@ -381,11 +390,29 @@ func (r *Repository) UpdateScanAgentActive(ctx context.Context, id int64, isActi
 }
 
 // UpdateScanAgentToken replaces the token hash for an agent.
-func (r *Repository) UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string) (*models.ScanAgent, error) {
-	row := r.db.QueryRow(ctx,
-		`UPDATE scan_agents SET token_hash=$2 WHERE id=$1 RETURNING `+scanAgentCols,
-		id, newTokenHash,
-	)
+// UpdateScanAgentToken replaces the token hash for an agent and optionally sets a new TTL.
+// If ttlDays is 0 the existing expiry is cleared (token never expires); if negative, expiry is unchanged.
+func (r *Repository) UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string, ttlDays int) (*models.ScanAgent, error) {
+	var row interface{ Scan(dest ...any) error }
+	if ttlDays > 0 {
+		row = r.db.QueryRow(ctx,
+			`UPDATE scan_agents SET token_hash=$2, expires_at=now() + ($3 * INTERVAL '1 day') WHERE id=$1 RETURNING `+scanAgentCols,
+			id, newTokenHash, ttlDays,
+		)
+	} else {
+		// ttlDays == 0: clear expiry; ttlDays < 0: leave unchanged
+		if ttlDays == 0 {
+			row = r.db.QueryRow(ctx,
+				`UPDATE scan_agents SET token_hash=$2, expires_at=NULL WHERE id=$1 RETURNING `+scanAgentCols,
+				id, newTokenHash,
+			)
+		} else {
+			row = r.db.QueryRow(ctx,
+				`UPDATE scan_agents SET token_hash=$2 WHERE id=$1 RETURNING `+scanAgentCols,
+				id, newTokenHash,
+			)
+		}
+	}
 	return scanScanAgent(row)
 }
 
@@ -425,7 +452,7 @@ func (r *Repository) ListScanJobsForAgent(ctx context.Context, agentID int64) ([
 func scanScanAgent(row interface{ Scan(dest ...any) error }) (*models.ScanAgent, error) {
 	a := &models.ScanAgent{}
 	var capJSON []byte
-	err := row.Scan(&a.ID, &a.Name, &a.TokenHash, &a.LastSeen, &a.IsActive, &a.CreatedAt, &a.Version, &capJSON, &a.Status, &a.LastError)
+	err := row.Scan(&a.ID, &a.Name, &a.TokenHash, &a.LastSeen, &a.IsActive, &a.CreatedAt, &a.Version, &capJSON, &a.Status, &a.LastError, &a.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}

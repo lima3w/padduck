@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
 
+function usePublicUrl() {
+  const [url, setUrl] = useState(window.location.origin)
+  useEffect(() => {
+    api.get('/public-info').then(res => {
+      if (res.data?.appUrl) setUrl(res.data.appUrl.replace(/\/$/, ''))
+    }).catch(() => {})
+  }, [])
+  return url
+}
+
 function StatusBadge({ status }) {
   const cfg = {
     healthy:  'bg-green-100 text-green-700',
@@ -17,6 +27,7 @@ function StatusBadge({ status }) {
 }
 
 export default function AdminAgentsPage() {
+  const publicUrl = usePublicUrl()
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,11 +36,15 @@ export default function AdminAgentsPage() {
   const [saving, setSaving] = useState(false)
   const [newToken, setNewToken] = useState(null)
   const [newTokenAgentName, setNewTokenAgentName] = useState('')
+  const [newTTLDays, setNewTTLDays] = useState(0)
   const [rotatingId, setRotatingId] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [copied, setCopied] = useState(false)
+  const [binaryInfo, setBinaryInfo] = useState(null)
 
   useEffect(() => {
     loadAgents()
+    api.get('/agent/version').then(res => setBinaryInfo(res.data)).catch(() => {})
   }, [])
 
   async function loadAgents() {
@@ -47,11 +62,12 @@ export default function AdminAgentsPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const { data } = await api.post('/admin/scan-agents', { name: newName })
+      const { data } = await api.post('/admin/scan-agents', { name: newName, ttl_days: newTTLDays })
       setNewToken(data.token)
       setNewTokenAgentName(newName)
       setCreateModal(false)
       setNewName('')
+      setNewTTLDays(0)
       await loadAgents()
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create agent')
@@ -84,15 +100,69 @@ export default function AdminAgentsPage() {
   }
 
   function copyToken() {
-    if (newToken) navigator.clipboard.writeText(newToken).catch(() => {})
+    if (!newToken) return
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(newToken).then(() => {
+        setCopied('token')
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => fallbackCopy(newToken))
+    } else {
+      fallbackCopy(newToken)
+    }
+  }
+
+  function buildInstallCmd(token) {
+    return `curl -fsSL ${publicUrl}/api/v1/agent/download -o padduck-agent && chmod +x padduck-agent && PADDUCK_SERVER_URL=${publicUrl} PADDUCK_AGENT_TOKEN=${token} ./padduck-agent`
+  }
+
+  function copyInstallCmd() {
+    const cmd = buildInstallCmd(newToken)
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(cmd).then(() => {
+        setCopied('install')
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => fallbackCopy(cmd))
+    } else {
+      fallbackCopy(cmd)
+    }
+  }
+
+  function fallbackCopy(text) {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.position = 'fixed'
+    el.style.opacity = '0'
+    document.body.appendChild(el)
+    el.select()
+    try {
+      document.execCommand('copy')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+    document.body.removeChild(el)
+  }
+
+  function fallbackCopyInstall() {
+    if (newToken) fallbackCopy(buildInstallCmd(newToken))
   }
 
   if (loading) return <div className="p-6 text-gray-500">Loading…</div>
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Scan Agents</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Scan Agents</h1>
+          {binaryInfo && (
+            <p className="text-xs text-gray-500 mt-1">
+              Hosted binary:{' '}
+              {binaryInfo.available
+                ? <span className="text-green-700 font-medium">{binaryInfo.version || 'available'}</span>
+                : <span className="text-amber-600">not available — place <code className="font-mono">padduck-agent</code> in <code className="font-mono">./data/agent/</code></span>
+              }
+            </p>
+          )}
+        </div>
         <button
           onClick={() => { setNewName(''); setCreateModal(true) }}
           className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
@@ -106,24 +176,49 @@ export default function AdminAgentsPage() {
       )}
 
       {newToken && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-lg">
-          <p className="text-sm font-semibold text-amber-800 mb-1">
-            Token for <span className="font-mono">{newTokenAgentName}</span> — copy it now, it will not be shown again.
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-lg space-y-4">
+          <p className="text-sm font-semibold text-amber-800">
+            Agent <span className="font-mono">{newTokenAgentName}</span> created — save the token now, it will not be shown again.
           </p>
-          <div className="flex items-center gap-2 mt-2">
-            <code className="flex-1 bg-white border border-amber-200 rounded px-3 py-2 text-xs font-mono text-gray-800 break-all select-all">
-              {newToken}
-            </code>
-            <button
-              onClick={copyToken}
-              className="shrink-0 px-3 py-2 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition"
-            >
-              Copy
-            </button>
+
+          {/* Raw token */}
+          <div>
+            <p className="text-xs font-medium text-amber-700 mb-1">Agent token</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-white border border-amber-200 rounded px-3 py-2 text-xs font-mono text-gray-800 break-all select-all">
+                {newToken}
+              </code>
+              <button
+                onClick={copyToken}
+                className="shrink-0 px-3 py-2 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition"
+              >
+                {copied === 'token' ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
           </div>
+
+          {/* Install command */}
+          <div>
+            <p className="text-xs font-medium text-amber-700 mb-1">One-line install command</p>
+            <div className="flex items-start gap-2">
+              <code className="flex-1 bg-white border border-amber-200 rounded px-3 py-2 text-xs font-mono text-gray-800 break-all select-all whitespace-pre-wrap">
+                {buildInstallCmd(newToken)}
+              </code>
+              <button
+                onClick={copyInstallCmd}
+                className="shrink-0 px-3 py-2 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition"
+              >
+                {copied === 'install' ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+            <p className="text-xs text-amber-600 mt-1">
+              Downloads the agent binary from this Padduck instance and starts it with the token embedded.
+            </p>
+          </div>
+
           <button
             onClick={() => setNewToken(null)}
-            className="mt-2 text-xs text-amber-600 hover:underline"
+            className="text-xs text-amber-600 hover:underline"
           >
             Dismiss
           </button>
@@ -139,6 +234,7 @@ export default function AdminAgentsPage() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Version</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Capabilities</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Last Seen</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Token Expires</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -169,6 +265,14 @@ export default function AdminAgentsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">
                     {agent.lastSeen ? new Date(agent.lastSeen).toLocaleString() : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {agent.expiresAt
+                      ? <span className={new Date(agent.expiresAt) < new Date() ? 'text-red-600 font-medium' : 'text-gray-500'}>
+                          {new Date(agent.expiresAt).toLocaleDateString()}
+                        </span>
+                      : <span className="text-gray-400">Never</span>
+                    }
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
                     <button
@@ -213,6 +317,18 @@ export default function AdminAgentsPage() {
                 autoFocus
                 required
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Token TTL (days)</label>
+              <input
+                type="number"
+                min="0"
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0"
+                value={newTTLDays}
+                onChange={e => setNewTTLDays(Math.max(0, parseInt(e.target.value) || 0))}
+              />
+              <p className="text-xs text-gray-500 mt-1">Set to 0 for a token that never expires.</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>

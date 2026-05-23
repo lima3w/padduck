@@ -1,6 +1,8 @@
 services:
   db:
     image: postgres:18
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-padduck}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-padduck}"
