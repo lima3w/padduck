@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import { AuthProvider } from './context/AuthContext'
 import { getFeatures } from './api/client'
 import { normalizeFeatures } from './utils/features'
 import { getStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
@@ -146,6 +147,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <AuthProvider>
       <DarkModeBootstrap />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
@@ -237,6 +239,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

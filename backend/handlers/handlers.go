@@ -121,6 +121,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	me.Post("/mfa/confirm", h.ConfirmTOTP)
 	me.Delete("/mfa", h.DisableTOTP)
 	me.Post("/mfa/backup-codes", h.RegenerateBackupCodes)
+	me.Get("/avatar", h.GetMyAvatar)
+	me.Put("/avatar", h.UpdateMyAvatar)
 
 	// Security / audit endpoints
 	user := protected.Group("/user")

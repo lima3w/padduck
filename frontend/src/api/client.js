@@ -190,6 +190,7 @@ export const setupTOTP = () => api.post('/auth/me/mfa/setup')
 export const confirmTOTP = (code) => api.post('/auth/me/mfa/confirm', { code })
 export const disableTOTP = (code) => api.delete('/auth/me/mfa', { data: { code } })
 export const regenerateBackupCodes = (code) => api.post('/auth/me/mfa/backup-codes', { code })
+export const updateMyAvatar = (source, data) => api.put('/auth/me/avatar', { source, data })
 
 // Admin config
 export const getAdminConfig = () => api.get('/admin/config')

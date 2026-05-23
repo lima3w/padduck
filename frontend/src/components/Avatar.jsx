@@ -1,19 +1,28 @@
 import { useState } from 'react'
+import { gravatarUrl as computeGravatarUrl } from '../utils/md5'
 
 /**
- * Avatar component — renders a Gravatar image with an initials fallback.
+ * Avatar component — renders the user's avatar with an initials fallback.
  * Props:
- *   email       {string}  — user email (used to derive Gravatar URL)
- *   username    {string}  — username (used for initials fallback)
- *   size        {number}  — pixel size (default 32)
- *   gravatarUrl {string}  — pre-computed Gravatar URL from the server (optional)
+ *   email        {string}  — user email (used to derive Gravatar URL)
+ *   username     {string}  — username (used for initials fallback)
+ *   size         {number}  — pixel size (default 32)
+ *   gravatarUrl  {string}  — pre-computed Gravatar URL from the server (optional)
+ *   avatarSource {string}  — 'gravatar' | 'custom' (default 'gravatar')
+ *   avatarBust   {string}  — cache-buster string (e.g. updated_at) for custom avatars
  */
-export default function Avatar({ email, username, size = 32, gravatarUrl }) {
+export default function Avatar({ email, username, size = 32, gravatarUrl, avatarSource, avatarBust }) {
   const [imgError, setImgError] = useState(false)
 
-  const src = gravatarUrl || (email
-    ? `https://www.gravatar.com/avatar/${md5(email)}?s=${size * 2}&d=identicon`
-    : null)
+  let src
+  if (avatarSource === 'custom') {
+    // Serve the user's custom avatar through our own endpoint.
+    // Append a cache-buster so the browser re-fetches after an upload.
+    src = `/api/v1/auth/me/avatar${avatarBust ? `?_v=${encodeURIComponent(avatarBust)}` : ''}`
+  } else {
+    // Fall back to the server-provided Gravatar URL, or compute it client-side.
+    src = gravatarUrl || (email ? computeGravatarUrl(email, size * 2) : null)
+  }
 
   const initial = (username || email || '?')[0].toUpperCase()
 
@@ -40,19 +49,4 @@ export default function Avatar({ email, username, size = 32, gravatarUrl }) {
       onError={() => setImgError(true)}
     />
   )
-}
-
-// Tiny inline MD5 for client-side fallback (not crypto-secure — only for Gravatar)
-// We only use it when gravatarUrl isn't passed from the server.
-function md5(str) {
-  // If running in a browser without SubtleCrypto access, use a simple XOR hash as fallback.
-  // In practice, the server always sends gravatar_url so this branch is rarely hit.
-  try {
-    return Array.from(new TextEncoder().encode(str.trim().toLowerCase()))
-      .reduce((h, b) => (((h << 5) - h) + b) | 0, 0)
-      .toString(16)
-      .replace('-', '')
-  } catch {
-    return ''
-  }
 }

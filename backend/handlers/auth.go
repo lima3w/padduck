@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/md5" // #nosec G501 -- Gravatar uses an MD5 email hash identifier.
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -66,6 +67,7 @@ type UserResponse struct {
 	Role                   string  `json:"role"`
 	State                  string  `json:"state"`
 	GravatarURL            string  `json:"gravatar_url"`
+	AvatarSource           string  `json:"avatar_source"`
 	PrivacyAcceptedVersion *string `json:"privacy_accepted_version,omitempty"`
 	CreatedAt              string  `json:"created_at"`
 	UpdatedAt              string  `json:"updated_at"`
@@ -131,6 +133,7 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 		Role:                   user.Role,
 		State:                  user.State,
 		GravatarURL:            gravatarURL(user.Email, 80),
+		AvatarSource:           user.AvatarSource,
 		PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
 		CreatedAt:              user.CreatedAt.String(),
 		UpdatedAt:              user.UpdatedAt.String(),
@@ -289,6 +292,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 			Role:                   user.Role,
 			State:                  user.State,
 			GravatarURL:            gravatarURL(user.Email, 80),
+			AvatarSource:           user.AvatarSource,
 			PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
 			CreatedAt:              user.CreatedAt.String(),
 			UpdatedAt:              user.UpdatedAt.String(),
@@ -457,4 +461,61 @@ func (h *Handler) ExtendToken(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(token)
+}
+
+// GetMyAvatar handles GET /api/v1/auth/me/avatar
+// Serves the custom avatar data, or redirects to Gravatar if the user uses Gravatar.
+func (h *Handler) GetMyAvatar(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	if user.AvatarSource != "custom" {
+		return c.Redirect(gravatarURL(user.Email, 256), fiber.StatusFound)
+	}
+	data, err := h.service.GetUserAvatarData(c.Context(), user.ID)
+	if err != nil || data == nil || *data == "" {
+		return c.Redirect(gravatarURL(user.Email, 256), fiber.StatusFound)
+	}
+	// data is a data URL like "data:image/jpeg;base64,..."
+	// Strip the prefix so we can serve the raw bytes with the correct Content-Type.
+	raw := *data
+	if idx := strings.Index(raw, ","); idx != -1 {
+		mediaType := "image/jpeg"
+		header := raw[:idx]
+		if strings.Contains(header, "image/png") {
+			mediaType = "image/png"
+		} else if strings.Contains(header, "image/webp") {
+			mediaType = "image/webp"
+		} else if strings.Contains(header, "image/gif") {
+			mediaType = "image/gif"
+		}
+		decoded, decErr := base64.StdEncoding.DecodeString(raw[idx+1:])
+		if decErr == nil {
+			c.Set("Content-Type", mediaType)
+			c.Set("Cache-Control", "private, max-age=3600")
+			return c.Send(decoded)
+		}
+	}
+	// Fallback: redirect to Gravatar
+	return c.Redirect(gravatarURL(user.Email, 256), fiber.StatusFound)
+}
+
+// UpdateMyAvatar handles PUT /api/v1/auth/me/avatar
+func (h *Handler) UpdateMyAvatar(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+	var req struct {
+		Source string  `json:"source"`
+		Data   *string `json:"data,omitempty"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if err := h.service.UpdateUserAvatar(c.Context(), user.ID, req.Source, req.Data); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "avatar updated"})
 }

@@ -289,3 +289,26 @@ func (s *Service) StartImpersonation(ctx context.Context, targetUserID, adminID 
 	}
 	return rawToken, nil
 }
+
+// GetUserAvatarData returns the raw avatar data for a user (nil if using Gravatar).
+func (s *Service) GetUserAvatarData(ctx context.Context, userID int64) (*string, error) {
+	return s.repository.GetUserAvatarData(ctx, userID)
+}
+
+// UpdateUserAvatar sets the avatar source ("gravatar" or "custom") and optional data.
+func (s *Service) UpdateUserAvatar(ctx context.Context, userID int64, source string, data *string) error {
+	if source != "gravatar" && source != "custom" {
+		return fmt.Errorf("invalid avatar source: must be 'gravatar' or 'custom'")
+	}
+	if source == "custom" && (data == nil || *data == "") {
+		return fmt.Errorf("avatar data is required when source is 'custom'")
+	}
+	// Cap data size: base64-encoded 2 MiB image ≈ 2.7 MiB of text
+	if data != nil && len(*data) > 3*1024*1024 {
+		return fmt.Errorf("avatar data exceeds maximum allowed size")
+	}
+	if source == "gravatar" {
+		data = nil
+	}
+	return s.repository.UpdateUserAvatar(ctx, userID, source, data)
+}

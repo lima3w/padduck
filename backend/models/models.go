@@ -45,6 +45,7 @@ type User struct {
 	AnonymizedAt           *time.Time
 	ExternalAuthProvider   *string
 	ExternalAuthID         *string
+	AvatarSource           string // "gravatar" or "custom"
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
