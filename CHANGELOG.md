@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.31.1
+
+- Fixed admin password file writing to `data/admin-password` in the working directory instead of `/run/ipam`, which required root filesystem access.
+- Added `entrypoint.sh` to fix bind-mount ownership at startup; backend container now drops to an unprivileged user via `su-exec`.
+- Fixed gosec `#nosec` annotation referencing wrong rule (`G306` → `G703`).
+- Fixed `feature_firewall_enabled` missing from the allowed config keys, causing a "unknown config key" error on save.
+
+## v1.31.0
+
+- Added firewall zones and firewall zone mappings.
+- Updated frontend assets: new logo, favicon set, and web app manifest icons.
+
 ## v1.30.0 Padduck Rebrand and GitHub Migration
 
 - Renamed project to Padduck across all surfaces: Go module, frontend metadata, storage keys, API artifacts, docs, and deployment config.
