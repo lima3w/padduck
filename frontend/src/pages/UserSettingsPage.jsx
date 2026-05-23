@@ -31,17 +31,17 @@ function resizeImage(file) {
 }
 
 function ProfileTab({ user, onAvatarChange }) {
-  const [source, setSource] = useState(user?.avatar_source || 'gravatar')
+  const [source, setSource] = useState(user?.avatarSource || 'gravatar')
   const [preview, setPreview] = useState(null)   // data URL for the chosen custom image
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const fileRef = useRef(null)
 
-  // Live avatar shown in the card; append updated_at as a cache-buster for custom avatars
+  // Live avatar shown in the card; append updatedAt as a cache-buster for custom avatars
   const currentAvatarSrc =
-    user?.avatar_source === 'custom'
-      ? `${AVATAR_ENDPOINT}${user.updated_at ? `?_v=${encodeURIComponent(user.updated_at)}` : ''}`
+    user?.avatarSource === 'custom'
+      ? `${AVATAR_ENDPOINT}${user.updatedAt ? `?_v=${encodeURIComponent(user.updatedAt)}` : ''}`
       : (user?.email ? gravatarUrl(user.email, 80) : null)
 
   // Preview shown while the user has selected a new file
@@ -70,11 +70,15 @@ function ProfileTab({ user, onAvatarChange }) {
   }
 
   async function handleSave() {
+    if (source === 'custom' && !preview) {
+      setError('Please select an image first')
+      return
+    }
     setSaving(true)
     setError('')
     setSuccess(false)
     try {
-      const data = source === 'custom' ? (preview ?? undefined) : undefined
+      const data = source === 'custom' ? preview : undefined
       await client.updateMyAvatar(source, data)
       // Refresh the user from the server so the header avatar updates immediately.
       const res = await client.getCurrentUser()
@@ -91,7 +95,9 @@ function ProfileTab({ user, onAvatarChange }) {
     }
   }
 
-  const isDirty = source !== (user?.avatar_source || 'gravatar') || preview !== null
+  // Dirty when: new image selected (custom) OR switching back to Gravatar from custom
+  const isDirty = (source === 'custom' && preview !== null) ||
+    (source === 'gravatar' && user?.avatarSource === 'custom')
 
   return (
     <div className="max-w-lg space-y-6">
