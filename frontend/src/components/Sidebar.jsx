@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getPendingRequestCount } from '../api/requests'
-import { getDnsZones, getFeatures } from '../api/client'
+import { getDnsZones, getFeatures, checkForUpdates } from '../api/client'
 import { DEFAULT_FEATURES, normalizeFeatures } from '../utils/features'
 import { getCachedUser } from '../utils/storageKeys'
 
@@ -12,6 +12,7 @@ export default function Sidebar() {
   const [pendingCount, setPendingCount] = useState(0)
   const [dnsConfigured, setDnsConfigured] = useState(true)
   const [features, setFeatures] = useState(DEFAULT_FEATURES)
+  const [version, setVersion] = useState(null)
 
   useEffect(() => {
     if (!isAdmin) return
@@ -38,6 +39,19 @@ export default function Sidebar() {
     checkDns()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+    async function fetchVersion() {
+      try {
+        const res = await checkForUpdates()
+        if (!cancelled) setVersion(res.data?.currentVersion ?? null)
+      } catch {}
+    }
+    fetchVersion()
+    return () => { cancelled = true }
+  }, [isAdmin])
 
   useEffect(() => {
     let cancelled = false
@@ -360,6 +374,7 @@ export default function Sidebar() {
             </NavLink>
             <NavLink
               to="/admin/roles"
+              end
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
                   isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
@@ -387,16 +402,6 @@ export default function Sidebar() {
               }
             >
               Settings
-            </NavLink>
-            <NavLink
-              to="/admin/break-glass"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Break-Glass
             </NavLink>
             <NavLink
               to="/admin/identity-policies"
@@ -429,57 +434,14 @@ export default function Sidebar() {
               Audit Retention
             </NavLink>
             <NavLink
-              to="/admin/discovery/conflicts"
+              to="/admin/discovery"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
                   isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
                 }`
               }
             >
-              Discovery Conflicts
-            </NavLink>
-            <div className="mt-2 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
               Discovery
-            </div>
-            <NavLink
-              to="/admin/scan-jobs"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Scan Jobs
-            </NavLink>
-            <NavLink
-              to="/admin/scan-profiles"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Scan Profiles
-            </NavLink>
-            <NavLink
-              to="/admin/scan-retention"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Scan Retention
-            </NavLink>
-            <NavLink
-              to="/admin/topology/hints"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Topology Hints
             </NavLink>
             <div className="mt-2 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
               Automation
@@ -495,16 +457,6 @@ export default function Sidebar() {
               Policies
             </NavLink>
             <NavLink
-              to="/admin/integration-templates"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Integration Templates
-            </NavLink>
-            <NavLink
               to="/admin/api-token-analytics"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
@@ -513,16 +465,6 @@ export default function Sidebar() {
               }
             >
               Token Analytics
-            </NavLink>
-            <NavLink
-              to="/admin/privacy/consent-report"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Privacy Consent
             </NavLink>
             <NavLink
               to="/admin/system-health"
@@ -537,6 +479,11 @@ export default function Sidebar() {
           </>
         )}
       </nav>
+      {isAdmin && version && (
+        <div className="px-4 py-2 text-[10px] text-[#a8b8cb]/40 border-t border-[#25364a] shrink-0">
+          {version}
+        </div>
+      )}
     </aside>
   )
 }

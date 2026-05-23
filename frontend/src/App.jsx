@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -78,6 +78,7 @@ const PrivacyConsentReportPage = lazy(() => import('./pages/PrivacyConsentReport
 const BreakGlassPage = lazy(() => import('./pages/BreakGlassPage'))
 const IdentityPoliciesPage = lazy(() => import('./pages/IdentityPoliciesPage'))
 const AdminCompatibilityPage = lazy(() => import('./pages/AdminCompatibilityPage'))
+const DiscoveryPage = lazy(() => import('./pages/DiscoveryPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -122,10 +123,14 @@ function FeatureGate({ feature, children }) {
   if (!features) return <PageLoadingFallback />
   if (features[feature] === false) {
     return (
-      <div className="p-6">
+      <div className="p-6 max-w-lg">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Feature disabled</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          This part of the application has been disabled by an administrator.
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          This feature has been disabled. An administrator can enable it in{' '}
+          <a href="/admin/settings?tab=features" className="text-blue-600 dark:text-blue-400 underline hover:no-underline">
+            Admin → Settings → Features
+          </a>
+          .
         </p>
       </div>
     )
@@ -188,10 +193,11 @@ export default function App() {
             <Route path="admin/vlan-domains" element={gated('vlans', <VlanDomainsPage />)} />
             <Route path="admin/vlan-groups" element={gated('vlans', <VlanGroupsPage />)} />
             <Route path="admin/vlans/usage-report" element={gated('vlans', <VlanUsageReportPage />)} />
-            <Route path="admin/scan-jobs" element={<ScanJobsPage />} />
-            <Route path="admin/scan-profiles" element={<ScanProfilesPage />} />
-            <Route path="admin/scan-retention" element={<ScanRetentionPage />} />
-            <Route path="admin/discovery/conflicts" element={<DiscoveryConflictsPage />} />
+            <Route path="admin/discovery" element={<DiscoveryPage />} />
+            <Route path="admin/scan-jobs" element={<Navigate to="/admin/discovery?tab=scan-jobs" replace />} />
+            <Route path="admin/scan-profiles" element={<Navigate to="/admin/discovery?tab=scan-profiles" replace />} />
+            <Route path="admin/scan-retention" element={<Navigate to="/admin/discovery?tab=scan-retention" replace />} />
+            <Route path="admin/discovery/conflicts" element={<Navigate to="/admin/discovery?tab=conflicts" replace />} />
             <Route path="admin/scan-agents" element={<AdminAgentsPage />} />
             <Route path="admin/webhooks" element={<AdminWebhooksPage />} />
             <Route path="admin/api-token-analytics" element={<APITokenAnalyticsPage />} />
@@ -216,10 +222,10 @@ export default function App() {
             <Route path="firewall-zones" element={gated('firewall', <FirewallZonesPage />)} />
             <Route path="dhcp" element={gated('dhcp', <DHCPPage />)} />
             <Route path="circuits" element={gated('circuits', <CircuitsPage />)} />
-            <Route path="admin/topology/hints" element={<TopologyHintsPage />} />
+            <Route path="admin/topology/hints" element={<Navigate to="/admin/discovery?tab=topology-hints" replace />} />
             <Route path="admin/system-health" element={<DeploymentHealthPage />} />
             <Route path="admin/privacy/consent-report" element={<PrivacyConsentReportPage />} />
-            <Route path="admin/break-glass" element={<BreakGlassPage />} />
+            <Route path="admin/break-glass" element={<Navigate to="/admin/users" replace />} />
             <Route path="admin/identity-policies" element={<IdentityPoliciesPage />} />
             <Route path="admin/compatibility" element={<AdminCompatibilityPage />} />
           </Route>

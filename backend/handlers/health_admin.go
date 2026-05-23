@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"bytes"
+	"log/slog"
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,16 +28,6 @@ func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
 		dbStatus = fiber.Map{"status": "error", "detail": err.Error()}
 	}
 
-	// --- migrations ---
-	migrationsInfo := fiber.Map{"status": "unknown"}
-	var migCount int
-	err := pool.QueryRow(ctx,
-		"SELECT COUNT(*) FROM schema_migrations",
-	).Scan(&migCount)
-	if err == nil {
-		migrationsInfo = fiber.Map{"status": "ok", "applied": migCount}
-	}
-
 	// --- scan agents ---
 	type agentCounts struct {
 		total   int
@@ -41,8 +35,8 @@ func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
 		offline int
 	}
 	var counts agentCounts
-	rows, err := pool.Query(ctx, "SELECT is_active, status, last_seen FROM scan_agents")
-	if err == nil {
+	rows, agentErr := pool.Query(ctx, "SELECT is_active, status, last_seen FROM scan_agents")
+	if agentErr == nil {
 		defer rows.Close()
 		now := time.Now()
 		for rows.Next() {
@@ -69,6 +63,9 @@ func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
 			}
 		}
 	}
+	// agentErr intentionally ignored — zero counts are the correct fallback when
+	// the scan_agents table doesn't exist yet (pre-migration fresh install).
+	_ = agentErr
 
 	// --- backup / restore rehearsal notes (static) ---
 	backupNotes := []map[string]string{
@@ -80,8 +77,7 @@ func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"database":   dbStatus,
-		"migrations": migrationsInfo,
+		"database": dbStatus,
 		"scan_agents": fiber.Map{
 			"total":   counts.total,
 			"healthy": counts.healthy,
@@ -89,4 +85,33 @@ func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
 		},
 		"backup_notes": backupNotes,
 	})
+}
+
+// DownloadBackup handles GET /api/v1/admin/backup/download
+// Runs pg_dump against the configured DATABASE_URL and streams the result
+// as a downloadable .sql file.
+func (h *Handler) DownloadBackup(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
+
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return RespondError(c, fiber.StatusServiceUnavailable, "backup_unavailable", "DATABASE_URL is not set")
+	}
+
+	cmd := exec.Command("pg_dump", "--no-password", dbURL) // #nosec G204 -- DATABASE_URL is operator-supplied env var
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		slog.Warn("pg_dump failed", "stderr", stderr.String(), "error", err)
+		return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "pg_dump failed: "+stderr.String())
+	}
+
+	filename := "padduck-backup-" + time.Now().UTC().Format("20060102-150405") + ".sql"
+	c.Set("Content-Type", "application/octet-stream")
+	c.Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+	return c.Send(out.Bytes())
 }

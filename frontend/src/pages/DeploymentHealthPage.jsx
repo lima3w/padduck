@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { getSystemHealth } from '../api/client'
+import { getSystemHealth, downloadBackup } from '../api/client'
 
 function StatusBadge({ status }) {
   const s = (status || '').toLowerCase()
@@ -35,6 +35,7 @@ export default function DeploymentHealthPage() {
   const [health, setHealth] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [backingUp, setBackingUp] = useState(false)
 
   const fetchHealth = useCallback(() => {
     setLoading(true)
@@ -52,6 +53,25 @@ export default function DeploymentHealthPage() {
   useEffect(() => {
     fetchHealth()
   }, [fetchHealth])
+
+  async function handleDownloadBackup() {
+    setBackingUp(true)
+    try {
+      const res = await downloadBackup()
+      const url = URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      const cd = res.headers['content-disposition'] || ''
+      const match = cd.match(/filename="([^"]+)"/)
+      a.href = url
+      a.download = match ? match[1] : 'padduck-backup.sql'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Backup failed: ' + (err?.response?.data?.error || err.message))
+    } finally {
+      setBackingUp(false)
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -80,7 +100,7 @@ export default function DeploymentHealthPage() {
         {loading && !health ? (
           <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
         ) : health ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Database */}
             <Card>
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
@@ -96,56 +116,57 @@ export default function DeploymentHealthPage() {
               </div>
             </Card>
 
-            {/* Migrations */}
-            <Card>
-              <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                Migrations
-              </div>
-              <div className="flex items-center gap-2">
-                <StatusBadge status={health.migrations?.status || 'unknown'} />
-                {health.migrations?.applied != null && (
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {health.migrations.applied} applied
-                  </span>
-                )}
-              </div>
-            </Card>
-
             {/* Scan Agents */}
             <Card>
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
                 Scan Agents
               </div>
-              {health.scan_agents ? (
-                <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                  <div>Total: <span className="font-medium">{health.scan_agents.total}</span></div>
-                  <div className="flex items-center gap-1">
-                    Healthy: <StatusBadge status={health.scan_agents.healthy > 0 ? 'healthy' : 'ok'} />
-                    <span className="font-medium ml-1">{health.scan_agents.healthy}</span>
+              {health.scan_agents?.total != null ? (
+                health.scan_agents.total === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No agents registered.</p>
+                ) : (
+                  <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                    <div>Total: <span className="font-medium">{health.scan_agents.total}</span></div>
+                    <div className="flex items-center gap-1">
+                      Healthy: <StatusBadge status={health.scan_agents.healthy > 0 ? 'healthy' : 'ok'} />
+                      <span className="font-medium ml-1">{health.scan_agents.healthy}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      Offline:
+                      <span className={`ml-1 font-medium ${health.scan_agents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                        {health.scan_agents.offline}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    Offline:
-                    <span className={`ml-1 font-medium ${health.scan_agents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
-                      {health.scan_agents.offline}
-                    </span>
-                  </div>
-                </div>
+                )
               ) : (
-                <StatusBadge status="unknown" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No agents registered.</p>
               )}
             </Card>
           </div>
         ) : null}
       </section>
 
-      {/* Panel 2: Backup & Restore Rehearsal */}
+      {/* Panel 2: Backup & Restore */}
       <section>
-        <SectionHeading>Backup &amp; Restore Rehearsal</SectionHeading>
+        <SectionHeading>Backup &amp; Restore</SectionHeading>
         <Card>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Follow these steps when conducting a restore rehearsal to verify backup integrity
             and validate your recovery procedure.
           </p>
+          <div className="mb-4">
+            <button
+              onClick={handleDownloadBackup}
+              disabled={backingUp}
+              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {backingUp ? 'Generating...' : 'Download Backup (.sql)'}
+            </button>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Downloads a full pg_dump of the database. Requires pg_dump to be installed in the backend container.
+            </p>
+          </div>
           {loading && !health ? (
             <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
           ) : health?.backup_notes ? (

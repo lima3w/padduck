@@ -169,16 +169,24 @@ func (r *Repository) DeleteAuditLogsBefore(ctx context.Context, before time.Time
 	return result.RowsAffected(), nil
 }
 
-// GetAuditRetentionSettings returns the single retention settings row.
+// GetAuditRetentionSettings returns the single retention settings row, creating
+// it with sensible defaults (365 days, archive disabled) if it doesn't exist yet.
 func (r *Repository) GetAuditRetentionSettings(ctx context.Context) (*models.AuditRetentionSettings, error) {
 	s := &models.AuditRetentionSettings{}
 	err := r.db.QueryRow(ctx,
 		`SELECT id, retention_days, archive_enabled, updated_at FROM audit_retention_settings LIMIT 1`,
 	).Scan(&s.ID, &s.RetentionDays, &s.ArchiveEnabled, &s.UpdatedAt)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		return s, nil
 	}
-	return s, nil
+	// No row exists — seed defaults and return them.
+	err = r.db.QueryRow(ctx,
+		`INSERT INTO audit_retention_settings (retention_days, archive_enabled)
+		 VALUES (365, false)
+		 ON CONFLICT DO NOTHING
+		 RETURNING id, retention_days, archive_enabled, updated_at`,
+	).Scan(&s.ID, &s.RetentionDays, &s.ArchiveEnabled, &s.UpdatedAt)
+	return s, err
 }
 
 // UpdateAuditRetentionSettings updates the single retention settings row.

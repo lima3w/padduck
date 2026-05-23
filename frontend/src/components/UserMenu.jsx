@@ -131,6 +131,17 @@ export default function UserMenu({ darkMode }) {
 
           <div className="my-1 border-t border-gray-200 dark:border-gray-600" />
 
+          <Link
+            role="menuitem"
+            to="/admin/privacy/consent-report"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+          >
+            <span>Privacy Policy</span>
+          </Link>
+
+          <div className="my-1 border-t border-gray-200 dark:border-gray-600" />
+
           <button
             type="button"
             role="menuitem"
