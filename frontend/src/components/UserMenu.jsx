@@ -68,6 +68,8 @@ export default function UserMenu({ darkMode }) {
           email={user.email}
           username={user.username}
           gravatarUrl={user.gravatar_url}
+          avatarSource={user.avatar_source}
+          avatarBust={user.updated_at}
           size={32}
         />
         <span className="text-sm text-blue-100 dark:text-gray-300">{user.username}</span>
