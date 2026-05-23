@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM alpine:3.22
 RUN addgroup -S app && adduser -S app -G app && \
-    apk add --no-cache su-exec postgresql18-client
+    apk add --no-cache su-exec
 WORKDIR /app
 COPY --from=builder /app/app .
 COPY --from=builder /app/migrations ./migrations
