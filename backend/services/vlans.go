@@ -9,8 +9,8 @@ import (
 )
 
 func (s *Service) CreateVLAN(ctx context.Context, vrfID *int64, domainID *int64, groupID *int64, vlanID int, name, description string) (*models.VLAN, error) {
-	if vlanID < 1 || vlanID > 4094 {
-		return nil, fmt.Errorf("VLAN ID must be between 1 and 4094")
+	if vlanID < 0 || vlanID > 4094 {
+		return nil, fmt.Errorf("VLAN ID must be between 0 and 4094")
 	}
 	if name == "" {
 		return nil, fmt.Errorf("VLAN name is required")

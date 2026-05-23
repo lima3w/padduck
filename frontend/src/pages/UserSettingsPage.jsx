@@ -271,7 +271,7 @@ function SecurityTab() {
             ) : setupData ? (
               <div className="space-y-4">
                 <p className="text-sm text-gray-700">Scan this QR code with your authenticator app:</p>
-                <img src={setupData.qr_code} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded" />
+                <img src={setupData.qr_code} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded bg-white" />
                 <details className="text-sm">
                   <summary className="text-gray-500 cursor-pointer">Can&apos;t scan? Enter the secret manually</summary>
                   <code className="block mt-2 p-2 bg-gray-100 rounded font-mono text-xs break-all">{setupData.secret}</code>
@@ -583,10 +583,10 @@ function NotificationsTab() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="divide-y divide-gray-100 border border-gray-200 rounded">
+      <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded">
         {Object.entries(NOTIF_LABELS).map(([key, label]) => (
-          <label key={key} className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50">
-            <span className="text-sm text-gray-800">{label}</span>
+          <label key={key} className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <span className="text-sm text-gray-800 dark:text-gray-100">{label}</span>
             <input
               type="checkbox"
               checked={prefs?.[key] ?? true}
@@ -815,7 +815,7 @@ function PrivacyTab({ user }) {
 }
 
 const TAB_PARAM_MAP = { history: 'login-history', notif: 'notifications' }
-const VALID_TABS = new Set(['profile', 'security', 'tokens', 'login-history', 'sessions', 'notifications', 'privacy'])
+const VALID_TABS = new Set(['profile', 'security', 'tokens', 'login-history', 'sessions', 'notifications'])
 
 export default function UserSettingsPage() {
   const { user } = useAuth()
@@ -834,14 +834,13 @@ export default function UserSettingsPage() {
     { id: 'sessions', label: 'Sessions' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'login-history', label: 'Login History' },
-    { id: 'privacy', label: 'Privacy' },
   ]
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h1>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto" role="tablist" aria-label="Account settings sections">
+      <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Account settings sections">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -869,7 +868,6 @@ export default function UserSettingsPage() {
         {tab === 'sessions' && <SessionsTab />}
         {tab === 'notifications' && <NotificationsTab />}
         {tab === 'login-history' && <LoginHistoryTab />}
-        {tab === 'privacy' && <PrivacyTab user={user} />}
       </div>
     </div>
   )

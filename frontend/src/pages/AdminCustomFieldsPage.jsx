@@ -182,7 +182,6 @@ export default function AdminCustomFieldsPage() {
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
                 <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-10">Order</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
                 <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Label</th>
                 <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
                 <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Required</th>
@@ -192,7 +191,7 @@ export default function AdminCustomFieldsPage() {
             </thead>
             <tbody>
               {fieldsForTab(et).length === 0 && (
-                <EmptyRow colSpan={7} message={`No custom fields for ${ENTITY_LABELS[et]} yet.`} />
+                <EmptyRow colSpan={6} message={`No custom fields for ${ENTITY_LABELS[et]} yet.`} />
               )}
               {fieldsForTab(et).map((field, idx, list) => (
                 <tr key={field.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -212,7 +211,6 @@ export default function AdminCustomFieldsPage() {
                       >▼</button>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-mono text-gray-700 dark:text-gray-300">{field.name}</td>
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{field.label}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{field.fieldType}</td>
                   <td className="px-4 py-3">

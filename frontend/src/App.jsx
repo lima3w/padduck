@@ -80,6 +80,7 @@ const IdentityPoliciesPage = lazy(() => import('./pages/IdentityPoliciesPage'))
 const AdminCompatibilityPage = lazy(() => import('./pages/AdminCompatibilityPage'))
 const DiscoveryPage = lazy(() => import('./pages/DiscoveryPage'))
 const UsersRolesPage = lazy(() => import('./pages/UsersRolesPage'))
+const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -206,10 +207,11 @@ export default function App() {
             <Route path="admin/integration-templates" element={<IntegrationTemplatesPage />} />
             <Route path="admin/automation/policies" element={<AutomationPoliciesPage />} />
             <Route path="sections/:id/topology" element={<TopologyPage />} />
-            <Route path="reports/utilization-trends" element={<UtilizationTrendsPage />} />
-            <Route path="reports/inactive-ips" element={<InactiveIPsPage />} />
-            <Route path="reports/duplicates" element={<DuplicatesPage />} />
-            <Route path="reports/reconciliation" element={<ReconciliationCenterPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="reports/utilization-trends" element={<Navigate to="/reports?tab=utilization" replace />} />
+            <Route path="reports/inactive-ips" element={<Navigate to="/reports?tab=inactive" replace />} />
+            <Route path="reports/duplicates" element={<Navigate to="/reports?tab=duplicates" replace />} />
+            <Route path="reports/reconciliation" element={<Navigate to="/reports?tab=reconciliation" replace />} />
             <Route path="admin/reports/scheduled" element={<ScheduledReportsPage />} />
             <Route path="admin/import" element={<ImportDataPage />} />
             <Route path="admin/export" element={<ExportDataPage />} />

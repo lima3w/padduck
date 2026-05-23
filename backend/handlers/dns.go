@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"padduck/services"
@@ -65,6 +66,7 @@ func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 
 // ListDNSZones handles GET /api/v1/dns/zones
 // Returns the list of zones from the configured DNS provider, or {"configured": false} if none is set up.
+// Applies the dns_zone_filter_mode / dns_zone_filter_list / dns_zone_filter_auto_allow config settings.
 func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2NameserverList); err != nil {
 		return nil
@@ -77,7 +79,84 @@ func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 	if !configured {
 		return c.JSON(fiber.Map{"configured": false, "zones": []interface{}{}})
 	}
+
+	// Apply zone visibility filter
+	zones = h.applyDNSZoneFilter(c.Context(), zones)
+
 	return c.JSON(fiber.Map{"configured": true, "zones": zones})
+}
+
+// applyDNSZoneFilter applies the dns_zone_filter_mode setting to the given zone list.
+// In "allow_all" mode (default): all zones shown, listed zones hidden.
+// In "block_all" mode: only listed zones shown; with auto_allow, new zones are added to the list.
+func (h *Handler) applyDNSZoneFilter(ctx context.Context, zones []services.ZoneInfo) []services.ZoneInfo {
+	if h.service.Config == nil {
+		return zones
+	}
+	mode, _ := h.service.Config.GetCtx(ctx, "dns_zone_filter_mode")
+	listRaw, _ := h.service.Config.GetCtx(ctx, "dns_zone_filter_list")
+
+	// Parse the exception list (one zone per line, trim whitespace)
+	listed := map[string]struct{}{}
+	for _, z := range strings.Split(listRaw, "\n") {
+		if t := strings.TrimSpace(z); t != "" {
+			listed[strings.ToLower(t)] = struct{}{}
+		}
+	}
+
+	switch mode {
+	case "block_all":
+		autoAllow, _ := h.service.Config.GetCtx(ctx, "dns_zone_filter_auto_allow")
+		if autoAllow == "true" {
+			// Add any new zones to the list automatically
+			var newEntries []string
+			for _, z := range zones {
+				name := strings.ToLower(z.Name)
+				if _, known := listed[name]; !known {
+					newEntries = append(newEntries, z.Name)
+					listed[name] = struct{}{}
+				}
+			}
+			if len(newEntries) > 0 {
+				updated := listRaw
+				for _, ne := range newEntries {
+					if updated != "" {
+						updated += "\n"
+					}
+					updated += ne
+				}
+				_ = h.service.Config.SetCtx(ctx, "dns_zone_filter_list", updated)
+			}
+			// After auto-allow, show everything in the updated list
+			var result []services.ZoneInfo
+			for _, z := range zones {
+				if _, ok := listed[strings.ToLower(z.Name)]; ok {
+					result = append(result, z)
+				}
+			}
+			return result
+		}
+		// Strict block_all: only show listed zones
+		var result []services.ZoneInfo
+		for _, z := range zones {
+			if _, ok := listed[strings.ToLower(z.Name)]; ok {
+				result = append(result, z)
+			}
+		}
+		return result
+
+	default: // "allow_all"
+		if len(listed) == 0 {
+			return zones
+		}
+		var result []services.ZoneInfo
+		for _, z := range zones {
+			if _, hidden := listed[strings.ToLower(z.Name)]; !hidden {
+				result = append(result, z)
+			}
+		}
+		return result
+	}
 }
 
 // GetDNSZoneRecords handles GET /api/v1/dns/zones/:zone/records
