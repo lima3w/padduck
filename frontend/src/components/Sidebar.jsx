@@ -287,9 +287,6 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-          Reports
-        </div>
         <NavLink
           to="/reports"
           className={({ isActive }) =>

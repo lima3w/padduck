@@ -625,9 +625,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 }
 
 func (h *Handler) loggingMiddleware(c *fiber.Ctx) error {
-	// Skip logging health-check probes in production to avoid log noise from
-	// Docker/Kubernetes liveness probes that fire every few seconds.
-	if h.isProduction && c.Path() == "/health" {
+	// Always skip /health to avoid log noise from Docker/Kubernetes liveness probes.
+	if c.Path() == "/health" {
 		return c.Next()
 	}
 	log.Printf("%s %s", c.Method(), c.Path())
