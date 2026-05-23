@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import CustomFieldForm from '../components/CustomFieldForm'
 import ChangeHistory from '../components/ChangeHistory'
-import DataQualityBadge from '../components/DataQualityBadge'
 import FingerprintPanel from '../components/FingerprintPanel'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import { getLocations } from '../api/locations'
@@ -13,6 +12,7 @@ import {
   getDeviceIPs, associateDeviceIP, disassociateDeviceIP,
   getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface,
   getCustomFields, getDeviceSNMPCredentials,
+  searchIPAddressesGlobal,
 } from '../api/client'
 import { getCachedUser } from '../utils/storageKeys'
 
@@ -33,6 +33,11 @@ export default function DeviceDetailPage() {
   const [editForm, setEditForm] = useState({})
   const [ifaceForm, setIfaceForm] = useState(EMPTY_IFACE_FORM)
   const [assocForm, setAssocForm] = useState({ ip_id: '', interface_name: '', is_primary: false })
+  const [ipSearch, setIpSearch] = useState('')
+  const [ipSearchResults, setIpSearchResults] = useState([])
+  const [ipSearching, setIpSearching] = useState(false)
+  const [selectedIpLabel, setSelectedIpLabel] = useState('')
+  const ipSearchTimer = useRef(null)
   const [deleteIfaceConfirm, setDeleteIfaceConfirm] = useState(null)
   const [deleteIpConfirm, setDeleteIpConfirm] = useState(null)
   const [snmpCreds, setSnmpCreds] = useState(null) // null = not loaded, false = not found
@@ -165,7 +170,33 @@ export default function DeviceDetailPage() {
 
   function openAssociateIP() {
     setAssocForm({ ip_id: '', interface_name: '', is_primary: false })
+    setIpSearch('')
+    setIpSearchResults([])
+    setSelectedIpLabel('')
     setModal('assoc')
+  }
+
+  const handleIpSearchChange = useCallback((value) => {
+    setIpSearch(value)
+    setAssocForm(f => ({ ...f, ip_id: '' }))
+    setSelectedIpLabel('')
+    if (ipSearchTimer.current) clearTimeout(ipSearchTimer.current)
+    if (!value.trim()) { setIpSearchResults([]); return }
+    ipSearchTimer.current = setTimeout(async () => {
+      setIpSearching(true)
+      try {
+        const res = await searchIPAddressesGlobal(value.trim())
+        setIpSearchResults(Array.isArray(res.data) ? res.data : [])
+      } catch { setIpSearchResults([]) }
+      finally { setIpSearching(false) }
+    }, 300)
+  }, [])
+
+  function selectIpResult(ip) {
+    setAssocForm(f => ({ ...f, ip_id: ip.id }))
+    setSelectedIpLabel(`${ip.address}${ip.hostname ? ` (${ip.hostname})` : ''}`)
+    setIpSearch('')
+    setIpSearchResults([])
   }
 
   async function handleAssocSubmit(e) {
@@ -386,17 +417,6 @@ export default function DeviceDetailPage() {
         )}
       </div>
 
-      {isAdmin && device && (
-        <div className="mb-6">
-          <DataQualityBadge fields={[
-            { label: 'Vendor', ok: Boolean(device.vendor) },
-            { label: 'Model', ok: Boolean(device.model) },
-            { label: 'Location', ok: Boolean(device.locationId) },
-            { label: 'Last scanned', ok: Boolean(device.lastPingAt) },
-            { label: 'Description', ok: Boolean(device.description) },
-          ]} entityLabel="device" />
-        </div>
-      )}
 
       {isAdmin && device && (
         <div className="mb-6">
@@ -871,14 +891,54 @@ export default function DeviceDetailPage() {
         <Modal title="Associate IP Address" onClose={() => setModal(null)}>
           <form onSubmit={handleAssocSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP Address ID <span className="text-red-500">*</span></label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="Enter IP address ID"
-                value={assocForm.ip_id}
-                onChange={e => setAssocForm(f => ({ ...f, ip_id: e.target.value }))}
-                required
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                IP Address <span className="text-red-500">*</span>
+              </label>
+              {assocForm.ip_id ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 border rounded text-sm font-mono bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 border-gray-300">
+                    {selectedIpLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setAssocForm(f => ({ ...f, ip_id: '' })); setSelectedIpLabel('') }}
+                    className="px-2 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm"
+                    title="Clear selection"
+                  >✕</button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                    placeholder="Type an IP address or hostname to search…"
+                    value={ipSearch}
+                    onChange={e => handleIpSearchChange(e.target.value)}
+                    autoFocus
+                  />
+                  {(ipSearching || ipSearchResults.length > 0) && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg max-h-48 overflow-y-auto">
+                      {ipSearching && (
+                        <div className="px-3 py-2 text-sm text-gray-400">Searching…</div>
+                      )}
+                      {!ipSearching && ipSearchResults.length === 0 && ipSearch.trim() && (
+                        <div className="px-3 py-2 text-sm text-gray-400">No matching IPs found</div>
+                      )}
+                      {ipSearchResults.map(ip => (
+                        <button
+                          key={ip.id}
+                          type="button"
+                          onClick={() => selectIpResult(ip)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 font-mono text-gray-900 dark:text-gray-100"
+                        >
+                          <span className="font-medium">{ip.address}</span>
+                          {ip.hostname && <span className="ml-2 text-gray-400 text-xs">{ip.hostname}</span>}
+                          {ip.status && <span className="ml-2 text-xs px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">{ip.status}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Interface Name</label>
@@ -900,7 +960,7 @@ export default function DeviceDetailPage() {
             </label>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+              <button type="submit" disabled={saving || !assocForm.ip_id} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
                 {saving ? 'Associating...' : 'Associate'}
               </button>
             </div>

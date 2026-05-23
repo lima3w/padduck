@@ -70,7 +70,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	app.Use(RequestIDMiddleware)
 
 	// Add logging middleware
-	app.Use(loggingMiddleware)
+	app.Use(h.loggingMiddleware)
 
 	// Grafana SimpleJSON datasource routes (v1.14.0 #236) — Bearer token auth, no CSRF
 	grafana := app.Group("/api/grafana")
@@ -178,6 +178,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Get("/:id/lease-status", h.IsIPLeaseExpired)
 	ipAddress.Post("/:id/release-expired", h.ReleaseExpiredLease)
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
+	ipAddress.Get("/search", h.SearchIPAddressesGlobal)
 	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
 
 	// VRFs routes
@@ -273,6 +274,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/audit-logs", h.GetAuditLogs)
 	admin.Get("/audit-logs/export", h.ExportAuditLogs)
 	admin.Post("/audit-logs/purge", h.PurgeAuditLogs)
+	admin.Get("/audit/retention", h.GetAuditRetention)
+	admin.Put("/audit/retention", h.UpdateAuditRetention)
 
 	// Role management
 	admin.Get("/roles", h.ListRoles)
@@ -621,7 +624,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	log.Println("Routes registered successfully")
 }
 
-func loggingMiddleware(c *fiber.Ctx) error {
+func (h *Handler) loggingMiddleware(c *fiber.Ctx) error {
+	// Skip logging health-check probes in production to avoid log noise from
+	// Docker/Kubernetes liveness probes that fire every few seconds.
+	if h.isProduction && c.Path() == "/health" {
+		return c.Next()
+	}
 	log.Printf("%s %s", c.Method(), c.Path())
 	return c.Next()
 }

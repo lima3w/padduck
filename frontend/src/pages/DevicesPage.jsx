@@ -758,10 +758,17 @@ function normalizeCustomFieldDefs(defs) {
   const rows = Array.isArray(defs) ? defs : []
   return rows.map(def => ({
     ...def,
+    // snake_case aliases (used by filters and internal logic)
     field_type: def.field_type ?? def.fieldType,
     is_required: def.is_required ?? def.isRequired,
     default_value: def.default_value ?? def.defaultValue,
     display_order: def.display_order ?? def.displayOrder,
     is_searchable: def.is_searchable ?? def.isSearchable,
+    // camelCase aliases (used by CustomFieldForm)
+    fieldType: def.fieldType ?? def.field_type,
+    isRequired: def.isRequired ?? def.is_required,
+    defaultValue: def.defaultValue ?? def.default_value,
+    displayOrder: def.displayOrder ?? def.display_order,
+    isSearchable: def.isSearchable ?? def.is_searchable,
   }))
 }

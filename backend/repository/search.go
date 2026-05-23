@@ -157,3 +157,24 @@ func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, quer
 	}
 	return ips, rows.Err()
 }
+
+// SearchIPAddressesGlobal searches IP addresses across all subnets by address text.
+func (r *Repository) SearchIPAddressesGlobal(ctx context.Context, query string, limit int64) ([]*models.IPAddress, error) {
+	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
+	        WHERE ip.address::text ILIKE $1 OR ip.hostname ILIKE $1
+	        ORDER BY ip.address ASC LIMIT $2`
+	rows, err := r.db.Query(ctx, sql, "%"+query+"%", limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ips := make([]*models.IPAddress, 0)
+	for rows.Next() {
+		ip, err := scanIP(rows)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, rows.Err()
+}

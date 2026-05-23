@@ -91,8 +91,9 @@ func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subne
 }
 
 // GetSubnetByCIDR looks up a subnet by CIDR notation (e.g. "192.168.1.0/24").
+// network_address stores only the host IP; prefix_length is in a separate column.
 func (r *Repository) GetSubnetByCIDR(ctx context.Context, cidr string) (*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.network_address = $1::inet`
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE host(s.network_address) = host($1::inet) AND s.prefix_length = masklen($1::inet)`
 	row := r.db.QueryRow(ctx, query, cidr)
 	return scanSubnet(row)
 }

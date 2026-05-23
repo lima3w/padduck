@@ -1,13 +1,6 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import UserSettingsPage from '../pages/UserSettingsPage'
-import * as client from '../api/client'
-
-vi.mock('../api/client', () => ({
-  getCurrentUser: vi.fn(),
-  getPrivacyPolicyVersion: vi.fn(),
-  acceptPrivacyPolicy: vi.fn(),
-}))
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
@@ -17,7 +10,6 @@ vi.mock('../hooks/useAuth', () => ({
       email: 'alice@example.test',
       role: 'user',
       state: 'active',
-      privacyAcceptedVersion: '1.0',
     },
   }),
 }))
@@ -39,8 +31,6 @@ describe('UserSettingsPage', () => {
   beforeEach(() => {
     if (!globalThis.localStorage) installLocalStorage()
     localStorage.clear()
-    client.getPrivacyPolicyVersion.mockResolvedValue({ data: { version: '1.1' } })
-    client.acceptPrivacyPolicy.mockResolvedValue({})
   })
 
   it('exposes account settings as accessible tabs', () => {
@@ -52,24 +42,10 @@ describe('UserSettingsPage', () => {
 
     expect(screen.getByRole('tablist', { name: 'Account settings sections' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Profile', selected: true })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Privacy' })).toBeInTheDocument()
-  })
-
-  it('shows and records privacy consent from the privacy tab', async () => {
-    render(
-      <MemoryRouter initialEntries={['/settings?tab=privacy']}>
-        <UserSettingsPage />
-      </MemoryRouter>
-    )
-
-    expect(await screen.findByText('Current policy version')).toBeInTheDocument()
-    expect(screen.getByText('1.1')).toBeInTheDocument()
-    expect(screen.getByText('1.0')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Accept current policy' }))
-
-    await waitFor(() => expect(client.acceptPrivacyPolicy).toHaveBeenCalledTimes(1))
-    expect(await screen.findByText('Privacy consent recorded.')).toBeInTheDocument()
-    expect(screen.getByText('Current')).toBeInTheDocument()
+    // Privacy tab removed — users imply acceptance by using the system
+    expect(screen.queryByRole('tab', { name: 'Privacy' })).not.toBeInTheDocument()
+    // Remaining tabs should be present
+    expect(screen.getByRole('tab', { name: 'Security' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Notifications' })).toBeInTheDocument()
   })
 })

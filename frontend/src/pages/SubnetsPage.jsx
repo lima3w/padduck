@@ -30,7 +30,7 @@ const DEFAULT_LIMIT = 25
 const FILTER_KEY = STORAGE_KEYS.subnetFilters
 const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.subnetFilters
 
-const EMPTY_FORM = { network_address: '', prefix_length: '', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
+const EMPTY_FORM = { network_address: '', prefix_length: '24', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
 
 function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
   if (!networkAddress || isNaN(newPrefix) || newPrefix <= currentPrefix || newPrefix > 32) return []
@@ -265,14 +265,14 @@ export default function SubnetsPage() {
       const full = res.data
       setForm({
         network_address: full.networkAddress || '',
-        prefix_length: full.prefixLength != null ? String(full.prefixLength) : '',
+        prefix_length: full.prefixLength != null ? String(full.prefixLength) : '24',
         description: full.description || '',
         gateway: full.gateway || '',
         auto_reserve_first: full.autoReserveFirst || false,
         auto_reserve_last: full.autoReserveLast || false,
         location_id: full.locationId ? String(full.locationId) : '',
         nameserver_id: full.nameserverId ? String(full.nameserverId) : '',
-        vlan_id: full.vlanId ? String(full.vlanId) : '',
+        vlan_id: full.vlanId != null ? String(full.vlanId) : '',
         custom_fields: full.customFields || {},
         alert_threshold_pct: full.alertThresholdPct != null ? String(full.alertThresholdPct) : '',
         alert_email_override: full.alertEmailOverride || '',
@@ -292,14 +292,14 @@ export default function SubnetsPage() {
       if (modal === 'create') {
         await createSubnet(sectionID, {
           network_address: form.network_address,
-          prefix_length: parseInt(form.prefix_length),
+          prefix_length: form.prefix_length !== '' ? parseInt(form.prefix_length) : 24,
           description: form.description,
           gateway: form.gateway || null,
           auto_reserve_first: form.auto_reserve_first,
           auto_reserve_last: form.auto_reserve_last,
           location_id: form.location_id ? parseInt(form.location_id) : null,
           nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
-          vlan_id: form.vlan_id ? parseInt(form.vlan_id) : null,
+          vlan_id: form.vlan_id !== '' ? parseInt(form.vlan_id) : null,
           custom_fields: form.custom_fields || {},
         })
       } else {
@@ -311,7 +311,7 @@ export default function SubnetsPage() {
           auto_reserve_last: form.auto_reserve_last,
           location_id: form.location_id ? parseInt(form.location_id) : null,
           nameserver_id: form.nameserver_id ? parseInt(form.nameserver_id) : null,
-          vlan_id: form.vlan_id ? parseInt(form.vlan_id) : null,
+          vlan_id: form.vlan_id !== '' ? parseInt(form.vlan_id) : null,
           custom_fields: form.custom_fields || {},
           alert_threshold_pct: form.alert_threshold_pct ? parseInt(form.alert_threshold_pct) : null,
           alert_email_override: form.alert_email_override || null,
@@ -596,9 +596,7 @@ export default function SubnetsPage() {
                 <tr>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Network</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Prefix</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Gateway</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Nameserver</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">VLAN</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
                   {searchableFields.map(d => (
@@ -609,7 +607,7 @@ export default function SubnetsPage() {
               </thead>
               <tbody>
                 {subnets.length === 0 && (
-                  <EmptyRow colSpan={8 + searchableFields.length} message="No subnets yet." />
+                  <EmptyRow colSpan={6 + searchableFields.length} message="No subnets yet." />
                 )}
                 {subnets.map(s => (
                   <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -620,7 +618,6 @@ export default function SubnetsPage() {
                       {s.networkAddress}
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">/{s.prefixLength}</td>
-                    <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400">{s.gateway || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {s.locationId ? (
                         <Link to={`/locations/${s.locationId}`} className="text-blue-600 dark:text-blue-400 hover:underline text-xs">
@@ -629,12 +626,9 @@ export default function SubnetsPage() {
                       ) : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                      {s.nameserverId ? (nameservers.find(ns => ns.id === s.nameserverId)?.name || `#${s.nameserverId}`) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                      {s.vlanId ? (
+                      {s.vlanId != null ? (
                         <Link to={`/vlans/${s.vlanId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                          VLAN {vlans.find(v => v.id === s.vlanId)?.vlanId || `#${s.vlanId}`}
+                          VLAN {vlans.find(v => v.id === s.vlanId)?.vlanId ?? `#${s.vlanId}`}
                         </Link>
                       ) : '—'}
                     </td>
@@ -913,7 +907,6 @@ export default function SubnetsPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gateway (optional)</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="192.168.0.1"
                 value={form.gateway}
                 onChange={e => setForm(f => ({ ...f, gateway: e.target.value }))}
               />

@@ -291,44 +291,14 @@ export default function Sidebar() {
           Reports
         </div>
         <NavLink
-          to="/reports/utilization-trends"
+          to="/reports"
           className={({ isActive }) =>
             `px-3 py-2 rounded text-sm font-medium transition-colors ${
               isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
             }`
           }
         >
-          Utilization Trends
-        </NavLink>
-        <NavLink
-          to="/reports/inactive-ips"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-            }`
-          }
-        >
-          Inactive IPs
-        </NavLink>
-        <NavLink
-          to="/reports/duplicates"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-            }`
-          }
-        >
-          Duplicate Detection
-        </NavLink>
-        <NavLink
-          to="/reports/reconciliation"
-          className={({ isActive }) =>
-            `px-3 py-2 rounded text-sm font-medium transition-colors ${
-              isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-            }`
-          }
-        >
-          Reconciliation Center
+          Reports
         </NavLink>
 
         {isAdmin && (

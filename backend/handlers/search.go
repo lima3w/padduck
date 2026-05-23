@@ -132,3 +132,21 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 
 	return c.JSON(ips)
 }
+
+// SearchIPAddressesGlobal handles GET /api/v1/ip-addresses/search?q=...
+// Returns up to 20 IP addresses matching the query across all subnets.
+func (h *Handler) SearchIPAddressesGlobal(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2IPList); err != nil {
+		return nil
+	}
+	q := c.Query("q")
+	ips, err := h.service.SearchIPAddressesGlobal(c.Context(), q)
+	if err != nil {
+		reqLogger(c).Error("error searching IP addresses globally", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "search failed"})
+	}
+	if ips == nil {
+		ips = make([]*models.IPAddress, 0)
+	}
+	return c.JSON(ips)
+}

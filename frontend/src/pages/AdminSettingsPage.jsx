@@ -30,6 +30,9 @@ const CONFIG_KEYS_BY_TAB = {
     'technitium_token',
     'technitium_default_zone',
     'technitium_skip_tls',
+    'dns_zone_filter_mode',
+    'dns_zone_filter_list',
+    'dns_zone_filter_auto_allow',
   ],
   scanner: [
     'scanner_resolve_hostnames',
@@ -819,6 +822,53 @@ export default function AdminSettingsPage() {
             >
               {technitiumTestStatus === 'testing' ? 'Testing...' : 'Test Connection'}
             </button>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">DNS Zone Visibility</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Control which zones from the DNS provider are shown in the DNS Zones list.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter Mode</label>
+              <select
+                value={config.dns_zone_filter_mode || 'allow_all'}
+                onChange={e => handleConfigChange('dns_zone_filter_mode', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm dark:bg-gray-700 dark:text-gray-100"
+              >
+                <option value="allow_all">Allow all except — show every zone; listed zones are hidden</option>
+                <option value="block_all">Block all except — hide every zone; only listed zones are shown</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {(config.dns_zone_filter_mode || 'allow_all') === 'allow_all' ? 'Zones to hide' : 'Zones to show'}
+              </label>
+              <textarea
+                rows={4}
+                value={config.dns_zone_filter_list || ''}
+                onChange={e => handleConfigChange('dns_zone_filter_list', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm font-mono dark:bg-gray-700 dark:text-gray-100"
+                placeholder="example.com&#10;internal.lan&#10;10.in-addr.arpa."
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">One zone name per line.</p>
+            </div>
+
+            {(config.dns_zone_filter_mode || 'allow_all') === 'block_all' && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.dns_zone_filter_auto_allow === 'true'}
+                  onChange={e => handleConfigChange('dns_zone_filter_auto_allow', e.target.checked ? 'true' : 'false')}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Automatically allow new zones — when a zone is found that is not in the list above, add it automatically
+                </span>
+              </label>
+            )}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">

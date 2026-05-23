@@ -16,7 +16,7 @@ func TestCreateVLAN_InvalidVLANID(t *testing.T) {
 		name   string
 		vlanID int
 	}{
-		{"zero", 0},
+		// 0 is now valid (native/default VLAN)
 		{"too high 4095", 4095},
 		{"negative", -1},
 		{"large negative", -100},
@@ -27,7 +27,7 @@ func TestCreateVLAN_InvalidVLANID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := svc.CreateVLAN(ctx, nil, nil, nil, tt.vlanID, "SomeVLAN", "desc")
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "VLAN ID must be between 1 and 4094")
+			assert.Contains(t, err.Error(), "VLAN ID must be between 0 and 4094")
 		})
 	}
 }

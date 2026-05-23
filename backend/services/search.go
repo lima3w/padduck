@@ -178,3 +178,11 @@ func (s *Service) SearchIPAddresses(ctx context.Context, subnetID int64, query s
 
 	return s.repository.SearchIPAddressesWithCustomFields(ctx, subnetID, query, status, limit, offset, repoFilter, cfFilters)
 }
+
+// SearchIPAddressesGlobal searches IP addresses across all subnets by address/hostname.
+func (s *Service) SearchIPAddressesGlobal(ctx context.Context, query string) ([]*models.IPAddress, error) {
+	if query == "" {
+		return []*models.IPAddress{}, nil
+	}
+	return s.repository.SearchIPAddressesGlobal(ctx, query, 20)
+}
