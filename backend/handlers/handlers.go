@@ -262,6 +262,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Delete("/automation/policies/:id", h.DeleteAutomationPolicy)
 	admin.Get("/integration-templates", h.ListIntegrationTemplates)
 	admin.Get("/system-health", h.GetSystemHealth)
+	admin.Get("/backup/download", h.DownloadBackup)
 	admin.Get("/compatibility/v2-warnings", h.GetV2CompatibilityWarnings)
 	admin.Get("/compatibility/v2-readiness", h.GetV2MigrationReadiness)
 	admin.Get("/compatibility/deprecations", h.GetV2DeprecationReport)

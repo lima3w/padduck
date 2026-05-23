@@ -5,22 +5,28 @@ export default function Modal({ title, onClose, children }) {
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
 
+  // Focus the dialog once on mount and restore the previous element on unmount.
+  // This runs only on mount (empty deps) so that button clicks inside the modal
+  // don't re-trigger it and steal focus away from text inputs.
   useEffect(() => {
     previousFocusRef.current = document.activeElement
     dialogRef.current?.focus()
+    return () => {
+      previousFocusRef.current?.focus?.()
+    }
+  }, [])
 
+  // Escape-to-close is a separate effect so it can track the latest onClose
+  // without affecting the focus-on-mount behaviour above.
+  useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
         event.preventDefault()
         onClose()
       }
     }
-
     document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      previousFocusRef.current?.focus?.()
-    }
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
   return (

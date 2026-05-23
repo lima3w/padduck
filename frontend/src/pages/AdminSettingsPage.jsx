@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import * as client from '../api/client'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { testDnsConnection, testTechnitiumConnection } from '../api/client'
 
 const CONFIG_KEYS_BY_TAB = {
@@ -116,6 +116,7 @@ const FEATURE_TOGGLES = [
 
 export default function AdminSettingsPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [config, setConfig] = useState(null)
   const [approvals, setApprovals] = useState([])
   const [loading, setLoading] = useState(true)
@@ -123,7 +124,8 @@ export default function AdminSettingsPage() {
   const [purging, setPurging] = useState(false)
   const [testEmail, setTestEmail] = useState('')
   const [message, setMessage] = useState({ text: '', type: '' })
-  const [activeTab, setActiveTab] = useState('registration')
+  const initialTab = new URLSearchParams(location.search).get('tab') || 'registration'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [dnsTestStatus, setDnsTestStatus] = useState(null) // null | 'testing' | 'ok' | { error: string }
   const [technitiumTestStatus, setTechnitiumTestStatus] = useState(null) // null | 'testing' | { ok, message }
   const [dnsBulkStatus, setDnsBulkStatus] = useState(null) // null | 'running' | { ok, message }
@@ -177,7 +179,9 @@ export default function AdminSettingsPage() {
       await client.updateAdminConfig(updates)
       showMessage('Settings saved successfully')
       if (activeTab === 'features') {
-        window.setTimeout(() => window.location.reload(), 250)
+        window.setTimeout(() => {
+          window.location.href = window.location.pathname + '?tab=features'
+        }, 250)
       }
     } catch (err) {
       showMessage('Failed to save: ' + (err.response?.data?.error || err.message), 'error')
