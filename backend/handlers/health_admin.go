@@ -100,7 +100,7 @@ func (h *Handler) DownloadBackup(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusServiceUnavailable, "backup_unavailable", "DATABASE_URL is not set")
 	}
 
-	cmd := exec.Command("pg_dump", "--no-password", dbURL) // #nosec G204 -- DATABASE_URL is operator-supplied env var
+	cmd := exec.Command("pg_dump", "--no-password", dbURL) // #nosec G204,G702 -- DATABASE_URL is operator-supplied env var
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
