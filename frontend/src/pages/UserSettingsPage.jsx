@@ -3,27 +3,62 @@ import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import * as client from '../api/client'
 import { getCachedUser, setCachedUser } from '../utils/storageKeys'
+import { gravatarUrl } from '../utils/md5'
 
 function ProfileTab({ user }) {
+  const avatarSrc = user?.email ? gravatarUrl(user.email, 80) : null
+
   return (
     <div className="max-w-lg">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Profile</h2>
+
+      {/* Avatar */}
+      <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        {avatarSrc ? (
+          <img
+            src={avatarSrc}
+            alt="Profile avatar"
+            className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-gray-600"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-2xl font-bold text-blue-600 dark:text-blue-300 border-2 border-gray-200 dark:border-gray-600">
+            {(user?.username || '?')[0].toUpperCase()}
+          </div>
+        )}
+        <div>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{user?.username}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{user?.email}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Avatar from{' '}
+            <a
+              href="https://gravatar.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              Gravatar
+            </a>
+          </p>
+        </div>
+      </div>
+
       <dl className="space-y-3">
         <div>
-          <dt className="text-sm font-medium text-gray-500">Username</dt>
-          <dd className="mt-1 text-sm text-gray-900">{user?.username}</dd>
+          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Username</dt>
+          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{user?.username}</dd>
         </div>
         <div>
-          <dt className="text-sm font-medium text-gray-500">Email</dt>
-          <dd className="mt-1 text-sm text-gray-900">{user?.email}</dd>
+          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</dt>
+          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100">{user?.email}</dd>
         </div>
         <div>
-          <dt className="text-sm font-medium text-gray-500">Role</dt>
-          <dd className="mt-1 text-sm text-gray-900 capitalize">{user?.role}</dd>
+          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Role</dt>
+          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 capitalize">{user?.role}</dd>
         </div>
         <div>
-          <dt className="text-sm font-medium text-gray-500">Account State</dt>
-          <dd className="mt-1 text-sm text-gray-900 capitalize">{user?.state?.replace(/_/g, ' ')}</dd>
+          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Account State</dt>
+          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 capitalize">{user?.state?.replace(/_/g, ' ')}</dd>
         </div>
       </dl>
     </div>

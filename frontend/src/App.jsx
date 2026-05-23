@@ -17,6 +17,7 @@ const AdminOverviewPage = lazy(() => import('./pages/AdminOverviewPage'))
 const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'))
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'))
 const AuditRetentionPage = lazy(() => import('./pages/AuditRetentionPage'))
+const AuditPage = lazy(() => import('./pages/AuditPage'))
 const UserSettingsPage = lazy(() => import('./pages/UserSettingsPage'))
 const AdminTagsPage = lazy(() => import('./pages/AdminTagsPage'))
 const OverlapReportPage = lazy(() => import('./pages/OverlapReportPage'))
@@ -169,8 +170,9 @@ export default function App() {
             <Route path="subnets/:subnetID/ip-addresses" element={<IPAddressesPage />} />
             <Route path="admin" element={<AdminOverviewPage />} />
             <Route path="admin/settings" element={<AdminSettingsPage />} />
-            <Route path="admin/audit-log" element={<AuditLogPage />} />
-            <Route path="admin/audit/retention" element={<AuditRetentionPage />} />
+            <Route path="admin/audit" element={<AuditPage />} />
+            <Route path="admin/audit-log" element={<Navigate to="/admin/audit?tab=log" replace />} />
+            <Route path="admin/audit/retention" element={<Navigate to="/admin/audit?tab=retention" replace />} />
             <Route path="admin/tags" element={<AdminTagsPage />} />
             <Route path="admin/overlap-report" element={<OverlapReportPage />} />
             <Route path="settings" element={<UserSettingsPage />} />

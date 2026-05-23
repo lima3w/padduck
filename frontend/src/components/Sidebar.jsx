@@ -5,6 +5,8 @@ import { getDnsZones, getFeatures, checkForUpdates } from '../api/client'
 import { DEFAULT_FEATURES, normalizeFeatures } from '../utils/features'
 import { getCachedUser } from '../utils/storageKeys'
 
+const SECTION_HEADER = 'mt-2 pt-3 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/50 uppercase tracking-wider border-t border-[#25364a]'
+
 export default function Sidebar() {
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
@@ -117,9 +119,7 @@ export default function Sidebar() {
         )}
 
         {(features.locations || features.racks) && (
-          <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-            Physical
-          </div>
+          <div className={SECTION_HEADER}>Physical</div>
         )}
         {features.locations && (
           <NavLink
@@ -160,9 +160,7 @@ export default function Sidebar() {
         )}
 
         {(features.nat || features.firewall || features.dhcp || features.circuits) && (
-          <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-            Network Services
-          </div>
+          <div className={SECTION_HEADER}>Network Services</div>
         )}
         {features.nat && (
           <NavLink
@@ -215,9 +213,7 @@ export default function Sidebar() {
 
         {features.customers && (
           <>
-            <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-              Customers
-            </div>
+            <div className={SECTION_HEADER}>Customers</div>
             <NavLink
               to="/customers"
               className={({ isActive }) =>
@@ -232,9 +228,7 @@ export default function Sidebar() {
         )}
 
         {(features.vlans || features.vrfs) && (
-          <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-            VLANs &amp; VRFs
-          </div>
+          <div className={SECTION_HEADER}>VLANs &amp; VRFs</div>
         )}
         {features.vlans && (
           <NavLink
@@ -261,9 +255,7 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-          DNS
-        </div>
+        <div className={SECTION_HEADER}>DNS</div>
         <NavLink
           to="/dns/nameservers"
           className={({ isActive }) =>
@@ -300,9 +292,7 @@ export default function Sidebar() {
 
         {isAdmin && (
           <>
-            <div className="mt-4 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-              Admin
-            </div>
+            <div className={SECTION_HEADER}>Admin</div>
             <NavLink
               to="/admin/requests"
               className={({ isActive }) =>
@@ -349,24 +339,14 @@ export default function Sidebar() {
               Identity Policies
             </NavLink>
             <NavLink
-              to="/admin/audit-log"
+              to="/admin/audit"
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
                   isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
                 }`
               }
             >
-              Audit Log
-            </NavLink>
-            <NavLink
-              to="/admin/audit/retention"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
-                }`
-              }
-            >
-              Audit Retention
+              Audit
             </NavLink>
             <NavLink
               to="/admin/discovery"
@@ -378,9 +358,7 @@ export default function Sidebar() {
             >
               Discovery
             </NavLink>
-            <div className="mt-2 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/60 uppercase tracking-wider">
-              Automation
-            </div>
+            <div className={`${SECTION_HEADER} mt-1`}>Automation</div>
             <NavLink
               to="/admin/automation/policies"
               className={({ isActive }) =>
