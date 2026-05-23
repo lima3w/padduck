@@ -259,11 +259,11 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4">
             Top Utilised Subnets
           </h2>
-          {summary?.top_subnets?.length === 0 ? (
+          {summary?.topSubnets?.length === 0 ? (
             <p className="text-sm text-gray-400">No subnet utilisation data yet</p>
           ) : (
             <div className="space-y-3">
-              {summary?.top_subnets?.map((s) => (
+              {summary?.topSubnets?.map((s) => (
                 <div key={s.id}>
                   <div className="flex justify-between text-sm mb-1">
                     <Link
