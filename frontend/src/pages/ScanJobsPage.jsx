@@ -7,6 +7,12 @@ import EmptyRow from '../components/EmptyRow'
 
 const SCAN_TYPE_LABELS = { ping: 'Ping', snmp: 'SNMP', 'ping+snmp': 'Ping + SNMP' }
 
+function formatDate(val) {
+  if (!val) return '—'
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? '—' : d.toLocaleString()
+}
+
 const CHANGE_COLORS = {
   new: 'bg-green-50 text-green-800',
   gone: 'bg-red-50 text-red-800',
@@ -67,7 +73,8 @@ export default function ScanJobsPage() {
   async function loadRunDetail(jobId, runId) {
     try {
       const { data } = await api.get(`/admin/scan-jobs/${jobId}/history/${runId}`)
-      setRunDetail(data)
+      // Flatten run + changes into a single object so templates can access fields directly
+      setRunDetail({ ...data.run, changes: data.changes })
     } catch {
       setRunDetail(null)
     }
@@ -186,16 +193,18 @@ export default function ScanJobsPage() {
             {jobs.length === 0 ? (
               <div className="p-4 text-sm text-gray-500">No scan jobs configured.</div>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-gray-100 dark:divide-gray-700">
                 {jobs.map((job) => (
                   <li key={job.id}>
                     <button
                       onClick={() => selectJob(job)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition ${
-                        selectedJob?.id === job.id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition ${
+                        selectedJob?.id === job.id
+                          ? 'bg-blue-50 dark:bg-blue-900/30 border-l-2 border-blue-500 dark:border-blue-400'
+                          : ''
                       }`}
                     >
-                      <p className="font-medium text-gray-900 text-sm truncate">{job.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">{job.name}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {job.schedule_cron || 'Manual only'} &middot;{' '}
                         <span className={`font-medium ${job.is_active ? 'text-green-600' : 'text-gray-400'}`}>
@@ -307,7 +316,7 @@ export default function ScanJobsPage() {
                                 <span className="text-gray-300">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-2 text-gray-500 text-xs">{new Date(r.scanned_at).toLocaleString()}</td>
+                            <td className="px-4 py-2 text-gray-500 text-xs">{formatDate(r.scanned_at)}</td>
                           </tr>
                         ))
                       )}
@@ -340,9 +349,9 @@ export default function ScanJobsPage() {
                                 onClick={() => selectRun(run)}
                                 className="hover:bg-blue-50 cursor-pointer"
                               >
-                                <td className="px-4 py-2 text-xs text-gray-700">{new Date(run.started_at).toLocaleString()}</td>
+                                <td className="px-4 py-2 text-xs text-gray-700">{formatDate(run.started_at)}</td>
                                 <td className="px-4 py-2 text-xs text-gray-700">
-                                  {run.finished_at ? new Date(run.finished_at).toLocaleString() : <span className="text-gray-400">—</span>}
+                                  {run.finished_at ? formatDate(run.finished_at) : <span className="text-gray-400">—</span>}
                                 </td>
                                 <td className="px-4 py-2 text-xs">
                                   <span className="text-green-700 font-medium">+{run.new_count}</span>
@@ -369,7 +378,7 @@ export default function ScanJobsPage() {
                           ← Back to history
                         </button>
                         <span className="text-xs text-gray-500">
-                          Run {new Date(runDetail.started_at).toLocaleString()}
+                          Run {formatDate(runDetail.started_at)}
                         </span>
                         <span className="text-xs text-green-700 font-medium">+{runDetail.new_count} new</span>
                         <span className="text-xs text-red-700 font-medium">-{runDetail.gone_count} gone</span>

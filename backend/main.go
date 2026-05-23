@@ -204,6 +204,9 @@ func main() {
 
 	app.Use(logger.New(logger.Config{
 		Format: "[${time}] ${status} ${method} ${path} ${latency} ${ip}\n",
+		Next: func(c *fiber.Ctx) bool {
+			return c.Path() == "/health"
+		},
 	}))
 
 	// Serve OpenAPI spec
