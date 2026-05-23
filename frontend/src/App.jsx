@@ -79,6 +79,7 @@ const BreakGlassPage = lazy(() => import('./pages/BreakGlassPage'))
 const IdentityPoliciesPage = lazy(() => import('./pages/IdentityPoliciesPage'))
 const AdminCompatibilityPage = lazy(() => import('./pages/AdminCompatibilityPage'))
 const DiscoveryPage = lazy(() => import('./pages/DiscoveryPage'))
+const UsersRolesPage = lazy(() => import('./pages/UsersRolesPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -175,9 +176,10 @@ export default function App() {
             <Route path="devices" element={gated('devices', <DevicesPage />)} />
             <Route path="devices/:id" element={gated('devices', <DeviceDetailPage />)} />
             <Route path="admin/custom-fields" element={<AdminCustomFieldsPage />} />
-            <Route path="admin/users" element={<AdminUsersPage />} />
-            <Route path="admin/roles" element={<AdminRolesPage />} />
-            <Route path="admin/roles/presets" element={<RolePresetsPage />} />
+            <Route path="admin/users-roles" element={<UsersRolesPage />} />
+            <Route path="admin/users" element={<Navigate to="/admin/users-roles" replace />} />
+            <Route path="admin/roles" element={<Navigate to="/admin/users-roles?tab=roles" replace />} />
+            <Route path="admin/roles/presets" element={<Navigate to="/admin/users-roles?tab=presets" replace />} />
             <Route path="locations" element={gated('locations', <LocationsPage />)} />
             <Route path="locations/:id" element={gated('locations', <LocationDetailPage />)} />
             <Route path="racks" element={gated('racks', <RacksPage />)} />

@@ -149,7 +149,14 @@ export default function AdminSettingsPage() {
         client.getAdminConfig(),
         client.listPendingApprovals(),
       ])
-      setConfig(configRes.data.config)
+      const loadedConfig = configRes.data.config || {}
+      const featureDefaults = {}
+      CONFIG_KEYS_BY_TAB.features.forEach(key => {
+        if (!Object.prototype.hasOwnProperty.call(loadedConfig, key)) {
+          featureDefaults[key] = 'true'
+        }
+      })
+      setConfig({ ...loadedConfig, ...featureDefaults })
       setApprovals(approvalsRes.data.approvals || [])
     } catch (err) {
       showMessage('Failed to load settings: ' + (err.response?.data?.error || err.message), 'error')
@@ -737,6 +744,13 @@ export default function AdminSettingsPage() {
                 {dnsTestStatus.ok ? `Connected: ${dnsTestStatus.message}` : `Error: ${dnsTestStatus.message}`}
               </div>
             )}
+            <button
+              onClick={handleTestDns}
+              disabled={dnsTestStatus === 'testing'}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
+            >
+              {dnsTestStatus === 'testing' ? 'Testing...' : 'Test PowerDNS Connection'}
+            </button>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -826,22 +840,13 @@ export default function AdminSettingsPage() {
             </button>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              onClick={handleSaveConfig}
-              disabled={saving}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={handleTestDns}
-              disabled={dnsTestStatus === 'testing'}
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
-            >
-              {dnsTestStatus === 'testing' ? 'Testing...' : 'Test PowerDNS Connection'}
-            </button>
-          </div>
+          <button
+            onClick={handleSaveConfig}
+            disabled={saving}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       )}
 
@@ -983,7 +988,7 @@ export default function AdminSettingsPage() {
               {FEATURE_TOGGLES.map((feature) => (
                 <label
                   key={feature.key}
-                  className="flex items-start gap-3 rounded border border-gray-200 p-4 cursor-pointer hover:bg-gray-50"
+                  className="flex items-start gap-3 rounded border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <input
                     type="checkbox"
@@ -992,8 +997,8 @@ export default function AdminSettingsPage() {
                     className="mt-1 h-4 w-4 rounded text-blue-600"
                   />
                   <span>
-                    <span className="block font-medium text-gray-900">{feature.title}</span>
-                    <span className="block text-sm text-gray-500">{feature.description}</span>
+                    <span className="block font-medium text-gray-900 dark:text-gray-100">{feature.title}</span>
+                    <span className="block text-sm text-gray-500 dark:text-gray-400">{feature.description}</span>
                   </span>
                 </label>
               ))}

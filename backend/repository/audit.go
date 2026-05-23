@@ -179,12 +179,12 @@ func (r *Repository) GetAuditRetentionSettings(ctx context.Context) (*models.Aud
 	if err == nil {
 		return s, nil
 	}
-	// No row exists — seed defaults and return them.
-	err = r.db.QueryRow(ctx,
+	// No row yet — insert defaults (ignore conflict from concurrent request), then re-read.
+	_, _ = r.db.Exec(ctx,
 		`INSERT INTO audit_retention_settings (retention_days, archive_enabled)
-		 VALUES (365, false)
-		 ON CONFLICT DO NOTHING
-		 RETURNING id, retention_days, archive_enabled, updated_at`,
+		 VALUES (365, false) ON CONFLICT DO NOTHING`)
+	err = r.db.QueryRow(ctx,
+		`SELECT id, retention_days, archive_enabled, updated_at FROM audit_retention_settings LIMIT 1`,
 	).Scan(&s.ID, &s.RetentionDays, &s.ArchiveEnabled, &s.UpdatedAt)
 	return s, err
 }

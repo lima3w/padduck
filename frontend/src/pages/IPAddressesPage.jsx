@@ -11,7 +11,6 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
-import DataQualityBadge from '../components/DataQualityBadge'
 import { getCachedUser, getStoredItem, LEGACY_STORAGE_KEYS, setStoredItem, STORAGE_KEYS } from '../utils/storageKeys'
 
 function DelegationsTab({ subnetId }) {
@@ -246,7 +245,6 @@ function UtilisationHistorySection({ subnetId }) {
   const [historyDays, setHistoryDays] = useState(30)
   const [historyData, setHistoryData] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [historyError, setHistoryError] = useState('')
 
   useEffect(() => {
     async function fetchHistory() {
@@ -256,7 +254,7 @@ function UtilisationHistorySection({ subnetId }) {
         const { data } = await api.get(`/subnets/${subnetId}/utilisation/history`, { params: { days: historyDays } })
         setHistoryData(Array.isArray(data) ? data : [])
       } catch {
-        setHistoryError('Failed to load utilisation history')
+        setHistoryData([])
       } finally {
         setHistoryLoading(false)
       }
@@ -272,7 +270,7 @@ function UtilisationHistorySection({ subnetId }) {
   return (
     <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Utilisation History</h2>
+        <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Utilization History</h2>
         <div className="flex gap-1">
           {HISTORY_DAYS_OPTIONS.map(d => (
             <button
@@ -286,9 +284,8 @@ function UtilisationHistorySection({ subnetId }) {
         </div>
       </div>
       {historyLoading && <p className="text-gray-400 text-sm">Loading history...</p>}
-      {historyError && <p className="text-red-500 text-sm">{historyError}</p>}
-      {!historyLoading && !historyError && chartData.length === 0 && (
-        <p className="text-gray-400 text-sm">No utilisation history available for this period.</p>
+      {!historyLoading && chartData.length === 0 && (
+        <p className="text-gray-400 text-sm">No utilization history available for this period.</p>
       )}
       {!historyLoading && chartData.length > 0 && (
         <ResponsiveContainer width="100%" height={200}>
@@ -296,7 +293,7 @@ function UtilisationHistorySection({ subnetId }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
             <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} tick={{ fontSize: 11 }} />
-            <Tooltip formatter={v => [`${v}%`, 'Utilisation']} />
+            <Tooltip formatter={v => [`${v}%`, 'Utilization']} />
             <Line type="monotone" dataKey="pct" stroke="#3b82f6" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
@@ -723,17 +720,7 @@ export default function IPAddressesPage() {
 
       {activeTab === 'delegations' && <DelegationsTab subnetId={subnetID} />}
 
-      {activeTab === 'ips' && <>{isAdmin && subnet && (
-        <div className="mb-4">
-          <DataQualityBadge fields={[
-            { label: 'Description', ok: Boolean(subnet.description) },
-            { label: 'Gateway', ok: Boolean(subnet.gateway) },
-            { label: 'Nameserver', ok: Boolean(subnet.nameserverId) },
-            { label: 'VLAN', ok: Boolean(subnet.vlanId) },
-            { label: 'Location', ok: Boolean(subnet.locationId) },
-          ]} entityLabel="subnet" />
-        </div>
-      )}
+      {activeTab === 'ips' && <>{/* data quality section removed */}
       <div className="mb-4 space-y-2">
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
