@@ -31,7 +31,11 @@ export default function NameserversPage() {
       const data = res.data
       setNameservers(Array.isArray(data) ? data : (data?.nameservers ?? []))
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load nameservers')
+      if (err.response?.status === 403) {
+        setError('You do not have permission to view nameservers.')
+      } else {
+        setError(err.response?.data?.error || 'Failed to load nameservers')
+      }
     } finally {
       setLoading(false)
     }
@@ -88,29 +92,20 @@ export default function NameserversPage() {
     }
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-red-600 font-semibold text-lg mb-2">Access Denied</p>
-          <p className="text-gray-500 text-sm">You need admin privileges to manage nameservers.</p>
-        </div>
-      </div>
-    )
-  }
-
   if (loading) return <PageSpinner message="Loading nameservers..." />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Nameservers</h1>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-        >
-          + Add Nameserver
-        </button>
+        {isAdmin && (
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+          >
+            + Add Nameserver
+          </button>
+        )}
       </div>
 
       <ErrorBanner error={error} />

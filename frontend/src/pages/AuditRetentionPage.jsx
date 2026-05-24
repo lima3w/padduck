@@ -22,8 +22,8 @@ export default function AuditRetentionPage() {
       .then(res => {
         setSettings(res.data)
         setForm({
-          retentionDays: res.data.retention_days,
-          archiveEnabled: res.data.archive_enabled,
+          retentionDays: res.data.retention_days ?? 365,
+          archiveEnabled: res.data.archive_enabled ?? false,
         })
       })
       .catch(() => setError('Failed to load audit retention settings'))
@@ -32,8 +32,8 @@ export default function AuditRetentionPage() {
 
   async function handleSave(e) {
     e.preventDefault()
-    if (form.retentionDays < 1) {
-      setError('Retention period must be at least 1 day')
+    if (form.retentionDays < 30) {
+      setError('Retention period must be at least 30 days')
       return
     }
     setSaving(true)
@@ -94,12 +94,12 @@ export default function AuditRetentionPage() {
             </label>
             <input
               type="number"
-              min="1"
+              min="30"
               className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
               value={form.retentionDays}
               onChange={e => setForm(f => ({ ...f, retentionDays: parseInt(e.target.value) || 1 }))}
             />
-            <p className="text-xs text-gray-500 mt-1">Audit log entries older than this will be deleted when pruning. Minimum 1 day.</p>
+            <p className="text-xs text-gray-500 mt-1">Audit log entries older than this will be deleted when pruning. Minimum 30 days.</p>
           </div>
           <div className="flex items-center gap-3">
             <input

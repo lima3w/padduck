@@ -84,8 +84,10 @@ func (r *Repository) ListAuditLogs(ctx context.Context, filter *models.AuditLogF
 	query += " ORDER BY created_at DESC"
 
 	limit := filter.Limit
-	if limit <= 0 || limit > 1000 {
+	if limit <= 0 {
 		limit = 100
+	} else if limit > 100000 {
+		limit = 100000
 	}
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", i, i+1)
 	args = append(args, limit, filter.Offset)
@@ -191,6 +193,12 @@ func (r *Repository) GetAuditRetentionSettings(ctx context.Context) (*models.Aud
 
 // UpdateAuditRetentionSettings updates the single retention settings row.
 func (r *Repository) UpdateAuditRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error) {
+	// Ensure the row exists before updating.
+	_, _ = r.db.Exec(ctx,
+		`INSERT INTO audit_retention_settings (retention_days, archive_enabled)
+		 VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		retentionDays, archiveEnabled,
+	)
 	s := &models.AuditRetentionSettings{}
 	err := r.db.QueryRow(ctx,
 		`UPDATE audit_retention_settings SET retention_days = $1, archive_enabled = $2, updated_at = now()

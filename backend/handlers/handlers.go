@@ -290,6 +290,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/audit-logs/purge", h.PurgeAuditLogs)
 	admin.Get("/audit/retention", h.GetAuditRetention)
 	admin.Put("/audit/retention", h.UpdateAuditRetention)
+	admin.Post("/audit/prune", h.PruneAuditLogs)
 
 	// Role management
 	admin.Get("/roles", h.ListRoles)
