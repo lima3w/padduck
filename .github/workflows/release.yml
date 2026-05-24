@@ -87,3 +87,36 @@ jobs:
         with:
           body: ${{ steps.changelog.outputs.notes }}
           make_latest: true
+
+  build-agent:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Build agent binaries
+        run: |
+          cd agent
+          GOOS=linux   GOARCH=amd64 go build -o ../dist/padduck-agent-linux-amd64   .
+          GOOS=linux   GOARCH=arm64 go build -o ../dist/padduck-agent-linux-arm64   .
+          GOOS=darwin  GOARCH=amd64 go build -o ../dist/padduck-agent-darwin-amd64  .
+          GOOS=darwin  GOARCH=arm64 go build -o ../dist/padduck-agent-darwin-arm64  .
+          GOOS=windows GOARCH=amd64 go build -o ../dist/padduck-agent-windows-amd64.exe .
+
+      - name: Upload agent binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/padduck-agent-linux-amd64
+            dist/padduck-agent-linux-arm64
+            dist/padduck-agent-darwin-amd64
+            dist/padduck-agent-darwin-arm64
+            dist/padduck-agent-windows-amd64.exe

@@ -171,6 +171,48 @@ export default function AdminAgentsPage() {
         </button>
       </div>
 
+      {/* Download Agent section */}
+      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <p className="text-sm font-medium text-gray-700 mb-2">Download latest scan agent binary:</p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-linux-amd64"
+            className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
+            download
+          >
+            Linux x64
+          </a>
+          <a
+            href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-linux-arm64"
+            className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
+            download
+          >
+            Linux ARM64
+          </a>
+          <a
+            href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-darwin-amd64"
+            className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
+            download
+          >
+            macOS x64
+          </a>
+          <a
+            href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-darwin-arm64"
+            className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
+            download
+          >
+            macOS ARM64
+          </a>
+          <a
+            href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-windows-amd64.exe"
+            className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
+            download
+          >
+            Windows x64
+          </a>
+        </div>
+      </div>
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded text-sm">{error}</div>
       )}
