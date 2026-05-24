@@ -58,6 +58,7 @@ const AdminRolesPage = lazy(() => import('./pages/AdminRolesPage'))
 const RolePresetsPage = lazy(() => import('./pages/RolePresetsPage'))
 const RacksPage = lazy(() => import('./pages/RacksPage'))
 const ExportDataPage = lazy(() => import('./pages/ExportDataPage'))
+const BackupsPage = lazy(() => import('./pages/BackupsPage'))
 const AdminLdapPage = lazy(() => import('./pages/AdminLdapPage'))
 const AdminOAuth2Page = lazy(() => import('./pages/AdminOAuth2Page'))
 const AdminSamlPage = lazy(() => import('./pages/AdminSamlPage'))
@@ -219,6 +220,7 @@ export default function App() {
             <Route path="admin/reports/scheduled" element={<ScheduledReportsPage />} />
             <Route path="admin/import" element={<ImportDataPage />} />
             <Route path="admin/export" element={<ExportDataPage />} />
+            <Route path="admin/backups" element={<BackupsPage />} />
             <Route path="admin/auth/ldap" element={<AdminLdapPage />} />
             <Route path="admin/auth/oauth2" element={<AdminOAuth2Page />} />
             <Route path="admin/auth/saml" element={<AdminSamlPage />} />
