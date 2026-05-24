@@ -33,6 +33,8 @@ const CONFIG_KEYS_BY_TAB = {
     'dns_zone_filter_mode',
     'dns_zone_filter_list',
     'dns_zone_filter_auto_allow',
+    'dns_auto_add_ips_enabled',
+    'dns_auto_remove_ips_enabled',
   ],
   scanner: [
     'scanner_resolve_hostnames',
@@ -877,6 +879,37 @@ export default function AdminSettingsPage() {
                 </span>
               </label>
             )}
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold mb-4">DNS Auto-Sync</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Automatically synchronize IP address records in IPAM with A/AAAA records from the configured DNS provider.
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.dns_auto_add_ips_enabled === 'true'}
+                  onChange={e => handleConfigChange('dns_auto_add_ips_enabled', e.target.checked ? 'true' : 'false')}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Auto-add discovered IPs to matching subnet — when a DNS A/AAAA record is found for an IP not already in IPAM, create the record automatically
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.dns_auto_remove_ips_enabled === 'true'}
+                  onChange={e => handleConfigChange('dns_auto_remove_ips_enabled', e.target.checked ? 'true' : 'false')}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Auto-remove IPs no longer in DNS — remove IPAM records that were added by DNS auto-sync but no longer appear in any DNS zone
+                </span>
+              </label>
+            </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">

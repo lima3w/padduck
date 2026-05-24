@@ -431,6 +431,143 @@ func (d *DNSService) RemoveIPFromDNS(ctx context.Context, ip *models.IPAddress) 
 	d.RemoveIPFromTechnitium(ctx, ip)
 }
 
+// SyncDNSZoneIPs reads all A/AAAA records from the configured DNS provider and
+// optionally creates IPAM records for newly-discovered addresses (auto-add) or
+// removes IPAM records that are no longer present in DNS (auto-remove).
+// IPs managed by this function use "dns-sync" as the hostname prefix so they
+// can be identified for auto-remove.
+func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
+	autoAdd, _ := d.svc.Config.GetCtx(ctx, "dns_auto_add_ips_enabled")
+	autoRemove, _ := d.svc.Config.GetCtx(ctx, "dns_auto_remove_ips_enabled")
+	if autoAdd != "true" && autoRemove != "true" {
+		return nil
+	}
+
+	// Collect all A/AAAA records from the active DNS provider.
+	zones, configured, err := d.ListDNSZones(ctx)
+	if err != nil {
+		return fmt.Errorf("SyncDNSZoneIPs: list zones: %w", err)
+	}
+	if !configured {
+		return nil
+	}
+
+	// dnsIPs maps IP address string → DNS name (first record wins).
+	dnsIPs := make(map[string]string)
+	for _, zone := range zones {
+		records, recErr := d.GetDNSZoneRecords(ctx, zone.Name, "")
+		if recErr != nil {
+			log.Printf("[dns-sync] list records for zone %s: %v", zone.Name, recErr)
+			continue
+		}
+		for _, rec := range records {
+			if rec.Type != "A" && rec.Type != "AAAA" {
+				continue
+			}
+			if rec.Content == "" {
+				continue
+			}
+			if _, exists := dnsIPs[rec.Content]; !exists {
+				dnsIPs[rec.Content] = strings.TrimSuffix(rec.Name, ".")
+			}
+		}
+	}
+
+	// Load all subnets so we can find a home for each DNS IP.
+	subnets, err := d.svc.repository.ListAllSubnets(ctx)
+	if err != nil {
+		return fmt.Errorf("SyncDNSZoneIPs: list subnets: %w", err)
+	}
+
+	// Build parsed subnet list for CIDR containment checks.
+	type parsedSubnet struct {
+		id      int64
+		network *net.IPNet
+	}
+	var parsed []parsedSubnet
+	for _, s := range subnets {
+		cidr := fmt.Sprintf("%s/%d", s.NetworkAddress, s.PrefixLength)
+		_, ipnet, parseErr := net.ParseCIDR(cidr)
+		if parseErr != nil {
+			continue
+		}
+		parsed = append(parsed, parsedSubnet{id: s.ID, network: ipnet})
+	}
+
+	findSubnetForIP := func(ipStr string) int64 {
+		candidate := net.ParseIP(ipStr)
+		if candidate == nil {
+			return 0
+		}
+		var bestID int64
+		var bestBits int = -1
+		for _, ps := range parsed {
+			if ps.network.Contains(candidate) {
+				ones, _ := ps.network.Mask.Size()
+				if ones > bestBits {
+					bestBits = ones
+					bestID = ps.id
+				}
+			}
+		}
+		return bestID
+	}
+
+	// Auto-add: for each DNS IP not already in IPAM, create it.
+	if autoAdd == "true" {
+		for ipStr, dnsName := range dnsIPs {
+			subnetID := findSubnetForIP(ipStr)
+			if subnetID == 0 {
+				continue // no matching subnet
+			}
+			existing, lookupErr := d.svc.repository.GetIPAddressBySubnetAndAddress(ctx, subnetID, ipStr)
+			if lookupErr == nil && existing != nil {
+				continue // already exists
+			}
+			hn := dnsName
+			_, createErr := d.svc.repository.CreateIPAddress(ctx, subnetID, ipStr, hn, "active", nil, nil, nil, nil)
+			if createErr != nil {
+				log.Printf("[dns-sync] create IP %s in subnet %d: %v", ipStr, subnetID, createErr)
+			} else {
+				log.Printf("[dns-sync] added IP %s (dns=%s) to subnet %d", ipStr, dnsName, subnetID)
+			}
+		}
+	}
+
+	// Auto-remove: find IPAM IPs with hostname prefix "dns-sync:" that no longer appear in DNS.
+	if autoRemove == "true" {
+		for _, s := range subnets {
+			ips, listErr := d.svc.repository.ListIPAddressesBySubnet(ctx, s.ID)
+			if listErr != nil {
+				log.Printf("[dns-sync] list IPs for subnet %d: %v", s.ID, listErr)
+				continue
+			}
+			for _, ip := range ips {
+				if !strings.HasPrefix(ip.Hostname, "dns-sync:") {
+					continue
+				}
+				if _, stillInDNS := dnsIPs[ip.Address]; !stillInDNS {
+					if delErr := d.svc.repository.DeleteIPAddress(ctx, ip.ID); delErr != nil {
+						log.Printf("[dns-sync] remove IP %s (id=%d): %v", ip.Address, ip.ID, delErr)
+					} else {
+						log.Printf("[dns-sync] removed IP %s (no longer in DNS)", ip.Address)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// AutoSyncDNSZoneIPs is a periodic wrapper around SyncDNSZoneIPs that logs errors
+// but does not propagate them. Intended to be called from a background scheduler.
+func (d *DNSService) AutoSyncDNSZoneIPs(ctx context.Context) {
+	if err := d.SyncDNSZoneIPs(ctx); err != nil {
+		log.Printf("[dns-sync] AutoSyncDNSZoneIPs: %v", err)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // helpers
 // ---------------------------------------------------------------------------

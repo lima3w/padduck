@@ -19,7 +19,7 @@ const CHANGE_COLORS = {
   changed: 'bg-yellow-50 text-yellow-800',
 }
 
-const EMPTY_JOB_FORM = { name: '', subnet: '', schedule_cron: '', is_active: true, scan_type: 'ping', notify_on_change: false }
+const EMPTY_JOB_FORM = { name: '', subnet: '', schedule_cron: '', is_active: true, scan_type: 'ping', notify_on_change: false, auto_add_ips: true }
 
 export default function ScanJobsPage() {
   const [jobs, setJobs] = useState([])
@@ -126,6 +126,7 @@ export default function ScanJobsPage() {
       is_active: job.isActive !== false,
       scan_type: job.scanType || 'ping',
       notify_on_change: job.notifyOnChange || false,
+      auto_add_ips: job.autoAddIps !== false,
     })
     setJobModal({ edit: job })
   }
@@ -141,6 +142,7 @@ export default function ScanJobsPage() {
         is_active: jobForm.is_active,
         scan_type: jobForm.scan_type,
         notify_on_change: jobForm.notify_on_change,
+        auto_add_ips: jobForm.auto_add_ips,
       }
       if (jobModal === 'create') {
         await api.post('/admin/scan-jobs', body)
@@ -482,6 +484,18 @@ export default function ScanJobsPage() {
                   className="w-4 h-4"
                 />
                 <span className="text-sm text-gray-700">Notify on change</span>
+              </label>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="auto_add_ips"
+                checked={jobForm.auto_add_ips !== false}
+                onChange={e => setJobForm(f => ({ ...f, auto_add_ips: e.target.checked }))}
+                className="w-4 h-4 text-blue-600"
+              />
+              <label htmlFor="auto_add_ips" className="text-sm text-gray-700">
+                Auto-add discovered IPs to matching subnet
               </label>
             </div>
             <div className="flex justify-end gap-2 pt-2">

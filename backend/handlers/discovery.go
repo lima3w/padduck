@@ -14,6 +14,7 @@ type CreateScanJobRequest struct {
 	Subnet       string  `json:"subnet,omitempty"`
 	SubnetIDs    []int64 `json:"subnet_ids"`
 	ScheduleCron *string `json:"schedule_cron,omitempty"`
+	AutoAddIPs   *bool   `json:"auto_add_ips,omitempty"`
 }
 
 type UpdateScanJobRequest struct {
@@ -26,6 +27,7 @@ type UpdateScanJobRequest struct {
 	NotifyOnChange  bool    `json:"notify_on_change,omitempty"`
 	ScanType        string  `json:"scan_type,omitempty"`
 	AgentID         *int64  `json:"agent_id,omitempty"`
+	AutoAddIPs      *bool   `json:"auto_add_ips,omitempty"`
 }
 
 // ListScanJobs handles GET /api/v1/admin/scan-jobs
@@ -62,7 +64,11 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 		req.SubnetIDs = []int64{sn.ID}
 	}
 
-	job, err := h.service.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID)
+	autoAddIPs := true
+	if req.AutoAddIPs != nil {
+		autoAddIPs = *req.AutoAddIPs
+	}
+	job, err := h.service.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID, autoAddIPs)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -105,7 +111,11 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 		}
 		req.SubnetIDs = []int64{sn.ID}
 	}
-	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID)
+	autoAddIPsUpdate := true
+	if req.AutoAddIPs != nil {
+		autoAddIPsUpdate = *req.AutoAddIPs
+	}
+	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID, autoAddIPsUpdate)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}

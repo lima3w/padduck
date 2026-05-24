@@ -31,12 +31,12 @@ type DiscoveryService struct {
 type discoveryRepo interface {
 	GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error)
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
-	CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64) (*models.ScanJob, error)
+	CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64, autoAddIPs bool) (*models.ScanJob, error)
 	GetScanJobByID(ctx context.Context, id int64) (*models.ScanJob, error)
 	ListScanJobs(ctx context.Context) ([]*models.ScanJob, error)
 	ListActiveScanJobs(ctx context.Context) ([]*models.ScanJob, error)
 	UpdateScanJob(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool) (*models.ScanJob, error)
-	UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64) (*models.ScanJob, error)
+	UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool) (*models.ScanJob, error)
 	UpdateScanJobRunTime(ctx context.Context, id int64, nextRunAt *time.Time) error
 	DeleteScanJob(ctx context.Context, id int64) error
 	CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64, ptrRecord *string, fwdRevMismatch bool) (*models.ScanResult, error)
@@ -85,6 +85,8 @@ type discoveryRepo interface {
 	GetDiscoveryConflict(ctx context.Context, id int64) (*models.DiscoveryConflict, error)
 	CreateDiscoveryConflict(ctx context.Context, deviceID int64, fieldName, discoveredValue string, currentValue *string, confidenceScore float64, source string) (*models.DiscoveryConflict, error)
 	ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error)
+	// Auto-add IPs (#item5)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error)
 }
 
 // maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
@@ -260,6 +262,23 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			}
 		}
 
+		// --- Auto-add discovered IPs (#item5) ---
+		if r.alive && ipAddressID == nil && job != nil && job.AutoAddIPs {
+			hostname := ""
+			if r.ptr != nil {
+				hostname = *r.ptr
+			}
+			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "active", nil, nil, nil, r.ptr)
+			if createErr != nil {
+				log.Printf("[discovery] auto-add IP %s in subnet %d: %v", r.ip, subnetID, createErr)
+			} else {
+				id := newIP.ID
+				ipAddressID = &id
+				existingIPs[r.ip] = id
+				log.Printf("[discovery] auto-added IP %s to subnet %d (job=%d)", r.ip, subnetID, jobID)
+			}
+		}
+
 		// --- Port scan (#214) ---
 		if portScanEnabled && r.alive && ipAddressID != nil {
 			portResult := scanner.ScanPorts(ctx, r.ip, ports, portConcurrency, time.Second)
@@ -397,7 +416,7 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 }
 
 // CreateJob creates a new scan job
-func (d *DiscoveryService) CreateJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64) (*models.ScanJob, error) {
+func (d *DiscoveryService) CreateJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64, autoAddIPs bool) (*models.ScanJob, error) {
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
@@ -409,7 +428,7 @@ func (d *DiscoveryService) CreateJob(ctx context.Context, name string, subnetIDs
 			return nil, fmt.Errorf("invalid cron expression: %w", err)
 		}
 	}
-	return d.repository.CreateScanJob(ctx, name, subnetIDs, scheduleCron, createdBy)
+	return d.repository.CreateScanJob(ctx, name, subnetIDs, scheduleCron, createdBy, autoAddIPs)
 }
 
 // GetJob retrieves a scan job by ID
@@ -433,7 +452,7 @@ func (d *DiscoveryService) UpdateJob(ctx context.Context, id int64, name string,
 }
 
 // UpdateJobFull updates all mutable fields of a scan job.
-func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64) (*models.ScanJob, error) {
+func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool) (*models.ScanJob, error) {
 	if scheduleCron != nil && *scheduleCron != "" {
 		if err := validateCron(*scheduleCron); err != nil {
 			return nil, fmt.Errorf("invalid cron expression: %w", err)
@@ -452,7 +471,7 @@ func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name str
 	if !validTypes[scanType] {
 		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
 	}
-	return d.repository.UpdateScanJobFull(ctx, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID)
+	return d.repository.UpdateScanJobFull(ctx, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs)
 }
 
 // DeleteJob deletes a scan job
@@ -703,6 +722,16 @@ func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64
 		_, err := d.repository.CreateScanResult(ctx, jobID, res.SubnetID, ipAddrID, res.IPAddress, res.IsAlive, ms, nil, false)
 		if err != nil {
 			log.Printf("agent %d: store result for %s: %v", agentID, res.IPAddress, err)
+		}
+		// Auto-add: if alive and no existing IP record, create one.
+		if res.IsAlive && ipAddrID == nil && job.AutoAddIPs && res.SubnetID > 0 {
+			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "active", nil, nil, nil, nil)
+			if createErr != nil {
+				log.Printf("agent %d: auto-add IP %s in subnet %d: %v", agentID, res.IPAddress, res.SubnetID, createErr)
+			} else {
+				log.Printf("agent %d: auto-added IP %s to subnet %d", agentID, res.IPAddress, res.SubnetID)
+				_ = newIP
+			}
 		}
 	}
 	return d.repository.UpdateScanJobRunTime(ctx, jobID, nil)

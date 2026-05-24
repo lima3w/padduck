@@ -10,19 +10,19 @@ import (
 )
 
 // scanJobCols is the column list for scan_jobs SELECT queries.
-const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id`
+const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips`
 
 func scanScanJob(row interface{ Scan(dest ...any) error }) (*models.ScanJob, error) {
 	j := &models.ScanJob{}
-	return j, row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt, &j.PingConcurrency, &j.NotifyOnChange, &j.ScanType, &j.AgentID)
+	return j, row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt, &j.PingConcurrency, &j.NotifyOnChange, &j.ScanType, &j.AgentID, &j.AutoAddIPs)
 }
 
 // CreateScanJob creates a new discovery scan job
-func (r *Repository) CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64) (*models.ScanJob, error) {
-	query := `INSERT INTO scan_jobs (name, subnet_ids, schedule_cron, created_by)
-		VALUES ($1, $2, $3, $4)
+func (r *Repository) CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64, autoAddIPs bool) (*models.ScanJob, error) {
+	query := `INSERT INTO scan_jobs (name, subnet_ids, schedule_cron, created_by, auto_add_ips)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING ` + scanJobCols
-	return scanScanJob(r.db.QueryRow(ctx, query, name, subnetIDs, scheduleCron, createdBy))
+	return scanScanJob(r.db.QueryRow(ctx, query, name, subnetIDs, scheduleCron, createdBy, autoAddIPs))
 }
 
 // GetScanJobByID retrieves a scan job by ID
@@ -76,12 +76,12 @@ func (r *Repository) UpdateScanJob(ctx context.Context, id int64, name string, s
 }
 
 // UpdateScanJobFull updates all mutable fields of a scan job.
-func (r *Repository) UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64) (*models.ScanJob, error) {
+func (r *Repository) UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool) (*models.ScanJob, error) {
 	query := `UPDATE scan_jobs
 		SET name=$2, subnet_ids=$3, schedule_cron=$4, is_active=$5, ping_concurrency=$6,
-		    notify_on_change=$7, scan_type=$8, agent_id=$9, updated_at=CURRENT_TIMESTAMP
+		    notify_on_change=$7, scan_type=$8, agent_id=$9, auto_add_ips=$10, updated_at=CURRENT_TIMESTAMP
 		WHERE id=$1 RETURNING ` + scanJobCols
-	return scanScanJob(r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID))
+	return scanScanJob(r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs))
 }
 
 // UpdateScanJobRunTime updates last_run_at and next_run_at after a scan

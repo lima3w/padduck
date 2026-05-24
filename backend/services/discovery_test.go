@@ -15,14 +15,14 @@ func TestDiscoveryService_GetJob_InvalidID(t *testing.T) {
 
 func TestDiscoveryService_CreateJob_MissingName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
-	_, err := svc.Discovery.CreateJob(context.Background(), "", []int64{1}, nil, 1)
+	_, err := svc.Discovery.CreateJob(context.Background(), "", []int64{1}, nil, 1, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "name is required")
 }
 
 func TestDiscoveryService_CreateJob_NoSubnets(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
-	_, err := svc.Discovery.CreateJob(context.Background(), "myjob", nil, nil, 1)
+	_, err := svc.Discovery.CreateJob(context.Background(), "myjob", nil, nil, 1, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one subnet ID is required")
 }
@@ -30,7 +30,7 @@ func TestDiscoveryService_CreateJob_NoSubnets(t *testing.T) {
 func TestDiscoveryService_CreateJob_InvalidCron(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	bad := "not a cron"
-	_, err := svc.Discovery.CreateJob(context.Background(), "job", []int64{1}, &bad, 1)
+	_, err := svc.Discovery.CreateJob(context.Background(), "job", []int64{1}, &bad, 1, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid cron expression")
 }
@@ -54,7 +54,7 @@ func TestDiscoveryService_ConfigWired(t *testing.T) {
 
 func TestDiscoveryService_UpdateJobFull_InvalidScanType(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
-	_, err := svc.Discovery.UpdateJobFull(context.Background(), 1, "job", []int64{1}, nil, true, 20, false, "invalid_type", nil)
+	_, err := svc.Discovery.UpdateJobFull(context.Background(), 1, "job", []int64{1}, nil, true, 20, false, "invalid_type", nil, true)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid scan_type")
 }
@@ -67,7 +67,7 @@ func TestDiscoveryService_UpdateJobFull_ValidScanTypes(t *testing.T) {
 		_ = st
 	}
 	// Test that invalid type is rejected.
-	_, err := svc.Discovery.UpdateJobFull(context.Background(), 1, "job", []int64{1}, nil, true, 20, false, "ftp", nil)
+	_, err := svc.Discovery.UpdateJobFull(context.Background(), 1, "job", []int64{1}, nil, true, 20, false, "ftp", nil, true)
 	assert.Error(t, err)
 }
 
@@ -108,6 +108,6 @@ func TestDiscoveryService_UpdateJobFull_ClampsConcurrency(t *testing.T) {
 	// Validate the clamping happens before calling repo.
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	// A degenerate test: just verify that passing invalid scan_type fails fast.
-	_, err := svc.Discovery.UpdateJobFull(context.Background(), 1, "job", []int64{1}, nil, true, 999, false, "NOPE", nil)
+	_, err := svc.Discovery.UpdateJobFull(context.Background(), 1, "job", []int64{1}, nil, true, 999, false, "NOPE", nil, true)
 	assert.Error(t, err)
 }

@@ -519,6 +519,7 @@ type ScanJob struct {
 	NotifyOnChange  bool       `json:"notify_on_change"`
 	ScanType        string     `json:"scan_type"`
 	AgentID         *int64     `json:"agent_id,omitempty"`
+	AutoAddIPs      bool       `json:"auto_add_ips"`
 }
 
 // ScanRun records a single execution of a scan job
