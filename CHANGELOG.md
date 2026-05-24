@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.31.9
+
+### Backups
+- Added a unified **Backups** page (`/admin/backups`) that consolidates Data Export, Data Import, and the new complete system backup.
+- New **Download Complete Backup** produces a ZIP archive containing the full PostgreSQL database dump, all admin configuration settings (as JSON), and any files stored in `./data/` (avatars, agent binary, etc.).
+- New **Restore from Backup** — upload a backup ZIP to restore the database, configuration, and files. Includes a two-step confirmation to prevent accidental data loss.
+- The existing CSV/JSON data export and CSV import (subnets, IP addresses, phpIPAM) are now embedded in the Backups page as sub-sections.
+- "Backups" sidebar link added under Admin; the Admin Overview now shows a single Backups card instead of separate Export and Import cards.
+
+### DNS Integration
+- **Auto-add IPs**: when enabled (`dns_auto_add_ips_enabled`), the DNS sync picks up A/AAAA records from the configured DNS provider and inserts any IP not already in IPAM into the matching subnet.
+- **Auto-remove IPs**: when enabled (`dns_auto_remove_ips_enabled`), IPs previously added by the DNS sync that are no longer present in DNS records are removed from IPAM.
+- Both options are toggleable in Admin → Settings → DNS. They default to disabled.
+
+### Discovery / Scan Jobs
+- **Auto-add discovered IPs**: new per-job toggle (enabled by default) — when a scan finds a live IP address that is not yet in IPAM, it is automatically added to the matching subnet.
+- The toggle is exposed in the scan job creation and edit form.
+
+### SNMP
+- Added a **show/hide toggle** (eye icon) next to the global SNMP community string field in Admin → Settings so the value can be revealed without having to clear and retype it.
+
+### Audit Log
+- Fixed the **Prune** button on the Audit Retention page — the `POST /api/v1/admin/audit/prune` route was not registered; it now correctly calls the prune handler.
+- Fixed the **export cap**: the repository previously reset any limit above 1,000 to 100, meaning CSV exports silently returned only 100 rows. The cap is now 100,000.
+- Fixed the **Save** button on the Audit Retention page — if the settings row did not exist yet, the UPDATE matched nothing and returned an error; the handler now upserts the row before updating.
+- Changed the minimum retention period from 1 to 30 days in the UI to match the database constraint.
+
+### Nameservers
+- Removed the hard-coded admin-only block from the Nameservers page. Non-admin users who have been granted nameserver permissions via RBAC can now view the list. Write controls (Add, Edit, Delete) remain admin-only.
+- A clear "access denied" message is shown if the API returns 403 instead of a generic error.
+
+### Scan Agents
+- New **Download latest scan agent binary** section at the top of the Scan Agents admin page with one-click links for Linux x64/ARM64, macOS x64/ARM64, and Windows x64.
+- Agent privilege model documented in `agent/PRIVILEGES.md` — the agent uses the system `ping` binary (no raw sockets), so elevated privileges are not required for the agent process itself.
+
+### CI / Release
+- GitHub Actions release workflow now builds the scan agent for all five platforms (linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64) and attaches the binaries as assets to the GitHub Release.
+
 ## v1.31.3
 
 ### Navigation
