@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.31.10
+
+### Installation
+- Docker Compose installs now require only `docker-compose.yml` by default. The backend and frontend images are pulled from GitHub Container Registry, and `.env` is only needed for overrides.
+- Updated the README and getting-started guide to document the compose-only install path.
+- `.env.example` now keeps built-in Compose defaults commented out so local config files can stay focused on explicit overrides.
+
+### MFA
+- Production deployments without `MFA_ENCRYPTION_KEY` now create and reuse a persistent backend-managed key at `./data/backend/mfa-encryption-key`.
+- Migration readiness checks now accept either an explicit `MFA_ENCRYPTION_KEY` or the backend-managed persistent key file.
+- Troubleshooting and user documentation now explain how to preserve or restore the MFA key.
+
+### Security / CI
+- Scoped MFA key file access and backup data-file reads with Go's root-scoped filesystem API.
+- Updated CI to Go 1.26.4 so `govulncheck` runs against the fixed standard library.
+
 ## v1.31.9
 
 ### Backups
