@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:18
+    restart: unless-stopped
     volumes:
       - ./data/db:/var/lib/postgresql/data
     environment:
@@ -16,6 +17,7 @@ services:
 
   backend:
     image: ghcr.io/lima3w/padduck-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     volumes:
       - ./data/backend:/app/data
     environment:
@@ -39,6 +41,7 @@ services:
 
   frontend:
     image: ghcr.io/lima3w/padduck-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
