@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.31.12
+
+### Authentication
+- The login page now hides the self-registration link when self-registration is disabled.
+- Public instance metadata now exposes the registration-enabled state so unauthenticated pages can reflect the current setting without exposing admin configuration.
+
+### Release / CI
+- Main-branch release automation now requires the top changelog entry to increment the latest release by exactly one patch version, creates the matching tag, and publishes versioned release images.
+- Frontend CI and Docker builds now use npm 11.16.0.
+
 ## v1.31.11
 
 ### Installation
