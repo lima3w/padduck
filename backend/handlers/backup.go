@@ -194,18 +194,23 @@ func (h *Handler) DownloadFullBackup(c *fiber.Ctx) error {
 	wd, _ := os.Getwd()
 	dataDir := filepath.Join(wd, "data")
 	if info, statErr := os.Stat(dataDir); statErr == nil && info.IsDir() {
+		dataRoot, rootErr := os.OpenRoot(dataDir)
+		if rootErr != nil {
+			return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "failed to open data directory: "+rootErr.Error())
+		}
+		defer dataRoot.Close()
 		_ = filepath.Walk(dataDir, func(path string, fi os.FileInfo, walkErr error) error {
 			if walkErr != nil || fi.IsDir() {
 				return nil
 			}
-			rel, relErr := filepath.Rel(wd, path)
+			relData, relErr := filepath.Rel(dataDir, path)
 			if relErr != nil {
 				return nil
 			}
 			// Use forward slashes in zip entry names
-			entryName := "files/" + filepath.ToSlash(rel)
+			entryName := "files/data/" + filepath.ToSlash(relData)
 			if fw, createErr := zw.Create(entryName); createErr == nil {
-				f, openErr := os.Open(path)
+				f, openErr := dataRoot.Open(relData)
 				if openErr == nil {
 					_, _ = io.Copy(fw, f)
 					_ = f.Close()

@@ -3,11 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"padduck/config"
 	"padduck/services"
 )
 
@@ -229,10 +229,10 @@ func (h *Handler) v2MigrationReadinessChecks(ctx context.Context) []compatibilit
 		configDetail = "Application URL is not configured; exported references may need manual adjustment."
 		configWork = "Set app_url to the externally reachable v1 URL before preparing the migration bundle."
 	}
-	if h.isProduction && strings.TrimSpace(os.Getenv("MFA_ENCRYPTION_KEY")) == "" {
+	if h.isProduction && !config.HasPersistentMFAKey() {
 		configStatus = "fail"
-		configDetail = "Production MFA encryption key is not present in the runtime environment."
-		configWork = "Set MFA_ENCRYPTION_KEY before migration readiness is considered complete."
+		configDetail = "Production MFA encryption key is not present in the runtime environment or persistent key file."
+		configWork = "Set MFA_ENCRYPTION_KEY or restart the backend so it can create data/mfa-encryption-key."
 	}
 	checks = append(checks, compatibilityCheck{
 		ID:              "config-runtime",
