@@ -24,7 +24,7 @@ Failed to connect to database: <detail>
 
 1. Check that the `db` container is running and healthy: `docker compose ps`
 2. Verify `DATABASE_URL` (or `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`) in your `.env`
-3. If you changed the password after first boot, destroy the volume and re-create: `docker compose down -v && docker compose up --build`
+3. If you changed the password after first boot and this is not a production database, destroy the volume and re-create: `docker compose down -v && docker compose up -d`
 
 ---
 
@@ -159,16 +159,24 @@ level=WARN msg="could not write admin password file; set ADMIN_PASSWORD explicit
 
 **Where you see it:** Users with MFA enrolled receive an "invalid code" error after the backend restarts.
 
-**Why it happens:** `MFA_ENCRYPTION_KEY` was not set (or was set to an empty string). In that case the backend generates a random per-process key at startup, so MFA secrets encrypted in the previous process cannot be decrypted after a restart.
+**Why it happens:** The key used to encrypt MFA secrets changed. In Docker
+Compose production deployments, the backend creates and reuses
+`./data/backend/mfa-encryption-key` when `MFA_ENCRYPTION_KEY` is unset. MFA
+secrets can be lost if that file is deleted, the `./data/backend` bind mount is
+not persistent, or `MFA_ENCRYPTION_KEY` is changed after users enroll MFA.
+Development and test runs without a valid key still use a temporary per-process
+key.
 
 **Fix:**
 
-1. Generate a key: `openssl rand -hex 32`
-2. Set `MFA_ENCRYPTION_KEY=<output>` in your `.env`
-3. Restart the backend
-4. Users whose MFA secrets were encrypted with the old key will need to re-enroll
+1. Confirm `./data/backend/mfa-encryption-key` exists and is persisted across restarts
+2. If you manage the key through `.env`, confirm `MFA_ENCRYPTION_KEY` has not changed
+3. Restore the previous key from backup if available
+4. Users whose MFA secrets were encrypted with the old key will need to re-enroll if the old key cannot be restored
 
-> **Important:** Once you set `MFA_ENCRYPTION_KEY` in production, do not change it without a migration plan. Rotating the key invalidates all existing MFA enrollments.
+> **Important:** Do not change `MFA_ENCRYPTION_KEY` or delete
+> `./data/backend/mfa-encryption-key` without a migration plan. Rotating the key
+> invalidates all existing MFA enrollments.
 
 ---
 
@@ -200,7 +208,7 @@ docker run -d \
 **Why it happens:** The Docker Compose healthchecks poll the `/health` endpoint. Common causes:
 
 - The backend is waiting for a database migration that is taking longer than expected
-- A port conflict prevents the service from binding (check if something else is on port `3000` or `8080`)
+- A port conflict prevents the frontend service from binding (check if something else is on port `3000`, or the value of `FRONTEND_PORT` if you changed it)
 - The backend exited with a fatal error before the healthcheck passed (check `docker compose logs backend`)
 
 **Fix:**

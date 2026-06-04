@@ -10,7 +10,7 @@ This guide walks you from zero to your first allocated IP address. It covers the
 |---|---|---|
 | [Docker](https://docs.docker.com/get-docker/) | 24.x | Engine + CLI |
 | [Docker Compose](https://docs.docker.com/compose/install/) | v2.20 | Ships with Docker Desktop; standalone install on Linux |
-| Outbound internet access | — | Required to pull images on first build |
+| Outbound internet access | — | Required to download the Compose file and pull images |
 
 > **Local development only** — if you want to run the backend or frontend outside Docker, you also need Go 1.22+ and Node.js 20+. Those paths are not covered here.
 
@@ -18,39 +18,44 @@ This guide walks you from zero to your first allocated IP address. It covers the
 
 ## Install
 
-### 1. Get the code
+### 1. Create a deployment directory
 
 ```bash
-git clone https://gitea.lima3.dev/Lima3-Automations/padduck.git
+mkdir padduck
 cd padduck
 ```
 
-### 2. Create your environment file
+You do not need to clone the repository or build images locally. The backend
+and frontend images are published to GitHub Container Registry.
 
-Copy the example file and open it in your editor:
-
-```bash
-cp .env.example .env
-```
-
-At minimum, set a strong database password and an MFA encryption key before continuing:
+### 2. Download the Compose file
 
 ```bash
-# Generate the MFA key (requires openssl):
-openssl rand -hex 32
+curl -fsSLO https://raw.githubusercontent.com/lima3w/padduck/main/docker-compose.yml
 ```
 
-Paste the output as the value of `MFA_ENCRYPTION_KEY` in your `.env` file. See the [Configuration](#configuration) section below for all available variables.
+Before using this in a shared or production environment, create a `.env` file
+and set a strong `POSTGRES_PASSWORD`. You can start from the example file:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lima3w/padduck/main/.env.example -o .env
+```
+
+See the [Configuration](#configuration) section below for all available variables.
 
 ### 3. Start the stack
 
 ```bash
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
-SCREENSHOT: Terminal output of `docker compose up --build` completing successfully, showing all three services (db, backend, frontend) marked as healthy.
+SCREENSHOT: Terminal output of `docker compose up -d` completing successfully, showing all three services (db, backend, frontend) marked as healthy.
 
-The first build takes a few minutes. When all three services are healthy you will see the backend print the admin password (if you left `ADMIN_PASSWORD` blank):
+The first image pull can take a few minutes. On first startup, the backend
+creates a persistent MFA encryption key in `./data/backend/mfa-encryption-key`
+if `MFA_ENCRYPTION_KEY` is not set. When all three services are healthy you will
+see the backend print the admin password (if you left `ADMIN_PASSWORD` blank):
 
 ```
 ========================================
@@ -72,13 +77,13 @@ All settings are read from environment variables. Docker Compose interpolates th
 
 | Variable | Default | Description |
 |---|---|---|
-| `POSTGRES_USER` | `ipam` | PostgreSQL user created at first boot |
-| `POSTGRES_PASSWORD` | `ipam` | **Change before any shared deployment** |
-| `POSTGRES_DB` | `ipam` | Database name |
+| `POSTGRES_USER` | `padduck` | PostgreSQL user created at first boot |
+| `POSTGRES_PASSWORD` | `padduck` | **Change before any shared deployment** |
+| `POSTGRES_DB` | `padduck` | Database name |
 | `DATABASE_URL` | *(derived)* | Full connection string; overrides the three variables above when set |
 | `SERVER_PORT` | `8080` | Port the backend listens on inside the container |
 | `ENVIRONMENT` | `production` | Set to `development` for debug-level text logs; `production` emits JSON logs |
-| `MFA_ENCRYPTION_KEY` | *(empty)* | **Required for persistent MFA.** 64 hex characters. Generate with `openssl rand -hex 32` |
+| `MFA_ENCRYPTION_KEY` | generated if unset | Optional override for the backend-managed persistent key. Must be 64 hex characters. Generate with `openssl rand -hex 32` |
 | `ADMIN_PASSWORD` | *(auto-generated)* | Leave empty to auto-generate on first boot; set to use a specific password |
 | `RESET_ADMIN_PASSWORD` | `false` | Set to `true` to force-reset the admin password on next boot, then remove the variable |
 | `TRUSTED_PROXIES` | *(none)* | Comma-separated IPs/CIDRs to trust for `X-Real-IP` forwarding (e.g. your load balancer) |
@@ -93,8 +98,8 @@ All settings are read from environment variables. Docker Compose interpolates th
 Once the stack is up, confirm the backend and frontend are healthy:
 
 ```bash
-# Backend health
-curl -s http://localhost:8080/health
+# Backend health from inside the Compose network
+docker compose exec backend wget -qO- http://127.0.0.1:8080/health
 # Expected: {"status":"ok"}
 
 # Frontend health
@@ -161,14 +166,5 @@ Configure it with three environment variables:
 | `IPAM_AGENT_TOKEN` | Bearer token created under **Admin → Scan Agents** |
 | `POLL_INTERVAL` | Polling interval in seconds (default: `30`) |
 
-Run the agent container:
-
-```bash
-docker run -d \
-  -e IPAM_SERVER_URL=https://padduck.example.com \
-  -e IPAM_AGENT_TOKEN=<your-token> \
-  -e POLL_INTERVAL=30 \
-  gitea.lima3.dev/Lima3-Automations/padduck/agent:latest
-```
-
-<!-- TODO: verify the agent image registry path -->
+Download the agent binary for your platform from the GitHub Releases page, then
+run it with those environment variables set.
