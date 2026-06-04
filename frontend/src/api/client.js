@@ -154,6 +154,8 @@ export const getCurrentUser = () => api.get('/auth/me')
 
 export const getFeatures = () => api.get('/features')
 
+export const getPublicInfo = () => noAuthApi.get('/public-info')
+
 export const listUserTokens = (userId) => api.get(`/auth/tokens/${userId}`)
 
 export const listMyTokens = () => api.get('/auth/me/tokens')

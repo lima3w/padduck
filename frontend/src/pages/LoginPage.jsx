@@ -24,11 +24,16 @@ export default function LoginPage() {
   // External auth providers
   const [providers, setProviders] = useState({ ldap: false, oauth2: false, saml: false })
   const [useLdap, setUseLdap] = useState(false)
+  const [registrationEnabled, setRegistrationEnabled] = useState(true)
 
   useEffect(() => {
     client.getAuthProviders()
       .then((res) => setProviders(res.data || {}))
       .catch(() => {}) // 404 or network error — silently ignore
+
+    client.getPublicInfo()
+      .then((res) => setRegistrationEnabled(res.data?.registrationEnabled !== false))
+      .catch(() => {})
   }, [])
 
   const handlePasswordLogin = async (e) => {
@@ -250,12 +255,14 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-4 text-center space-y-2">
-          <div>
-            <span className="text-gray-600 dark:text-[#a8b8cb] text-sm">Don&apos;t have an account? </span>
-            <Link to="/register" className="text-[#f5b800] text-sm hover:underline font-medium">
-              Register
-            </Link>
-          </div>
+          {registrationEnabled && (
+            <div>
+              <span className="text-gray-600 dark:text-[#a8b8cb] text-sm">Don&apos;t have an account? </span>
+              <Link to="/register" className="text-[#f5b800] text-sm hover:underline font-medium">
+                Register
+              </Link>
+            </div>
+          )}
           <div>
             <Link to="/forgot-password" className="text-[#f5b800] text-sm hover:underline">
               Forgot password?
