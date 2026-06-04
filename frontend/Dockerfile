@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:22.16-alpine AS builder
 WORKDIR /app
+RUN npm install -g npm@11.16.0
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
     npm ci --prefer-offline
