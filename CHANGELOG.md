@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.11
+
+### Installation
+- Updated the Docker Compose PostgreSQL bind mount for `postgres:18` from `/var/lib/postgresql/data` to `/var/lib/postgresql`, matching the official PostgreSQL 18 image layout.
+- Existing deployments that already started with the previous mount should verify where their database files were initialized before changing mounts on a live system.
+
 ## v1.31.10
 
 ### Installation
