@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.31.13
+
+### Authentication
+- Added a **Change Password** option under User → Security settings, allowing users to update their password without admin intervention.
+
+### Network / IP Addresses
+- The New IP Address form now pre-fills the network portion of the IP field based on the selected subnet, reducing manual entry errors.
+- Fixed IP addresses not appearing in subnet list views due to a field key mismatch and an incomplete paginated query.
+- Fixed an encode error in the split-subnet IP move query.
+
+### Configuration
+- Added `anonymous_api_enabled` to the allowed configuration keys and included it in the seed migration so it is recognized on fresh installs.
+
 ## v1.31.12
 
 ### Authentication
