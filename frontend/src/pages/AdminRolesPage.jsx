@@ -220,7 +220,7 @@ export default function AdminRolesPage() {
                 <div className="flex gap-2 flex-shrink-0">
                   <button
                     onClick={() => openPermEditor(role)}
-                    className="text-xs text-blue-600 border border-blue-200 px-2.5 py-1 rounded hover:bg-blue-50 transition"
+                    className="text-xs text-blue-600 border border-blue-200 px-2.5 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
                   >
                     Permissions
                   </button>
