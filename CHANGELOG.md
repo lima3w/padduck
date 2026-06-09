@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.31.16
+
+### Build
+- Updated frontend builder image from `node:22.16-alpine` to `node:22.22.3-alpine`.
+- Updated frontend runtime image from `nginx:1.28-alpine` to `nginx:1.28.3-alpine`.
+- Added `apk upgrade` to the nginx stage to pull in latest Alpine package security patches (nginx, libcrypto3, libssl3, curl, musl, nghttp2-libs, zlib, xz-libs, tiff, libpng, libxml2, and others).
+
 ## v1.31.15
 
 ### Build
