@@ -1,0 +1,51 @@
+name: Check Changelog
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify CHANGELOG.md is bumped for merge
+        run: |
+          set -euo pipefail
+
+          latest_semver_tag() {
+            git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1
+          }
+
+          next_patch() {
+            local tag="${1#v}"
+            IFS=. read -r major minor patch <<< "${tag}"
+            printf 'v%s.%s.%s\n' "${major}" "${minor}" "$((patch + 1))"
+          }
+
+          latest="$(latest_semver_tag)"
+          if [ -z "${latest}" ]; then
+            echo "No semver tags found — skipping changelog check."
+            exit 0
+          fi
+
+          expected="$(next_patch "${latest}")"
+          actual="$(awk '/^## v[0-9]+\.[0-9]+\.[0-9]+$/{print $2; exit}' CHANGELOG.md)"
+
+          if [ -z "${actual}" ]; then
+            echo "ERROR: CHANGELOG.md has no version section (expected ## ${expected} at the top)."
+            exit 1
+          fi
+
+          if [ "${actual}" != "${expected}" ]; then
+            echo "ERROR: CHANGELOG.md top version is ${actual}, but the next release must be ${expected}."
+            echo "Latest release tag is ${latest}. Add a '## ${expected}' section to CHANGELOG.md before merging."
+            exit 1
+          fi
+
+          echo "CHANGELOG.md top version is ${actual} — OK."
