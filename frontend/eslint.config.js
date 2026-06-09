@@ -1,8 +1,10 @@
+import js from '@eslint/js'
 import globals from 'globals'
 import reactPlugin from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
+  js.configs.recommended,
   {
     files: ['src/**/*.{js,jsx}'],
     languageOptions: {
@@ -27,12 +29,13 @@ export default [
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/static-components': 'off',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
   {
     files: ['src/test/**/*.{js,jsx}', 'src/**/*.test.{js,jsx}'],
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+      globals: { ...globals.browser, ...globals.node, ...globals.vitest },
     },
   },
 ]
