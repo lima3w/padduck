@@ -249,6 +249,13 @@ function SecurityTab() {
   const [regenResult, setRegenResult] = useState(null)
   const [showRegen, setShowRegen] = useState(false)
 
+  // Change password
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [changePwForm, setChangePwForm] = useState({ current: '', next: '', confirm: '' })
+  const [changePwError, setChangePwError] = useState('')
+  const [changePwSuccess, setChangePwSuccess] = useState(false)
+  const [changePwLoading, setChangePwLoading] = useState(false)
+
   useEffect(() => {
     loadStatus()
   }, [])
@@ -262,6 +269,31 @@ function SecurityTab() {
       setStatus(null)
     } finally {
       setLoadingStatus(false)
+    }
+  }
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    setChangePwError('')
+    setChangePwSuccess(false)
+    if (changePwForm.next !== changePwForm.confirm) {
+      setChangePwError('New passwords do not match')
+      return
+    }
+    if (changePwForm.next.length < 8) {
+      setChangePwError('New password must be at least 8 characters')
+      return
+    }
+    setChangePwLoading(true)
+    try {
+      await client.changePassword(changePwForm.current, changePwForm.next)
+      setChangePwSuccess(true)
+      setChangePwForm({ current: '', next: '', confirm: '' })
+      setShowChangePassword(false)
+    } catch (err) {
+      setChangePwError(err.response?.data?.error || 'Failed to change password')
+    } finally {
+      setChangePwLoading(false)
     }
   }
 
@@ -335,6 +367,78 @@ function SecurityTab() {
 
   return (
     <div className="max-w-lg space-y-8">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Password</h2>
+        <p className="text-sm text-gray-600 mb-4">Change your account password.</p>
+        {changePwSuccess && (
+          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+            Password changed successfully.
+          </div>
+        )}
+        {!showChangePassword ? (
+          <button
+            type="button"
+            onClick={() => { setShowChangePassword(true); setChangePwError(''); setChangePwSuccess(false); }}
+            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
+          >
+            Change Password
+          </button>
+        ) : (
+          <form onSubmit={handleChangePassword} className="space-y-3">
+            {changePwError && <p className="text-sm text-red-600">{changePwError}</p>}
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Current password</label>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={changePwForm.current}
+                onChange={e => setChangePwForm(f => ({ ...f, current: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">New password</label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={changePwForm.next}
+                onChange={e => setChangePwForm(f => ({ ...f, next: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-1">Confirm new password</label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={changePwForm.confirm}
+                onChange={e => setChangePwForm(f => ({ ...f, confirm: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={changePwLoading}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition"
+              >
+                {changePwLoading ? 'Saving…' : 'Update Password'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowChangePassword(false); setChangePwForm({ current: '', next: '', confirm: '' }); setChangePwError(''); }}
+                className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-1">Two-Factor Authentication</h2>
         <p className="text-sm text-gray-600 mb-4">

@@ -390,6 +390,22 @@ func (s *Service) InitAdminPassword(ctx context.Context, password string) (bool,
 	return s.repository.InitAdminPassword(ctx, hash)
 }
 
+// ChangePassword verifies the current password and sets a new one for the given user.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+	user, err := s.repository.GetUserByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+	if user.PasswordHash == "" || !utils.VerifyPassword(user.PasswordHash, currentPassword) {
+		return fmt.Errorf("current password is incorrect")
+	}
+	hash, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password")
+	}
+	return s.repository.UpdateUserPassword(ctx, userID, hash)
+}
+
 // ForceResetAdminPassword unconditionally sets the admin password.
 func (s *Service) ForceResetAdminPassword(ctx context.Context, password string) error {
 	hash, err := utils.HashPassword(password)

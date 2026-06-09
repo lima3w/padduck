@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"padduck/models"
 	"padduck/services"
 	"padduck/utils"
 )
@@ -76,4 +77,50 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 	return c.JSON(PasswordResetResponse{
 		Message: "Password has been reset successfully",
 	})
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+// ChangeMyPassword handles POST /api/v1/auth/me/change-password
+func (h *Handler) ChangeMyPassword(c *fiber.Ctx) error {
+	currentUser, ok := c.Locals("user").(*models.User)
+	if !ok || currentUser == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	req := new(ChangePasswordRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if req.CurrentPassword == "" || req.NewPassword == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "current_password and new_password are required"})
+	}
+
+	if len(req.NewPassword) < 8 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "new password must be at least 8 characters"})
+	}
+
+	if err := h.service.ChangePassword(c.Context(), currentUser.ID, req.CurrentPassword, req.NewPassword); err != nil {
+		if err.Error() == "current password is incorrect" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+		}
+		reqLogger(c).Error("error changing password", "user_id", currentUser.ID, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to change password"})
+	}
+
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "password_changed",
+		ResourceType: "user", ResourceID: &currentUser.ID, ResourceName: currentUser.Username,
+	})
+
+	_ = h.service.Notification.Queue(c.Context(), currentUser.ID, services.NotifPasswordChanged, map[string]interface{}{
+		"IP": c.IP(),
+	})
+
+	return c.Status(fiber.StatusNoContent).Send(nil)
 }
