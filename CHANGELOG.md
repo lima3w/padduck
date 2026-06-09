@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.31.14
+
+### Dependencies
+- Updated frontend npm packages: axios 1.16.1→1.17.0, cytoscape 3.33.3→3.34.0, react/react-dom 19.2.6→19.2.7, react-router-dom 7.15.1→7.17.0, vite 8.0.13→8.0.16, vitest 4.1.6→4.1.8.
+- Added `eslint:recommended` to the flat ESLint config; added vitest globals to test file config; fixed undeclared `historyError` state in the utilization history section.
+- Updated Go backend dependencies: jackc/pgx/v5, x/crypto, x/net, x/sys, x/text, x/sync, go-sqlite3, go-runewidth, go-colorable, go-internal.
+- Bumped the `go` directive to 1.26.4 in both the backend and agent modules.
+
 ## v1.31.13
 
 ### Authentication
