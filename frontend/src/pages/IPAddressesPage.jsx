@@ -245,6 +245,7 @@ function UtilisationHistorySection({ subnetId }) {
   const [historyDays, setHistoryDays] = useState(30)
   const [historyData, setHistoryData] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState('')
 
   useEffect(() => {
     async function fetchHistory() {
@@ -255,6 +256,7 @@ function UtilisationHistorySection({ subnetId }) {
         setHistoryData(Array.isArray(data) ? data : [])
       } catch {
         setHistoryData([])
+        setHistoryError('Failed to load utilization history.')
       } finally {
         setHistoryLoading(false)
       }
@@ -284,7 +286,8 @@ function UtilisationHistorySection({ subnetId }) {
         </div>
       </div>
       {historyLoading && <p className="text-gray-400 text-sm">Loading history...</p>}
-      {!historyLoading && chartData.length === 0 && (
+      {!historyLoading && historyError && <p className="text-red-500 text-sm">{historyError}</p>}
+      {!historyLoading && !historyError && chartData.length === 0 && (
         <p className="text-gray-400 text-sm">No utilization history available for this period.</p>
       )}
       {!historyLoading && chartData.length > 0 && (
