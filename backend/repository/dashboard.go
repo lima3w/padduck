@@ -187,24 +187,31 @@ func (r *Repository) ListIPAddressesBySubnetPaginated(ctx context.Context, subne
 
 func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Context, subnetID int64, opts ListOptions) ([]*models.IPAddress, int64, error) {
 	args := []interface{}{subnetID}
-	where := ` WHERE subnet_id = $1`
+	where := ` WHERE ip.subnet_id = $1`
 	if opts.Status != "" {
 		args = append(args, opts.Status)
-		where += fmt.Sprintf(" AND status = $%d", len(args))
+		where += fmt.Sprintf(" AND ip.status = $%d", len(args))
 	}
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
-		where += fmt.Sprintf(" AND (address::text ILIKE $%d OR hostname ILIKE $%d OR assigned_to ILIKE $%d)", len(args), len(args), len(args))
+		where += fmt.Sprintf(" AND (ip.address::text ILIKE $%d OR ip.hostname ILIKE $%d OR ip.assigned_to ILIKE $%d)", len(args), len(args), len(args))
 	}
 
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses`+where, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses ip`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	sortCol := sortExpr(opts.Sort, "address", map[string]string{"address": "address", "hostname": "hostname", "status": "status", "created_at": "created_at", "updated_at": "updated_at"})
+	allowedSorts := map[string]string{
+		"address":    "ip.address",
+		"hostname":   "ip.hostname",
+		"status":     "ip.status",
+		"created_at": "ip.created_at",
+		"updated_at": "ip.updated_at",
+	}
+	sortCol := sortExpr(opts.Sort, "ip.address", allowedSorts)
 	args = append(args, opts.Limit, opts.Offset)
-	query := fmt.Sprintf(`SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at FROM ip_addresses%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
+	query := fmt.Sprintf(`SELECT `+ipSelectCols+` `+ipFromJoin+`%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
@@ -213,8 +220,8 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 
 	ips := make([]*models.IPAddress, 0)
 	for rows.Next() {
-		ip := &models.IPAddress{}
-		if err := rows.Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo, &ip.CreatedAt, &ip.UpdatedAt); err != nil {
+		ip, err := scanIP(rows)
+		if err != nil {
 			return nil, 0, err
 		}
 		ips = append(ips, ip)
