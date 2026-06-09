@@ -468,9 +468,9 @@ export default function IPAddressesPage() {
 
   function openMeta(ip) {
     setForm({
-      tag_id: ip.TagID ? String(ip.TagID) : '',
-      mac_address: ip.MACAddress || '',
-      ptr_record: ip.PTRRecord || ip.ptrRecord || '',
+      tag_id: ip.tagId ? String(ip.tagId) : '',
+      mac_address: ip.macAddress || '',
+      ptr_record: ip.ptrRecord || '',
       dns_name: ip.dnsName || '',
       custom_fields: ip.customFields || {},
     })
@@ -910,19 +910,19 @@ export default function IPAddressesPage() {
                     <input type="checkbox" checked={selected.has(ip.id)} onChange={() => toggleSelect(ip.id)} />
                   </td>
                 )}
-                {col('address') && <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.Address}</td>}
-                {col('hostname') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.Hostname || '—'}</td>}
+                {col('address') && <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.address}</td>}
+                {col('hostname') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.hostname || '—'}</td>}
                 {col('status') && (
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ip.Status] || 'bg-gray-100 text-gray-600'}`}>
-                      {ip.Status}
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ip.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {ip.status}
                     </span>
                   </td>
                 )}
-                {col('tag') && <td className="px-4 py-3"><TagBadge tag={ip.Tag} /></td>}
+                {col('tag') && <td className="px-4 py-3"><TagBadge tag={ip.tag} /></td>}
                 {col('assigned_to') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {ip.AssignedTo || '—'}
+                    {ip.assignedTo || '—'}
                     {ip.expiresAt && (
                       <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
                         {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
@@ -939,12 +939,12 @@ export default function IPAddressesPage() {
                     ) : '—'}
                   </td>
                 )}
-                {col('mac_address') && <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400 text-xs">{ip.MACAddress || '—'}</td>}
+                {col('mac_address') && <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400 text-xs">{ip.macAddress || '—'}</td>}
                 {col('dns_name') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       {ip.dnsName || '—'}
-                      {ip.dnsName && ip.dnsRecords && !ip.dnsRecords.includes(ip.Address) && (
+                      {ip.dnsName && ip.dnsRecords && !ip.dnsRecords.includes(ip.address) && (
                         <span
                           title="DNS mismatch: DNS records do not include this IP's address"
                           className="text-yellow-500 cursor-help"
@@ -955,10 +955,10 @@ export default function IPAddressesPage() {
                     </span>
                   </td>
                 )}
-                {col('ptr_record') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.PTRRecord || ip.ptrRecord || '—'}</td>}
+                {col('ptr_record') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.ptrRecord || '—'}</td>}
                 {col('last_seen') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                    {ip.LastSeen ? new Date(ip.LastSeen).toLocaleString() : '—'}
+                    {ip.lastSeen ? new Date(ip.lastSeen).toLocaleString() : '—'}
                   </td>
                 )}
                 {col('services') && (
@@ -984,10 +984,10 @@ export default function IPAddressesPage() {
                 })}
                 <td className="px-4 py-3 text-right space-x-2">
                   <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
-                  {ip.Status !== 'assigned' && (
+                  {ip.status !== 'assigned' && (
                     <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
                   )}
-                  {ip.Status === 'assigned' && (
+                  {ip.status === 'assigned' && (
                     <>
                       <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
                       {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
