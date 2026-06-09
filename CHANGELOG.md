@@ -4,6 +4,8 @@
 
 ### Bug Fixes
 - **Frontend healthcheck**: Fixed the compose healthcheck using `wget`, which is not available in the `nginx:1.31.1-trixie` (Debian-based) image; switched to `curl`.
+- **Scan auto-add IPs**: Fixed auto-discovered IPs never being saved — the insert used status `"active"`, which violates the DB `CHECK` constraint; corrected to `"available"`. Affects both local-scan and remote-agent paths.
+- **Dark mode list selection**: Selected and hovered list rows in Scan Jobs and Admin Roles pages were unreadable in dark mode (white text on pale-blue background); added `dark:bg-blue-900/20` to fix contrast.
 
 ## v1.31.18
 
