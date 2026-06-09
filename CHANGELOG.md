@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.31.18
+
+### Features
+- **Scan job improvements**: Run Now button stays disabled until the scan finishes; scan type, concurrency, schedule, auto-add IPs, discover DNS, and overwrite DNS options are now configured directly on the job in a unified Settings tab — separate Scan Profiles removed.
+- **Auto-add IPs from scans**: Active IPs discovered during a scan are automatically added to the appropriate subnet when the job's auto-add option is enabled.
+- **Per-job DNS options**: New `discover_dns` and `dns_overwrite` flags on scan jobs control whether PTR records are looked up and whether existing `dns_name` values are overwritten.
+- **Scan results enhancements**: Added a "Hide down" toggle to filter non-alive IPs; IPs that were alive in the previous scan but are now gone display an amber "Gone" badge.
+- **Scan Retention fix**: The retention settings tab no longer errors on a fresh installation — defaults are inserted automatically if no settings row exists.
+
+### Changes
+- Renamed "Sections" to "Networks" throughout the application (UI labels, API routes, database table, and all code references). Migration: `20260609_003_rename_sections_to_networks`.
+- Fixed topology view showing a double CIDR (e.g. `10.0.0.0/32/24`) by using PostgreSQL `host()` instead of `::text` cast on INET columns.
+
+### Bug Fixes
+- **Subnet split**: The original subnet is now deleted after a split instead of being kept as a container, preventing overlapping address space. IPs are moved to the correct child subnet during the transaction.
+- **Subnet split blocking**: If any existing IP falls on a network or broadcast address of a child subnet, the split is blocked and the conflicting IPs are shown to the user.
+
+### Database Migrations
+- `20260609_002_scan_job_dns_options`: Adds `discover_dns` (default `true`) and `dns_overwrite` (default `false`) columns to `scan_jobs`.
+- `20260609_003_rename_sections_to_networks`: Renames the `sections` table to `networks` and the `section_id` column to `network_id`.
+
 ## v1.31.17
 
 ### Build
