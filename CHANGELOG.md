@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.19
+
+### Bug Fixes
+- **Frontend healthcheck**: Fixed the compose healthcheck using `wget`, which is not available in the `nginx:1.31.1-trixie` (Debian-based) image; switched to `curl`.
+
 ## v1.31.18
 
 ### Features
