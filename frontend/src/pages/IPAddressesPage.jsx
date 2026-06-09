@@ -456,8 +456,18 @@ export default function IPAddressesPage() {
     load(1)
   }
 
+  function networkPrefix(networkAddress, prefixLength) {
+    if (!networkAddress) return ''
+    if (networkAddress.includes(':')) return networkAddress  // IPv6: use as-is
+    const octets = networkAddress.split('.')
+    if (prefixLength <= 8) return octets[0] + '.'
+    if (prefixLength <= 16) return octets.slice(0, 2).join('.') + '.'
+    return octets.slice(0, 3).join('.') + '.'
+  }
+
   function openCreate() {
-    setForm({ address: '', hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
+    const prefix = networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
+    setForm({ address: prefix, hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
     setModal('create')
   }
 
