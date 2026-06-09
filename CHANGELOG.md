@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.31.17
+
+### Build
+- Updated frontend runtime image from `nginx:1.28.3-alpine` to `nginx:1.31.1-trixie` (Debian-based).
+- Replaced `apk upgrade` with `apt-get upgrade` to pull latest Debian security patches.
+- Switched healthcheck from `wget` to `curl` to match the Debian nginx image toolset.
+
 ## v1.31.16
 
 ### Build
