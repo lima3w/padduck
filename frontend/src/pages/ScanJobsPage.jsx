@@ -306,7 +306,7 @@ export default function ScanJobsPage() {
                       onClick={() => selectJob(job)}
                       className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition ${
                         selectedJob?.id === job.id
-                          ? 'bg-blue-50 border-l-2 border-blue-500'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
                           : ''
                       }`}
                     >
@@ -474,7 +474,7 @@ export default function ScanJobsPage() {
                             <EmptyRow colSpan={5} message="No scan history yet." />
                           ) : (
                             history.map((run) => (
-                              <tr key={run.id} onClick={() => selectRun(run)} className="hover:bg-blue-50 cursor-pointer">
+                              <tr key={run.id} onClick={() => selectRun(run)} className="hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
                                 <td className="px-4 py-2 text-xs text-gray-700">{formatDate(run.startedAt)}</td>
                                 <td className="px-4 py-2 text-xs text-gray-700">
                                   {run.finishedAt ? formatDate(run.finishedAt) : <span className="text-gray-400">—</span>}

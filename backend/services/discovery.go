@@ -273,7 +273,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			if r.ptr != nil {
 				hostname = *r.ptr
 			}
-			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "active", nil, nil, nil, r.ptr)
+			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "available", nil, nil, nil, r.ptr)
 			if createErr != nil {
 				log.Printf("[discovery] auto-add IP %s in subnet %d: %v", r.ip, subnetID, createErr)
 			} else {
@@ -736,7 +736,7 @@ func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64
 		}
 		// Auto-add: if alive and no existing IP record, create one.
 		if res.IsAlive && ipAddrID == nil && job.AutoAddIPs && res.SubnetID > 0 {
-			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "active", nil, nil, nil, nil)
+			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "available", nil, nil, nil, nil)
 			if createErr != nil {
 				log.Printf("agent %d: auto-add IP %s in subnet %d: %v", agentID, res.IPAddress, res.SubnetID, createErr)
 			} else {

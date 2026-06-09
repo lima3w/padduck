@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.20
+
+### Bug Fixes
+- **Scan auto-add IPs**: Fixed auto-discovered IPs never being saved — the insert used status `"active"`, which violates the DB `CHECK` constraint; corrected to `"available"`. Affects both local-scan and remote-agent paths.
+- **Dark mode list selection**: Selected and hovered list rows in Scan Jobs and Admin Roles pages were unreadable in dark mode (white text on pale-blue background); added `dark:bg-blue-900/20` to fix contrast.
+
 ## v1.31.19
 
 ### Bug Fixes
