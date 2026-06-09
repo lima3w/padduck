@@ -4,7 +4,7 @@ import ChangeHistory from '../components/ChangeHistory'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import {
   assignSubnetToVlan,
-  getSections,
+  getNetworks,
   getSubnetsPaginated,
   getVlan,
   getVlanDomains,
@@ -42,7 +42,7 @@ export default function VlanDetailPage() {
   const { id } = useParams()
   const [vlan, setVlan] = useState(null)
   const [subnets, setSubnets] = useState([])
-  const [sections, setSections] = useState([])
+  const [networks, setSections] = useState([])
   const [domains, setDomains] = useState([])
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +69,7 @@ export default function VlanDetailPage() {
         getVlanSubnets(id),
         getVlanDomains(),
         getVlanGroups(),
-        getSections(),
+        getNetworks(),
       ])
       if (vlanRes.status === 'fulfilled') {
         setVlan(vlanRes.value.data)
@@ -90,7 +90,7 @@ export default function VlanDetailPage() {
       }
       if (sectionsRes.status === 'fulfilled') {
         const d = sectionsRes.value.data
-        setSections(Array.isArray(d) ? d : (d?.sections ?? []))
+        setSections(Array.isArray(d) ? d : (d?.networks ?? []))
       }
     } finally {
       setLoading(false)
@@ -156,14 +156,14 @@ export default function VlanDetailPage() {
       setAssignSubnets(candidates)
       setAssignSubnetId(candidates[0] ? String(candidates[0].id) : '')
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load section subnets')
+      setError(err.response?.data?.error || 'Failed to load network subnets')
     } finally {
       setLoadingAssignSubnets(false)
     }
   }
 
   async function openAssignSubnet() {
-    const firstSectionId = sections[0]?.id ?? ''
+    const firstSectionId = networks[0]?.id ?? ''
     setAssignSectionId(firstSectionId ? String(firstSectionId) : '')
     setAssignSubnetId('')
     setAssignSubnets([])
@@ -223,10 +223,10 @@ export default function VlanDetailPage() {
       description: `${subnets.length} subnet${subnets.length === 1 ? '' : 's'} assigned to this VLAN`,
     },
     {
-      label: 'Sections',
-      value: 'Related sections',
+      label: 'Networks',
+      value: 'Related networks',
       count: sectionIds.size,
-      description: `${sectionIds.size} section${sectionIds.size === 1 ? '' : 's'} represented by assigned subnets`,
+      description: `${sectionIds.size} network${sectionIds.size === 1 ? '' : 's'} represented by assigned subnets`,
     },
   ]
 
@@ -316,7 +316,7 @@ export default function VlanDetailPage() {
             <tr>
               <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">CIDR</th>
               <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
-              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Section</th>
+              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Network</th>
               <th className="px-6 py-3"></th>
             </tr>
           </thead>
@@ -350,10 +350,10 @@ export default function VlanDetailPage() {
                   <td className="px-6 py-3 text-gray-500 dark:text-gray-400">
                     {secId ? (
                       <Link
-                        to={`/sections/${secId}/subnets`}
+                        to={`/networks/${secId}/subnets`}
                         className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
                       >
-                        Section #{secId}
+                        Network #{secId}
                       </Link>
                     ) : '—'}
                   </td>
@@ -465,7 +465,7 @@ export default function VlanDetailPage() {
         <Modal title="Add Subnet to VLAN" onClose={() => setAssignModal(false)}>
           <form onSubmit={handleAssignSubnet} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Section</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Network</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={assignSectionId}
@@ -474,10 +474,10 @@ export default function VlanDetailPage() {
                   loadAssignableSubnets(e.target.value)
                 }}
               >
-                {sections.length === 0 && <option value="">No sections available</option>}
-                {sections.map(section => (
-                  <option key={section.id} value={section.id}>
-                    {section.name}
+                {networks.length === 0 && <option value="">No networks available</option>}
+                {networks.map(network => (
+                  <option key={network.id} value={network.id}>
+                    {network.name}
                   </option>
                 ))}
               </select>

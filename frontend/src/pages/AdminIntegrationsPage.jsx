@@ -51,8 +51,8 @@ const KEY_ENDPOINTS = [
   { method: 'POST', path: '/api/v1/subnets/{subnetID}/ip-addresses/allocate', desc: 'Allocate the next available IP address' },
   { method: 'POST', path: '/api/v1/ip-addresses/{id}/assign', desc: 'Assign an IP to a host' },
   { method: 'POST', path: '/api/v1/ip-addresses/{id}/release', desc: 'Release an IP address' },
-  { method: 'GET', path: '/api/v1/sections', desc: 'List all sections' },
-  { method: 'GET', path: '/api/v1/sections/{id}/subnets', desc: 'List subnets in a section' },
+  { method: 'GET', path: '/api/v1/networks', desc: 'List all networks' },
+  { method: 'GET', path: '/api/v1/networks/{id}/subnets', desc: 'List subnets in a network' },
   { method: 'GET', path: '/api/v1/subnets/{subnetID}/ip-addresses', desc: 'List IPs in a subnet' },
 ]
 
@@ -111,7 +111,7 @@ function IntegrationHealthPanel() {
   ]
 
   return (
-    <section className="space-y-3">
+    <network className="space-y-3">
       <h2 className="text-base font-semibold text-gray-800">Integration Health</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {integrations.map(intg => {
@@ -147,7 +147,7 @@ function IntegrationHealthPanel() {
           )
         })}
       </div>
-    </section>
+    </network>
   )
 }
 
@@ -169,7 +169,7 @@ function AutomationOverview() {
   }, [])
 
   return (
-    <section className="space-y-3">
+    <network className="space-y-3">
       <h2 className="text-base font-semibold text-gray-800">Automation Control Plane</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="border border-gray-200 rounded-lg p-4 bg-white">
@@ -211,7 +211,7 @@ function AutomationOverview() {
           </table>
         </div>
       )}
-    </section>
+    </network>
   )
 }
 
@@ -251,7 +251,7 @@ export default function AdminIntegrationsPage() {
       <IntegrationHealthPanel />
       <AutomationOverview />
 
-      <section className="space-y-3">
+      <network className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">1. Generate an API Token</h2>
         <form onSubmit={handleGenerate} className="flex gap-2 items-end">
           <div className="flex-1">
@@ -280,9 +280,9 @@ export default function AdminIntegrationsPage() {
             </div>
           </div>
         )}
-      </section>
+      </network>
 
-      <section className="space-y-3">
+      <network className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">2. Key API Endpoints</h2>
         <div className="rounded border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -312,9 +312,9 @@ export default function AdminIntegrationsPage() {
           Base URL: <code className="bg-gray-100 px-1 rounded">{baseUrl}</code>.
           All requests require <code className="bg-gray-100 px-1 rounded">Authorization: Bearer &lt;token&gt;</code>.
         </p>
-      </section>
+      </network>
 
-      <section className="space-y-3">
+      <network className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">3. Platform Setup</h2>
         <div className="flex gap-2">
           {PLATFORMS.map(p => (
@@ -341,19 +341,19 @@ export default function AdminIntegrationsPage() {
             </ol>
           </div>
         )}
-      </section>
+      </network>
 
-      <section className="space-y-2">
+      <network className="space-y-2">
         <h2 className="text-base font-semibold text-gray-800">4. Webhook Events</h2>
         <p className="text-sm text-gray-600">
           Configure outbound webhooks in <a href="/admin/webhooks" className="text-blue-600 hover:underline">Admin → Webhooks</a>.
-          IPAM will POST a JSON payload to your automation platform URL on every IP, subnet, or section change.
+          IPAM will POST a JSON payload to your automation platform URL on every IP, subnet, or network change.
         </p>
         <p className="text-sm text-gray-500">
           In n8n, use a <strong>Webhook</strong> trigger node. In Zapier, use <strong>Webhooks by Zapier</strong>.
           In Make, use the <strong>Webhooks</strong> module.
         </p>
-      </section>
+      </network>
     </div>
   )
 }

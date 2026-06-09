@@ -12,15 +12,15 @@ import (
 var unprivSubnet = &models.User{ID: 0, Role: "viewer"}
 
 // ---------------------------------------------------------------------------
-// CreateSubnet — POST /sections/:sectionID/subnets
+// CreateSubnet — POST /networks/:networkID/subnets
 // ---------------------------------------------------------------------------
 
 func TestCreateSubnet_NoUser_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Post("/sections/:sectionID/subnets", h.CreateSubnet)
+	app.Post("/networks/:networkID/subnets", h.CreateSubnet)
 
-	resp, err := app.Test(httptest.NewRequest("POST", "/sections/1/subnets", nil))
+	resp, err := app.Test(httptest.NewRequest("POST", "/networks/1/subnets", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
@@ -28,12 +28,12 @@ func TestCreateSubnet_NoUser_Returns401(t *testing.T) {
 func TestCreateSubnet_NoPermission_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Post("/sections/:sectionID/subnets", func(c *fiber.Ctx) error {
+	app.Post("/networks/:networkID/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
 		return h.CreateSubnet(c)
 	})
 
-	resp, err := app.Test(httptest.NewRequest("POST", "/sections/1/subnets", nil))
+	resp, err := app.Test(httptest.NewRequest("POST", "/networks/1/subnets", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
@@ -41,23 +41,23 @@ func TestCreateSubnet_NoPermission_Returns403(t *testing.T) {
 func TestCreateSubnet_BadSectionID_Returns400(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Post("/sections/:sectionID/subnets", h.CreateSubnet)
+	app.Post("/networks/:networkID/subnets", h.CreateSubnet)
 
-	resp, err := app.Test(httptest.NewRequest("POST", "/sections/abc/subnets", nil))
+	resp, err := app.Test(httptest.NewRequest("POST", "/networks/abc/subnets", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
 
 // ---------------------------------------------------------------------------
-// ListSubnets — GET /sections/:sectionID/subnets
+// ListSubnets — GET /networks/:networkID/subnets
 // ---------------------------------------------------------------------------
 
 func TestListSubnets_NoUser_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/sections/:sectionID/subnets", h.ListSubnets)
+	app.Get("/networks/:networkID/subnets", h.ListSubnets)
 
-	resp, err := app.Test(httptest.NewRequest("GET", "/sections/1/subnets", nil))
+	resp, err := app.Test(httptest.NewRequest("GET", "/networks/1/subnets", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
@@ -65,12 +65,12 @@ func TestListSubnets_NoUser_Returns401(t *testing.T) {
 func TestListSubnets_NoPermission_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/sections/:sectionID/subnets", func(c *fiber.Ctx) error {
+	app.Get("/networks/:networkID/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
 		return h.ListSubnets(c)
 	})
 
-	resp, err := app.Test(httptest.NewRequest("GET", "/sections/1/subnets", nil))
+	resp, err := app.Test(httptest.NewRequest("GET", "/networks/1/subnets", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
@@ -78,9 +78,9 @@ func TestListSubnets_NoPermission_Returns403(t *testing.T) {
 func TestListSubnets_BadSectionID_Returns400(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/sections/:sectionID/subnets", h.ListSubnets)
+	app.Get("/networks/:networkID/subnets", h.ListSubnets)
 
-	resp, err := app.Test(httptest.NewRequest("GET", "/sections/abc/subnets", nil))
+	resp, err := app.Test(httptest.NewRequest("GET", "/networks/abc/subnets", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }

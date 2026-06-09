@@ -1,0 +1,3 @@
+-- +migrate Up
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS discover_dns BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS dns_overwrite BOOLEAN NOT NULL DEFAULT false;

@@ -19,10 +19,10 @@ var ValidRoles = []string{RoleAdmin, RoleUser, RoleViewer}
 
 // Legacy permission strings (pre-v0.8.11, kept for tests)
 const (
-	PermSectionCreate = "section:create"
-	PermSectionRead   = "section:read"
-	PermSectionUpdate = "section:update"
-	PermSectionDelete = "section:delete"
+	PermNetworkCreate = "section:create"
+	PermNetworkRead   = "section:read"
+	PermNetworkUpdate = "section:update"
+	PermNetworkDelete = "section:delete"
 	PermSubnetCreate  = "subnet:create"
 	PermSubnetRead    = "subnet:read"
 	PermSubnetUpdate  = "subnet:update"
@@ -41,10 +41,10 @@ const (
 // ---- v0.8.11 permission constants ----
 
 const (
-	PermV2SectionList   = "ipam:section:list"
-	PermV2SectionRead   = "ipam:section:read"
-	PermV2SectionWrite  = "ipam:section:write"
-	PermV2SectionDelete = "ipam:section:delete"
+	PermV2NetworkList   = "ipam:section:list"
+	PermV2NetworkRead   = "ipam:section:read"
+	PermV2NetworkWrite  = "ipam:section:write"
+	PermV2NetworkDelete = "ipam:section:delete"
 
 	PermV2SubnetList   = "ipam:subnet:list"
 	PermV2SubnetRead   = "ipam:subnet:read"
@@ -141,7 +141,7 @@ const (
 
 // AllPermissions is the authoritative list of valid permission strings.
 var AllPermissions = []string{
-	PermV2SectionList, PermV2SectionRead, PermV2SectionWrite, PermV2SectionDelete,
+	PermV2NetworkList, PermV2NetworkRead, PermV2NetworkWrite, PermV2NetworkDelete,
 	PermV2SubnetList, PermV2SubnetRead, PermV2SubnetWrite, PermV2SubnetDelete,
 	PermV2IPList, PermV2IPRead, PermV2IPAssign, PermV2IPRelease,
 	PermV2VRFList, PermV2VRFRead, PermV2VRFWrite, PermV2VRFDelete,
@@ -299,7 +299,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 		return !adminOnly[permission]
 	case "viewer":
 		readPerms := map[string]bool{
-			PermV2SectionList: true, PermV2SectionRead: true,
+			PermV2NetworkList: true, PermV2NetworkRead: true,
 			PermV2SubnetList: true, PermV2SubnetRead: true,
 			PermV2IPList: true, PermV2IPRead: true,
 			PermV2VRFList: true, PermV2VRFRead: true,
@@ -355,20 +355,20 @@ func getRolePermissions(role string) []string {
 	switch role {
 	case RoleAdmin:
 		return []string{
-			PermSectionCreate, PermSectionRead, PermSectionUpdate, PermSectionDelete,
+			PermNetworkCreate, PermNetworkRead, PermNetworkUpdate, PermNetworkDelete,
 			PermSubnetCreate, PermSubnetRead, PermSubnetUpdate, PermSubnetDelete,
 			PermIPCreate, PermIPRead, PermIPUpdate, PermIPDelete, PermIPAssign, PermIPRelease,
 			PermTokenCreate, PermTokenRead, PermTokenDelete,
 		}
 	case RoleUser:
 		return []string{
-			PermSectionRead, PermSectionCreate, PermSectionUpdate, PermSectionDelete,
+			PermNetworkRead, PermNetworkCreate, PermNetworkUpdate, PermNetworkDelete,
 			PermSubnetRead, PermSubnetCreate, PermSubnetUpdate, PermSubnetDelete,
 			PermIPRead, PermIPCreate, PermIPUpdate, PermIPDelete, PermIPAssign, PermIPRelease,
 			PermTokenCreate, PermTokenRead, PermTokenDelete,
 		}
 	case RoleViewer:
-		return []string{PermSectionRead, PermSubnetRead, PermIPRead, PermTokenRead}
+		return []string{PermNetworkRead, PermSubnetRead, PermIPRead, PermTokenRead}
 	}
 	return nil
 }

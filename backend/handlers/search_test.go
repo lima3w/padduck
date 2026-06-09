@@ -10,13 +10,13 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// SearchSubnets — POST /api/v1/subnets/search/:sectionID
+// SearchSubnets — POST /api/v1/subnets/search/:networkID
 // ---------------------------------------------------------------------------
 
 func TestSearchSubnets_BadSectionID_Returns400(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
-	app.Post("/subnets/search/:sectionID", h.SearchSubnets)
+	app.Post("/subnets/search/:networkID", h.SearchSubnets)
 	req := httptest.NewRequest("POST", "/subnets/search/notanumber", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)

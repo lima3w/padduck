@@ -318,7 +318,7 @@ func scanScheduledReport(row interface {
 
 // GetInactiveIPs returns assigned IPs that have not been seen within the given number of days.
 // It excludes reserved IPs and gateway addresses.
-func (r *Repository) GetInactiveIPs(ctx context.Context, days int, sectionID *int64) ([]*models.InactiveIPReport, error) {
+func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *int64) ([]*models.InactiveIPReport, error) {
 	query := `
 		SELECT
 			ip.id,
@@ -334,7 +334,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, sectionID *in
 			END AS days_inactive
 		FROM ip_addresses ip
 		JOIN subnets s ON s.id = ip.subnet_id
-		JOIN sections sec ON sec.id = s.section_id
+		JOIN networks sec ON sec.id = s.network_id
 		WHERE ip.status = 'assigned'
 		  AND (ip.device_id IS NOT NULL OR ip.assigned_to IS NOT NULL)
 		  AND (ip.last_seen IS NULL OR ip.last_seen < now() - ($1 || ' days')::interval)
@@ -342,7 +342,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, sectionID *in
 		  AND ($2::bigint IS NULL OR sec.id = $2)
 		ORDER BY ip.last_seen ASC NULLS FIRST
 	`
-	rows, err := r.db.Query(ctx, query, days, sectionID)
+	rows, err := r.db.Query(ctx, query, days, networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, sectionID *in
 		rec := &models.InactiveIPReport{}
 		if err := rows.Scan(
 			&rec.IPID, &rec.IPAddress, &rec.Hostname,
-			&rec.SubnetCIDR, &rec.SectionName,
+			&rec.SubnetCIDR, &rec.NetworkName,
 			&rec.AssignedTo, &rec.LastSeen, &rec.DaysInactive,
 		); err != nil {
 			return nil, err

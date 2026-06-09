@@ -165,20 +165,20 @@ func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// GetSectionTopology handles GET /api/v1/sections/:id/topology
-func (h *Handler) GetSectionTopology(c *fiber.Ctx) error {
+// GetNetworkTopology handles GET /api/v1/networks/:id/topology
+func (h *Handler) GetNetworkTopology(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
 		return nil
 	}
 
-	sectionID, err := c.ParamsInt("id")
+	networkID, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
 
-	topology, err := h.service.GetRepository().GetSectionTopology(c.Context(), int64(sectionID))
+	topology, err := h.service.GetRepository().GetNetworkTopology(c.Context(), int64(networkID))
 	if err != nil {
-		reqLogger(c).Error("error getting section topology", "section_id", sectionID, "error", err)
+		reqLogger(c).Error("error getting section topology", "network_id", networkID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

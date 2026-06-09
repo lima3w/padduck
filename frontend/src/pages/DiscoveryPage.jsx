@@ -1,13 +1,11 @@
 import { useSearchParams } from 'react-router-dom'
 import ScanJobsPage from './ScanJobsPage'
-import ScanProfilesPage from './ScanProfilesPage'
 import ScanRetentionPage from './ScanRetentionPage'
 import TopologyHintsPage from './TopologyHintsPage'
 import DiscoveryConflictsPage from './DiscoveryConflictsPage'
 
 const TABS = [
   { id: 'scan-jobs', label: 'Scan Jobs' },
-  { id: 'scan-profiles', label: 'Scan Profiles' },
   { id: 'scan-retention', label: 'Scan Retention' },
   { id: 'topology-hints', label: 'Topology Hints' },
   { id: 'conflicts', label: 'Conflicts' },
@@ -42,7 +40,6 @@ export default function DiscoveryPage() {
       </div>
       <div className="flex-1 min-h-0">
         {activeTab === 'scan-jobs' && <ScanJobsPage />}
-        {activeTab === 'scan-profiles' && <ScanProfilesPage />}
         {activeTab === 'scan-retention' && <ScanRetentionPage />}
         {activeTab === 'topology-hints' && <TopologyHintsPage />}
         {activeTab === 'conflicts' && <DiscoveryConflictsPage />}

@@ -397,14 +397,14 @@ func (h *Handler) GetInactiveIPs(c *fiber.Ctx) error {
 		}
 	}
 
-	var sectionID *int64
-	if s := c.Query("section_id"); s != "" {
+	var networkID *int64
+	if s := c.Query("network_id"); s != "" {
 		if v, err := strconv.ParseInt(s, 10, 64); err == nil {
-			sectionID = &v
+			networkID = &v
 		}
 	}
 
-	ips, err := h.service.Reports.GetInactiveIPs(c.Context(), days, sectionID)
+	ips, err := h.service.Reports.GetInactiveIPs(c.Context(), days, networkID)
 	if err != nil {
 		reqLogger(c).Error("get inactive IPs failed", "days", days, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

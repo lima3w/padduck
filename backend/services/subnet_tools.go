@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"sort"
+	"strings"
 
 	"padduck/models"
 )
@@ -41,6 +43,7 @@ func (s *Service) SplitSubnet(ctx context.Context, subnetID int64, newPrefixLen 
 	}
 
 	childSubnets := make([]*models.Subnet, 0, childCount)
+	blockingAddrs := make([]string, 0, childCount*2)
 	ip := cloneIP(parentNet.IP.To4())
 	for i := 0; i < childCount; i++ {
 		childNet := &net.IPNet{
@@ -48,13 +51,33 @@ func (s *Service) SplitSubnet(ctx context.Context, subnetID int64, newPrefixLen 
 			Mask: net.CIDRMask(newPrefixLen, 32),
 		}
 		child := &models.Subnet{
-			SectionID:      parent.SectionID,
+			NetworkID:      parent.NetworkID,
 			NetworkAddress: childNet.IP.String(),
 			PrefixLength:   newPrefixLen,
 			Description:    fmt.Sprintf("Split from %s", parentCIDR),
 		}
 		childSubnets = append(childSubnets, child)
+
+		// Collect network and broadcast addresses for this child
+		blockingAddrs = append(blockingAddrs, childNet.IP.String())
+		broadcast := broadcastAddr(childNet)
+		blockingAddrs = append(blockingAddrs, broadcast)
+
 		incrementIP(ip, 32-newPrefixLen)
+	}
+
+	// Pre-flight: block if any existing IPs fall on network/broadcast addresses
+	blockingIPs, err := s.repository.ListIPsAtAddresses(ctx, subnetID, blockingAddrs)
+	if err != nil {
+		return nil, fmt.Errorf("checking blocking IPs: %w", err)
+	}
+	if len(blockingIPs) > 0 {
+		addrs := make([]string, len(blockingIPs))
+		for i, ip := range blockingIPs {
+			addrs[i] = ip.Address
+		}
+		sort.Strings(addrs)
+		return nil, &SplitBlockedError{BlockingIPs: addrs}
 	}
 
 	if err := s.repository.SplitSubnet(ctx, subnetID, childSubnets); err != nil {
@@ -80,6 +103,15 @@ func incrementIP(ip net.IP, hostBits int) {
 	binary.BigEndian.PutUint32(b, val)
 }
 
+// SplitBlockedError is returned when split cannot proceed due to IPs on network/broadcast addresses.
+type SplitBlockedError struct {
+	BlockingIPs []string
+}
+
+func (e *SplitBlockedError) Error() string {
+	return fmt.Sprintf("the following IPs fall on network or broadcast addresses of the new subnets and must be removed first: %s", strings.Join(e.BlockingIPs, ", "))
+}
+
 // MergeSubnets merges multiple subnets into a common supernet.
 // Validates: all subnets same prefix length, same section, and they form a contiguous block.
 // In DB transaction: creates parent subnet, moves all IPs, deletes merged children.
@@ -100,10 +132,10 @@ func (s *Service) MergeSubnets(ctx context.Context, subnetIDs []int64) (*models.
 	}
 
 	// Validate: same section
-	sectionID := subnets[0].SectionID
+	networkID := subnets[0].NetworkID
 	prefixLen := subnets[0].PrefixLength
 	for _, sub := range subnets[1:] {
-		if sub.SectionID != sectionID {
+		if sub.NetworkID != networkID {
 			return nil, fmt.Errorf("all subnets must be in the same section")
 		}
 		if sub.PrefixLength != prefixLen {
@@ -147,7 +179,7 @@ func (s *Service) MergeSubnets(ctx context.Context, subnetIDs []int64) (*models.
 	}
 
 	parent := &models.Subnet{
-		SectionID:      sectionID,
+		NetworkID:      networkID,
 		NetworkAddress: supernet.IP.String(),
 		PrefixLength:   newPrefixLen,
 		Description:    fmt.Sprintf("Merged from %d subnets", len(subnetIDs)),

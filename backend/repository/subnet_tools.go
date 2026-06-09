@@ -22,10 +22,10 @@ func (r *Repository) SplitSubnet(ctx context.Context, parentID int64, childSubne
 	for _, child := range childSubnets {
 		var childID int64
 		err := tx.QueryRow(ctx, `
-			INSERT INTO subnets (section_id, network_address, prefix_length, description, parent_subnet_id, is_container)
+			INSERT INTO subnets (network_id, network_address, prefix_length, description, parent_subnet_id, is_container)
 			VALUES ($1, $2::inet, $3, $4, $5, false)
 			RETURNING id`,
-			child.SectionID, child.NetworkAddress, child.PrefixLength, child.Description, parentID,
+			child.NetworkID, child.NetworkAddress, child.PrefixLength, child.Description, parentID,
 		).Scan(&childID)
 		if err != nil {
 			return fmt.Errorf("creating child subnet %s/%d: %w", child.NetworkAddress, child.PrefixLength, err)
@@ -46,11 +46,8 @@ func (r *Repository) SplitSubnet(ctx context.Context, parentID int64, childSubne
 		}
 	}
 
-	// Mark parent as container
-	_, err = tx.Exec(ctx, `
-		UPDATE subnets SET is_container = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-		parentID,
-	)
+	// Delete the parent subnet now that all its IPs have been moved to children
+	_, err = tx.Exec(ctx, `DELETE FROM subnets WHERE id = $1`, parentID)
 	if err != nil {
 		return err
 	}
@@ -70,10 +67,10 @@ func (r *Repository) MergeSubnets(ctx context.Context, subnetIDs []int64, parent
 	// Create the parent subnet
 	var parentID int64
 	err = tx.QueryRow(ctx, `
-		INSERT INTO subnets (section_id, network_address, prefix_length, description, is_container)
+		INSERT INTO subnets (network_id, network_address, prefix_length, description, is_container)
 		VALUES ($1, $2::inet, $3, $4, false)
 		RETURNING id`,
-		parent.SectionID, parent.NetworkAddress, parent.PrefixLength, parent.Description,
+		parent.NetworkID, parent.NetworkAddress, parent.PrefixLength, parent.Description,
 	).Scan(&parentID)
 	if err != nil {
 		return nil, fmt.Errorf("creating merged parent subnet: %w", err)
@@ -145,11 +142,38 @@ func (r *Repository) ListIPsOutsideCIDR(ctx context.Context, subnetID int64, net
 	return ips, rows.Err()
 }
 
-// ListSiblingSubnets returns subnets with the same section_id as the given subnet, excluding self.
+// ListIPsAtAddresses returns IP addresses in a subnet whose address matches any of the given addresses.
+func (r *Repository) ListIPsAtAddresses(ctx context.Context, subnetID int64, addresses []string) ([]*models.IPAddress, error) {
+	if len(addresses) == 0 {
+		return nil, nil
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT `+ipSelectCols+` `+ipFromJoin+`
+		WHERE ip.subnet_id = $1
+		  AND host(ip.address) = ANY($2)`,
+		subnetID, addresses,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ips := make([]*models.IPAddress, 0)
+	for rows.Next() {
+		ip, err := scanIP(rows)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, rows.Err()
+}
+
+// ListSiblingSubnets returns subnets with the same network_id as the given subnet, excluding self.
 func (r *Repository) ListSiblingSubnets(ctx context.Context, subnetID int64) ([]*models.Subnet, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT `+subnetSelectCols+` `+subnetFromJoin+`
-		WHERE s.section_id = (SELECT section_id FROM subnets WHERE id = $1)
+		WHERE s.network_id = (SELECT network_id FROM subnets WHERE id = $1)
 		  AND s.id != $1
 		ORDER BY s.network_address`,
 		subnetID,
@@ -170,26 +194,26 @@ func (r *Repository) ListSiblingSubnets(ctx context.Context, subnetID int64) ([]
 	return subnets, rows.Err()
 }
 
-// GetSectionTopology returns topology node and edge data for all subnets in a section.
-func (r *Repository) GetSectionTopology(ctx context.Context, sectionID int64) (*models.SectionTopology, error) {
+// GetNetworkTopology returns topology node and edge data for all subnets in a section.
+func (r *Repository) GetNetworkTopology(ctx context.Context, networkID int64) (*models.NetworkTopology, error) {
 	rows, err := r.db.Query(ctx, `
-		SELECT s.id, s.network_address::text, s.prefix_length, s.description,
+		SELECT s.id, host(s.network_address)::text, s.prefix_length, s.description,
 		       s.is_container, s.parent_subnet_id, s.vlan_id,
 		       COUNT(ip.id) FILTER (WHERE ip.status != 'available') AS used_count,
 		       COUNT(ip.id) AS total_count
 		FROM subnets s
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
-		WHERE s.section_id = $1
+		WHERE s.network_id = $1
 		GROUP BY s.id
 		ORDER BY s.network_address`,
-		sectionID,
+		networkID,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	topology := &models.SectionTopology{
+	topology := &models.NetworkTopology{
 		Nodes: make([]*models.TopologyNode, 0),
 		Edges: make([]*models.TopologyEdge, 0),
 	}

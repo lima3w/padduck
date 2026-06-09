@@ -12,7 +12,7 @@ import (
 
 // GlobalSearchResult holds results from a cross-entity search.
 type GlobalSearchResult struct {
-	Sections []*models.Section `json:"sections"`
+	Sections []*models.Network `json:"networks"`
 	Subnets  []*models.Subnet  `json:"subnets"`
 	Devices  []*models.Device  `json:"devices"`
 }
@@ -20,7 +20,7 @@ type GlobalSearchResult struct {
 // GlobalSearch searches sections, subnets, and devices concurrently.
 func (s *Service) GlobalSearch(ctx context.Context, query string, limit int64) (*GlobalSearchResult, error) {
 	empty := &GlobalSearchResult{
-		Sections: make([]*models.Section, 0),
+		Sections: make([]*models.Network, 0),
 		Subnets:  make([]*models.Subnet, 0),
 		Devices:  make([]*models.Device, 0),
 	}
@@ -40,7 +40,7 @@ func (s *Service) GlobalSearch(ctx context.Context, query string, limit int64) (
 	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		secs, err := s.repository.SearchSections(ctx, query, limit, 0)
+		secs, err := s.repository.SearchNetworks(ctx, query, limit, 0)
 		if err == nil && len(secs) > 0 {
 			mu.Lock()
 			result.Sections = secs
@@ -79,8 +79,8 @@ const (
 	DefaultOffset = 0
 )
 
-// SearchSections searches for sections by name or description
-func (s *Service) SearchSections(ctx context.Context, query string, limit, offset int64) ([]*models.Section, error) {
+// SearchNetworks searches for sections by name or description
+func (s *Service) SearchNetworks(ctx context.Context, query string, limit, offset int64) ([]*models.Network, error) {
 	if query == "" {
 		return nil, fmt.Errorf("search query is required")
 	}
@@ -95,12 +95,12 @@ func (s *Service) SearchSections(ctx context.Context, query string, limit, offse
 		offset = DefaultOffset
 	}
 
-	return s.repository.SearchSections(ctx, query, limit, offset)
+	return s.repository.SearchNetworks(ctx, query, limit, offset)
 }
 
 // SearchSubnets searches for subnets in a section by network address or description
-func (s *Service) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64, cfFilters ...map[string]string) ([]*models.Subnet, error) {
-	if sectionID <= 0 {
+func (s *Service) SearchSubnets(ctx context.Context, networkID int64, query string, limit, offset int64, cfFilters ...map[string]string) ([]*models.Subnet, error) {
+	if networkID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
 	if query == "" {
@@ -121,7 +121,7 @@ func (s *Service) SearchSubnets(ctx context.Context, sectionID int64, query stri
 	if len(cfFilters) > 0 {
 		cf = cfFilters[0]
 	}
-	return s.repository.SearchSubnetsWithCustomFields(ctx, sectionID, query, limit, offset, cf)
+	return s.repository.SearchSubnetsWithCustomFields(ctx, networkID, query, limit, offset, cf)
 }
 
 // IPSearchOptions holds additional search filters for IP address search

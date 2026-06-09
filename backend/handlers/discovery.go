@@ -10,11 +10,17 @@ import (
 )
 
 type CreateScanJobRequest struct {
-	Name         string  `json:"name"`
-	Subnet       string  `json:"subnet,omitempty"`
-	SubnetIDs    []int64 `json:"subnet_ids"`
-	ScheduleCron *string `json:"schedule_cron,omitempty"`
-	AutoAddIPs   *bool   `json:"auto_add_ips,omitempty"`
+	Name            string  `json:"name"`
+	Subnet          string  `json:"subnet,omitempty"`
+	SubnetIDs       []int64 `json:"subnet_ids"`
+	ScheduleCron    *string `json:"schedule_cron,omitempty"`
+	AutoAddIPs      *bool   `json:"auto_add_ips,omitempty"`
+	ScanType        string  `json:"scan_type,omitempty"`
+	PingConcurrency int     `json:"ping_concurrency,omitempty"`
+	NotifyOnChange  bool    `json:"notify_on_change,omitempty"`
+	IsActive        *bool   `json:"is_active,omitempty"`
+	DiscoverDNS     *bool   `json:"discover_dns,omitempty"`
+	DNSOverwrite    bool    `json:"dns_overwrite,omitempty"`
 }
 
 type UpdateScanJobRequest struct {
@@ -28,6 +34,8 @@ type UpdateScanJobRequest struct {
 	ScanType        string  `json:"scan_type,omitempty"`
 	AgentID         *int64  `json:"agent_id,omitempty"`
 	AutoAddIPs      *bool   `json:"auto_add_ips,omitempty"`
+	DiscoverDNS     *bool   `json:"discover_dns,omitempty"`
+	DNSOverwrite    bool    `json:"dns_overwrite,omitempty"`
 }
 
 // ListScanJobs handles GET /api/v1/admin/scan-jobs
@@ -68,7 +76,19 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 	if req.AutoAddIPs != nil {
 		autoAddIPs = *req.AutoAddIPs
 	}
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+	discoverDNS := true
+	if req.DiscoverDNS != nil {
+		discoverDNS = *req.DiscoverDNS
+	}
 	job, err := h.service.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID, autoAddIPs)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	job, err = h.service.Discovery.UpdateJobFull(c.Context(), job.ID, job.Name, job.SubnetIDs, job.ScheduleCron, isActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, nil, autoAddIPs, discoverDNS, req.DNSOverwrite)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -115,7 +135,11 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 	if req.AutoAddIPs != nil {
 		autoAddIPsUpdate = *req.AutoAddIPs
 	}
-	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID, autoAddIPsUpdate)
+	discoverDNSUpdate := true
+	if req.DiscoverDNS != nil {
+		discoverDNSUpdate = *req.DiscoverDNS
+	}
+	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID, autoAddIPsUpdate, discoverDNSUpdate, req.DNSOverwrite)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -160,6 +184,18 @@ func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
 		return fiber.Map{"scan_job_id": job.ID}, nil
 	})
 	return c.Status(fiber.StatusAccepted).JSON(bgJob)
+}
+
+// GetScanJobStatus handles GET /api/v1/admin/scan-jobs/:id/status
+func (h *Handler) GetScanJobStatus(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+		return nil
+	}
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+	}
+	return c.JSON(fiber.Map{"running": h.service.Discovery.IsRunning(int64(id))})
 }
 
 // GetScanJobResults handles GET /api/v1/admin/scan-jobs/:id/results

@@ -61,15 +61,15 @@ func TestGetDashboardRecentActivity_NoPermission_Returns403(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetSubnetTree — GET /api/v1/sections/:id/subnets/tree
+// GetSubnetTree — GET /api/v1/networks/:id/subnets/tree
 // ID is parsed before permCheck so bad ID returns 400 without auth.
 // ---------------------------------------------------------------------------
 
 func TestGetSubnetTree_BadSectionID_Returns400(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
-	app.Get("/sections/:id/subnets/tree", h.GetSubnetTree)
-	resp, err := app.Test(httptest.NewRequest("GET", "/sections/notanint/subnets/tree", nil))
+	app.Get("/networks/:id/subnets/tree", h.GetSubnetTree)
+	resp, err := app.Test(httptest.NewRequest("GET", "/networks/notanint/subnets/tree", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
@@ -77,8 +77,8 @@ func TestGetSubnetTree_BadSectionID_Returns400(t *testing.T) {
 func TestGetSubnetTree_NoUser_Returns401(t *testing.T) {
 	h := &Handler{}
 	app := fiber.New()
-	app.Get("/sections/:id/subnets/tree", h.GetSubnetTree)
-	resp, err := app.Test(httptest.NewRequest("GET", "/sections/1/subnets/tree", nil))
+	app.Get("/networks/:id/subnets/tree", h.GetSubnetTree)
+	resp, err := app.Test(httptest.NewRequest("GET", "/networks/1/subnets/tree", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
@@ -90,8 +90,8 @@ func TestGetSubnetTree_NoPermission_Returns403(t *testing.T) {
 		c.Locals("user", permUser())
 		return c.Next()
 	})
-	app.Get("/sections/:id/subnets/tree", h.GetSubnetTree)
-	resp, err := app.Test(httptest.NewRequest("GET", "/sections/1/subnets/tree", nil))
+	app.Get("/networks/:id/subnets/tree", h.GetSubnetTree)
+	resp, err := app.Test(httptest.NewRequest("GET", "/networks/1/subnets/tree", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }

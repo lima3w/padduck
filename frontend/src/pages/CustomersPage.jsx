@@ -174,7 +174,7 @@ export default function CustomersPage() {
             {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select value={assocForm.object_type} onChange={e => setAssocForm(f => ({ ...f, object_type: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm">
-            {['section', 'subnet', 'ip_address', 'device', 'rack', 'location', 'vlan', 'vrf', 'nat_rule', 'dhcp_server', 'dhcp_lease', 'physical_circuit', 'logical_circuit'].map(t => <option key={t} value={t}>{t}</option>)}
+            {['network', 'subnet', 'ip_address', 'device', 'rack', 'location', 'vlan', 'vrf', 'nat_rule', 'dhcp_server', 'dhcp_lease', 'physical_circuit', 'logical_circuit'].map(t => <option key={t} value={t}>{t}</option>)}
           </select>
           <input required type="number" min="1" placeholder="Object ID" value={assocForm.object_id} onChange={e => setAssocForm(f => ({ ...f, object_id: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm" />
           <select value={assocForm.relationship} onChange={e => setAssocForm(f => ({ ...f, relationship: e.target.value }))} className="border border-gray-300 rounded px-3 py-2 text-sm">

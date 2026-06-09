@@ -11,7 +11,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
-const SectionsPage = lazy(() => import('./pages/SectionsPage'))
+const NetworksPage = lazy(() => import('./pages/NetworksPage'))
 const SubnetsPage = lazy(() => import('./pages/SubnetsPage'))
 const IPAddressesPage = lazy(() => import('./pages/IPAddressesPage'))
 const AdminOverviewPage = lazy(() => import('./pages/AdminOverviewPage'))
@@ -168,8 +168,8 @@ export default function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="sections" element={<SectionsPage />} />
-            <Route path="sections/:sectionID/subnets" element={<SubnetsPage />} />
+            <Route path="networks" element={<NetworksPage />} />
+            <Route path="networks/:networkID/subnets" element={<SubnetsPage />} />
             <Route path="subnets/:subnetID/ip-addresses" element={<IPAddressesPage />} />
             <Route path="admin" element={<AdminOverviewPage />} />
             <Route path="admin/settings" element={<AdminSettingsPage />} />
@@ -211,7 +211,7 @@ export default function App() {
             <Route path="admin/api-token-analytics" element={<APITokenAnalyticsPage />} />
             <Route path="admin/integration-templates" element={<IntegrationTemplatesPage />} />
             <Route path="admin/automation/policies" element={<AutomationPoliciesPage />} />
-            <Route path="sections/:id/topology" element={<TopologyPage />} />
+            <Route path="networks/:id/topology" element={<TopologyPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="reports/utilization-trends" element={<Navigate to="/reports?tab=utilization" replace />} />
             <Route path="reports/inactive-ips" element={<Navigate to="/reports?tab=inactive" replace />} />

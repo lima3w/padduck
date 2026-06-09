@@ -32,7 +32,7 @@ type IPSearchRequest struct {
 
 // GlobalSearch handles GET /api/v1/search?q=...
 func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
 		return nil
 	}
 	q := c.Query("q")
@@ -43,9 +43,9 @@ func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// SearchSections handles POST /api/v1/sections/search
-func (h *Handler) SearchSections(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+// SearchNetworks handles POST /api/v1/networks/search
+func (h *Handler) SearchNetworks(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
 		return nil
 	}
 
@@ -54,26 +54,26 @@ func (h *Handler) SearchSections(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	sections, err := h.service.SearchSections(c.Context(), req.Query, req.Limit, req.Offset)
+	sections, err := h.service.SearchNetworks(c.Context(), req.Query, req.Limit, req.Offset)
 	if err != nil {
 		reqLogger(c).Error("error searching sections", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	if sections == nil {
-		sections = make([]*models.Section, 0)
+		sections = make([]*models.Network, 0)
 	}
 
 	return c.JSON(sections)
 }
 
-// SearchSubnets handles POST /api/v1/subnets/search/:sectionID
+// SearchSubnets handles POST /api/v1/subnets/search/:networkID
 func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
-	sectionID, err := c.ParamsInt("sectionID")
+	networkID, err := c.ParamsInt("networkID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
-	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnets, err := h.service.SearchSubnets(c.Context(), int64(sectionID), req.Query, req.Limit, req.Offset, req.CustomFields)
+	subnets, err := h.service.SearchSubnets(c.Context(), int64(networkID), req.Query, req.Limit, req.Offset, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error searching subnets", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})

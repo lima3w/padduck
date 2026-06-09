@@ -196,15 +196,15 @@ func TestDeleteDelegation_AdminInvalidID_Returns403(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// GetSectionTopology — auth enforcement
+// GetNetworkTopology — auth enforcement
 // ---------------------------------------------------------------------------
 
 func TestGetSectionTopology_NoUser_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/sections/:id/topology", h.GetSectionTopology)
+	app.Get("/networks/:id/topology", h.GetNetworkTopology)
 
-	req := httptest.NewRequest("GET", "/sections/1/topology", nil)
+	req := httptest.NewRequest("GET", "/networks/1/topology", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
@@ -213,12 +213,12 @@ func TestGetSectionTopology_NoUser_Returns401(t *testing.T) {
 func TestGetSectionTopology_NonAdmin_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/sections/:id/topology", func(c *fiber.Ctx) error {
+	app.Get("/networks/:id/topology", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
-		return h.GetSectionTopology(c)
+		return h.GetNetworkTopology(c)
 	})
 
-	req := httptest.NewRequest("GET", "/sections/1/topology", nil)
+	req := httptest.NewRequest("GET", "/networks/1/topology", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
@@ -228,12 +228,12 @@ func TestGetSectionTopology_AdminInvalidID_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before param parsing
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/sections/:id/topology", func(c *fiber.Ctx) error {
+	app.Get("/networks/:id/topology", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
-		return h.GetSectionTopology(c)
+		return h.GetNetworkTopology(c)
 	})
 
-	req := httptest.NewRequest("GET", "/sections/notanint/topology", nil)
+	req := httptest.NewRequest("GET", "/networks/notanint/topology", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)

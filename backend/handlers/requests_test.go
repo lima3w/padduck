@@ -55,7 +55,7 @@ func TestSubmitSubnetRequest_BadBody_Returns400(t *testing.T) {
 		c.Locals("user", unprivReq)
 		return h.SubmitSubnetRequest(c)
 	})
-	req := httptest.NewRequest("POST", "/requests/subnets", strings.NewReader(`{"section_id":0}`))
+	req := httptest.NewRequest("POST", "/requests/subnets", strings.NewReader(`{"network_id":0}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
@@ -370,12 +370,12 @@ func TestGetPendingRequestCount_NoPermission_Returns403(t *testing.T) {
 func TestSubmitSubnetRequestBody_Fields(t *testing.T) {
 	pID := int64(5)
 	req := &SubmitSubnetRequestBody{
-		SectionID:          1,
+		NetworkID:          1,
 		ParentSubnetID:     &pID,
 		RequestedPrefixLen: 24,
 		Purpose:            "Testing",
 	}
-	assert.Equal(t, int64(1), req.SectionID)
+	assert.Equal(t, int64(1), req.NetworkID)
 	assert.Equal(t, int64(5), *req.ParentSubnetID)
 	assert.Equal(t, 24, req.RequestedPrefixLen)
 	assert.Equal(t, "Testing", req.Purpose)

@@ -1140,7 +1140,7 @@ export default function UserSettingsPage() {
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h1>
 
-      <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Account settings sections">
+      <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Account settings networks">
         {tabs.map((t) => (
           <button
             key={t.id}

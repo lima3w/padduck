@@ -10,7 +10,7 @@ import (
 // Subnet operations
 
 // subnetSelectCols is the base column list for subnets (no JOIN).
-const subnetSelectCols = `s.id, s.section_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.parent_subnet_id, s.is_container, s.alert_threshold_pct, s.alert_email_override, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at, s.scan_profile_id`
+const subnetSelectCols = `s.id, s.network_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.parent_subnet_id, s.is_container, s.alert_threshold_pct, s.alert_email_override, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at, s.scan_profile_id`
 
 const subnetFromJoin = `FROM subnets s LEFT JOIN nameservers ns ON s.nameserver_id = ns.id`
 
@@ -23,7 +23,7 @@ func scanSubnet(row interface {
 	var nsServer2, nsServer3, nsDesc *string
 	var nsCreatedAt, nsUpdatedAt *time.Time
 	err := row.Scan(
-		&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength,
+		&subnet.ID, &subnet.NetworkID, &subnet.NetworkAddress, &subnet.PrefixLength,
 		&subnet.Description, &subnet.Gateway, &subnet.AutoReserveFirst, &subnet.AutoReserveLast,
 		&subnet.LocationID, &subnet.NameserverID, &subnet.VLANID, &subnet.ParentSubnetID, &subnet.IsContainer,
 		&subnet.AlertThresholdPct, &subnet.AlertEmailOverride,
@@ -49,36 +49,36 @@ func scanSubnet(row interface {
 	return subnet, nil
 }
 
-func (r *Repository) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
+func (r *Repository) CreateSubnet(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
+	query := `INSERT INTO subnets (network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	var id int64
-	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast).Scan(&id); err != nil {
+	if err := r.db.QueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
 }
 
 // CreateSubnetWithLocation inserts a new subnet with an optional location.
-func (r *Repository) CreateSubnetWithLocation(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
+func (r *Repository) CreateSubnetWithLocation(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
 	var nsID *int64
 	if len(nameserverID) > 0 {
 		nsID = nameserverID[0]
 	}
-	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id)
+	query := `INSERT INTO subnets (network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 	var id int64
-	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nsID).Scan(&id); err != nil {
+	if err := r.db.QueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nsID).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
 }
 
-func (r *Repository) CreateSubnetWithVLAN(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (section_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id, vlan_id)
+func (r *Repository) CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+	query := `INSERT INTO subnets (network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id, vlan_id)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
 	var id int64
-	if err := r.db.QueryRow(ctx, query, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID).Scan(&id); err != nil {
+	if err := r.db.QueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -98,9 +98,9 @@ func (r *Repository) GetSubnetByCIDR(ctx context.Context, cidr string) (*models.
 	return scanSubnet(row)
 }
 
-func (r *Repository) ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.section_id = $1 ORDER BY s.network_address`
-	rows, err := r.db.Query(ctx, query, sectionID)
+func (r *Repository) ListSubnetsBySection(ctx context.Context, networkID int64) ([]*models.Subnet, error) {
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.network_id = $1 ORDER BY s.network_address`
+	rows, err := r.db.Query(ctx, query, networkID)
 	if err != nil {
 		return nil, err
 	}

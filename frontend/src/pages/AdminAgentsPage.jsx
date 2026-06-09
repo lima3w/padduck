@@ -171,7 +171,7 @@ export default function AdminAgentsPage() {
         </button>
       </div>
 
-      {/* Download Agent section */}
+      {/* Download Agent network */}
       <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <p className="text-sm font-medium text-gray-700 mb-2">Download latest scan agent binary:</p>
         <div className="flex flex-wrap gap-2">

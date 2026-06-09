@@ -19,11 +19,11 @@ var (
 // ---- Subnet Requests ----
 
 // SubmitSubnetRequest creates a new pending subnet request.
-func (s *Service) SubmitSubnetRequest(ctx context.Context, requesterID, sectionID int64, parentSubnetID *int64, prefixLen int, purpose string) (*models.SubnetRequest, error) {
+func (s *Service) SubmitSubnetRequest(ctx context.Context, requesterID, networkID int64, parentSubnetID *int64, prefixLen int, purpose string) (*models.SubnetRequest, error) {
 	if requesterID <= 0 {
 		return nil, fmt.Errorf("invalid requester ID")
 	}
-	if sectionID <= 0 {
+	if networkID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
 	if prefixLen < 0 || prefixLen > 32 {
@@ -34,7 +34,7 @@ func (s *Service) SubmitSubnetRequest(ctx context.Context, requesterID, sectionI
 		return nil, fmt.Errorf("purpose is required")
 	}
 
-	sr, err := s.repository.CreateSubnetRequest(ctx, requesterID, sectionID, parentSubnetID, prefixLen, purpose)
+	sr, err := s.repository.CreateSubnetRequest(ctx, requesterID, networkID, parentSubnetID, prefixLen, purpose)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +77,12 @@ func (s *Service) ApproveSubnetRequest(ctx context.Context, requestID, reviewerI
 	}
 
 	// Create the subnet — we need a network address; auto-allocate the first free block in the section
-	networkAddr, err := s.findFreeSubnetBlock(ctx, sr.SectionID, sr.ParentSubnetID, sr.RequestedPrefixLen)
+	networkAddr, err := s.findFreeSubnetBlock(ctx, sr.NetworkID, sr.ParentSubnetID, sr.RequestedPrefixLen)
 	if err != nil {
 		return nil, fmt.Errorf("could not allocate subnet block: %w", err)
 	}
 
-	subnet, err := s.CreateSubnet(ctx, sr.SectionID, networkAddr, sr.RequestedPrefixLen, sr.Purpose, nil, false, false, nil, nil, nil)
+	subnet, err := s.CreateSubnet(ctx, sr.NetworkID, networkAddr, sr.RequestedPrefixLen, sr.Purpose, nil, false, false, nil, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create subnet: %w", err)
 	}
@@ -152,9 +152,9 @@ func (s *Service) CancelSubnetRequest(ctx context.Context, requestID, requesterI
 
 // findFreeSubnetBlock finds the first network address that fits a /<prefixLen> block
 // within the given section (optionally within a parent subnet).
-func (s *Service) findFreeSubnetBlock(ctx context.Context, sectionID int64, parentSubnetID *int64, prefixLen int) (string, error) {
+func (s *Service) findFreeSubnetBlock(ctx context.Context, networkID int64, parentSubnetID *int64, prefixLen int) (string, error) {
 	// Get all existing subnets in the section
-	existing, err := s.repository.ListSubnetsBySection(ctx, sectionID)
+	existing, err := s.repository.ListSubnetsBySection(ctx, networkID)
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getSectionsPaginated, createSection, updateSection, deleteSection, searchSections } from '../api/client'
+import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/client'
 import { submitSubnetRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -12,14 +12,14 @@ import { getCachedUser } from '../utils/storageKeys'
 
 const DEFAULT_LIMIT = 25
 
-const SUBNET_REQUEST_EMPTY = { section_id: '', prefix_length: '24', purpose: '', parent_subnet_id: '' }
+const SUBNET_REQUEST_EMPTY = { network_id: '', prefix_length: '24', purpose: '', parent_subnet_id: '' }
 
-export default function SectionsPage() {
+export default function NetworksPage() {
   const navigate = useNavigate()
   const user = getCachedUser()
   const canCreateSubnet = user?.role === 'admin'
 
-  const [sections, setSections] = useState([])
+  const [networks, setSections] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
@@ -27,7 +27,7 @@ export default function SectionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [isSearchActive, setIsSearchActive] = useState(false)
-  const [modal, setModal] = useState(null) // null | 'create' | { edit: section } | { requestSubnet: section|null }
+  const [modal, setModal] = useState(null) // null | 'create' | { edit: network } | { requestSubnet: network|null }
   const [form, setForm] = useState({ name: '', description: '' })
   const [subnetReqForm, setSubnetReqForm] = useState(SUBNET_REQUEST_EMPTY)
   const [subnetReqError, setSubnetReqError] = useState(null)
@@ -38,7 +38,7 @@ export default function SectionsPage() {
 
   async function handleExport() {
     setDownloading(true)
-    try { await downloadFile('/api/v1/admin/reports/export/sections', 'sections.csv') }
+    try { await downloadFile('/api/v1/admin/reports/export/networks', 'networks.csv') }
     catch { setError('Export failed') }
     finally { setDownloading(false) }
   }
@@ -50,12 +50,12 @@ export default function SectionsPage() {
       setLoading(true)
       setSearchQuery('')
       setIsSearchActive(false)
-      const res = await getSectionsPaginated(p, DEFAULT_LIMIT)
+      const res = await getNetworksPaginated(p, DEFAULT_LIMIT)
       const data = res.data
       setSections(data.data ?? data)
       setTotal(data.total ?? (Array.isArray(data) ? data.length : 0))
     } catch {
-      setError('Failed to load sections')
+      setError('Failed to load networks')
     } finally {
       setLoading(false)
     }
@@ -76,13 +76,13 @@ export default function SectionsPage() {
     try {
       setSearching(true)
       setIsSearchActive(true)
-      const res = await searchSections(searchQuery)
+      const res = await searchNetworks(searchQuery)
       const data = res.data
       setSections(Array.isArray(data) ? data : (data.data ?? []))
       setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
       setPage(1)
     } catch {
-      setError('Failed to search sections')
+      setError('Failed to search networks')
     } finally {
       setSearching(false)
     }
@@ -99,9 +99,9 @@ export default function SectionsPage() {
     setModal('create')
   }
 
-  function openEdit(section) {
-    setForm({ name: section.name, description: section.description })
-    setModal({ edit: section })
+  function openEdit(network) {
+    setForm({ name: network.name, description: network.description })
+    setModal({ edit: network })
   }
 
   async function handleSubmit(e) {
@@ -109,14 +109,14 @@ export default function SectionsPage() {
     setSaving(true)
     try {
       if (modal === 'create') {
-        await createSection({ name: form.name, description: form.description, created_by: 1 })
+        await createNetwork({ name: form.name, description: form.description, created_by: 1 })
       } else {
-        await updateSection(modal.edit.id, { name: form.name, description: form.description })
+        await updateNetwork(modal.edit.id, { name: form.name, description: form.description })
       }
       setModal(null)
       load(page)
     } catch {
-      setError('Failed to save section')
+      setError('Failed to save network')
     } finally {
       setSaving(false)
     }
@@ -124,19 +124,19 @@ export default function SectionsPage() {
 
   async function handleDelete(id) {
     try {
-      await deleteSection(id)
+      await deleteNetwork(id)
       setDeleteConfirm(null)
       load(page)
     } catch {
-      setError('Failed to delete section')
+      setError('Failed to delete network')
     }
   }
 
-  function openSubnetRequest(section) {
-    setSubnetReqForm({ ...SUBNET_REQUEST_EMPTY, section_id: section ? String(section.id) : '' })
+  function openSubnetRequest(network) {
+    setSubnetReqForm({ ...SUBNET_REQUEST_EMPTY, network_id: network ? String(network.id) : '' })
     setSubnetReqError(null)
     setSubnetReqSuccess(false)
-    setModal({ requestSubnet: section })
+    setModal({ requestSubnet: network })
   }
 
   async function handleSubnetRequestSubmit(e) {
@@ -145,7 +145,7 @@ export default function SectionsPage() {
     setSaving(true)
     try {
       await submitSubnetRequest({
-        section_id: subnetReqForm.section_id ? parseInt(subnetReqForm.section_id) : null,
+        network_id: subnetReqForm.network_id ? parseInt(subnetReqForm.network_id) : null,
         prefix_length: parseInt(subnetReqForm.prefix_length),
         purpose: subnetReqForm.purpose,
         parent_subnet_id: subnetReqForm.parent_subnet_id ? parseInt(subnetReqForm.parent_subnet_id) : null,
@@ -159,12 +159,12 @@ export default function SectionsPage() {
     }
   }
 
-  if (loading) return <PageSpinner message="Loading sections..." />
+  if (loading) return <PageSpinner message="Loading networks..." />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">Sections</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Networks</h1>
         <div className="flex items-center gap-2">
           {!canCreateSubnet && (
             <button
@@ -180,7 +180,7 @@ export default function SectionsPage() {
                 {downloading ? 'Exporting...' : 'Export CSV'}
               </button>
               <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-                + New Section
+                + New Network
               </button>
             </>
           )}
@@ -193,7 +193,7 @@ export default function SectionsPage() {
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
-            placeholder="Search sections..."
+            placeholder="Search networks..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -219,7 +219,7 @@ export default function SectionsPage() {
 
       {!isSearchActive && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {total} section{total !== 1 ? 's' : ''}
+          {total} network{total !== 1 ? 's' : ''}
         </p>
       )}
 
@@ -233,20 +233,20 @@ export default function SectionsPage() {
             </tr>
           </thead>
           <tbody>
-            {sections.length === 0 && (
-              <EmptyRow colSpan={3} message="No sections yet." />
+            {networks.length === 0 && (
+              <EmptyRow colSpan={3} message="No networks yet." />
             )}
-            {sections.map(s => (
+            {networks.map(s => (
               <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td
                   className="px-4 py-3 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
-                  onClick={() => navigate(`/sections/${s.id}/subnets`)}
+                  onClick={() => navigate(`/networks/${s.id}/subnets`)}
                 >
                   {s.name}
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <Link to={`/sections/${s.id}/topology`} className="text-gray-400 hover:text-blue-600 text-xs">Topology</Link>
+                  <Link to={`/networks/${s.id}/topology`} className="text-gray-400 hover:text-blue-600 text-xs">Topology</Link>
                   {!canCreateSubnet && (
                     <button onClick={() => openSubnetRequest(s)} className="text-green-600 hover:text-green-800 text-xs font-medium">Request Subnet</button>
                   )}
@@ -281,7 +281,7 @@ export default function SectionsPage() {
       )}
 
       {(modal === 'create' || modal?.edit) && (
-        <Modal title={modal === 'create' ? 'New Section' : 'Edit Section'} onClose={() => setModal(null)}>
+        <Modal title={modal === 'create' ? 'New Network' : 'Edit Network'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -321,16 +321,16 @@ export default function SectionsPage() {
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Section <span className="text-red-500">*</span>
+                  Network <span className="text-red-500">*</span>
                 </label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  value={subnetReqForm.section_id}
-                  onChange={e => setSubnetReqForm(f => ({ ...f, section_id: e.target.value }))}
+                  value={subnetReqForm.network_id}
+                  onChange={e => setSubnetReqForm(f => ({ ...f, network_id: e.target.value }))}
                   required
                 >
-                  <option value="">Select a section...</option>
-                  {sections.map(s => (
+                  <option value="">Select a network...</option>
+                  {networks.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>

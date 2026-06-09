@@ -71,12 +71,12 @@ func cloneDashboardActivities(activities []*models.DashboardActivity) []*models.
 // Since the DB schema has no parent_subnet_id, we build the hierarchy by containment:
 // subnet A is parent of subnet B if B's network is within A's network and there is no
 // smaller subnet C also containing B.
-func (s *Service) GetSubnetTree(ctx context.Context, sectionID int64) ([]models.SubnetTreeNode, error) {
-	if sectionID <= 0 {
+func (s *Service) GetSubnetTree(ctx context.Context, networkID int64) ([]models.SubnetTreeNode, error) {
+	if networkID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
 
-	nodes, err := s.repository.GetSubnetTreeBySection(ctx, sectionID)
+	nodes, err := s.repository.GetSubnetTreeBySection(ctx, networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -160,12 +160,12 @@ func buildTree(flat []models.SubnetTreeNode) []models.SubnetTreeNode {
 	return result
 }
 
-// ListSectionsPaginated returns a paginated list of sections.
-func (s *Service) ListSectionsPaginated(ctx context.Context, page, limit int) ([]*models.Section, int64, error) {
-	return s.ListSectionsPaginatedWithOptions(ctx, page, limit, repository.ListOptions{})
+// ListNetworksPaginated returns a paginated list of sections.
+func (s *Service) ListNetworksPaginated(ctx context.Context, page, limit int) ([]*models.Network, int64, error) {
+	return s.ListNetworksPaginatedWithOptions(ctx, page, limit, repository.ListOptions{})
 }
 
-func (s *Service) ListSectionsPaginatedWithOptions(ctx context.Context, page, limit int, opts repository.ListOptions) ([]*models.Section, int64, error) {
+func (s *Service) ListNetworksPaginatedWithOptions(ctx context.Context, page, limit int, opts repository.ListOptions) ([]*models.Network, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -174,16 +174,16 @@ func (s *Service) ListSectionsPaginatedWithOptions(ctx context.Context, page, li
 	}
 	opts.Limit = limit
 	opts.Offset = (page - 1) * limit
-	return s.repository.ListSectionsPaginatedWithOptions(ctx, opts)
+	return s.repository.ListNetworksPaginatedWithOptions(ctx, opts)
 }
 
 // ListSubnetsPaginated returns a paginated list of subnets for a section.
-func (s *Service) ListSubnetsPaginated(ctx context.Context, sectionID int64, page, limit int) ([]*models.Subnet, int64, error) {
-	return s.ListSubnetsPaginatedWithOptions(ctx, sectionID, page, limit, repository.ListOptions{})
+func (s *Service) ListSubnetsPaginated(ctx context.Context, networkID int64, page, limit int) ([]*models.Subnet, int64, error) {
+	return s.ListSubnetsPaginatedWithOptions(ctx, networkID, page, limit, repository.ListOptions{})
 }
 
-func (s *Service) ListSubnetsPaginatedWithOptions(ctx context.Context, sectionID int64, page, limit int, opts repository.ListOptions) ([]*models.Subnet, int64, error) {
-	if sectionID <= 0 {
+func (s *Service) ListSubnetsPaginatedWithOptions(ctx context.Context, networkID int64, page, limit int, opts repository.ListOptions) ([]*models.Subnet, int64, error) {
+	if networkID <= 0 {
 		return nil, 0, fmt.Errorf("invalid section ID")
 	}
 	if page < 1 {
@@ -194,7 +194,7 @@ func (s *Service) ListSubnetsPaginatedWithOptions(ctx context.Context, sectionID
 	}
 	opts.Limit = limit
 	opts.Offset = (page - 1) * limit
-	return s.repository.ListSubnetsBySectionPaginatedWithOptions(ctx, sectionID, opts)
+	return s.repository.ListSubnetsBySectionPaginatedWithOptions(ctx, networkID, opts)
 }
 
 // ListIPAddressesPaginated returns a paginated list of IP addresses for a subnet.

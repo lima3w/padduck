@@ -26,7 +26,7 @@ const SORT_KEYS = {
 export default function InactiveIPsPage() {
   const [days, setDays] = useState(90)
   const [sectionId, setSectionId] = useState('')
-  const [sections, setSections] = useState([])
+  const [networks, setSections] = useState([])
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -43,7 +43,7 @@ export default function InactiveIPsPage() {
 
   async function loadSections() {
     try {
-      const { data } = await api.get('/sections')
+      const { data } = await api.get('/networks')
       setSections(Array.isArray(data) ? data : (data?.data ?? []))
     } catch {}
   }
@@ -54,7 +54,7 @@ export default function InactiveIPsPage() {
     setSelected([])
     try {
       const params = { days }
-      if (sectionId) params.section_id = sectionId
+      if (sectionId) params.network_id = sectionId
       const { data } = await api.get('/admin/reports/inactive-ips', { params })
       setRows(Array.isArray(data) ? data : (data?.inactive ?? []))
     } catch {
@@ -110,7 +110,7 @@ export default function InactiveIPsPage() {
     setDownloading(true)
     try {
       const params = new URLSearchParams({ days, format: 'csv' })
-      if (sectionId) params.set('section_id', sectionId)
+      if (sectionId) params.set('network_id', sectionId)
       await downloadFile(`/api/v1/admin/reports/export/inactive-ips?${params}`, `inactive-ips-${days}d.csv`)
     } catch {
       setError('Export failed')
@@ -174,14 +174,14 @@ export default function InactiveIPsPage() {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Section</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Network</label>
           <select
             value={sectionId}
             onChange={e => setSectionId(e.target.value)}
             className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           >
-            <option value="">All Sections</option>
-            {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <option value="">All Networks</option>
+            {networks.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default function InactiveIPsPage() {
                   <SortTh col="ipAddress" label="IP Address" />
                   <SortTh col="hostname" label="Hostname" />
                   <SortTh col="subnetCidr" label="Subnet" />
-                  <SortTh col="sectionName" label="Section" />
+                  <SortTh col="sectionName" label="Network" />
                   <SortTh col="assignedTo" label="Assigned To" />
                   <SortTh col="lastSeen" label="Last Seen" />
                   <SortTh col="daysInactive" label="Days Inactive" />

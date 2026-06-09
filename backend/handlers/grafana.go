@@ -88,7 +88,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 			Type: "table",
 			Columns: []grafanaColumn{
 				{Text: "CIDR", Type: "string"},
-				{Text: "Section", Type: "string"},
+				{Text: "Network", Type: "string"},
 				{Text: "Description", Type: "string"},
 				{Text: "Used IPs", Type: "number"},
 				{Text: "Total IPs", Type: "number"},
@@ -97,7 +97,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 		}
 		for _, r := range rows {
 			resp.Rows = append(resp.Rows, []interface{}{
-				r.CIDR, r.SectionName, r.Description, r.Used, r.Total, r.UtilisationPct,
+				r.CIDR, r.NetworkName, r.Description, r.Used, r.Total, r.UtilisationPct,
 			})
 		}
 		return resp, nil
@@ -120,21 +120,21 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 		return resp, nil
 
 	case "section_summary":
-		rows, err := h.service.GrafanaSectionSummary(ctx)
+		rows, err := h.service.GrafanaNetworkSummary(ctx)
 		if err != nil {
 			return grafanaTableResponse{}, err
 		}
 		resp := grafanaTableResponse{
 			Type: "table",
 			Columns: []grafanaColumn{
-				{Text: "Section", Type: "string"},
+				{Text: "Network", Type: "string"},
 				{Text: "Subnets", Type: "number"},
 				{Text: "Total IPs", Type: "number"},
 				{Text: "Used IPs", Type: "number"},
 			},
 		}
 		for _, r := range rows {
-			resp.Rows = append(resp.Rows, []interface{}{r.SectionName, r.SubnetCount, r.IPCount, r.UsedIPs})
+			resp.Rows = append(resp.Rows, []interface{}{r.NetworkName, r.SubnetCount, r.IPCount, r.UsedIPs})
 		}
 		return resp, nil
 

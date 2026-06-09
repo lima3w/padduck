@@ -28,7 +28,7 @@ type stubReportsRepo struct {
 	nextID           int64
 	snapshots        []snapshotCall
 	inactiveIPs      []*models.InactiveIPReport
-	sections         []*models.Section
+	sections         []*models.Network
 	trends           []*models.SubnetUtilisationTrend
 	duplicates       *models.DuplicatesReport
 
@@ -57,7 +57,7 @@ func newStubRepo() *stubReportsRepo {
 func (r *stubReportsRepo) ListAllSubnets(_ context.Context) ([]*models.Subnet, error) {
 	return r.subnets, nil
 }
-func (r *stubReportsRepo) ListSubnetsBySection(_ context.Context, sectionID int64) ([]*models.Subnet, error) {
+func (r *stubReportsRepo) ListSubnetsBySection(_ context.Context, networkID int64) ([]*models.Subnet, error) {
 	return r.subnets, nil
 }
 func (r *stubReportsRepo) ListIPAddressesBySubnet(_ context.Context, subnetID int64) ([]*models.IPAddress, error) {
@@ -147,14 +147,14 @@ func (r *stubReportsRepo) DeleteScheduledReport(_ context.Context, id int64) err
 	delete(r.scheduledReports, id)
 	return nil
 }
-func (r *stubReportsRepo) GetInactiveIPs(_ context.Context, days int, sectionID *int64) ([]*models.InactiveIPReport, error) {
+func (r *stubReportsRepo) GetInactiveIPs(_ context.Context, days int, networkID *int64) ([]*models.InactiveIPReport, error) {
 	r.inactiveIPCalls++
 	return r.inactiveIPs, nil
 }
 func (r *stubReportsRepo) BulkReleaseIPs(_ context.Context, ipIDs []int64) (int64, error) {
 	return int64(len(ipIDs)), nil
 }
-func (r *stubReportsRepo) ListAllSections(_ context.Context) ([]*models.Section, error) {
+func (r *stubReportsRepo) ListAllNetworks(_ context.Context) ([]*models.Network, error) {
 	return r.sections, nil
 }
 func (r *stubReportsRepo) GetSubnetByID(_ context.Context, id int64) (*models.Subnet, error) {
@@ -440,14 +440,14 @@ func TestPerformanceBudget_InactiveIPWorkflowUsesParameterizedCachedRead(t *test
 	}
 	svc := newTestReportsService(repo)
 	ctx := context.Background()
-	sectionID := int64(42)
+	networkID := int64(42)
 
 	for i := 0; i < 3; i++ {
-		ips, err := svc.GetInactiveIPs(ctx, 90, &sectionID)
+		ips, err := svc.GetInactiveIPs(ctx, 90, &networkID)
 		require.NoError(t, err)
 		require.Len(t, ips, 1)
 	}
-	if _, err := svc.GetInactiveIPs(ctx, 30, &sectionID); err != nil {
+	if _, err := svc.GetInactiveIPs(ctx, 30, &networkID); err != nil {
 		t.Fatal(err)
 	}
 

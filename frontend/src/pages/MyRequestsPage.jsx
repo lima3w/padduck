@@ -247,7 +247,7 @@ export default function MyRequestsPage() {
         </Modal>
       )}
 
-      {/* Re-request modal — just shows info for now; actual submit goes through SectionsPage / IPAddressesPage forms */}
+      {/* Re-request modal — just shows info for now; actual submit goes through NetworksPage / IPAddressesPage forms */}
       {reRequestModal && (
         <Modal
           title={`Re-request ${reRequestModal.requestType === 'subnets' ? 'Subnet' : 'IP'}`}
@@ -257,7 +257,7 @@ export default function MyRequestsPage() {
             <p className="text-gray-600 dark:text-gray-400">
               To re-request, please use the{' '}
               <strong>{reRequestModal.requestType === 'subnets' ? '"Request Subnet"' : '"Request IP"'}</strong>{' '}
-              button on the {reRequestModal.requestType === 'subnets' ? 'Sections' : 'IP Addresses'} page.
+              button on the {reRequestModal.requestType === 'subnets' ? 'Networks' : 'IP Addresses'} page.
             </p>
             <div className="bg-gray-50 dark:bg-gray-700 rounded p-3 space-y-1">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Previous values</p>

@@ -12,13 +12,13 @@ import (
 	"padduck/services"
 )
 
-// ExportSectionsCSV handles GET /api/v1/admin/reports/export/sections
-func (h *Handler) ExportSectionsCSV(c *fiber.Ctx) error {
+// ExportNetworksCSV handles GET /api/v1/admin/reports/export/networks
+func (h *Handler) ExportNetworksCSV(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
-	sections, _, err := h.service.ListSectionsPaginated(c.Context(), 1, 10000)
+	sections, _, err := h.service.ListNetworksPaginated(c.Context(), 1, 10000)
 	if err != nil {
 		reqLogger(c).Error("export sections CSV failed", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

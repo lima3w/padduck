@@ -131,7 +131,7 @@ export default function CircuitsPage() {
 }
 
 function Table({ title, cols, rows, empty }) {
-  return <section><h2 className="text-lg font-semibold mb-3">{title}</h2><div className="overflow-x-auto rounded border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr>{cols.map(c => <th key={c} className="px-4 py-3 text-left">{c}</th>)}<th /></tr></thead><tbody className="divide-y divide-gray-100 bg-white">{rows.length === 0 && <tr><td colSpan={cols.length + 1} className="px-4 py-6 text-center text-gray-500">{empty}</td></tr>}{rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} className="px-4 py-3">{cell}</td>)}</tr>)}</tbody></table></div></section>
+  return <network><h2 className="text-lg font-semibold mb-3">{title}</h2><div className="overflow-x-auto rounded border border-gray-200"><table className="min-w-full divide-y divide-gray-200 text-sm"><thead className="bg-gray-50"><tr>{cols.map(c => <th key={c} className="px-4 py-3 text-left">{c}</th>)}<th /></tr></thead><tbody className="divide-y divide-gray-100 bg-white">{rows.length === 0 && <tr><td colSpan={cols.length + 1} className="px-4 py-6 text-center text-gray-500">{empty}</td></tr>}{rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} className="px-4 py-3">{cell}</td>)}</tr>)}</tbody></table></div></network>
 }
 
 function Actions({ onEdit, onDelete }) {

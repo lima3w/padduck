@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { generateTokenForMe } from '../api/client'
 
 const METRICS = [
-  { name: 'subnet_utilization', desc: 'All subnets with CIDR, section, used/total IPs, and utilisation %' },
+  { name: 'subnet_utilization', desc: 'All subnets with CIDR, network, used/total IPs, and utilisation %' },
   { name: 'ip_by_status', desc: 'IP address counts grouped by status (assigned, available, reserved, …)' },
-  { name: 'section_summary', desc: 'Per-section subnet count, total IPs, and used IPs' },
+  { name: 'section_summary', desc: 'Per-network subnet count, total IPs, and used IPs' },
 ]
 
 export default function AdminGrafanaPage() {
@@ -38,7 +38,7 @@ export default function AdminGrafanaPage() {
         </p>
       </div>
 
-      <section className="space-y-3">
+      <network className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">1. Datasource URL</h2>
         <div className="bg-gray-50 border border-gray-200 rounded px-4 py-3 font-mono text-sm text-gray-800 select-all">
           {baseUrl}
@@ -46,9 +46,9 @@ export default function AdminGrafanaPage() {
         <p className="text-xs text-gray-500">
           Use the <strong>JSON API</strong> or <strong>SimpleJSON</strong> Grafana plugin and set this as the base URL.
         </p>
-      </section>
+      </network>
 
-      <section className="space-y-3">
+      <network className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">2. Generate an API Token</h2>
         <form onSubmit={handleGenerate} className="flex gap-2 items-end">
           <div className="flex-1">
@@ -81,9 +81,9 @@ export default function AdminGrafanaPage() {
             </p>
           </div>
         )}
-      </section>
+      </network>
 
-      <section className="space-y-3">
+      <network className="space-y-3">
         <h2 className="text-base font-semibold text-gray-800">3. Available Metrics</h2>
         <div className="rounded border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -103,9 +103,9 @@ export default function AdminGrafanaPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </network>
 
-      <section className="space-y-2">
+      <network className="space-y-2">
         <h2 className="text-base font-semibold text-gray-800">4. Grafana Plugin Setup</h2>
         <ol className="list-decimal list-inside space-y-1 text-sm text-gray-700">
           <li>Install the <strong>Marcusolsson JSON API</strong> or <strong>SimpleJSON</strong> plugin in Grafana.</li>
@@ -114,7 +114,7 @@ export default function AdminGrafanaPage() {
           <li>Save &amp; test the connection (the health check endpoint should return <code className="bg-gray-100 px-1 rounded">ok</code>).</li>
           <li>In a panel, select a metric from the table above and render as a Table or Stat visualization.</li>
         </ol>
-      </section>
+      </network>
     </div>
   )
 }

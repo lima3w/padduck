@@ -4,7 +4,7 @@ import { downloadFile } from '../utils/download'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function Section({ title, description, children }) {
+function Network({ title, description, children }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
       <div>
@@ -231,7 +231,7 @@ export default function BackupsPage() {
       )}
 
       {/* ── Complete Backup ─────────────────────────────────────────────────── */}
-      <Section
+      <Network
         title="Complete Backup"
         description="Downloads a ZIP archive containing the full database, all configuration settings, and any uploaded files. Use this to migrate to a new server or restore after data loss."
       >
@@ -249,10 +249,10 @@ export default function BackupsPage() {
         <p className="text-xs text-gray-500 dark:text-gray-400">
           The backup archive includes: full PostgreSQL database dump, all admin settings, and files from the <code>./data/</code> directory.
         </p>
-      </Section>
+      </Network>
 
       {/* ── Restore ─────────────────────────────────────────────────────────── */}
-      <Section
+      <Network
         title="Restore from Backup"
         description="Upload a backup ZIP archive to restore your data. This will overwrite all current data — use with caution."
       >
@@ -304,12 +304,12 @@ export default function BackupsPage() {
             )}
           </div>
         )}
-      </Section>
+      </Network>
 
       {/* ── Data Export ─────────────────────────────────────────────────────── */}
-      <Section
+      <Network
         title="Data Export"
-        description="Export all sections, subnets, and IP addresses in a portable format."
+        description="Export all networks, subnets, and IP addresses in a portable format."
       >
         <div className="flex flex-wrap gap-3">
           <button
@@ -334,10 +334,10 @@ export default function BackupsPage() {
             {downloading === 'v2' ? 'Generating…' : 'v2 Migration Bundle (ZIP)'}
           </button>
         </div>
-      </Section>
+      </Network>
 
       {/* ── Data Import ─────────────────────────────────────────────────────── */}
-      <Section
+      <Network
         title="Data Import"
         description="Import subnets or IP addresses from a CSV file."
       >
@@ -357,7 +357,7 @@ export default function BackupsPage() {
           ))}
         </div>
         <CSVImportTab key={importTab} tab={importTab} setError={setError} />
-      </Section>
+      </Network>
     </div>
   )
 }

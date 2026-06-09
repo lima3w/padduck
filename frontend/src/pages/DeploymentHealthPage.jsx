@@ -73,7 +73,7 @@ export default function DeploymentHealthPage() {
       )}
 
       {/* Panel 1: System Health */}
-      <section>
+      <network>
         <SectionHeading>System Health</SectionHeading>
         {loading && !health ? (
           <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
@@ -123,7 +123,7 @@ export default function DeploymentHealthPage() {
             </Card>
           </div>
         ) : null}
-      </section>
+      </network>
 
     </div>
   )

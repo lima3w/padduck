@@ -44,6 +44,13 @@ func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
 
 	children, err := h.service.SplitSubnet(c.Context(), int64(id), req.NewPrefixLen)
 	if err != nil {
+		var blockedErr *services.SplitBlockedError
+		if errors.As(err, &blockedErr) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error":        blockedErr.Error(),
+				"blocking_ips": blockedErr.BlockingIPs,
+			})
+		}
 		reqLogger(c).Error("split subnet error", "id", id, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}

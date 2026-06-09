@@ -64,7 +64,7 @@ export default function DHCPPage() {
       </div>
       {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">{error}</div>}
 
-      <section>
+      <network>
         <h2 className="text-lg font-semibold mb-3">Servers</h2>
         <div className="overflow-x-auto rounded border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -75,9 +75,9 @@ export default function DHCPPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </network>
 
-      <section>
+      <network>
         <h2 className="text-lg font-semibold mb-3">Leases</h2>
         <div className="overflow-x-auto rounded border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -88,7 +88,7 @@ export default function DHCPPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </network>
 
       {modal?.type === 'server' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">DHCP Server</h2><form onSubmit={saveServer} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input required placeholder="Name" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border rounded px-3 py-2 text-sm" />

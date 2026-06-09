@@ -184,8 +184,8 @@ type PasswordReset struct {
 	UpdatedAt time.Time
 }
 
-// Section represents an IP address section/grouping
-type Section struct {
+// Network represents an IP address section/grouping
+type Network struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
@@ -209,7 +209,7 @@ type Nameserver struct {
 // Subnet represents a network subnet
 type Subnet struct {
 	ID                 int64              `json:"id"`
-	SectionID          int64              `json:"section_id"`
+	NetworkID          int64              `json:"network_id"`
 	NetworkAddress     string             `json:"network_address"`
 	PrefixLength       int                `json:"prefix_length"`
 	Description        string             `json:"description"`
@@ -263,8 +263,8 @@ type TopologyEdge struct {
 	Type   string `json:"type"` // "parent_child" or "subnet_vlan"
 }
 
-// SectionTopology holds the full topology graph for a section
-type SectionTopology struct {
+// NetworkTopology holds the full topology graph for a section
+type NetworkTopology struct {
 	Nodes []*TopologyNode `json:"nodes"`
 	Edges []*TopologyEdge `json:"edges"`
 }
@@ -520,6 +520,8 @@ type ScanJob struct {
 	ScanType        string     `json:"scan_type"`
 	AgentID         *int64     `json:"agent_id,omitempty"`
 	AutoAddIPs      bool       `json:"auto_add_ips"`
+	DiscoverDNS     bool       `json:"discover_dns"`
+	DNSOverwrite    bool       `json:"dns_overwrite"`
 }
 
 // ScanRun records a single execution of a scan job
@@ -588,7 +590,7 @@ type ScanResult struct {
 
 // DashboardSummary holds aggregate IPAM statistics for the dashboard
 type DashboardSummary struct {
-	TotalSections         int64               `json:"total_sections"`
+	TotalNetworks         int64               `json:"total_networks"`
 	TotalSubnets          int64               `json:"total_subnets"`
 	TotalIPs              int64               `json:"total_ips"`
 	UsedIPs               int64               `json:"used_ips"`
@@ -733,7 +735,7 @@ type Device struct {
 	Description   *string            `json:"description,omitempty"`
 	TypeID        *int64             `json:"type_id,omitempty"`
 	Type          *DeviceType        `json:"type,omitempty"`
-	SectionID     *int64             `json:"section_id,omitempty"`
+	NetworkID     *int64             `json:"network_id,omitempty"`
 	Vendor        *string            `json:"vendor,omitempty"`
 	Model         *string            `json:"model,omitempty"`
 	OSVersion     *string            `json:"os_version,omitempty"`
@@ -819,7 +821,7 @@ type SubnetRequest struct {
 	ID                 int64     `json:"id"`
 	RequesterID        int64     `json:"requester_id"`
 	RequesterUsername  string    `json:"requester_username,omitempty"`
-	SectionID          int64     `json:"section_id"`
+	NetworkID          int64     `json:"network_id"`
 	ParentSubnetID     *int64    `json:"parent_subnet_id,omitempty"`
 	RequestedPrefixLen int       `json:"requested_prefix_len"`
 	Purpose            string    `json:"purpose"`
@@ -941,7 +943,7 @@ type InactiveIPReport struct {
 	IPAddress    string     `json:"ip_address"`
 	Hostname     string     `json:"hostname"`
 	SubnetCIDR   string     `json:"subnet_cidr"`
-	SectionName  string     `json:"section_name"`
+	NetworkName  string     `json:"section_name"`
 	AssignedTo   *string    `json:"assigned_to,omitempty"`
 	LastSeen     *time.Time `json:"last_seen,omitempty"`
 	DaysInactive int        `json:"days_inactive"`

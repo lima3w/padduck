@@ -67,7 +67,7 @@ export default function RolePresetsPage() {
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Permission Presets</h1>
 
       {/* Preset cards */}
-      <section>
+      <network>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Built-in permission presets are read-only templates you can use as a baseline when configuring roles.
         </p>
@@ -94,10 +94,10 @@ export default function RolePresetsPage() {
             </div>
           ))}
         </div>
-      </section>
+      </network>
 
       {/* Compare role with preset */}
-      <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
+      <network className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Compare Role with Preset</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Select a role and a preset to see which permissions would be added or removed if you applied the preset.
@@ -219,7 +219,7 @@ export default function RolePresetsPage() {
             )}
           </div>
         )}
-      </section>
+      </network>
     </div>
   )
 }

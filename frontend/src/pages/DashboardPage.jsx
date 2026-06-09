@@ -145,7 +145,7 @@ export default function DashboardPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard label="Sections" value={summary?.totalSections ?? 0} />
+        <SummaryCard label="Networks" value={summary?.totalNetworks ?? 0} />
         <SummaryCard label="Subnets" value={summary?.totalSubnets ?? 0} />
         <SummaryCard
           label="IP Addresses"

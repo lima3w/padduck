@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
-  getSection,
+  getNetwork,
   getSubnet,
   getSubnetsPaginated,
   createSubnet,
@@ -51,9 +51,9 @@ function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
 }
 
 export default function SubnetsPage() {
-  const { sectionID } = useParams()
+  const { networkID } = useParams()
   const navigate = useNavigate()
-  const [section, setSection] = useState(null)
+  const [network, setSection] = useState(null)
   const [subnets, setSubnets] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -85,6 +85,7 @@ export default function SubnetsPage() {
   const [splitPrefix, setSplitPrefix] = useState('')
   const [splitting, setSplitting] = useState(false)
   const [splitError, setSplitError] = useState('')
+  const [splitBlockingIPs, setSplitBlockingIPs] = useState([])
   const [splitSuccess, setSplitSuccess] = useState(false)
 
   // Merge modal state
@@ -112,7 +113,7 @@ export default function SubnetsPage() {
     loadLocations()
     loadNameservers()
     loadVlans()
-  }, [sectionID])
+  }, [networkID])
 
   useEffect(() => {
     savePrefs(FILTER_KEY, { filterLocationId }, LEGACY_FILTER_KEY)
@@ -152,8 +153,8 @@ export default function SubnetsPage() {
     try {
       setLoading(true)
       const [secRes, subRes] = await Promise.all([
-        getSection(sectionID),
-        getSubnetsPaginated(sectionID, p, DEFAULT_LIMIT),
+        getNetwork(networkID),
+        getSubnetsPaginated(networkID, p, DEFAULT_LIMIT),
       ])
       setSection(secRes.data)
       const data = subRes.data
@@ -169,7 +170,7 @@ export default function SubnetsPage() {
   async function loadTree() {
     try {
       setTreeLoading(true)
-      const res = await getSubnetTree(sectionID)
+      const res = await getSubnetTree(networkID)
       setTreeData(res.data)
     } catch {
       setError('Failed to load subnet tree')
@@ -228,7 +229,7 @@ export default function SubnetsPage() {
       const body = { query: searchQuery || '', limit: 100, offset: 0 }
       if (hasCf) body.custom_fields = cfFilters
       if (hasLoc) body.location_id = parseInt(filterLocationId)
-      const res = await searchSubnets(sectionID, body)
+      const res = await searchSubnets(networkID, body)
       const data = res.data
       setSubnets(Array.isArray(data) ? data : (data.data ?? []))
       setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
@@ -290,7 +291,7 @@ export default function SubnetsPage() {
     setOverlapError(null)
     try {
       if (modal === 'create') {
-        await createSubnet(sectionID, {
+        await createSubnet(networkID, {
           network_address: form.network_address,
           prefix_length: form.prefix_length !== '' ? parseInt(form.prefix_length) : 24,
           description: form.description,
@@ -352,6 +353,7 @@ export default function SubnetsPage() {
     setSplitModal({ subnet })
     setSplitPrefix(String(subnet.prefixLength + 1))
     setSplitError('')
+    setSplitBlockingIPs([])
     setSplitSuccess(false)
   }
 
@@ -359,6 +361,7 @@ export default function SubnetsPage() {
     if (!splitModal) return
     setSplitting(true)
     setSplitError('')
+    setSplitBlockingIPs([])
     try {
       await api.post(`/admin/subnets/${splitModal.subnet.id}/split`, { new_prefix_len: parseInt(splitPrefix) })
       setSplitSuccess(true)
@@ -367,7 +370,13 @@ export default function SubnetsPage() {
       load(page)
       if (viewMode === 'tree') loadTree()
     } catch (err) {
-      setSplitError(err.response?.data?.error || 'Failed to split subnet')
+      const data = err.response?.data
+      if (data?.blocking_ips?.length) {
+        setSplitBlockingIPs(data.blocking_ips)
+        setSplitError('Split blocked: the following IPs fall on network or broadcast addresses and must be removed first.')
+      } else {
+        setSplitError(data?.error || 'Failed to split subnet')
+      }
     } finally {
       setSplitting(false)
     }
@@ -375,7 +384,7 @@ export default function SubnetsPage() {
 
   async function openMerge(subnet) {
     try {
-      const res = await api.get(`/sections/${sectionID}/subnets`)
+      const res = await api.get(`/networks/${networkID}/subnets`)
       const all = res.data?.data ?? res.data ?? []
       const siblings = all.filter(s => s.id !== subnet.id && s.prefixLength === subnet.prefixLength)
       setMergeModal({ subnet, siblings })
@@ -440,7 +449,7 @@ export default function SubnetsPage() {
   async function handleExportSubnets() {
     setDownloading(true)
     try {
-      await downloadFile(`/api/v1/admin/reports/export/subnets?format=csv`, `subnets-section-${sectionID}.csv`)
+      await downloadFile(`/api/v1/admin/reports/export/subnets?format=csv`, `subnets-network-${networkID}.csv`)
     } catch {
       setError('Export failed')
     } finally {
@@ -453,9 +462,9 @@ export default function SubnetsPage() {
   return (
     <div>
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1">
-        <Link to="/sections" className="hover:text-blue-600">Sections</Link>
+        <Link to="/networks" className="hover:text-blue-600">Networks</Link>
         <span>/</span>
-        <span className="text-gray-800 dark:text-gray-200 font-medium">{section?.name}</span>
+        <span className="text-gray-800 dark:text-gray-200 font-medium">{network?.name}</span>
       </nav>
 
       <div className="flex items-center justify-between mb-4">
@@ -726,7 +735,16 @@ export default function SubnetsPage() {
       {splitModal && (
         <Modal title={`Split ${splitModal.subnet.networkAddress}/${splitModal.subnet.prefixLength}`} onClose={() => setSplitModal(null)}>
           <div className="space-y-4">
-            {splitError && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{splitError}</div>}
+            {splitError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                <p>{splitError}</p>
+                {splitBlockingIPs.length > 0 && (
+                  <ul className="mt-2 space-y-0.5 font-mono text-xs">
+                    {splitBlockingIPs.map(ip => <li key={ip} className="text-red-600">{ip}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Prefix Length</label>
               <input
@@ -767,7 +785,7 @@ export default function SubnetsPage() {
           <div className="space-y-4">
             {mergeError && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{mergeError}</div>}
             {mergeModal.siblings.length === 0 ? (
-              <p className="text-sm text-gray-500">No sibling subnets with the same prefix length found in this section.</p>
+              <p className="text-sm text-gray-500">No sibling subnets with the same prefix length found in this network.</p>
             ) : (
               <>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Select subnets to merge with <strong className="font-mono">{mergeModal.subnet.networkAddress}/{mergeModal.subnet.prefixLength}</strong>:</p>

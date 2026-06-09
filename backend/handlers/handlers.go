@@ -152,16 +152,16 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	users.Delete("/:id", h.DeleteUser)
 
 	// Sections routes
-	sections := protected.Group("/sections")
-	sections.Get("", h.ListSections)
-	sections.Post("", h.CreateSection)
-	sections.Post("/search", h.SearchSections)
-	sections.Get("/:id", h.GetSection)
-	sections.Put("/:id", h.UpdateSection)
-	sections.Delete("/:id", h.DeleteSection)
+	sections := protected.Group("/networks")
+	sections.Get("", h.ListNetworks)
+	sections.Post("", h.CreateNetwork)
+	sections.Post("/search", h.SearchNetworks)
+	sections.Get("/:id", h.GetNetwork)
+	sections.Put("/:id", h.UpdateNetwork)
+	sections.Delete("/:id", h.DeleteNetwork)
 
 	// Subnets collection routes (nested under sections)
-	subnets := sections.Group("/:sectionID/subnets")
+	subnets := sections.Group("/:networkID/subnets")
 	subnets.Get("", h.ListSubnets)
 	subnets.Post("", h.CreateSubnet)
 
@@ -171,7 +171,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	subnet.Put("/:id", h.UpdateSubnet)
 	subnet.Delete("/:id", h.DeleteSubnet)
 	subnet.Get("/:subnetID/utilization", h.GetSubnetUtilization)
-	subnet.Post("/search/:sectionID", h.SearchSubnets)
+	subnet.Post("/search/:networkID", h.SearchSubnets)
 	subnet.Get("/:subnetID/ip-addresses", h.ListIPAddresses)
 	subnet.Post("/:subnetID/ip-addresses", h.CreateIPAddress)
 	subnet.Post("/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
@@ -335,6 +335,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Put("/scan-jobs/:id", h.UpdateScanJob)
 	admin.Delete("/scan-jobs/:id", h.DeleteScanJob)
 	admin.Post("/scan-jobs/:id/run", h.RunScanJobNow)
+	admin.Get("/scan-jobs/:id/status", h.GetScanJobStatus)
 	admin.Get("/scan-jobs/:id/results", h.GetScanJobResults)
 	// Scan history (#211)
 	admin.Get("/scan-jobs/:id/history", h.GetScanJobHistory)
@@ -507,7 +508,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	delegations.Delete("/:id", h.DeleteDelegation)
 
 	// Network topology (v1.10.0 #219)
-	sections.Get("/:id/topology", h.GetSectionTopology)
+	sections.Get("/:id/topology", h.GetNetworkTopology)
 
 	// Reporting & Analytics (v1.11.0 #220 #221 #222 #223 #224)
 	// Utilisation history
@@ -526,7 +527,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/reports/export/subnets", h.ExportSubnets)
 	admin.Get("/reports/export/ips", h.ExportIPs)
 	admin.Get("/reports/export/inactive-ips", h.ExportInactiveIPs)
-	admin.Get("/reports/export/sections", h.ExportSectionsCSV)
+	admin.Get("/reports/export/networks", h.ExportNetworksCSV)
 	admin.Get("/reports/export/devices", h.ExportDevicesCSV)
 	admin.Get("/reports/export/vlans", h.ExportVLANsCSV)
 	admin.Get("/reports/export/vrfs", h.ExportVRFsCSV)

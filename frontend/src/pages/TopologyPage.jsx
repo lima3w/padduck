@@ -21,7 +21,7 @@ export default function TopologyPage() {
     let cy = null
     async function load() {
       try {
-        const { data } = await api.get(`/sections/${sectionId}/topology`)
+        const { data } = await api.get(`/networks/${sectionId}/topology`)
         if (!containerRef.current) return
 
         const elements = [
@@ -134,7 +134,7 @@ export default function TopologyPage() {
     const png = cyRef.current.png({ full: true, scale: 2 })
     const a = document.createElement('a')
     a.href = png
-    a.download = `topology-section-${sectionId}.png`
+    a.download = `topology-network-${sectionId}.png`
     a.click()
   }
 
@@ -144,9 +144,9 @@ export default function TopologyPage() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Link to="/sections" className="text-sm text-blue-600 hover:underline dark:text-blue-400">Sections</Link>
+          <Link to="/networks" className="text-sm text-blue-600 hover:underline dark:text-blue-400">Networks</Link>
           <span className="text-gray-400">/</span>
-          <Link to={`/sections/${sectionId}/subnets`} className="text-sm text-blue-600 hover:underline dark:text-blue-400">Subnets</Link>
+          <Link to={`/networks/${sectionId}/subnets`} className="text-sm text-blue-600 hover:underline dark:text-blue-400">Subnets</Link>
           <span className="text-gray-400">/</span>
           <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Topology</span>
         </div>

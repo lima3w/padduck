@@ -655,10 +655,10 @@ export default function IPAddressesPage() {
   return (
     <div>
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1">
-        <Link to="/sections" className="hover:text-blue-600">Sections</Link>
+        <Link to="/networks" className="hover:text-blue-600">Networks</Link>
         <span>/</span>
         {subnet && (
-          <Link to={`/sections/${subnet.sectionId}/subnets`} className="hover:text-blue-600">Subnets</Link>
+          <Link to={`/networks/${subnet.sectionId}/subnets`} className="hover:text-blue-600">Subnets</Link>
         )}
         <span>/</span>
         <span className="text-gray-800 font-medium font-mono">{subnet?.networkAddress}/{subnet?.prefixLength}</span>
@@ -733,7 +733,7 @@ export default function IPAddressesPage() {
 
       {activeTab === 'delegations' && <DelegationsTab subnetId={subnetID} />}
 
-      {activeTab === 'ips' && <>{/* data quality section removed */}
+      {activeTab === 'ips' && <>{/* data quality network removed */}
       <div className="mb-4 space-y-2">
         <form onSubmit={handleSearch} className="flex gap-2">
           <input

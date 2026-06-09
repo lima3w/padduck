@@ -32,7 +32,7 @@ func ValidateCIDR(address string, prefixLength int) error {
 }
 
 // checkOverlap checks whether the given CIDR overlaps any existing subnet in the section (excluding excludeID)
-func (s *Service) checkOverlap(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, excludeID int64) error {
+func (s *Service) checkOverlap(ctx context.Context, networkID int64, networkAddress string, prefixLength int, excludeID int64) error {
 	allowed, _ := s.Config.GetCtx(ctx, "allow_subnet_overlaps")
 	if allowed == "true" {
 		return nil
@@ -44,7 +44,7 @@ func (s *Service) checkOverlap(ctx context.Context, sectionID int64, networkAddr
 		return fmt.Errorf("invalid CIDR: %s", newCIDR)
 	}
 
-	existing, err := s.repository.ListSubnetsBySection(ctx, sectionID)
+	existing, err := s.repository.ListSubnetsBySection(ctx, networkID)
 	if err != nil {
 		return err
 	}
@@ -78,10 +78,10 @@ func (s *Service) OverlapReport(ctx context.Context) ([]*OverlapPair, error) {
 		return nil, err
 	}
 
-	// Group by section_id in Go to avoid one DB query per section
+	// Group by network_id in Go to avoid one DB query per section
 	bySec := make(map[int64][]*models.Subnet)
 	for _, sub := range all {
-		bySec[sub.SectionID] = append(bySec[sub.SectionID], sub)
+		bySec[sub.NetworkID] = append(bySec[sub.NetworkID], sub)
 	}
 
 	var pairs []*OverlapPair
@@ -208,8 +208,8 @@ func (s *Service) RemoveSubnetFromVLAN(ctx context.Context, vlanID, subnetID int
 }
 
 // CreateSubnet creates a new subnet with CIDR validation and optional gateway/auto-reserve settings
-func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
-	if sectionID <= 0 {
+func (s *Service) CreateSubnet(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
+	if networkID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
 
@@ -226,7 +226,7 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		gateway = nil
 	}
 
-	if err := s.checkOverlap(ctx, sectionID, networkAddress, prefixLength, 0); err != nil {
+	if err := s.checkOverlap(ctx, networkID, networkAddress, prefixLength, 0); err != nil {
 		return nil, err
 	}
 
@@ -249,7 +249,7 @@ func (s *Service) CreateSubnet(ctx context.Context, sectionID int64, networkAddr
 		}
 	}
 
-	subnet, err := s.repository.CreateSubnetWithVLAN(ctx, sectionID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID)
+	subnet, err := s.repository.CreateSubnetWithVLAN(ctx, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID)
 	if err != nil {
 		return nil, err
 	}
@@ -293,12 +293,12 @@ func (s *Service) GetSubnet(ctx context.Context, id int64) (*models.Subnet, erro
 }
 
 // ListSubnets returns all subnets in a section
-func (s *Service) ListSubnets(ctx context.Context, sectionID int64) ([]*models.Subnet, error) {
-	if sectionID <= 0 {
+func (s *Service) ListSubnets(ctx context.Context, networkID int64) ([]*models.Subnet, error) {
+	if networkID <= 0 {
 		return nil, fmt.Errorf("invalid section ID")
 	}
 
-	return s.repository.ListSubnetsBySection(ctx, sectionID)
+	return s.repository.ListSubnetsBySection(ctx, networkID)
 }
 
 // UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, location, nameserver, and VLAN.

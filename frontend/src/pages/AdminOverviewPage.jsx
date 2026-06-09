@@ -54,7 +54,7 @@ export const ADMIN_SURFACE_SECTIONS = [
       { to: '/admin/reports/scheduled', title: 'Scheduled Reports', description: 'Manage recurring emailed reports.' },
       { to: '/admin/backups', title: 'Backups', description: 'Download a complete backup or restore data from a previous backup.' },
       { to: '/admin/compatibility', title: 'V2 Compatibility', description: 'Review migration readiness and deprecation reporting.' },
-      { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all sections.' },
+      { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all networks.' },
       { to: '/admin/system-health', title: 'System Health', description: 'Review deployment, backup, and dependency health.' },
     ],
   },
@@ -71,13 +71,13 @@ export default function AdminOverviewPage() {
       </div>
 
       <div className="space-y-8">
-        {ADMIN_SURFACE_SECTIONS.map((section) => (
-          <section key={section.title} aria-labelledby={`admin-section-${section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
-            <h2 id={`admin-section-${section.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              {section.title}
+        {ADMIN_SURFACE_SECTIONS.map((network) => (
+          <network key={network.title} aria-labelledby={`admin-network-${network.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
+            <h2 id={`admin-network-${network.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {network.title}
             </h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {section.links.map((link) => (
+              {network.links.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
@@ -88,7 +88,7 @@ export default function AdminOverviewPage() {
                 </Link>
               ))}
             </div>
-          </section>
+          </network>
         ))}
       </div>
     </div>

@@ -13,7 +13,7 @@ import Modal from '../components/Modal'
 
 const ZONE_EMPTY = { name: '', description: '', color: '#2563eb', status: 'active' }
 const MAPPING_EMPTY = { zone_id: '', object_type: 'cidr', object_id: '', cidr: '', direction: 'both', description: '', status: 'active' }
-const OBJECT_TYPES = ['cidr', 'section', 'subnet', 'ip_address', 'device', 'rack', 'location', 'vlan', 'vrf', 'nat_rule', 'dhcp_server', 'dhcp_lease', 'physical_circuit', 'logical_circuit']
+const OBJECT_TYPES = ['cidr', 'network', 'subnet', 'ip_address', 'device', 'rack', 'location', 'vlan', 'vrf', 'nat_rule', 'dhcp_server', 'dhcp_lease', 'physical_circuit', 'logical_circuit']
 
 export default function FirewallZonesPage() {
   const [zones, setZones] = useState([])
@@ -100,7 +100,7 @@ export default function FirewallZonesPage() {
 
       {loading ? <div className="text-sm text-gray-500">Loading...</div> : (
         <>
-          <section>
+          <network>
             <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">Zones</h2>
             <div className="overflow-x-auto rounded border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -118,9 +118,9 @@ export default function FirewallZonesPage() {
                 </tbody>
               </table>
             </div>
-          </section>
+          </network>
 
-          <section>
+          <network>
             <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">Mappings</h2>
             <div className="overflow-x-auto rounded border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -139,7 +139,7 @@ export default function FirewallZonesPage() {
                 </tbody>
               </table>
             </div>
-          </section>
+          </network>
         </>
       )}
 
