@@ -88,7 +88,7 @@ export default function UserMenu({ darkMode }) {
             role="menuitem"
             to="/settings"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
             <span>My Settings</span>
           </Link>
@@ -96,7 +96,7 @@ export default function UserMenu({ darkMode }) {
             role="menuitem"
             to="/requests"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
             <span>My Requests</span>
           </Link>
@@ -104,7 +104,7 @@ export default function UserMenu({ darkMode }) {
             role="menuitem"
             to="/settings?tab=sessions"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
             <span>Active Sessions</span>
           </Link>
@@ -112,7 +112,7 @@ export default function UserMenu({ darkMode }) {
             role="menuitem"
             to="/settings?tab=history"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
             <span>Login History</span>
           </Link>
@@ -122,7 +122,7 @@ export default function UserMenu({ darkMode }) {
               type="button"
               role="menuitem"
               onClick={toggleDarkMode}
-              className="w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+              className="w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
             >
               <span>Dark Mode</span>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -137,7 +137,7 @@ export default function UserMenu({ darkMode }) {
             role="menuitem"
             to="/admin/privacy/consent-report"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
             <span>Privacy Policy</span>
           </Link>
@@ -148,7 +148,7 @@ export default function UserMenu({ darkMode }) {
             type="button"
             role="menuitem"
             onClick={handleLogout}
-            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
             Logout
           </button>

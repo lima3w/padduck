@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.21
+
+### Bug Fixes
+- **Dark mode user menu hover**: User menu dropdown items used `dark:hover:bg-gray-700` (bright gray) against a navy background forced by the global dark mode override, producing a blown-out highlight. Changed hover to `#0d2848` (pd-700) to match the sidebar.
+
 ## v1.31.20
 
 ### Bug Fixes
