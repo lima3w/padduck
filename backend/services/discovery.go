@@ -281,6 +281,9 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 				ipAddressID = &id
 				existingIPs[r.ip] = id
 				log.Printf("[discovery] auto-added IP %s to subnet %d (job=%d)", r.ip, subnetID, jobID)
+				if r.ptr != nil {
+					_ = d.repository.SetIPAddressPTRFromScan(ctx, id, *r.ptr, dnsOverwrite)
+				}
 			}
 		}
 

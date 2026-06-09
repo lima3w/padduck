@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.22
+
+### Bug Fixes
+- **Scan auto-add: IP address displayed with /32**: IP addresses were selected from the database using `address::text`, which includes the CIDR prefix for host addresses (e.g. `192.168.1.5/32`). Changed to `host(ip.address)` — matching the existing pattern in the subnets repository — to return the bare address.
+- **Scan auto-add: dns_name not populated**: After auto-adding a discovered IP, `SetIPAddressPTRFromScan` was not called on the new record, so `dns_name` was never set even when a PTR record was resolved. Now called immediately after a successful auto-add (requires "Discover reverse DNS" enabled on the job and PTR records present in DNS).
+
 ## v1.31.21
 
 ### Bug Fixes

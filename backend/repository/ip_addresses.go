@@ -13,7 +13,7 @@ import (
 // IP Address operations
 
 // ipSelectCols is the column list for ip_addresses JOINed with ip_tags
-const ipSelectCols = `ip.id, ip.subnet_id, ip.address::text, ip.hostname, ip.status, ip.assigned_to,
+const ipSelectCols = `ip.id, ip.subnet_id, host(ip.address), ip.hostname, ip.status, ip.assigned_to,
 	ip.tag_id, t.id, t.name, t.colour, t.description, t.is_system, t.created_at,
 	ip.last_seen, ip.mac_address, ip.ptr_record,
 	ip.dns_name, ip.dns_records::text, ip.dns_last_checked,
