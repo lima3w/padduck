@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.15
+
+### Build
+- Updated backend Dockerfile base image from `golang:1.26.3-alpine` to `golang:1.26.4-alpine` to match the go directive.
+
 ## v1.31.14
 
 ### Dependencies
