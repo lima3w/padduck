@@ -183,6 +183,9 @@ export const requestPasswordReset = (email) =>
 export const resetPassword = (token, newPassword) =>
   noAuthApi.post('/auth/reset-password', { token, new_password: newPassword })
 
+export const changePassword = (currentPassword, newPassword) =>
+  api.post('/auth/me/change-password', { current_password: currentPassword, new_password: newPassword })
+
 export const verifyMFA = (mfaChallenge, code) =>
   noAuthApi.post('/auth/verify-mfa', { mfa_challenge: mfaChallenge, code })
 
