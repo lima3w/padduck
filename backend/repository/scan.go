@@ -10,11 +10,11 @@ import (
 )
 
 // scanJobCols is the column list for scan_jobs SELECT queries.
-const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips`
+const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips, discover_dns, dns_overwrite`
 
 func scanScanJob(row interface{ Scan(dest ...any) error }) (*models.ScanJob, error) {
 	j := &models.ScanJob{}
-	return j, row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt, &j.PingConcurrency, &j.NotifyOnChange, &j.ScanType, &j.AgentID, &j.AutoAddIPs)
+	return j, row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt, &j.PingConcurrency, &j.NotifyOnChange, &j.ScanType, &j.AgentID, &j.AutoAddIPs, &j.DiscoverDNS, &j.DNSOverwrite)
 }
 
 // CreateScanJob creates a new discovery scan job
@@ -76,12 +76,13 @@ func (r *Repository) UpdateScanJob(ctx context.Context, id int64, name string, s
 }
 
 // UpdateScanJobFull updates all mutable fields of a scan job.
-func (r *Repository) UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool) (*models.ScanJob, error) {
+func (r *Repository) UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool, discoverDNS bool, dnsOverwrite bool) (*models.ScanJob, error) {
 	query := `UPDATE scan_jobs
 		SET name=$2, subnet_ids=$3, schedule_cron=$4, is_active=$5, ping_concurrency=$6,
-		    notify_on_change=$7, scan_type=$8, agent_id=$9, auto_add_ips=$10, updated_at=CURRENT_TIMESTAMP
+		    notify_on_change=$7, scan_type=$8, agent_id=$9, auto_add_ips=$10,
+		    discover_dns=$11, dns_overwrite=$12, updated_at=CURRENT_TIMESTAMP
 		WHERE id=$1 RETURNING ` + scanJobCols
-	return scanScanJob(r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs))
+	return scanScanJob(r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs, discoverDNS, dnsOverwrite))
 }
 
 // UpdateScanJobRunTime updates last_run_at and next_run_at after a scan
@@ -133,14 +134,15 @@ func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limi
 }
 
 // SetIPAddressPTRFromScan updates ptr_record on an IP address row from scan data.
-// It also sets dns_name if dns_name is currently empty, without overwriting existing values.
-func (r *Repository) SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string) error {
-	_, err := r.db.Exec(ctx, `
-		UPDATE ip_addresses
-		SET ptr_record = $2,
-		    dns_name   = CASE WHEN (dns_name IS NULL OR dns_name = '') THEN $2 ELSE dns_name END,
-		    updated_at = now()
-		WHERE id = $1`, ipID, ptrRecord)
+// When overwrite is true dns_name is always updated; otherwise it is only set when currently empty.
+func (r *Repository) SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string, overwrite bool) error {
+	var query string
+	if overwrite {
+		query = `UPDATE ip_addresses SET ptr_record = $2, dns_name = $2, updated_at = now() WHERE id = $1`
+	} else {
+		query = `UPDATE ip_addresses SET ptr_record = $2, dns_name = CASE WHEN (dns_name IS NULL OR dns_name = '') THEN $2 ELSE dns_name END, updated_at = now() WHERE id = $1`
+	}
+	_, err := r.db.Exec(ctx, query, ipID, ptrRecord)
 	return err
 }
 
@@ -528,12 +530,18 @@ func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, p
 // Scan retention (#435)
 // ---------------------------------------------------------------------------
 
-// GetScanRetentionSettings returns the single retention settings row.
+// GetScanRetentionSettings returns the single retention settings row, inserting defaults if none exist.
 func (r *Repository) GetScanRetentionSettings(ctx context.Context) (*models.ScanRetentionSettings, error) {
 	row := r.db.QueryRow(ctx, `SELECT id, raw_history_days, rollup_enabled, rollup_after_days, updated_at FROM scan_retention_settings ORDER BY id LIMIT 1`)
 	s := &models.ScanRetentionSettings{}
-	if err := row.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt); err != nil {
-		return nil, err
+	err := row.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt)
+	if err == nil {
+		return s, nil
+	}
+	// No row exists — seed defaults and return them.
+	row2 := r.db.QueryRow(ctx, `INSERT INTO scan_retention_settings (raw_history_days, rollup_enabled, rollup_after_days) VALUES (90, false, 30) RETURNING id, raw_history_days, rollup_enabled, rollup_after_days, updated_at`)
+	if err2 := row2.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt); err2 != nil {
+		return nil, err2
 	}
 	return s, nil
 }

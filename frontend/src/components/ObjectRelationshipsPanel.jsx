@@ -6,7 +6,7 @@ export default function ObjectRelationshipsPanel({ title = 'Relationships', rela
   if (visible.length === 0) return null
 
   return (
-    <section className="mb-6" aria-labelledby="object-relationships-title">
+    <network className="mb-6" aria-labelledby="object-relationships-title">
       <h2 id="object-relationships-title" className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">
         {title}
       </h2>
@@ -36,6 +36,6 @@ export default function ObjectRelationshipsPanel({ title = 'Relationships', rela
           </div>
         ))}
       </div>
-    </section>
+    </network>
   )
 }

@@ -7,7 +7,7 @@ import (
 
 // GetDashboardSummary handles GET /api/v1/dashboard/summary
 func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
 		return nil
 	}
 
@@ -22,7 +22,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 
 // GetDashboardRecentActivity handles GET /api/v1/dashboard/recent-activity
 func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SectionList); err != nil {
+	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
 		return nil
 	}
 
@@ -35,19 +35,19 @@ func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
 	return c.JSON(activities)
 }
 
-// GetSubnetTree handles GET /api/v1/sections/:id/subnets/tree
+// GetSubnetTree handles GET /api/v1/networks/:id/subnets/tree
 func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
-	sectionID, err := c.ParamsInt("id")
+	networkID, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
-	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
 	}
 
-	tree, err := h.service.GetSubnetTree(c.Context(), int64(sectionID))
+	tree, err := h.service.GetSubnetTree(c.Context(), int64(networkID))
 	if err != nil {
-		reqLogger(c).Error("GetSubnetTree failed", "error", err, "section_id", sectionID)
+		reqLogger(c).Error("GetSubnetTree failed", "error", err, "network_id", networkID)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 

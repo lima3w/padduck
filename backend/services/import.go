@@ -70,11 +70,11 @@ type DryRunResult struct {
 // It is exported so that handler tests can build stub implementations.
 type ImportRepo interface {
 	// sections
-	ListAllSections(ctx context.Context) ([]*models.Section, error)
+	ListAllNetworks(ctx context.Context) ([]*models.Network, error)
 	// subnets
-	ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error)
+	ListSubnetsBySection(ctx context.Context, networkID int64) ([]*models.Subnet, error)
 	ListAllSubnets(ctx context.Context) ([]*models.Subnet, error)
-	CreateSubnetWithVLAN(ctx context.Context, sectionID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error)
+	CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error)
 	// IPs
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
 	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error)
@@ -127,7 +127,7 @@ func (s *ImportService) ImportSubnetsCSV(ctx context.Context, r io.Reader) (*Imp
 	result := &ImportResult{Errors: []ImportRowError{}}
 
 	// Pre-load lookup tables once.
-	sections, _ := s.repo.ListAllSections(ctx)
+	sections, _ := s.repo.ListAllNetworks(ctx)
 	sectionByName := indexSections(sections)
 
 	vlans, _ := s.repo.ListAllVLANs(ctx)
@@ -152,7 +152,7 @@ func (s *ImportService) ImportSubnetsCSV(ctx context.Context, r io.Reader) (*Imp
 		}
 
 		sectionName := strings.TrimSpace(rec["section"])
-		sectionID, ok := sectionByName[sectionName]
+		networkID, ok := sectionByName[sectionName]
 		if !ok {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: cidr, Message: fmt.Sprintf("section %q not found", sectionName)})
@@ -173,7 +173,7 @@ func (s *ImportService) ImportSubnetsCSV(ctx context.Context, r io.Reader) (*Imp
 			}
 		}
 
-		_, err = s.repo.CreateSubnetWithVLAN(ctx, sectionID, networkAddr, prefixLen, description, gateway, false, false, nil, nil, vlanID)
+		_, err = s.repo.CreateSubnetWithVLAN(ctx, networkID, networkAddr, prefixLen, description, gateway, false, false, nil, nil, vlanID)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: cidr, Message: err.Error()})
@@ -281,7 +281,7 @@ func (s *ImportService) DryRunSubnetsCSV(ctx context.Context, r io.Reader) (*Dry
 
 	result := &DryRunResult{DryRun: true, Rows: []DryRunRow{}}
 
-	sections, _ := s.repo.ListAllSections(ctx)
+	sections, _ := s.repo.ListAllNetworks(ctx)
 	sectionByName := indexSections(sections)
 	existingCIDRs, _ := s.buildSubnetCIDRIndex(ctx)
 
@@ -391,7 +391,7 @@ func (s *ImportService) DryRunPHPIpamSubnetsCSV(ctx context.Context, r io.Reader
 
 	result := &DryRunResult{DryRun: true, Rows: []DryRunRow{}}
 
-	sections, _ := s.repo.ListAllSections(ctx)
+	sections, _ := s.repo.ListAllNetworks(ctx)
 	sectionByName := indexSections(sections)
 	existingCIDRs, _ := s.buildSubnetCIDRIndex(ctx)
 
@@ -520,7 +520,7 @@ func (s *ImportService) importPHPIpamSubnets(ctx context.Context, r io.Reader) (
 
 	result := &ImportResult{Errors: []ImportRowError{}}
 
-	sections, _ := s.repo.ListAllSections(ctx)
+	sections, _ := s.repo.ListAllNetworks(ctx)
 	sectionByName := indexSections(sections)
 
 	for i, rec := range records {
@@ -545,7 +545,7 @@ func (s *ImportService) importPHPIpamSubnets(ctx context.Context, r io.Reader) (
 		}
 
 		sectionName := strings.TrimSpace(rec["sectionName"])
-		sectionID, ok := sectionByName[sectionName]
+		networkID, ok := sectionByName[sectionName]
 		if !ok {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: subnet, Message: fmt.Sprintf("section %q not found", sectionName)})
@@ -554,7 +554,7 @@ func (s *ImportService) importPHPIpamSubnets(ctx context.Context, r io.Reader) (
 
 		description := strings.TrimSpace(rec["description"])
 
-		_, err = s.repo.CreateSubnetWithVLAN(ctx, sectionID, subnet, prefixLen, description, nil, false, false, nil, nil, nil)
+		_, err = s.repo.CreateSubnetWithVLAN(ctx, networkID, subnet, prefixLen, description, nil, false, false, nil, nil, nil)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: subnet, Message: err.Error()})
@@ -762,13 +762,13 @@ func addZipFile(zw *zip.Writer, name string, data []byte) error {
 
 // exportFullCSV produces two CSV sections separated by a blank line.
 func (s *ImportService) exportFullCSV(ctx context.Context, subnets []*models.Subnet) ([]byte, string, string, error) {
-	subnetHeaders := []string{"cidr", "description", "section_id", "gateway", "vlan_id"}
+	subnetHeaders := []string{"cidr", "description", "network_id", "gateway", "vlan_id"}
 	subnetRows := make([]map[string]string, 0, len(subnets))
 	for _, sub := range subnets {
 		row := map[string]string{
 			"cidr":        fmt.Sprintf("%s/%d", sub.NetworkAddress, sub.PrefixLength),
 			"description": sub.Description,
-			"section_id":  strconv.FormatInt(sub.SectionID, 10),
+			"network_id":  strconv.FormatInt(sub.NetworkID, 10),
 			"gateway":     strPtrVal(sub.Gateway),
 			"vlan_id":     int64PtrVal(sub.VLANID),
 		}
@@ -953,7 +953,7 @@ func (s *ImportService) buildSubnetCIDRIndex(ctx context.Context) (map[string]in
 }
 
 // indexSections returns a name→ID map.
-func indexSections(sections []*models.Section) map[string]int64 {
+func indexSections(sections []*models.Network) map[string]int64 {
 	idx := make(map[string]int64, len(sections))
 	for _, s := range sections {
 		idx[s.Name] = s.ID

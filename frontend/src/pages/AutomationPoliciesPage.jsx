@@ -164,7 +164,7 @@ export default function AutomationPoliciesPage() {
                 { label: 'Workflow (use * for all)', key: 'workflow' },
                 { label: 'Action (use * for all)', key: 'action' },
                 { label: 'Message (shown when denied/reviewed)', key: 'message' },
-                { label: 'Conditions (e.g. section=Production, vrf=Global)', key: 'conditions' },
+                { label: 'Conditions (e.g. network=Production, vrf=Global)', key: 'conditions' },
               ].map(({ label, key, required }) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>

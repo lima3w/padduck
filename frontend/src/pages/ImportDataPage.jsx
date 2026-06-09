@@ -7,7 +7,7 @@ const TABS = [
   { key: 'phpipam', label: 'PHPIpam' },
 ]
 
-const SUBNET_HEADERS = 'cidr,description,section,gateway,vlan,vrf,location'
+const SUBNET_HEADERS = 'cidr,description,network,gateway,vlan,vrf,location'
 const IP_HEADERS = 'address,hostname,status,subnet_cidr,assigned_to,mac_address'
 const PHPIPAM_SUBNET_HEADERS = 'subnet,mask,description,sectionName'
 const PHPIPAM_IP_HEADERS = 'ip,hostname,description,subnetIp,subnetMask,state'

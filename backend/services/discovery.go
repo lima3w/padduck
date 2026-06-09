@@ -36,13 +36,13 @@ type discoveryRepo interface {
 	ListScanJobs(ctx context.Context) ([]*models.ScanJob, error)
 	ListActiveScanJobs(ctx context.Context) ([]*models.ScanJob, error)
 	UpdateScanJob(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool) (*models.ScanJob, error)
-	UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool) (*models.ScanJob, error)
+	UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool, discoverDNS bool, dnsOverwrite bool) (*models.ScanJob, error)
 	UpdateScanJobRunTime(ctx context.Context, id int64, nextRunAt *time.Time) error
 	DeleteScanJob(ctx context.Context, id int64) error
 	CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64, ptrRecord *string, fwdRevMismatch bool) (*models.ScanResult, error)
 	ListScanResultsByJob(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error)
 	ListScanResultsBySubnet(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error)
-	SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string) error
+	SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string, overwrite bool) error
 	// Port scan (#214)
 	UpdateIPPortScan(ctx context.Context, ipID int64, ports map[string]bool) error
 	// Scan runs (#211)
@@ -173,6 +173,11 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			portList = v
 		}
 	}
+	// Per-job DNS setting takes precedence over global config.
+	if job != nil {
+		resolveHostnames = job.DiscoverDNS
+	}
+	dnsOverwrite := job != nil && job.DNSOverwrite
 
 	ports := parsePorts(portList)
 	portConcurrency := d.portScanConcurrency()
@@ -258,7 +263,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		if err == nil {
 			scanResults = append(scanResults, sr)
 			if r.ptr != nil && ipAddressID != nil {
-				_ = d.repository.SetIPAddressPTRFromScan(ctx, *ipAddressID, *r.ptr)
+				_ = d.repository.SetIPAddressPTRFromScan(ctx, *ipAddressID, *r.ptr, dnsOverwrite)
 			}
 		}
 
@@ -436,6 +441,12 @@ func (d *DiscoveryService) GetJob(ctx context.Context, id int64) (*models.ScanJo
 	return d.repository.GetScanJobByID(ctx, id)
 }
 
+// IsRunning reports whether a scan job is currently executing.
+func (d *DiscoveryService) IsRunning(jobID int64) bool {
+	_, ok := d.inFlight.Load(jobID)
+	return ok
+}
+
 // ListJobs returns all scan jobs
 func (d *DiscoveryService) ListJobs(ctx context.Context) ([]*models.ScanJob, error) {
 	return d.repository.ListScanJobs(ctx)
@@ -452,7 +463,7 @@ func (d *DiscoveryService) UpdateJob(ctx context.Context, id int64, name string,
 }
 
 // UpdateJobFull updates all mutable fields of a scan job.
-func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool) (*models.ScanJob, error) {
+func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool, discoverDNS bool, dnsOverwrite bool) (*models.ScanJob, error) {
 	if scheduleCron != nil && *scheduleCron != "" {
 		if err := validateCron(*scheduleCron); err != nil {
 			return nil, fmt.Errorf("invalid cron expression: %w", err)
@@ -471,7 +482,7 @@ func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name str
 	if !validTypes[scanType] {
 		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
 	}
-	return d.repository.UpdateScanJobFull(ctx, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs)
+	return d.repository.UpdateScanJobFull(ctx, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs, discoverDNS, dnsOverwrite)
 }
 
 // DeleteJob deletes a scan job

@@ -10,19 +10,19 @@ import (
 // ---- Subnet Requests ----
 
 // CreateSubnetRequest inserts a new subnet request.
-func (r *Repository) CreateSubnetRequest(ctx context.Context, requesterID, sectionID int64, parentSubnetID *int64, prefixLen int, purpose string) (*models.SubnetRequest, error) {
+func (r *Repository) CreateSubnetRequest(ctx context.Context, requesterID, networkID int64, parentSubnetID *int64, prefixLen int, purpose string) (*models.SubnetRequest, error) {
 	query := `
-		INSERT INTO subnet_requests (requester_id, section_id, parent_subnet_id, requested_prefix_len, purpose)
+		INSERT INTO subnet_requests (requester_id, network_id, parent_subnet_id, requested_prefix_len, purpose)
 		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, requester_id, section_id, parent_subnet_id, requested_prefix_len, purpose, status, reviewer_id, reviewer_note, subnet_id, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query, requesterID, sectionID, parentSubnetID, prefixLen, purpose)
+		RETURNING id, requester_id, network_id, parent_subnet_id, requested_prefix_len, purpose, status, reviewer_id, reviewer_note, subnet_id, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, requesterID, networkID, parentSubnetID, prefixLen, purpose)
 	return scanSubnetRequest(row)
 }
 
 // GetSubnetRequestByID returns a subnet request by ID, joining requester/reviewer usernames.
 func (r *Repository) GetSubnetRequestByID(ctx context.Context, id int64) (*models.SubnetRequest, error) {
 	query := `
-		SELECT sr.id, sr.requester_id, COALESCE(ru.username,''), sr.section_id, sr.parent_subnet_id,
+		SELECT sr.id, sr.requester_id, COALESCE(ru.username,''), sr.network_id, sr.parent_subnet_id,
 		       sr.requested_prefix_len, sr.purpose, sr.status, sr.reviewer_id, COALESCE(rv.username,''),
 		       sr.reviewer_note, sr.subnet_id, sr.created_at, sr.updated_at
 		FROM subnet_requests sr
@@ -36,7 +36,7 @@ func (r *Repository) GetSubnetRequestByID(ctx context.Context, id int64) (*model
 // ListSubnetRequestsByRequester returns all subnet requests for a specific requester.
 func (r *Repository) ListSubnetRequestsByRequester(ctx context.Context, requesterID int64) ([]*models.SubnetRequest, error) {
 	query := `
-		SELECT sr.id, sr.requester_id, COALESCE(ru.username,''), sr.section_id, sr.parent_subnet_id,
+		SELECT sr.id, sr.requester_id, COALESCE(ru.username,''), sr.network_id, sr.parent_subnet_id,
 		       sr.requested_prefix_len, sr.purpose, sr.status, sr.reviewer_id, COALESCE(rv.username,''),
 		       sr.reviewer_note, sr.subnet_id, sr.created_at, sr.updated_at
 		FROM subnet_requests sr
@@ -50,7 +50,7 @@ func (r *Repository) ListSubnetRequestsByRequester(ctx context.Context, requeste
 // ListAllSubnetRequests returns all subnet requests.
 func (r *Repository) ListAllSubnetRequests(ctx context.Context) ([]*models.SubnetRequest, error) {
 	query := `
-		SELECT sr.id, sr.requester_id, COALESCE(ru.username,''), sr.section_id, sr.parent_subnet_id,
+		SELECT sr.id, sr.requester_id, COALESCE(ru.username,''), sr.network_id, sr.parent_subnet_id,
 		       sr.requested_prefix_len, sr.purpose, sr.status, sr.reviewer_id, COALESCE(rv.username,''),
 		       sr.reviewer_note, sr.subnet_id, sr.created_at, sr.updated_at
 		FROM subnet_requests sr
@@ -138,7 +138,7 @@ type subnetRequestScanner interface {
 func scanSubnetRequest(s subnetRequestScanner) (*models.SubnetRequest, error) {
 	sr := &models.SubnetRequest{}
 	err := s.Scan(
-		&sr.ID, &sr.RequesterID, &sr.SectionID, &sr.ParentSubnetID,
+		&sr.ID, &sr.RequesterID, &sr.NetworkID, &sr.ParentSubnetID,
 		&sr.RequestedPrefixLen, &sr.Purpose, &sr.Status,
 		&sr.ReviewerID, &sr.ReviewerNote, &sr.SubnetID,
 		&sr.CreatedAt, &sr.UpdatedAt,
@@ -152,7 +152,7 @@ func scanSubnetRequest(s subnetRequestScanner) (*models.SubnetRequest, error) {
 func scanSubnetRequestFull(s subnetRequestScanner) (*models.SubnetRequest, error) {
 	sr := &models.SubnetRequest{}
 	err := s.Scan(
-		&sr.ID, &sr.RequesterID, &sr.RequesterUsername, &sr.SectionID, &sr.ParentSubnetID,
+		&sr.ID, &sr.RequesterID, &sr.RequesterUsername, &sr.NetworkID, &sr.ParentSubnetID,
 		&sr.RequestedPrefixLen, &sr.Purpose, &sr.Status,
 		&sr.ReviewerID, &sr.ReviewerUsername,
 		&sr.ReviewerNote, &sr.SubnetID,

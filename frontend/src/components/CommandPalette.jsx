@@ -4,20 +4,20 @@ import { globalSearch } from '../api/client'
 
 function buildItems(data) {
   const items = []
-  for (const s of data.sections || []) {
+  for (const s of data.networks || []) {
     items.push({
-      type: 'section',
+      type: 'network',
       label: s.name,
       sub: s.description || '',
-      url: `/sections/${s.id}/subnets`,
+      url: `/networks/${s.id}/subnets`,
     })
   }
   for (const s of data.subnets || []) {
     items.push({
       type: 'subnet',
       label: `${s.networkAddress}/${s.prefixLength}`,
-      sub: s.description || `Section ${s.sectionId}`,
-      url: `/sections/${s.sectionId}/subnets`,
+      sub: s.description || `Network ${s.sectionId}`,
+      url: `/networks/${s.sectionId}/subnets`,
     })
   }
   for (const d of data.devices || []) {
@@ -31,9 +31,9 @@ function buildItems(data) {
   return items
 }
 
-const TYPE_LABEL = { section: 'Section', subnet: 'Subnet', device: 'Device' }
+const TYPE_LABEL = { network: 'Network', subnet: 'Subnet', device: 'Device' }
 const TYPE_COLOR = {
-  section: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  network: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   subnet:  'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   device:  'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
 }
@@ -115,13 +115,13 @@ export default function CommandPalette({ open, onClose }) {
             value={query}
             onChange={handleInput}
             onKeyDown={handleKey}
-            aria-label="Search sections, subnets, and devices"
+            aria-label="Search networks, subnets, and devices"
             aria-controls="command-palette-results"
             aria-activedescendant={items[cursor] ? `command-palette-item-${cursor}` : undefined}
             role="combobox"
             aria-expanded={items.length > 0}
             aria-autocomplete="list"
-            placeholder="Search sections, subnets, devices…"
+            placeholder="Search networks, subnets, devices…"
             className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
           />
           {loading && (
@@ -169,7 +169,7 @@ export default function CommandPalette({ open, onClose }) {
 
         {!query && (
           <p className="px-4 py-4 text-xs text-center text-gray-400">
-            Type to search across sections, subnets, and devices
+            Type to search across networks, subnets, and devices
           </p>
         )}
 

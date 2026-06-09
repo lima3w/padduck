@@ -40,7 +40,7 @@ describe('UserSettingsPage', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('tablist', { name: 'Account settings sections' })).toBeInTheDocument()
+    expect(screen.getByRole('tablist', { name: 'Account settings networks' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Profile', selected: true })).toBeInTheDocument()
     // Privacy tab removed — users imply acceptance by using the system
     expect(screen.queryByRole('tab', { name: 'Privacy' })).not.toBeInTheDocument()

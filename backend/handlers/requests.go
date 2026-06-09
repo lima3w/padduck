@@ -12,7 +12,7 @@ import (
 // ---- Request body types ----
 
 type SubmitSubnetRequestBody struct {
-	SectionID          int64  `json:"section_id"`
+	NetworkID          int64  `json:"network_id"`
 	ParentSubnetID     *int64 `json:"parent_subnet_id"`
 	RequestedPrefixLen int    `json:"requested_prefix_len"`
 	Purpose            string `json:"purpose"`
@@ -43,8 +43,8 @@ func (h *Handler) SubmitSubnetRequest(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
-	if req.SectionID <= 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "section_id is required"})
+	if req.NetworkID <= 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "network_id is required"})
 	}
 	if req.RequestedPrefixLen <= 0 || req.RequestedPrefixLen > 32 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "requested_prefix_len must be between 1 and 32"})
@@ -53,7 +53,7 @@ func (h *Handler) SubmitSubnetRequest(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "purpose is required"})
 	}
 
-	sr, err := h.service.SubmitSubnetRequest(c.Context(), currentUser.ID, req.SectionID, req.ParentSubnetID, req.RequestedPrefixLen, req.Purpose)
+	sr, err := h.service.SubmitSubnetRequest(c.Context(), currentUser.ID, req.NetworkID, req.ParentSubnetID, req.RequestedPrefixLen, req.Purpose)
 	if err != nil {
 		reqLogger(c).Error("error submitting subnet request", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -63,7 +63,7 @@ func (h *Handler) SubmitSubnetRequest(c *fiber.Ctx) error {
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "subnet_request_submitted",
 		ResourceType: "subnet_request", ResourceID: &sr.ID,
-		NewValues: map[string]interface{}{"section_id": req.SectionID, "prefix_len": req.RequestedPrefixLen, "purpose": req.Purpose},
+		NewValues: map[string]interface{}{"network_id": req.NetworkID, "prefix_len": req.RequestedPrefixLen, "purpose": req.Purpose},
 	})
 
 	return c.Status(fiber.StatusCreated).JSON(sr)

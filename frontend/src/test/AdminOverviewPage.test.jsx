@@ -25,8 +25,8 @@ describe('AdminOverviewPage', () => {
       </MemoryRouter>
     )
 
-    for (const section of ADMIN_SURFACE_SECTIONS) {
-      for (const link of section.links) {
+    for (const network of ADMIN_SURFACE_SECTIONS) {
+      for (const link of network.links) {
         expect(screen.getByRole('link', { name: new RegExp(link.title) })).toHaveAttribute('href', link.to)
       }
     }

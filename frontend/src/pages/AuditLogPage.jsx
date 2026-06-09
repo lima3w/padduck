@@ -17,9 +17,9 @@ const ACTION_LABELS = {
   user_rejected: 'User Rejected',
   account_unlocked: 'Account Unlocked',
   config_updated: 'Config Updated',
-  section_created: 'Section Created',
-  section_updated: 'Section Updated',
-  section_deleted: 'Section Deleted',
+  section_created: 'Network Created',
+  section_updated: 'Network Updated',
+  section_deleted: 'Network Deleted',
   subnet_created: 'Subnet Created',
   subnet_updated: 'Subnet Updated',
   subnet_deleted: 'Subnet Deleted',
@@ -180,7 +180,7 @@ export default function AuditLogPage() {
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
             >
               <option value="">All types</option>
-              {['session', 'api_token', 'user', 'user_approval', 'config', 'section', 'subnet', 'ip_address', 'vrf', 'vlan', 'audit_log'].map((t) => (
+              {['session', 'api_token', 'user', 'user_approval', 'config', 'network', 'subnet', 'ip_address', 'vrf', 'vlan', 'audit_log'].map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>

@@ -33,13 +33,13 @@ type UpdateSubnetRequest struct {
 	CustomFields     map[string]*string `json:"custom_fields"`
 }
 
-// CreateSubnet handles POST /api/v1/sections/:sectionID/subnets
+// CreateSubnet handles POST /api/v1/networks/:networkID/subnets
 func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
-	sectionID, err := c.ParamsInt("sectionID")
+	networkID, err := c.ParamsInt("networkID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
-	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
 	}
 
@@ -48,13 +48,13 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	subnet, err := h.service.CreateSubnet(c.Context(), int64(sectionID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
+	subnet, err := h.service.CreateSubnet(c.Context(), int64(networkID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
 	if err != nil {
 		var overlapErr *services.SubnetOverlapError
 		if errors.As(err, &overlapErr) {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": overlapErr.Error(), "conflicting_cidr": overlapErr.ConflictingCIDR})
 		}
-		reqLogger(c).Error("error creating subnet", "section_id", sectionID, "error", err)
+		reqLogger(c).Error("error creating subnet", "network_id", networkID, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -63,7 +63,7 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "subnet_created",
 		ResourceType: "subnet", ResourceID: &subnet.ID, ResourceName: cidr,
-		NewValues: map[string]interface{}{"cidr": cidr, "description": subnet.Description, "section_id": subnet.SectionID},
+		NewValues: map[string]interface{}{"cidr": cidr, "description": subnet.Description, "network_id": subnet.NetworkID},
 	})
 
 	return c.Status(fiber.StatusCreated).JSON(subnet)
@@ -88,14 +88,14 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 	return c.JSON(subnet)
 }
 
-// ListSubnets handles GET /api/v1/sections/:sectionID/subnets
+// ListSubnets handles GET /api/v1/networks/:networkID/subnets
 // Supports ?page=1&limit=25 for pagination.
 func (h *Handler) ListSubnets(c *fiber.Ctx) error {
-	sectionID, err := c.ParamsInt("sectionID")
+	networkID, err := c.ParamsInt("networkID")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
 	}
-	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(sectionID)}); err != nil {
+	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
 	}
 
@@ -104,9 +104,9 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 
 	if page > 0 || limit > 0 || c.Query("sort") != "" || c.Query("q") != "" || c.Query("search") != "" {
 		page, limit, opts := parseListOptions(c)
-		subnets, total, err := h.service.ListSubnetsPaginatedWithOptions(c.Context(), int64(sectionID), page, limit, opts)
+		subnets, total, err := h.service.ListSubnetsPaginatedWithOptions(c.Context(), int64(networkID), page, limit, opts)
 		if err != nil {
-			reqLogger(c).Error("error listing subnets", "section_id", sectionID, "error", err)
+			reqLogger(c).Error("error listing subnets", "network_id", networkID, "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 		}
 		if subnets == nil {
@@ -120,9 +120,9 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 		})
 	}
 
-	subnets, err := h.service.ListSubnets(c.Context(), int64(sectionID))
+	subnets, err := h.service.ListSubnets(c.Context(), int64(networkID))
 	if err != nil {
-		reqLogger(c).Error("error listing subnets", "section_id", sectionID, "error", err)
+		reqLogger(c).Error("error listing subnets", "network_id", networkID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 	if subnets == nil {

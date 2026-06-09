@@ -20,8 +20,8 @@ type IPSearchFilter struct {
 
 // Search operations
 
-func (r *Repository) SearchSections(ctx context.Context, query string, limit, offset int64) ([]*models.Section, error) {
-	sql := `SELECT id, name, description, created_by, created_at, updated_at FROM sections
+func (r *Repository) SearchNetworks(ctx context.Context, query string, limit, offset int64) ([]*models.Network, error) {
+	sql := `SELECT id, name, description, created_by, created_at, updated_at FROM networks
 	        WHERE name ILIKE $1 OR description ILIKE $1
 	        ORDER BY created_at DESC
 	        LIMIT $2 OFFSET $3`
@@ -32,9 +32,9 @@ func (r *Repository) SearchSections(ctx context.Context, query string, limit, of
 	}
 	defer rows.Close()
 
-	sections := make([]*models.Section, 0)
+	sections := make([]*models.Network, 0)
 	for rows.Next() {
-		section := &models.Section{}
+		section := &models.Network{}
 		err := rows.Scan(&section.ID, &section.Name, &section.Description, &section.CreatedBy, &section.CreatedAt, &section.UpdatedAt)
 		if err != nil {
 			return nil, err
@@ -44,13 +44,13 @@ func (r *Repository) SearchSections(ctx context.Context, query string, limit, of
 	return sections, rows.Err()
 }
 
-func (r *Repository) SearchSubnets(ctx context.Context, sectionID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
+func (r *Repository) SearchSubnets(ctx context.Context, networkID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
 	sql := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-	        WHERE s.section_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)
+	        WHERE s.network_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)
 	        ORDER BY s.network_address ASC
 	        LIMIT $3 OFFSET $4`
 	searchQuery := "%" + query + "%"
-	rows, err := r.db.Query(ctx, sql, sectionID, searchQuery, limit, offset)
+	rows, err := r.db.Query(ctx, sql, networkID, searchQuery, limit, offset)
 	if err != nil {
 		return nil, err
 	}

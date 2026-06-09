@@ -101,17 +101,17 @@ api.interceptors.response.use(
 
 noAuthApi.interceptors.response.use(normalizeResponseData)
 
-// Sections
-export const getSections = () => api.get('/sections')
-export const getSection = (id) => api.get(`/sections/${id}`)
-export const createSection = (data) => api.post('/sections', data)
-export const updateSection = (id, data) => api.put(`/sections/${id}`, data)
-export const deleteSection = (id) => api.delete(`/sections/${id}`)
+// Networks
+export const getNetworks = () => api.get('/networks')
+export const getNetwork = (id) => api.get(`/networks/${id}`)
+export const createNetwork = (data) => api.post('/networks', data)
+export const updateNetwork = (id, data) => api.put(`/networks/${id}`, data)
+export const deleteNetwork = (id) => api.delete(`/networks/${id}`)
 
 // Subnets
-export const getSubnets = (sectionID) => api.get(`/sections/${sectionID}/subnets`)
+export const getSubnets = (networkID) => api.get(`/networks/${networkID}/subnets`)
 export const getSubnet = (id) => api.get(`/subnets/${id}`)
-export const createSubnet = (sectionID, data) => api.post(`/sections/${sectionID}/subnets`, data)
+export const createSubnet = (networkID, data) => api.post(`/networks/${networkID}/subnets`, data)
 export const updateSubnet = (id, data) => api.put(`/subnets/${id}`, data)
 export const deleteSubnet = (id) => api.delete(`/subnets/${id}`)
 
@@ -133,13 +133,13 @@ export const getDashboardSummary = () => api.get('/dashboard/summary')
 export const getDashboardRecentActivity = () => api.get('/dashboard/recent-activity')
 
 // Subnet tree
-export const getSubnetTree = (sectionID) => api.get(`/sections/${sectionID}/subnets/tree`)
+export const getSubnetTree = (networkID) => api.get(`/networks/${networkID}/subnets/tree`)
 
 // Paginated lists
-export const getSectionsPaginated = (page = 1, limit = 25) =>
-  api.get('/sections', { params: { page, limit } })
-export const getSubnetsPaginated = (sectionID, page = 1, limit = 25) =>
-  api.get(`/sections/${sectionID}/subnets`, { params: { page, limit } })
+export const getNetworksPaginated = (page = 1, limit = 25) =>
+  api.get('/networks', { params: { page, limit } })
+export const getSubnetsPaginated = (networkID, page = 1, limit = 25) =>
+  api.get(`/networks/${networkID}/subnets`, { params: { page, limit } })
 export const getIPAddressesPaginated = (subnetID, page = 1, limit = 25) =>
   api.get(`/subnets/${subnetID}/ip-addresses`, { params: { page, limit } })
 
@@ -258,11 +258,11 @@ export const bulkActivateUsers = (userIds) => api.post('/admin/users/bulk-activa
 export const bulkDeleteUsers = (userIds) => api.post('/admin/users/bulk-delete', { user_ids: userIds })
 
 // Search
-export const searchSections = (query, limit = 50, offset = 0) =>
-  api.post('/sections/search', { query, limit, offset })
+export const searchNetworks = (query, limit = 50, offset = 0) =>
+  api.post('/networks/search', { query, limit, offset })
 
-export const searchSubnets = (sectionID, body) =>
-  api.post(`/subnets/search/${sectionID}`, body)
+export const searchSubnets = (networkID, body) =>
+  api.post(`/subnets/search/${networkID}`, body)
 
 export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offset = 0, filters = {}) =>
   api.post(`/ip-addresses/search/${subnetID}`, { query, status, limit, offset, ...filters })

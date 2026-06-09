@@ -14,6 +14,6 @@ func (s *Service) GrafanaIPCountsByStatus(ctx context.Context) ([]repository.Gra
 	return s.repository.GrafanaGetIPCountsByStatus(ctx)
 }
 
-func (s *Service) GrafanaSectionSummary(ctx context.Context) ([]repository.GrafanaSectionRow, error) {
+func (s *Service) GrafanaNetworkSummary(ctx context.Context) ([]repository.GrafanaSectionRow, error) {
 	return s.repository.GrafanaGetSectionSummary(ctx)
 }

@@ -389,7 +389,7 @@ func (h *Handler) DeleteDeviceInterface(c *fiber.Ctx) error {
 type deviceSearchRequest struct {
 	Query        string            `json:"query"`
 	TypeID       *int64            `json:"type_id"`
-	SectionID    *int64            `json:"section_id"`
+	NetworkID    *int64            `json:"network_id"`
 	Vendor       *string           `json:"vendor"`
 	IsOnline     *bool             `json:"is_online"`
 	VLANID       *int64            `json:"vlan_id"`
@@ -410,7 +410,7 @@ func (h *Handler) SearchDevices(c *fiber.Ctx) error {
 	filter := &repository.DeviceSearchFilter{
 		Query:     req.Query,
 		TypeID:    req.TypeID,
-		SectionID: req.SectionID,
+		NetworkID: req.NetworkID,
 		Vendor:    req.Vendor,
 		IsOnline:  req.IsOnline,
 		VLANID:    req.VLANID,

@@ -110,23 +110,23 @@ func TestCreateSubnet_Validation(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		sectionID      int64
+		networkID      int64
 		networkAddress string
 		prefixLength   int
 		wantErr        bool
 		errorContains  string
 	}{
 		{
-			name:           "sectionID zero",
-			sectionID:      0,
+			name:           "networkID zero",
+			networkID:      0,
 			networkAddress: "192.168.0.0",
 			prefixLength:   24,
 			wantErr:        true,
 			errorContains:  "invalid section ID",
 		},
 		{
-			name:           "sectionID negative",
-			sectionID:      -1,
+			name:           "networkID negative",
+			networkID:      -1,
 			networkAddress: "192.168.0.0",
 			prefixLength:   24,
 			wantErr:        true,
@@ -134,7 +134,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 		},
 		{
 			name:           "invalid network address",
-			sectionID:      1,
+			networkID:      1,
 			networkAddress: "not-an-ip",
 			prefixLength:   24,
 			wantErr:        true,
@@ -142,7 +142,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 		},
 		{
 			name:           "invalid prefix length negative",
-			sectionID:      1,
+			networkID:      1,
 			networkAddress: "192.168.0.0",
 			prefixLength:   -1,
 			wantErr:        true,
@@ -150,7 +150,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 		},
 		{
 			name:           "invalid prefix length too large",
-			sectionID:      1,
+			networkID:      1,
 			networkAddress: "192.168.0.0",
 			prefixLength:   129,
 			wantErr:        true,
@@ -160,7 +160,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateSubnet(ctx, tt.sectionID, tt.networkAddress, tt.prefixLength, "", nil, false, false, nil, nil, nil)
+			_, err := svc.CreateSubnet(ctx, tt.networkID, tt.networkAddress, tt.prefixLength, "", nil, false, false, nil, nil, nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorContains)
@@ -199,15 +199,15 @@ func TestListSubnets_InvalidSectionID(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		sectionID int64
+		networkID int64
 	}{
-		{"zero sectionID", 0},
-		{"negative sectionID", -1},
+		{"zero networkID", 0},
+		{"negative networkID", -1},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.ListSubnets(ctx, tt.sectionID)
+			_, err := svc.ListSubnets(ctx, tt.networkID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid section ID")
 		})

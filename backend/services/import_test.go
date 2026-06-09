@@ -20,7 +20,7 @@ import (
 // ─────────────────────────────────────────────────────────────────────────────
 
 type stubImportRepo struct {
-	sections []*models.Section
+	sections []*models.Network
 	subnets  []*models.Subnet
 	ips      map[int64][]*models.IPAddress
 	vlans    []*models.VLAN
@@ -40,13 +40,13 @@ func newStubImportRepo() *stubImportRepo {
 	}
 }
 
-func (r *stubImportRepo) ListAllSections(_ context.Context) ([]*models.Section, error) {
+func (r *stubImportRepo) ListAllNetworks(_ context.Context) ([]*models.Network, error) {
 	return r.sections, nil
 }
-func (r *stubImportRepo) ListSubnetsBySection(_ context.Context, sectionID int64) ([]*models.Subnet, error) {
+func (r *stubImportRepo) ListSubnetsBySection(_ context.Context, networkID int64) ([]*models.Subnet, error) {
 	var out []*models.Subnet
 	for _, s := range r.subnets {
-		if s.SectionID == sectionID {
+		if s.NetworkID == networkID {
 			out = append(out, s)
 		}
 	}
@@ -55,10 +55,10 @@ func (r *stubImportRepo) ListSubnetsBySection(_ context.Context, sectionID int64
 func (r *stubImportRepo) ListAllSubnets(_ context.Context) ([]*models.Subnet, error) {
 	return r.subnets, nil
 }
-func (r *stubImportRepo) CreateSubnetWithVLAN(_ context.Context, sectionID int64, networkAddr string, prefixLen int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+func (r *stubImportRepo) CreateSubnetWithVLAN(_ context.Context, networkID int64, networkAddr string, prefixLen int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
 	sub := &models.Subnet{
 		ID:             r.nextSubnetID,
-		SectionID:      sectionID,
+		NetworkID:      networkID,
 		NetworkAddress: networkAddr,
 		PrefixLength:   prefixLen,
 		Description:    description,
@@ -108,7 +108,7 @@ func TestImportSubnetsCSV_HappyPath(t *testing.T) {
 	t.Parallel()
 
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{
+	repo.sections = []*models.Network{
 		{ID: 1, Name: "Default"},
 	}
 
@@ -130,7 +130,7 @@ func TestImportSubnetsCSV_HappyPath(t *testing.T) {
 
 func TestImportSubnetsCSV_MultipleRows(t *testing.T) {
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{
+	repo.sections = []*models.Network{
 		{ID: 1, Name: "Primary"},
 	}
 
@@ -149,7 +149,7 @@ func TestImportSubnetsCSV_MultipleRows(t *testing.T) {
 
 func TestImportSubnetsCSV_MissingCIDR(t *testing.T) {
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{{ID: 1, Name: "Default"}}
+	repo.sections = []*models.Network{{ID: 1, Name: "Default"}}
 	svc := newTestImportService(repo)
 
 	csv := "cidr,description,section,gateway,vlan,vrf,location\n" +
@@ -167,7 +167,7 @@ func TestImportSubnetsCSV_MissingCIDR(t *testing.T) {
 
 func TestImportSubnetsCSV_InvalidCIDR(t *testing.T) {
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{{ID: 1, Name: "Default"}}
+	repo.sections = []*models.Network{{ID: 1, Name: "Default"}}
 	svc := newTestImportService(repo)
 
 	csv := "cidr,description,section,gateway,vlan,vrf,location\n" +
@@ -197,7 +197,7 @@ func TestImportSubnetsCSV_SectionNotFound(t *testing.T) {
 
 func TestImportSubnetsCSV_WithVLAN(t *testing.T) {
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{{ID: 1, Name: "Default"}}
+	repo.sections = []*models.Network{{ID: 1, Name: "Default"}}
 	vlanID := int64(10)
 	repo.vlans = []*models.VLAN{{ID: vlanID, Name: "VLAN10"}}
 	svc := newTestImportService(repo)
@@ -350,7 +350,7 @@ func TestImportIPsCSV_AllValidStatuses(t *testing.T) {
 
 func TestImportFromPHPIpam_Subnets_HappyPath(t *testing.T) {
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{{ID: 1, Name: "Main"}}
+	repo.sections = []*models.Network{{ID: 1, Name: "Main"}}
 	svc := newTestImportService(repo)
 
 	csv := "subnet,mask,description,sectionName\n" +
@@ -368,7 +368,7 @@ func TestImportFromPHPIpam_Subnets_HappyPath(t *testing.T) {
 
 func TestImportFromPHPIpam_Subnets_MaskAsInt(t *testing.T) {
 	repo := newStubImportRepo()
-	repo.sections = []*models.Section{{ID: 1, Name: "Main"}}
+	repo.sections = []*models.Network{{ID: 1, Name: "Main"}}
 	svc := newTestImportService(repo)
 
 	csv := "subnet,mask,description,sectionName\n" +
@@ -457,7 +457,7 @@ func TestImportFromPHPIpam_Subnets_SectionNotFound(t *testing.T) {
 func TestExportFullData_CSV(t *testing.T) {
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{
-		{ID: 1, SectionID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24, Description: "Corp"},
+		{ID: 1, NetworkID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24, Description: "Corp"},
 	}
 	repo.ips[1] = []*models.IPAddress{
 		{ID: 1, SubnetID: 1, Address: "10.0.0.10", Hostname: "server1", Status: "active"},
@@ -477,7 +477,7 @@ func TestExportFullData_CSV(t *testing.T) {
 func TestExportFullData_JSON(t *testing.T) {
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{
-		{ID: 2, SectionID: 1, NetworkAddress: "192.168.1.0", PrefixLength: 24, Description: "LAN"},
+		{ID: 2, NetworkID: 1, NetworkAddress: "192.168.1.0", PrefixLength: 24, Description: "LAN"},
 	}
 	repo.ips[2] = []*models.IPAddress{
 		{ID: 10, SubnetID: 2, Address: "192.168.1.100", Hostname: "laptop", Status: "active"},
@@ -521,7 +521,7 @@ func TestExportFullData_EmptyDatabase(t *testing.T) {
 func TestExportV2MigrationBundle_ZipContents(t *testing.T) {
 	repo := newStubImportRepo()
 	repo.subnets = []*models.Subnet{
-		{ID: 1, SectionID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24, Description: "Corp"},
+		{ID: 1, NetworkID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24, Description: "Corp"},
 	}
 	repo.ips[1] = []*models.IPAddress{
 		{ID: 1, SubnetID: 1, Address: "10.0.0.10", Hostname: "server1", Status: "active"},

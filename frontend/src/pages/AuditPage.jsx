@@ -23,7 +23,7 @@ export default function AuditPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div
         role="tablist"
-        aria-label="Audit sections"
+        aria-label="Audit networks"
         className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-700"
       >
         {TABS.map((t) => (

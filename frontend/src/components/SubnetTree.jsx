@@ -86,7 +86,7 @@ function SubnetRow({ node, depth, onEdit, onDelete, deleteConfirm, setDeleteConf
 /**
  * SubnetTree renders a collapsible indented table of subnets.
  * Props:
- *   nodes       {Array}    — tree nodes from GET /sections/:id/subnets/tree
+ *   nodes       {Array}    — tree nodes from GET /networks/:id/subnets/tree
  *   onEdit      {Function} — called with subnet node to edit
  *   onDelete    {Function} — called with subnet id to delete
  *   navigate    {Function} — react-router navigate fn

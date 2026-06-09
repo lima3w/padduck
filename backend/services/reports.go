@@ -18,7 +18,7 @@ import (
 type reportsRepo interface {
 	// utilisation
 	ListAllSubnets(ctx context.Context) ([]*models.Subnet, error)
-	ListSubnetsBySection(ctx context.Context, sectionID int64) ([]*models.Subnet, error)
+	ListSubnetsBySection(ctx context.Context, networkID int64) ([]*models.Subnet, error)
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
 	RecordUtilisationSnapshot(ctx context.Context, subnetID int64, used, total int, pct float64) error
 	GetUtilisationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilisationPoint, error)
@@ -38,10 +38,10 @@ type reportsRepo interface {
 	UpdateScheduledReportRunTime(ctx context.Context, id int64, t time.Time) error
 	DeleteScheduledReport(ctx context.Context, id int64) error
 	// inactive IPs
-	GetInactiveIPs(ctx context.Context, days int, sectionID *int64) ([]*models.InactiveIPReport, error)
+	GetInactiveIPs(ctx context.Context, days int, networkID *int64) ([]*models.InactiveIPReport, error)
 	BulkReleaseIPs(ctx context.Context, ipIDs []int64) (int64, error)
 	// sections and subnets for export
-	ListAllSections(ctx context.Context) ([]*models.Section, error)
+	ListAllNetworks(ctx context.Context) ([]*models.Network, error)
 	GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error)
 	// expanded report types
 	GetSubnetGaps(ctx context.Context) ([]*repository.SubnetGapRow, error)
@@ -397,7 +397,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				"ip_address":    ip.IPAddress,
 				"hostname":      ip.Hostname,
 				"subnet_cidr":   ip.SubnetCIDR,
-				"section_name":  ip.SectionName,
+				"section_name":  ip.NetworkName,
 				"assigned_to":   assignedTo,
 				"days_inactive": strconv.Itoa(ip.DaysInactive),
 			}
@@ -502,7 +502,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				"ip_address":    ip.IPAddress,
 				"hostname":      ip.Hostname,
 				"subnet_cidr":   ip.SubnetCIDR,
-				"section_name":  ip.SectionName,
+				"section_name":  ip.NetworkName,
 				"days_inactive": strconv.Itoa(ip.DaysInactive),
 			}
 		}
@@ -593,11 +593,11 @@ func (rs *ReportsService) clearReportCache() {
 	}
 }
 
-func sectionCacheKey(sectionID *int64) string {
-	if sectionID == nil {
+func sectionCacheKey(networkID *int64) string {
+	if networkID == nil {
 		return "all"
 	}
-	return strconv.FormatInt(*sectionID, 10)
+	return strconv.FormatInt(*networkID, 10)
 }
 
 func cloneUtilisationTrends(trends []*models.SubnetUtilisationTrend) []*models.SubnetUtilisationTrend {
@@ -722,12 +722,12 @@ func reportIsDue(rpt *models.ScheduledReport, now time.Time) bool {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // GetInactiveIPs returns IPs that have been inactive for the given number of days.
-func (rs *ReportsService) GetInactiveIPs(ctx context.Context, days int, sectionID *int64) ([]*models.InactiveIPReport, error) {
-	key := fmt.Sprintf("inactive_ips:%d:%s", days, sectionCacheKey(sectionID))
+func (rs *ReportsService) GetInactiveIPs(ctx context.Context, days int, networkID *int64) ([]*models.InactiveIPReport, error) {
+	key := fmt.Sprintf("inactive_ips:%d:%s", days, sectionCacheKey(networkID))
 	if value, ok := rs.reportCache().get(key); ok {
 		return cloneInactiveIPs(value.([]*models.InactiveIPReport)), nil
 	}
-	ips, err := rs.repo.GetInactiveIPs(ctx, days, sectionID)
+	ips, err := rs.repo.GetInactiveIPs(ctx, days, networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -839,7 +839,7 @@ func (rs *ReportsService) ExportInactiveIPs(ctx context.Context, days int, forma
 			"ip_address":    ip.IPAddress,
 			"hostname":      ip.Hostname,
 			"subnet_cidr":   ip.SubnetCIDR,
-			"section_name":  ip.SectionName,
+			"section_name":  ip.NetworkName,
 			"days_inactive": strconv.Itoa(ip.DaysInactive),
 		}
 	}
@@ -879,8 +879,8 @@ func parseIPNet(cidr string) (*net.IPNet, error) {
 	return ipNet, err
 }
 
-// subnetSectionName returns the section name by extracting it from a join. Placeholder.
-func subnetSectionName(s *models.Subnet) string {
+// subnetNetworkName returns the section name by extracting it from a join. Placeholder.
+func subnetNetworkName(s *models.Subnet) string {
 	_ = s
 	return ""
 }
@@ -889,4 +889,4 @@ func subnetSectionName(s *models.Subnet) string {
 var _ = strings.TrimSpace
 var _ = cidrFromSubnet
 var _ = parseIPNet
-var _ = subnetSectionName
+var _ = subnetNetworkName

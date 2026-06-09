@@ -14,7 +14,7 @@ import (
 func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
 	summary := &models.DashboardSummary{}
 
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM sections`).Scan(&summary.TotalSections); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM networks`).Scan(&summary.TotalNetworks); err != nil {
 		return nil, fmt.Errorf("count sections: %w", err)
 	}
 	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets`).Scan(&summary.TotalSubnets); err != nil {
@@ -104,12 +104,12 @@ func (r *Repository) GetDashboardRecentActivity(ctx context.Context) ([]*models.
 	return activities, rows.Err()
 }
 
-// ListSectionsPaginated returns sections with pagination.
-func (r *Repository) ListSectionsPaginated(ctx context.Context, limit, offset int) ([]*models.Section, int64, error) {
-	return r.ListSectionsPaginatedWithOptions(ctx, ListOptions{Limit: limit, Offset: offset})
+// ListNetworksPaginated returns sections with pagination.
+func (r *Repository) ListNetworksPaginated(ctx context.Context, limit, offset int) ([]*models.Network, int64, error) {
+	return r.ListNetworksPaginatedWithOptions(ctx, ListOptions{Limit: limit, Offset: offset})
 }
 
-func (r *Repository) ListSectionsPaginatedWithOptions(ctx context.Context, opts ListOptions) ([]*models.Section, int64, error) {
+func (r *Repository) ListNetworksPaginatedWithOptions(ctx context.Context, opts ListOptions) ([]*models.Network, int64, error) {
 	where := ""
 	args := []interface{}{}
 	if opts.Query != "" {
@@ -118,22 +118,22 @@ func (r *Repository) ListSectionsPaginatedWithOptions(ctx context.Context, opts 
 	}
 
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM sections`+where, args...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM networks`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	sortCol := sortExpr(opts.Sort, "created_at", map[string]string{"name": "name", "created_at": "created_at", "updated_at": "updated_at"})
 	args = append(args, opts.Limit, opts.Offset)
-	query := fmt.Sprintf(`SELECT id, name, description, created_by, created_at, updated_at FROM sections%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
+	query := fmt.Sprintf(`SELECT id, name, description, created_by, created_at, updated_at FROM networks%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 
-	sections := make([]*models.Section, 0)
+	sections := make([]*models.Network, 0)
 	for rows.Next() {
-		section := &models.Section{}
+		section := &models.Network{}
 		if err := rows.Scan(&section.ID, &section.Name, &section.Description, &section.CreatedBy, &section.CreatedAt, &section.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
@@ -143,13 +143,13 @@ func (r *Repository) ListSectionsPaginatedWithOptions(ctx context.Context, opts 
 }
 
 // ListSubnetsBySectionPaginated returns subnets for a section with pagination.
-func (r *Repository) ListSubnetsBySectionPaginated(ctx context.Context, sectionID int64, limit, offset int) ([]*models.Subnet, int64, error) {
-	return r.ListSubnetsBySectionPaginatedWithOptions(ctx, sectionID, ListOptions{Limit: limit, Offset: offset})
+func (r *Repository) ListSubnetsBySectionPaginated(ctx context.Context, networkID int64, limit, offset int) ([]*models.Subnet, int64, error) {
+	return r.ListSubnetsBySectionPaginatedWithOptions(ctx, networkID, ListOptions{Limit: limit, Offset: offset})
 }
 
-func (r *Repository) ListSubnetsBySectionPaginatedWithOptions(ctx context.Context, sectionID int64, opts ListOptions) ([]*models.Subnet, int64, error) {
-	args := []interface{}{sectionID}
-	where := ` WHERE section_id = $1`
+func (r *Repository) ListSubnetsBySectionPaginatedWithOptions(ctx context.Context, networkID int64, opts ListOptions) ([]*models.Subnet, int64, error) {
+	args := []interface{}{networkID}
+	where := ` WHERE network_id = $1`
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
 		where += fmt.Sprintf(" AND (host(network_address) ILIKE $%d OR description ILIKE $%d)", len(args), len(args))
@@ -162,7 +162,7 @@ func (r *Repository) ListSubnetsBySectionPaginatedWithOptions(ctx context.Contex
 
 	sortCol := sortExpr(opts.Sort, "network_address", map[string]string{"network": "network_address", "prefix": "prefix_length", "created_at": "created_at", "updated_at": "updated_at"})
 	args = append(args, opts.Limit, opts.Offset)
-	query := fmt.Sprintf(`SELECT id, section_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
+	query := fmt.Sprintf(`SELECT id, network_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
@@ -172,7 +172,7 @@ func (r *Repository) ListSubnetsBySectionPaginatedWithOptions(ctx context.Contex
 	subnets := make([]*models.Subnet, 0)
 	for rows.Next() {
 		subnet := &models.Subnet{}
-		if err := rows.Scan(&subnet.ID, &subnet.SectionID, &subnet.NetworkAddress, &subnet.PrefixLength, &subnet.Description, &subnet.CreatedAt, &subnet.UpdatedAt); err != nil {
+		if err := rows.Scan(&subnet.ID, &subnet.NetworkID, &subnet.NetworkAddress, &subnet.PrefixLength, &subnet.Description, &subnet.CreatedAt, &subnet.UpdatedAt); err != nil {
 			return nil, 0, err
 		}
 		subnets = append(subnets, subnet)

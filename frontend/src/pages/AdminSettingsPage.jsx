@@ -349,7 +349,7 @@ export default function AdminSettingsPage() {
     {
       title: 'Data Tools',
       links: [
-        { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all sections' },
+        { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all networks' },
         { to: '/admin/import', title: 'Data Import', description: 'Import subnets, IP addresses, or phpIPAM data' },
         { to: '/admin/export', title: 'Data Export', description: 'Export a full data backup' },
       ],
@@ -386,11 +386,11 @@ export default function AdminSettingsPage() {
       ],
     },
   ]
-    .map((section) => ({
-      ...section,
-      links: section.links.filter((link) => link.visible !== false),
+    .map((network) => ({
+      ...network,
+      links: network.links.filter((link) => link.visible !== false),
     }))
-    .filter((section) => section.links.length > 0)
+    .filter((network) => network.links.length > 0)
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
@@ -1059,11 +1059,11 @@ export default function AdminSettingsPage() {
 
       {activeTab === 'tools' && (
         <div className="space-y-4">
-          {toolSections.map((section) => (
-            <div key={section.title} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{section.title}</h2>
+          {toolSections.map((network) => (
+            <div key={network.title} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{network.title}</h2>
               <div className="space-y-3">
-                {section.links.map((link) => (
+                {network.links.map((link) => (
                   <Link
                     key={link.to}
                     to={link.to}

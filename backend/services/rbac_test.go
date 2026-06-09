@@ -25,10 +25,10 @@ func TestPermissionConstants(t *testing.T) {
 	t.Parallel()
 
 	constants := map[string]string{
-		"PermSectionCreate": PermSectionCreate,
-		"PermSectionRead":   PermSectionRead,
-		"PermSectionUpdate": PermSectionUpdate,
-		"PermSectionDelete": PermSectionDelete,
+		"PermNetworkCreate": PermNetworkCreate,
+		"PermNetworkRead":   PermNetworkRead,
+		"PermNetworkUpdate": PermNetworkUpdate,
+		"PermNetworkDelete": PermNetworkDelete,
 		"PermSubnetCreate":  PermSubnetCreate,
 		"PermSubnetRead":    PermSubnetRead,
 		"PermSubnetUpdate":  PermSubnetUpdate,
@@ -65,7 +65,7 @@ func TestRoleConstants(t *testing.T) {
 
 func TestHasPermission_NilUser(t *testing.T) {
 	svc := newTestService()
-	assert.False(t, svc.HasPermission(nil, PermSectionRead))
+	assert.False(t, svc.HasPermission(nil, PermNetworkRead))
 	assert.False(t, svc.HasPermission(nil, PermIPCreate))
 	assert.False(t, svc.HasPermission(nil, "arbitrary:perm"))
 }
@@ -75,7 +75,7 @@ func TestHasPermission_AdminGetsEveryPermission(t *testing.T) {
 	admin := &models.User{Role: RoleAdmin}
 
 	allPerms := []string{
-		PermSectionCreate, PermSectionRead, PermSectionUpdate, PermSectionDelete,
+		PermNetworkCreate, PermNetworkRead, PermNetworkUpdate, PermNetworkDelete,
 		PermSubnetCreate, PermSubnetRead, PermSubnetUpdate, PermSubnetDelete,
 		PermIPCreate, PermIPRead, PermIPUpdate, PermIPDelete, PermIPAssign, PermIPRelease,
 		PermTokenCreate, PermTokenRead, PermTokenDelete,
@@ -95,7 +95,7 @@ func TestHasPermission_UserRole(t *testing.T) {
 
 	// user role has all permissions
 	granted := []string{
-		PermSectionRead, PermSectionCreate, PermSectionUpdate, PermSectionDelete,
+		PermNetworkRead, PermNetworkCreate, PermNetworkUpdate, PermNetworkDelete,
 		PermSubnetRead, PermSubnetCreate, PermSubnetUpdate, PermSubnetDelete,
 		PermIPRead, PermIPCreate, PermIPUpdate, PermIPDelete, PermIPAssign, PermIPRelease,
 		PermTokenCreate, PermTokenRead, PermTokenDelete,
@@ -118,7 +118,7 @@ func TestHasPermission_ViewerRole(t *testing.T) {
 	viewer := &models.User{Role: RoleViewer}
 
 	// viewer only gets read permissions
-	readPerms := []string{PermSectionRead, PermSubnetRead, PermIPRead, PermTokenRead}
+	readPerms := []string{PermNetworkRead, PermSubnetRead, PermIPRead, PermTokenRead}
 	for _, perm := range readPerms {
 		t.Run("granted_"+perm, func(t *testing.T) {
 			assert.True(t, svc.HasPermission(viewer, perm),
@@ -128,7 +128,7 @@ func TestHasPermission_ViewerRole(t *testing.T) {
 
 	// viewer must not get write permissions
 	deniedPerms := []string{
-		PermSectionCreate, PermSectionUpdate, PermSectionDelete,
+		PermNetworkCreate, PermNetworkUpdate, PermNetworkDelete,
 		PermSubnetCreate, PermSubnetUpdate, PermSubnetDelete,
 		PermIPCreate, PermIPUpdate, PermIPDelete, PermIPAssign, PermIPRelease,
 		PermTokenCreate, PermTokenDelete,
@@ -146,7 +146,7 @@ func TestHasPermission_UnknownRole(t *testing.T) {
 	unknown := &models.User{Role: "superuser"}
 
 	perms := []string{
-		PermSectionCreate, PermSectionRead, PermSubnetRead, PermIPRead, PermTokenRead,
+		PermNetworkCreate, PermNetworkRead, PermSubnetRead, PermIPRead, PermTokenRead,
 	}
 	for _, perm := range perms {
 		t.Run(perm, func(t *testing.T) {
@@ -159,7 +159,7 @@ func TestHasPermission_UnknownRole(t *testing.T) {
 func TestHasPermission_EmptyRole(t *testing.T) {
 	svc := newTestService()
 	noRole := &models.User{Role: ""}
-	assert.False(t, svc.HasPermission(noRole, PermSectionRead))
+	assert.False(t, svc.HasPermission(noRole, PermNetworkRead))
 }
 
 // ---------------------------------------------------------------------------
@@ -175,12 +175,12 @@ func TestCanAccessResource_DelegatesToHasPermission(t *testing.T) {
 		action string
 		want   bool
 	}{
-		{"nil user denied", nil, PermSectionRead, false},
+		{"nil user denied", nil, PermNetworkRead, false},
 		{"admin granted", &models.User{Role: RoleAdmin}, PermIPDelete, true},
 		{"viewer read granted", &models.User{Role: RoleViewer}, PermIPRead, true},
 		{"viewer write denied", &models.User{Role: RoleViewer}, PermIPCreate, false},
 		{"user granted", &models.User{Role: RoleUser}, PermSubnetCreate, true},
-		{"unknown role denied", &models.User{Role: "ghost"}, PermSectionRead, false},
+		{"unknown role denied", &models.User{Role: "ghost"}, PermNetworkRead, false},
 	}
 
 	for _, tc := range cases {
@@ -202,7 +202,7 @@ func TestRequirePermission(t *testing.T) {
 
 	t.Run("returns nil when user has permission", func(t *testing.T) {
 		admin := &models.User{Role: RoleAdmin}
-		err := svc.RequirePermission(admin, PermSectionCreate)
+		err := svc.RequirePermission(admin, PermNetworkCreate)
 		assert.NoError(t, err)
 	})
 
@@ -221,9 +221,9 @@ func TestRequirePermission(t *testing.T) {
 	})
 
 	t.Run("error for nil user contains permission name", func(t *testing.T) {
-		err := svc.RequirePermission(nil, PermSectionCreate)
+		err := svc.RequirePermission(nil, PermNetworkCreate)
 		assert.Error(t, err)
-		assert.True(t, strings.Contains(err.Error(), PermSectionCreate),
+		assert.True(t, strings.Contains(err.Error(), PermNetworkCreate),
 			"error message should contain the missing permission name, got: %s", err.Error())
 	})
 
@@ -295,7 +295,7 @@ func TestIsValidPermission_UnknownPermissions(t *testing.T) {
 
 func TestAllPermissions_ContainsExpectedCount(t *testing.T) {
 	expected := []string{
-		PermV2SectionList, PermV2SectionRead, PermV2SectionWrite, PermV2SectionDelete,
+		PermV2NetworkList, PermV2NetworkRead, PermV2NetworkWrite, PermV2NetworkDelete,
 		PermV2SubnetList, PermV2SubnetRead, PermV2SubnetWrite, PermV2SubnetDelete,
 		PermV2IPList, PermV2IPRead, PermV2IPAssign, PermV2IPRelease,
 		PermV2VRFList, PermV2VRFRead, PermV2VRFWrite, PermV2VRFDelete,
@@ -343,7 +343,7 @@ func TestCheckPermission_InvalidUserID(t *testing.T) {
 	ctx := context.Background()
 
 	for _, id := range []int64{0, -1, -99} {
-		err := svc.CheckPermission(ctx, id, PermV2SectionRead)
+		err := svc.CheckPermission(ctx, id, PermV2NetworkRead)
 		assert.Error(t, err, "userID %d should be rejected", id)
 	}
 }
@@ -500,7 +500,7 @@ func TestDeleteRole_InvalidID(t *testing.T) {
 func TestAddPermissionToRole_InvalidRoleID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	_, err := svc.AddPermissionToRole(ctx, 0, PermV2SectionRead, nil, nil)
+	_, err := svc.AddPermissionToRole(ctx, 0, PermV2NetworkRead, nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid role ID")
 }
@@ -528,7 +528,7 @@ func TestAddPermissionToRole_ValidArgs_ReachesRepo(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 	assert.Panics(t, func() {
-		_, _ = svc.AddPermissionToRole(ctx, 1, PermV2SectionRead, nil, nil)
+		_, _ = svc.AddPermissionToRole(ctx, 1, PermV2NetworkRead, nil, nil)
 	})
 }
 
@@ -598,10 +598,10 @@ func TestGetUserRoles_InvalidUserID(t *testing.T) {
 
 func TestV2PermissionConstants_NonEmpty(t *testing.T) {
 	v2perms := map[string]string{
-		"PermV2SectionList":   PermV2SectionList,
-		"PermV2SectionRead":   PermV2SectionRead,
-		"PermV2SectionWrite":  PermV2SectionWrite,
-		"PermV2SectionDelete": PermV2SectionDelete,
+		"PermV2NetworkList":   PermV2NetworkList,
+		"PermV2NetworkRead":   PermV2NetworkRead,
+		"PermV2NetworkWrite":  PermV2NetworkWrite,
+		"PermV2NetworkDelete": PermV2NetworkDelete,
 		"PermV2SubnetList":    PermV2SubnetList,
 		"PermV2SubnetRead":    PermV2SubnetRead,
 		"PermV2SubnetWrite":   PermV2SubnetWrite,

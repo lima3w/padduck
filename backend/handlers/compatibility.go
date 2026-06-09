@@ -57,13 +57,13 @@ func v2CompatibilityWarnings() []compatibilityWarning {
 			Severity:        "warning",
 			Summary:         "Nested IP address routes remain available for v1 compatibility.",
 			Detail:          "Clients should prefer top-level IP address endpoints before upgrading to v2.",
-			V1Surface:       "/api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses",
+			V1Surface:       "/api/v1/networks/{networkID}/subnets/{subnetID}/ip-addresses",
 			V2Change:        "v2 will standardize IP address collection operations under /api/v2/ip-addresses with explicit subnet filters.",
 			RecommendedWork: "Update clients to call top-level IP address endpoints and pass subnet IDs explicitly.",
 			DocsURL:         "/docs/api-contract.md",
 			APIs: []string{
-				"GET /api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses",
-				"POST /api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses",
+				"GET /api/v1/networks/{networkID}/subnets/{subnetID}/ip-addresses",
+				"POST /api/v1/networks/{networkID}/subnets/{subnetID}/ip-addresses",
 			},
 		},
 		{
@@ -181,7 +181,7 @@ func (h *Handler) v2MigrationReadinessChecks(ctx context.Context) []compatibilit
 	requiredTables := []string{
 		"schema_migrations",
 		"configs",
-		"sections",
+		"networks",
 		"subnets",
 		"ip_addresses",
 		"roles",

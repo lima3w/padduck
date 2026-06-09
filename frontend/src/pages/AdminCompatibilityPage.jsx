@@ -123,7 +123,7 @@ export default function AdminCompatibilityPage() {
         <SummaryTile label="Deprecations" value={deprecations?.summary?.total} />
       </div>
 
-      <section className="mt-8">
+      <network className="mt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase text-gray-500 dark:text-gray-400">Migration Readiness</h2>
           {readiness?.summary && (
@@ -162,9 +162,9 @@ export default function AdminCompatibilityPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </network>
 
-      <section className="mt-8">
+      <network className="mt-8">
         <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500 dark:text-gray-400">Deprecation Report</h2>
         <div className="grid gap-3 lg:grid-cols-2">
           {(deprecations?.deprecations || []).map((item) => (
@@ -193,7 +193,7 @@ export default function AdminCompatibilityPage() {
             </article>
           ))}
         </div>
-      </section>
+      </network>
     </div>
   )
 }

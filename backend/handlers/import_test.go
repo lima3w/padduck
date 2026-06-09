@@ -21,7 +21,7 @@ import (
 
 // handlerImportRepo is a minimal in-memory stub satisfying services.ImportRepo.
 type handlerImportRepo struct {
-	sections []*models.Section
+	sections []*models.Network
 	subnets  []*models.Subnet
 	ips      map[int64][]*models.IPAddress
 	nextID   int64
@@ -29,14 +29,14 @@ type handlerImportRepo struct {
 
 func newHandlerImportRepo() *handlerImportRepo {
 	return &handlerImportRepo{
-		sections: []*models.Section{{ID: 1, Name: "Default"}},
+		sections: []*models.Network{{ID: 1, Name: "Default"}},
 		subnets:  []*models.Subnet{{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24}},
 		ips:      make(map[int64][]*models.IPAddress),
 		nextID:   100,
 	}
 }
 
-func (r *handlerImportRepo) ListAllSections(_ context.Context) ([]*models.Section, error) {
+func (r *handlerImportRepo) ListAllNetworks(_ context.Context) ([]*models.Network, error) {
 	return r.sections, nil
 }
 func (r *handlerImportRepo) ListSubnetsBySection(_ context.Context, _ int64) ([]*models.Subnet, error) {
@@ -45,9 +45,9 @@ func (r *handlerImportRepo) ListSubnetsBySection(_ context.Context, _ int64) ([]
 func (r *handlerImportRepo) ListAllSubnets(_ context.Context) ([]*models.Subnet, error) {
 	return r.subnets, nil
 }
-func (r *handlerImportRepo) CreateSubnetWithVLAN(_ context.Context, sectionID int64, networkAddr string, prefixLen int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+func (r *handlerImportRepo) CreateSubnetWithVLAN(_ context.Context, networkID int64, networkAddr string, prefixLen int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
 	r.nextID++
-	sub := &models.Subnet{ID: r.nextID, SectionID: sectionID, NetworkAddress: networkAddr, PrefixLength: prefixLen, Description: description}
+	sub := &models.Subnet{ID: r.nextID, NetworkID: networkID, NetworkAddress: networkAddr, PrefixLength: prefixLen, Description: description}
 	r.subnets = append(r.subnets, sub)
 	return sub, nil
 }

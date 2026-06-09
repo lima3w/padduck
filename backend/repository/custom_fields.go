@@ -177,9 +177,9 @@ var textLikeFieldTypes = map[string]bool{
 }
 
 // SearchSubnetsWithCustomFields searches subnets and optionally filters by custom field values.
-func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, sectionID int64, query string, limit, offset int64, cfFilters map[string]string) ([]*models.Subnet, error) {
+func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, networkID int64, query string, limit, offset int64, cfFilters map[string]string) ([]*models.Subnet, error) {
 	if len(cfFilters) == 0 {
-		return r.SearchSubnets(ctx, sectionID, query, limit, offset)
+		return r.SearchSubnets(ctx, networkID, query, limit, offset)
 	}
 
 	defs, err := r.ListCustomFieldDefinitions(ctx, "subnet")
@@ -192,8 +192,8 @@ func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, sectionI
 	}
 
 	base := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-	         WHERE s.section_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)`
-	args := []interface{}{sectionID, "%" + query + "%"}
+	         WHERE s.network_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)`
+	args := []interface{}{networkID, "%" + query + "%"}
 	n := 3
 
 	for fname, fval := range cfFilters {

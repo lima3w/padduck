@@ -7,7 +7,7 @@ import (
 // GrafanaSubnetRow holds per-subnet utilisation data for the Grafana datasource.
 type GrafanaSubnetRow struct {
 	CIDR           string
-	SectionName    string
+	NetworkName    string
 	Description    string
 	Used           int64
 	Total          int64
@@ -22,7 +22,7 @@ type GrafanaIPStatusRow struct {
 
 // GrafanaSectionRow holds aggregate counts for a single section.
 type GrafanaSectionRow struct {
-	SectionName string
+	NetworkName string
 	SubnetCount int64
 	IPCount     int64
 	UsedIPs     int64
@@ -37,7 +37,7 @@ func (r *Repository) GrafanaGetSubnetUtilisation(ctx context.Context) ([]Grafana
 			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END) AS used,
 			COUNT(ip.id) AS total
 		FROM subnets s
-		JOIN sections sec ON sec.id = s.section_id
+		JOIN networks sec ON sec.id = s.network_id
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
 		GROUP BY s.id, s.network_address, s.prefix_length, s.description, sec.name
 		ORDER BY sec.name ASC, s.network_address ASC`
@@ -51,7 +51,7 @@ func (r *Repository) GrafanaGetSubnetUtilisation(ctx context.Context) ([]Grafana
 	var result []GrafanaSubnetRow
 	for rows.Next() {
 		var row GrafanaSubnetRow
-		if err := rows.Scan(&row.CIDR, &row.SectionName, &row.Description, &row.Used, &row.Total); err != nil {
+		if err := rows.Scan(&row.CIDR, &row.NetworkName, &row.Description, &row.Used, &row.Total); err != nil {
 			return nil, err
 		}
 		if row.Total > 0 {
@@ -88,8 +88,8 @@ func (r *Repository) GrafanaGetSectionSummary(ctx context.Context) ([]GrafanaSec
 			COUNT(DISTINCT s.id) AS subnet_count,
 			COUNT(ip.id) AS ip_count,
 			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END) AS used_ips
-		FROM sections sec
-		LEFT JOIN subnets s ON s.section_id = sec.id
+		FROM networks sec
+		LEFT JOIN subnets s ON s.network_id = sec.id
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
 		GROUP BY sec.id, sec.name
 		ORDER BY sec.name ASC`
@@ -103,7 +103,7 @@ func (r *Repository) GrafanaGetSectionSummary(ctx context.Context) ([]GrafanaSec
 	var result []GrafanaSectionRow
 	for rows.Next() {
 		var row GrafanaSectionRow
-		if err := rows.Scan(&row.SectionName, &row.SubnetCount, &row.IPCount, &row.UsedIPs); err != nil {
+		if err := rows.Scan(&row.NetworkName, &row.SubnetCount, &row.IPCount, &row.UsedIPs); err != nil {
 			return nil, err
 		}
 		result = append(result, row)
