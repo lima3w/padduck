@@ -33,12 +33,13 @@ func (r *Repository) SplitSubnet(ctx context.Context, parentID int64, childSubne
 		child.ID = childID
 
 		// Move IPs that fall within this child's CIDR
+		childCIDR := fmt.Sprintf("%s/%d", child.NetworkAddress, child.PrefixLength)
 		_, err = tx.Exec(ctx, `
 			UPDATE ip_addresses
 			SET subnet_id = $1, updated_at = CURRENT_TIMESTAMP
 			WHERE subnet_id = $2
-			  AND address << ($3::text || '/' || $4::text)::inet`,
-			childID, parentID, child.NetworkAddress, child.PrefixLength,
+			  AND address << $3::inet`,
+			childID, parentID, childCIDR,
 		)
 		if err != nil {
 			return fmt.Errorf("moving IPs to child subnet %s/%d: %w", child.NetworkAddress, child.PrefixLength, err)
