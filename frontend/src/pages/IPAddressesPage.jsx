@@ -658,7 +658,7 @@ export default function IPAddressesPage() {
         <Link to="/networks" className="hover:text-blue-600">Networks</Link>
         <span>/</span>
         {subnet && (
-          <Link to={`/networks/${subnet.sectionId}/subnets`} className="hover:text-blue-600">Subnets</Link>
+          <Link to={`/networks/${subnet.networkId}/subnets`} className="hover:text-blue-600">Subnets</Link>
         )}
         <span>/</span>
         <span className="text-gray-800 font-medium font-mono">{subnet?.networkAddress}/{subnet?.prefixLength}</span>

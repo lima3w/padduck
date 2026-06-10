@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -12,6 +12,7 @@ import EmptyRow from '../components/EmptyRow'
 import { downloadFile } from '../utils/download'
 import { loadPrefs, savePrefs, loadColPrefs, saveColPrefs } from '../utils/listPrefs'
 import { getCachedUser, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '../utils/storageKeys'
+import vendorCatalog from '../data/vendors.json'
 
 const FILTER_KEY = STORAGE_KEYS.deviceFilters
 const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.deviceFilters
@@ -125,6 +126,21 @@ export default function DevicesPage() {
       setDeviceTypes(Array.isArray(res.data) ? res.data : [])
     } catch {}
   }
+
+  const vendorSuggestions = useMemo(() => {
+    const typeName = (deviceTypes.find(t => String(t.id) === String(form.type_id))?.name || '').toLowerCase()
+    const cats = Object.values(vendorCatalog.categories)
+    const matched = cats.find(c => c.keywords.some(k => typeName.includes(k))) || vendorCatalog.categories.other
+    return Object.keys(matched.vendors)
+  }, [form.type_id, deviceTypes])
+
+  const modelSuggestions = useMemo(() => {
+    const typeName = (deviceTypes.find(t => String(t.id) === String(form.type_id))?.name || '').toLowerCase()
+    const cats = Object.values(vendorCatalog.categories)
+    const matched = cats.find(c => c.keywords.some(k => typeName.includes(k))) || vendorCatalog.categories.other
+    const models = matched.vendors[form.vendor] || []
+    return models
+  }, [form.type_id, form.vendor, deviceTypes])
 
   async function load(p = page) {
     try {
@@ -538,7 +554,7 @@ export default function DevicesPage() {
               >
                 <option value="">No type</option>
                 {deviceTypes.map(t => (
-                  <option key={t.id} value={t.id}>{t.icon} {t.name}</option>
+                  <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
             </div>
@@ -551,10 +567,17 @@ export default function DevicesPage() {
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               />
             </div>
+            <datalist id="vendor-list">
+              {vendorSuggestions.map(v => <option key={v} value={v} />)}
+            </datalist>
+            <datalist id="model-list">
+              {modelSuggestions.map(m => <option key={m} value={m} />)}
+            </datalist>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vendor</label>
                 <input
+                  list="vendor-list"
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   placeholder="Cisco"
                   value={form.vendor}
@@ -564,6 +587,7 @@ export default function DevicesPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
                 <input
+                  list="model-list"
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   placeholder="ASR-1000"
                   value={form.model}

@@ -15,7 +15,7 @@ import (
 
 // GetSubnetUtilisationHistory handles GET /api/v1/subnets/:id/utilisation/history
 func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "subnets:read"); err != nil {
+	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
 		return nil
 	}
 

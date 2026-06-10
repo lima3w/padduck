@@ -189,7 +189,7 @@ export default function BackupsPage() {
     try {
       await downloadFile(
         `/api/v1/admin/export/full?format=${format}`,
-        `ipam-export.${format}`
+        `padduck_export.${format}`
       )
     } catch (err) {
       setError(err.message || 'Export failed')
@@ -202,7 +202,7 @@ export default function BackupsPage() {
     setDownloading('v2')
     setError('')
     try {
-      await downloadFile('/api/v1/admin/export/v2-migration-bundle', 'ipam-v2-migration-bundle.zip')
+      await downloadFile('/api/v1/admin/export/v2-migration-bundle', 'padduck_v2_migration_bundle.zip')
     } catch (err) {
       setError(err.message || 'Export failed')
     } finally {
