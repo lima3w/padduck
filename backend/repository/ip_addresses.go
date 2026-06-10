@@ -66,14 +66,16 @@ func scanIP(row interface {
 }
 
 func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error) {
-	query := `WITH ins AS (
-		INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to, tag_id, mac_address, ptr_record)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id
-	)
-	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM ins)`
-	row := r.db.QueryRow(ctx, query, subnetID, address, hostname, status, assignedTo, tagID, macAddress, ptrRecord)
-	return scanIP(row)
+	var id int64
+	err := r.db.QueryRow(ctx,
+		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to, tag_id, mac_address, ptr_record)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		subnetID, address, hostname, status, assignedTo, tagID, macAddress, ptrRecord,
+	).Scan(&id)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetIPAddressByID(ctx, id)
 }
 
 func (r *Repository) GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error) {

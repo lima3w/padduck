@@ -1,0 +1,143 @@
+{
+  "_comment": "Static vendor/model catalog. Update by replacing this file. Vendors are organized by device type keyword matching.",
+  "categories": {
+    "router": {
+      "label": "Router",
+      "keywords": ["router", "gateway", "cpe"],
+      "vendors": {
+        "Cisco": ["ISR 1100", "ISR 4000", "ASR 1000", "ASR 9000", "NCS 5000", "CRS-1"],
+        "Juniper": ["MX Series", "ACX Series", "SRX Series", "PTX Series", "NFX Series"],
+        "Arista": ["7280R", "7500R", "7800R"],
+        "MikroTik": ["CCR1009", "CCR1016", "CCR1036", "CCR1072", "CCR2004", "RB5009"],
+        "Ubiquiti": ["EdgeRouter X", "EdgeRouter 4", "EdgeRouter 6P", "EdgeRouter 12", "UniFi Dream Router"],
+        "Peplink": ["Balance 20", "Balance 210", "Balance 380", "Balance 580", "Balance 710"],
+        "Cradlepoint": ["E100", "E300", "E3000", "R1900"],
+        "TP-Link": ["ER605", "ER7206", "ER8411"],
+        "Netgear": ["BR500", "Orbi Pro SXR80"],
+        "Zyxel": ["USG FLEX 50", "USG FLEX 100", "USG FLEX 200", "USG FLEX 500"],
+        "Fortinet": ["FortiGate 40F", "FortiGate 60F", "FortiGate 100F", "FortiGate 200F"]
+      }
+    },
+    "switch": {
+      "label": "Switch",
+      "keywords": ["switch", "switching"],
+      "vendors": {
+        "Cisco": ["Catalyst 1000", "Catalyst 2960", "Catalyst 3650", "Catalyst 3850", "Catalyst 9200", "Catalyst 9300", "Catalyst 9400", "Catalyst 9500", "Nexus 3000", "Nexus 5000", "Nexus 7000", "Nexus 9000"],
+        "Juniper": ["EX2300", "EX3400", "EX4300", "EX4600", "EX9200", "QFX5100", "QFX5200", "QFX10000"],
+        "Arista": ["7010", "7020", "7050X3", "7060X4", "7130", "7150", "7160", "7250X3", "7280X3", "7300X3", "7320X", "7358X4", "7388X5", "7500X3"],
+        "HPE Aruba": ["2530", "2540", "2920", "2930", "3810", "5400R", "6100", "6200", "6300", "6400", "CX 8360"],
+        "Dell": ["N-Series N1108", "N1148", "N2000", "N3000", "PowerSwitch N3224", "PowerSwitch S3048", "PowerSwitch Z9264"],
+        "Netgear": ["GS308", "GS316", "GS324", "GS748T", "M4300", "M4350", "M6100"],
+        "Ubiquiti": ["UniFi USW-8", "UniFi USW-16-POE", "UniFi USW-24", "UniFi USW-48", "UniFi USW-Pro-24", "UniFi USW-Pro-48", "UniFi USW-Aggregation", "UniFi USW-Enterprise-48-PoE"],
+        "MikroTik": ["CRS305", "CRS309", "CRS317", "CRS326", "CRS354", "CSS326", "CSS610"],
+        "TP-Link": ["TL-SG108", "TL-SG1016", "TL-SG3428", "TL-SG3452", "TL-SX3206HPP"],
+        "D-Link": ["DGS-1008", "DGS-1024", "DGS-3000", "DGS-3130"],
+        "Extreme Networks": ["X435", "X440-G2", "X450-G2", "X460-G2", "X465", "X620", "X690", "X870"],
+        "Brocade": ["ICX 6430", "ICX 6450", "ICX 6610", "ICX 7150", "ICX 7250", "ICX 7450", "ICX 7650", "ICX 7750"]
+      }
+    },
+    "firewall": {
+      "label": "Firewall",
+      "keywords": ["firewall", "utm", "ngfw", "security"],
+      "vendors": {
+        "Palo Alto Networks": ["PA-220", "PA-440", "PA-450", "PA-460", "PA-850", "PA-3200", "PA-5200", "PA-7000"],
+        "Fortinet": ["FortiGate 40F", "FortiGate 60F", "FortiGate 80F", "FortiGate 100F", "FortiGate 200F", "FortiGate 400F", "FortiGate 600F", "FortiGate 1800F", "FortiGate 3200F"],
+        "Check Point": ["1500", "3200", "5000", "6000", "7000", "15000", "16000", "23000", "26000"],
+        "Cisco": ["Firepower 1010", "Firepower 1120", "Firepower 1140", "Firepower 2100", "Firepower 4100", "Firepower 9300", "ASA 5505", "ASA 5506", "ASA 5508", "ASA 5515", "ASA 5525"],
+        "Sophos": ["XG 86", "XG 106", "XG 125", "XG 135", "XG 230", "XG 330"],
+        "pfSense": ["SG-1100", "SG-2100", "SG-3100", "SG-4860", "SG-6100", "XG-1541", "XG-7100"],
+        "OPNsense": ["DEC675", "DEC695", "DEC750", "DEC2750"],
+        "SonicWall": ["SOHO 250", "TZ270", "TZ370", "TZ470", "TZ570", "NSa 2700", "NSa 3700", "NSa 4700"],
+        "WatchGuard": ["Firebox T25", "Firebox T45", "Firebox T85", "Firebox M290", "Firebox M390", "Firebox M4800"],
+        "Zyxel": ["USG FLEX 50", "USG FLEX 100", "USG FLEX 200", "USG FLEX 500", "USG FLEX 700"]
+      }
+    },
+    "access_point": {
+      "label": "Access Point",
+      "keywords": ["access point", "ap", "wireless", "wifi", "wi-fi"],
+      "vendors": {
+        "Cisco": ["Aironet 1800", "Aironet 2800", "Aironet 3800", "Catalyst 9120", "Catalyst 9130", "Catalyst 9136", "Catalyst 9162", "Catalyst 9164"],
+        "Ubiquiti": ["UniFi U6 Lite", "UniFi U6 LR", "UniFi U6 Pro", "UniFi U6 Mesh", "UniFi UAP-AC-Lite", "UniFi UAP-AC-LR", "UniFi UAP-AC-Pro", "UniFi UAP-AC-HD", "UniFi UAP-nanoHD"],
+        "HPE Aruba": ["AP-515", "AP-535", "AP-555", "AP-615", "AP-635", "AP-655", "AP-575", "AP-577"],
+        "Ruckus": ["R350", "R550", "R650", "R750", "R850", "T350", "T750"],
+        "Meraki": ["MR20", "MR28", "MR36", "MR44", "MR46", "MR56", "MR57", "MR76", "MR86"],
+        "TP-Link": ["EAP225", "EAP245", "EAP265 HD", "EAP620 HD", "EAP670", "EAP660 HD"],
+        "Netgear": ["WAX202", "WAX204", "WAX206", "WAX214", "WAX220", "WAX630"],
+        "Extreme Networks": ["AP302W", "AP305C", "AP410i", "AP460i", "AP505i", "AP510i", "AP560h"]
+      }
+    },
+    "server": {
+      "label": "Server",
+      "keywords": ["server", "blade", "rack server", "compute"],
+      "vendors": {
+        "Dell": ["PowerEdge R240", "PowerEdge R340", "PowerEdge R440", "PowerEdge R540", "PowerEdge R640", "PowerEdge R650", "PowerEdge R740", "PowerEdge R750", "PowerEdge R840", "PowerEdge R850", "PowerEdge R940", "PowerEdge T340", "PowerEdge T440", "PowerEdge T640"],
+        "HPE": ["ProLiant DL20 Gen10", "ProLiant DL360 Gen10", "ProLiant DL380 Gen10", "ProLiant DL560 Gen10", "ProLiant ML30 Gen10", "ProLiant ML110 Gen10", "ProLiant ML350 Gen10"],
+        "Lenovo": ["ThinkSystem SR250", "ThinkSystem SR530", "ThinkSystem SR550", "ThinkSystem SR570", "ThinkSystem SR590", "ThinkSystem SR630", "ThinkSystem SR650", "ThinkSystem ST250"],
+        "Supermicro": ["1U 1028", "1U 1029", "2U 2028", "2U 2029", "4U 4028", "BigTwin", "MicroBlade", "FatTwin"],
+        "Cisco": ["UCS C220 M6", "UCS C240 M6", "UCS C480 M5", "UCS B200 M6"],
+        "Fujitsu": ["PRIMERGY RX1330", "PRIMERGY RX2530", "PRIMERGY RX2540", "PRIMERGY TX1320", "PRIMERGY TX1330"],
+        "IBM": ["Power S1014", "Power S1022", "Power S1024", "Power E1050", "Power E1080"]
+      }
+    },
+    "storage": {
+      "label": "Storage",
+      "keywords": ["storage", "nas", "san", "disk", "array"],
+      "vendors": {
+        "NetApp": ["AFF A150", "AFF A250", "AFF A400", "AFF A800", "AFF A900", "FAS2800", "FAS8300", "FAS9000"],
+        "Dell": ["PowerStore 500T", "PowerStore 1200T", "PowerStore 3200T", "PowerVault ME4012", "PowerVault ME5012"],
+        "HPE": ["MSA 2060", "MSA 2062", "Nimble HF20H", "Nimble AF40", "Primera 630"],
+        "Synology": ["DS420", "DS920+", "DS1520+", "DS1821+", "RS820+", "RS1221+", "RS3621xs+"],
+        "QNAP": ["TS-433", "TS-873A", "TS-1635AX", "TS-2888X", "TES-3085U", "TVS-h1688X"],
+        "Pure Storage": ["FlashArray//C", "FlashArray//X", "FlashArray//XL", "FlashBlade//S", "FlashBlade//E"],
+        "Huawei": ["OceanStor 2200V3", "OceanStor 5300V3", "OceanStor 6800V3", "OceanStor Pacific Series"]
+      }
+    },
+    "load_balancer": {
+      "label": "Load Balancer",
+      "keywords": ["load balancer", "load-balancer", "adc", "application delivery"],
+      "vendors": {
+        "F5": ["BIG-IP i800", "BIG-IP i1800", "BIG-IP i2800", "BIG-IP i4800", "BIG-IP i5800", "BIG-IP i7800", "BIG-IP i10800", "BIG-IP i15800"],
+        "Citrix": ["NetScaler MPX 5500", "NetScaler MPX 8900", "NetScaler MPX 14000", "ADC VPX"],
+        "HAProxy": ["HAProxy Enterprise", "HAProxy Community"],
+        "Kemp": ["LoadMaster 2200", "LoadMaster 3400", "LoadMaster 5300", "LoadMaster VLM"],
+        "A10 Networks": ["Thunder 930", "Thunder 1040", "Thunder 3040", "Thunder 4040", "Thunder 6040"],
+        "Radware": ["Alteon 5008", "Alteon 6024", "Alteon 10000"]
+      }
+    },
+    "vpn": {
+      "label": "VPN Concentrator",
+      "keywords": ["vpn", "concentrator"],
+      "vendors": {
+        "Cisco": ["ASA 5505", "ASA 5506", "ASA 5508", "Secure Firewall 3100"],
+        "Palo Alto Networks": ["GlobalProtect"],
+        "Fortinet": ["FortiGate VPN"],
+        "Pulse Secure": ["PSA300", "PSA3000", "PSA5000", "PSA7000"],
+        "OpenVPN": ["Access Server"],
+        "WireGuard": ["WireGuard Appliance"]
+      }
+    },
+    "other": {
+      "label": "Other",
+      "keywords": [],
+      "vendors": {
+        "Cisco": [],
+        "Juniper": [],
+        "Arista": [],
+        "HPE": [],
+        "Dell": [],
+        "Lenovo": [],
+        "Ubiquiti": [],
+        "MikroTik": [],
+        "Netgear": [],
+        "TP-Link": [],
+        "D-Link": [],
+        "Zyxel": [],
+        "Sophos": [],
+        "Fortinet": [],
+        "Palo Alto Networks": [],
+        "Huawei": [],
+        "Extreme Networks": []
+      }
+    }
+  }
+}

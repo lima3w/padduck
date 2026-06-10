@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.31.23
+
+### Features
+- **Vendor/model suggestions**: Device create/edit form now shows vendor and model suggestions filtered by device type, drawn from a bundled `vendors.json` catalog that can be manually updated.
+- **Scan Agents tab in Discovery**: Discovery menu now has a dedicated "Scan Agents" tab, replacing the link in Settings → Tools.
+
+### Bug Fixes
+- **IP creation "no rows in result set"**: Creating an IP address returned an error even though the record was saved. Root cause: PostgreSQL CTE snapshot visibility — the outer SELECT in `WITH ins AS (INSERT…RETURNING id) SELECT…` could not see the newly inserted row. Fixed by splitting into two queries: INSERT RETURNING id, then SELECT by that id.
+- **Utilization history failed to load**: The `GetSubnetUtilisationHistory` handler used the wrong permission string (`"subnets:read"` instead of `"ipam:subnet:read"`), causing all non-admin users to get a 403. Fixed.
+- **Subnets breadcrumb navigated to `networks/undefined/subnets`**: Frontend used `subnet.sectionId` but the API returns `networkId` after camelCase normalization. Fixed to use `subnet.networkId`.
+- **Devices and Requests failed to load / internal server error on device create**: Migration `20260609_003` renamed `sections` → `networks` but missed `devices.section_id` and `subnet_requests.section_id`. Added migration `20260609_004` to rename those columns and update related indexes.
+- **Discovery auto-adds IPs as "Available"**: Discovered IPs are active on the network; status corrected to `"assigned"` in both local-scan and remote-agent paths.
+- **Device type selector showed slug and name**: Type dropdown was rendering `{icon} {name}` (which included the slug icon); now shows name only.
+
+### Changes
+- Settings → Tools: Removed "Scan Jobs" and "Scan Profiles" entries (duplicated the Discovery menu). "Scan Agents" moved to the Discovery tab.
+- Settings → Tools: Split "Reports & Authentication" into separate "Reports" and "Authentication" sections.
+- Backups: Export filenames renamed to `padduck_export.csv`, `padduck_export.json`, and `padduck_v2_migration_bundle.zip`.
+
+### Database Migrations
+- `20260609_004_rename_remaining_section_columns`: Renames `devices.section_id` → `devices.network_id` and `subnet_requests.section_id` → `subnet_requests.network_id`; updates related indexes.
+
 ## v1.31.22
 
 ### Bug Fixes
