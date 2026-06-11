@@ -29,7 +29,7 @@ func (r *Repository) GetUtilisationHistory(ctx context.Context, subnetID int64, 
 	rows, err := r.db.Query(ctx,
 		`SELECT recorded_at, used_count, total_count, utilisation_pct
 		 FROM subnet_utilisation_history
-		 WHERE subnet_id = $1 AND recorded_at >= now() - ($2 || ' days')::interval
+		 WHERE subnet_id = $1 AND recorded_at >= now() - ($2 * INTERVAL '1 day')
 		 ORDER BY recorded_at ASC`,
 		subnetID, days,
 	)
@@ -337,7 +337,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 		JOIN networks sec ON sec.id = s.network_id
 		WHERE ip.status = 'assigned'
 		  AND (ip.device_id IS NOT NULL OR ip.assigned_to IS NOT NULL)
-		  AND (ip.last_seen IS NULL OR ip.last_seen < now() - ($1 || ' days')::interval)
+		  AND (ip.last_seen IS NULL OR ip.last_seen < now() - ($1 * INTERVAL '1 day'))
 		  AND ip.address::text != s.gateway
 		  AND ($2::bigint IS NULL OR sec.id = $2)
 		ORDER BY ip.last_seen ASC NULLS FIRST
@@ -723,7 +723,7 @@ func (r *Repository) GetInactiveDevices(ctx context.Context, days int) ([]*model
 				ELSE GREATEST(0, EXTRACT(DAY FROM now() - last_ping_at)::int)
 			END AS days_inactive
 		FROM devices
-		WHERE last_ping_at IS NULL OR last_ping_at < now() - ($1 || ' days')::interval
+		WHERE last_ping_at IS NULL OR last_ping_at < now() - ($1 * INTERVAL '1 day')
 		ORDER BY days_inactive DESC
 		LIMIT 500
 	`, days)
@@ -759,7 +759,7 @@ func (r *Repository) GetOverdueScanJobs(ctx context.Context, days int) ([]*model
 			is_active
 		FROM scan_jobs
 		WHERE is_active = true
-		  AND (last_run_at IS NULL OR last_run_at < now() - ($1 || ' days')::interval)
+		  AND (last_run_at IS NULL OR last_run_at < now() - ($1 * INTERVAL '1 day'))
 		ORDER BY days_since_run DESC
 		LIMIT 500
 	`, days)

@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.31.24
+
+### Bug Fixes
+- **DHCP sidebar item visible when feature disabled**: Sidebar initialized feature flags from `DEFAULT_FEATURES` (all enabled) before the API responded, causing disabled features to flash or persist in the nav. Features state now starts as `null`; gated items are hidden until the API confirms they are enabled.
+- **DNS settings: `dns_auto_add_ips_enabled` rejected on save**: Both `dns_auto_add_ips_enabled` and `dns_auto_remove_ips_enabled` were missing from the config handler allowlist, causing a "unknown config key" error on every save. Added both keys.
+- **Config allowlist gaps**: Six additional config keys read by the backend had no write path — `session_idle_timeout_minutes`, `session_absolute_timeout_hours`, `api_token_default_expiration_days`, `api_token_rate_limit_per_minute`, `api_token_rotation_grace_period_hours`, and `privacy_policy_version` — all added to the allowlist.
+- **IP hostname not editable after creation**: The edit-IP form did not include the hostname field; `UpdateIPAddressFull` also did not update it. Both fixed.
+- **IP `dns_name` not saving**: `dns_name` was sent by the frontend on create and edit but neither the handler request structs nor the repository queries included it. Fixed across the full stack: handler → service → repository → SQL.
+- **Utilization history failed to load**: PostgreSQL rejected `($2 || ' days')::interval` when pgx sent a typed `int8` — the `||` operator cannot concatenate integer and text. Changed to `$2 * INTERVAL '1 day'` in all four affected queries.
+- **Locations not hidden when feature disabled**: `DevicesPage` did not check the locations feature flag; location columns, filters, and form fields now gate on `features.locations`.
+- **IP association search showed no suggestions**: The device-detail IP search dropdown was `absolute`-positioned inside a modal with `overflow-hidden`, clipping it. Switched to inline flow rendering.
+- **Interface description text appeared disabled**: Description column color was `text-gray-500 dark:text-gray-400` (too faded); changed to `text-gray-700 dark:text-gray-200`.
+- **Bulk delete IPs**: Added a two-step bulk delete action to the IP list (confirmation required). New `POST /api/v1/admin/ip-addresses/bulk-delete` endpoint performs sequential deletion and returns a count.
+- **Scan job hover blown out in dark mode**: List rows and result table rows lacked `dark:hover:bg-gray-700/50`; added.
+
+### Changes
+- **Scheduled Reports moved to Reports page**: Removed from Admin Settings; now appears as a tab in the Reports page (admin only).
+- **Mobile responsiveness**: Added hamburger menu and slide-in sidebar drawer for small screens. Tables wrapped in `overflow-x-auto` across all list pages to prevent horizontal overflow.
+
 ## v1.31.23
 
 ### Features

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api, bulkReleaseIPs } from '../api/client'
+import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, getCustomFields, api, bulkReleaseIPs, bulkDeleteIPs } from '../api/client'
 import { submitIPRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -100,6 +100,7 @@ function DelegationsTab({ subnetId }) {
       </div>
       <ErrorBanner error={error} />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -140,6 +141,7 @@ function DelegationsTab({ subnetId }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (
@@ -339,6 +341,8 @@ export default function IPAddressesPage() {
   const [downloading, setDownloading] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [bulkReleasing, setBulkReleasing] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -481,6 +485,7 @@ export default function IPAddressesPage() {
 
   function openMeta(ip) {
     setForm({
+      hostname: ip.hostname || '',
       tag_id: ip.tagId ? String(ip.tagId) : '',
       mac_address: ip.macAddress || '',
       ptr_record: ip.ptrRecord || '',
@@ -546,6 +551,7 @@ export default function IPAddressesPage() {
     setSaving(true)
     try {
       await updateIPMeta(modal.meta.id, {
+        hostname: form.hostname || '',
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
         mac_address: form.mac_address || null,
         ptr_record: form.ptr_record || null,
@@ -645,6 +651,21 @@ export default function IPAddressesPage() {
       setError('Failed to bulk release IP addresses')
     } finally {
       setBulkReleasing(false)
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selected.size === 0) return
+    setBulkDeleting(true)
+    setBulkDeleteConfirm(false)
+    try {
+      await bulkDeleteIPs(Array.from(selected))
+      setSelected(new Set())
+      load(page)
+    } catch {
+      setError('Failed to bulk delete IP addresses')
+    } finally {
+      setBulkDeleting(false)
     }
   }
 
@@ -873,10 +894,23 @@ export default function IPAddressesPage() {
       {selected.size > 0 && isAdmin && (
         <div className="mb-3 flex items-center gap-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800 text-sm">
           <span className="text-blue-700 dark:text-blue-300 font-medium">{selected.size} selected</span>
-          <button onClick={handleBulkRelease} disabled={bulkReleasing} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
+          <button onClick={handleBulkRelease} disabled={bulkReleasing || bulkDeleting} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
             {bulkReleasing ? 'Releasing...' : 'Release selected'}
           </button>
-          <button onClick={() => setSelected(new Set())} className="px-3 py-1 text-gray-500 hover:text-gray-700 text-xs">Clear</button>
+          {bulkDeleteConfirm ? (
+            <>
+              <span className="text-red-600 dark:text-red-400 text-xs font-medium">Delete {selected.size} IP{selected.size !== 1 ? 's' : ''}?</span>
+              <button onClick={handleBulkDelete} disabled={bulkDeleting} className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50">
+                {bulkDeleting ? 'Deleting...' : 'Confirm delete'}
+              </button>
+              <button onClick={() => setBulkDeleteConfirm(false)} className="px-3 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs">Cancel</button>
+            </>
+          ) : (
+            <button onClick={() => setBulkDeleteConfirm(true)} disabled={bulkDeleting} className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50">
+              Delete selected
+            </button>
+          )}
+          <button onClick={() => { setSelected(new Set()); setBulkDeleteConfirm(false) }} className="px-3 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs">Clear</button>
         </div>
       )}
 
@@ -887,6 +921,7 @@ export default function IPAddressesPage() {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -1022,6 +1057,7 @@ export default function IPAddressesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {!isSearchActive && total > DEFAULT_LIMIT && (

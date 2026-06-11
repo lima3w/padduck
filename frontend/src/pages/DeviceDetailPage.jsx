@@ -467,6 +467,7 @@ export default function DeviceDetailPage() {
             </button>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
@@ -506,6 +507,7 @@ export default function DeviceDetailPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -518,6 +520,7 @@ export default function DeviceDetailPage() {
             </button>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
@@ -537,7 +540,7 @@ export default function DeviceDetailPage() {
                 {interfaces.map(iface => (
                   <tr key={iface.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{iface.name}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.description || '—'}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{iface.description || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {iface.speedMbps ? `${iface.speedMbps} Mbps` : '—'}
                     </td>
@@ -566,6 +569,7 @@ export default function DeviceDetailPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -907,7 +911,7 @@ export default function DeviceDetailPage() {
                   >✕</button>
                 </div>
               ) : (
-                <div className="relative">
+                <div>
                   <input
                     className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                     placeholder="Type an IP address or hostname to search…"
@@ -915,8 +919,8 @@ export default function DeviceDetailPage() {
                     onChange={e => handleIpSearchChange(e.target.value)}
                     autoFocus
                   />
-                  {(ipSearching || ipSearchResults.length > 0) && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg max-h-48 overflow-y-auto">
+                  {(ipSearching || ipSearchResults.length > 0 || (ipSearch.trim() && !ipSearching)) && (
+                    <div className="mt-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 max-h-48 overflow-y-auto">
                       {ipSearching && (
                         <div className="px-3 py-2 text-sm text-gray-400">Searching…</div>
                       )}

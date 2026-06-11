@@ -13,6 +13,7 @@ type CreateIPAddressRequest struct {
 	TagID        *int64             `json:"tag_id"`
 	MACAddress   *string            `json:"mac_address"`
 	PTRRecord    *string            `json:"ptr_record"`
+	DNSName      *string            `json:"dns_name"`
 	CustomFields map[string]*string `json:"custom_fields"`
 }
 
@@ -24,9 +25,11 @@ type AssignIPAddressRequest struct {
 }
 
 type UpdateIPMetaRequest struct {
+	Hostname     string             `json:"hostname"`
 	TagID        *int64             `json:"tag_id"`
 	MACAddress   *string            `json:"mac_address"`
 	PTRRecord    *string            `json:"ptr_record"`
+	DNSName      *string            `json:"dns_name"`
 	CustomFields map[string]*string `json:"custom_fields"`
 }
 
@@ -45,7 +48,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.CustomFields)
+	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error creating IP address", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -219,7 +222,7 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.TagID, req.MACAddress, req.PTRRecord, req.CustomFields)
+	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error updating IP meta", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

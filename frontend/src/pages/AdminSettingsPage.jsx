@@ -373,12 +373,6 @@ export default function AdminSettingsPage() {
       ],
     },
     {
-      title: 'Reports',
-      links: [
-        { to: '/admin/reports/scheduled', title: 'Scheduled Reports', description: 'Manage recurring emailed reports' },
-      ],
-    },
-    {
       title: 'Authentication',
       links: [
         { to: '/admin/auth/ldap', title: 'LDAP / AD', description: 'Configure LDAP authentication and group mappings' },

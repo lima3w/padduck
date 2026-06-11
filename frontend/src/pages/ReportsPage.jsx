@@ -3,8 +3,10 @@ import UtilizationTrendsPage from './UtilizationTrendsPage'
 import InactiveIPsPage from './InactiveIPsPage'
 import DuplicatesPage from './DuplicatesPage'
 import ReconciliationCenterPage from './ReconciliationCenterPage'
+import ScheduledReportsPage from './ScheduledReportsPage'
+import { getCachedUser } from '../utils/storageKeys'
 
-const TABS = [
+const BASE_TABS = [
   { id: 'utilization', label: 'Utilization Trends' },
   { id: 'inactive', label: 'Inactive IPs' },
   { id: 'duplicates', label: 'Duplicate Detection' },
@@ -13,6 +15,8 @@ const TABS = [
 
 export default function ReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const isAdmin = getCachedUser()?.role === 'admin'
+  const tabs = isAdmin ? [...BASE_TABS, { id: 'scheduled', label: 'Scheduled Reports' }] : BASE_TABS
   const activeTab = searchParams.get('tab') || 'utilization'
 
   function setTab(id) {
@@ -23,7 +27,7 @@ export default function ReportsPage() {
     <div className="flex flex-col min-h-0 h-full">
       <div className="border-b border-gray-200 dark:border-gray-700">
         <div className="flex gap-0">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setTab(tab.id)}
@@ -43,6 +47,7 @@ export default function ReportsPage() {
         {activeTab === 'inactive' && <InactiveIPsPage />}
         {activeTab === 'duplicates' && <DuplicatesPage />}
         {activeTab === 'reconciliation' && <ReconciliationCenterPage />}
+        {activeTab === 'scheduled' && isAdmin && <ScheduledReportsPage />}
       </div>
     </div>
   )

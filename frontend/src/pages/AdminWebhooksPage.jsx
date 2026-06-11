@@ -178,6 +178,7 @@ export default function AdminWebhooksPage() {
       <ErrorBanner error={error} onDismiss={() => setError('')} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-8">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -222,10 +223,12 @@ export default function AdminWebhooksPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Recent Deliveries</h2>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -258,10 +261,12 @@ export default function AdminWebhooksPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-8 mb-3">Failure Groups</h2>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -290,6 +295,7 @@ export default function AdminWebhooksPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (
