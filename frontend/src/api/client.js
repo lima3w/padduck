@@ -466,6 +466,7 @@ export const deleteCustomerAssociation = (id) => api.delete(`/customer-associati
 
 // Bulk IP actions
 export const bulkReleaseIPs = (ipIds) => api.post('/admin/ip-addresses/bulk-release', { ip_ids: ipIds })
+export const bulkDeleteIPs = (ipIds) => api.post('/admin/ip-addresses/bulk-delete', { ip_ids: ipIds })
 
 
 // Inactive IPs report

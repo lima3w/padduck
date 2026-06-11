@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from './Header'
 import Sidebar from './Sidebar'
@@ -8,6 +8,13 @@ import { useDarkMode } from '../hooks/useDarkMode'
 export default function Layout() {
   const darkMode = useDarkMode()
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const location = useLocation()
+
+  // close mobile nav on route change
+  useEffect(() => {
+    setNavOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     function onKey(e) {
@@ -28,10 +35,18 @@ export default function Layout() {
       >
         Skip to main content
       </a>
-      <Header darkMode={darkMode} onSearchClick={() => setPaletteOpen(true)} />
+      <Header darkMode={darkMode} onSearchClick={() => setPaletteOpen(true)} onNavToggle={() => setNavOpen(o => !o)} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto p-6 focus:outline-none">
+        {/* mobile overlay */}
+        {navOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+            onClick={() => setNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto p-3 sm:p-6 focus:outline-none">
           <Outlet />
         </main>
       </div>

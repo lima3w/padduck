@@ -137,6 +137,7 @@ function DryRunPreviewPanel({ result }) {
       </div>
       {result.rows?.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
@@ -162,6 +163,7 @@ function DryRunPreviewPanel({ result }) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

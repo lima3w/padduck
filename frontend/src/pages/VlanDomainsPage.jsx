@@ -126,6 +126,7 @@ export default function VlanDomainsPage() {
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -165,6 +166,7 @@ export default function VlanDomainsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

@@ -54,7 +54,7 @@ func (r *handlerImportRepo) CreateSubnetWithVLAN(_ context.Context, networkID in
 func (r *handlerImportRepo) ListIPAddressesBySubnet(_ context.Context, subnetID int64) ([]*models.IPAddress, error) {
 	return r.ips[subnetID], nil
 }
-func (r *handlerImportRepo) CreateIPAddress(_ context.Context, subnetID int64, address, hostname, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error) {
+func (r *handlerImportRepo) CreateIPAddress(_ context.Context, subnetID int64, address, hostname, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
 	r.nextID++
 	ip := &models.IPAddress{ID: r.nextID, SubnetID: subnetID, Address: address, Hostname: hostname, Status: status}
 	r.ips[subnetID] = append(r.ips[subnetID], ip)

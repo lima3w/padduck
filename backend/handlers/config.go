@@ -99,7 +99,15 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"dns_zone_filter_mode":        true,
 		"dns_zone_filter_list":        true,
 		"dns_zone_filter_auto_allow":  true,
-		"anonymous_api_enabled":       true,
+		"dns_auto_add_ips_enabled":             true,
+		"dns_auto_remove_ips_enabled":          true,
+		"anonymous_api_enabled":                true,
+		"session_idle_timeout_minutes":         true,
+		"session_absolute_timeout_hours":       true,
+		"api_token_default_expiration_days":    true,
+		"api_token_rate_limit_per_minute":      true,
+		"api_token_rotation_grace_period_hours": true,
+		"privacy_policy_version":               true,
 	}
 
 	sensitiveConfigKeys := map[string]bool{

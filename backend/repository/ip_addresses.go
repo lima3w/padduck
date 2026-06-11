@@ -65,12 +65,12 @@ func scanIP(row interface {
 	return ip, nil
 }
 
-func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error) {
+func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
 	var id int64
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to, tag_id, mac_address, ptr_record)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-		subnetID, address, hostname, status, assignedTo, tagID, macAddress, ptrRecord,
+		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to, tag_id, mac_address, ptr_record, dns_name)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+		subnetID, address, hostname, status, assignedTo, tagID, macAddress, ptrRecord, dnsName,
 	).Scan(&id)
 	if err != nil {
 		return nil, err
@@ -113,13 +113,13 @@ func (r *Repository) UpdateIPAddressStatus(ctx context.Context, id int64, status
 	return scanIP(row)
 }
 
-func (r *Repository) UpdateIPAddressFull(ctx context.Context, id int64, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error) {
+func (r *Repository) UpdateIPAddressFull(ctx context.Context, id int64, hostname string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
 	query := `WITH upd AS (
-		UPDATE ip_addresses SET tag_id = $2, mac_address = $3, ptr_record = $4, updated_at = CURRENT_TIMESTAMP
+		UPDATE ip_addresses SET hostname = $2, tag_id = $3, mac_address = $4, ptr_record = $5, dns_name = $6, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1 RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, tagID, macAddress, ptrRecord)
+	row := r.db.QueryRow(ctx, query, id, hostname, tagID, macAddress, ptrRecord, dnsName)
 	return scanIP(row)
 }
 

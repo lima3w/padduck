@@ -74,6 +74,7 @@ export default function DnsZoneDetailPage() {
         <p className="text-gray-500">Loading records...</p>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
@@ -117,6 +118,7 @@ export default function DnsZoneDetailPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

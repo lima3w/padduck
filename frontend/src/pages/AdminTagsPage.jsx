@@ -104,6 +104,7 @@ export default function AdminTagsPage() {
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
@@ -148,6 +149,7 @@ export default function AdminTagsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal && (

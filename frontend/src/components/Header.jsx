@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import UserMenu from './UserMenu'
 import { api } from '../api/client'
 
-export default function Header({ darkMode, onSearchClick }) {
+export default function Header({ darkMode, onSearchClick, onNavToggle }) {
   const { user } = useAuth()
   const [appUrl, setAppUrl] = useState(null)
 
@@ -15,17 +15,29 @@ export default function Header({ darkMode, onSearchClick }) {
   }, [])
 
   return (
-    <header className="bg-[#07162b] text-white px-6 py-3 flex items-center justify-between shadow border-b border-[#25364a]">
-      <a
-        href={appUrl || '/'}
-        className="flex items-center gap-3 hover:opacity-90 transition-opacity"
-        title={appUrl || 'Dashboard'}
-      >
-        <img src="/favicon.svg" alt="Padduck" className="w-8 h-8" />
-        <span className="text-xl font-bold tracking-tight">Padduck</span>
-        <span className="text-[#a8b8cb] text-sm hidden sm:inline">IP Address Management</span>
-      </a>
-      <div className="flex items-center gap-3">
+    <header className="bg-[#07162b] text-white px-4 py-3 flex items-center justify-between shadow border-b border-[#25364a] shrink-0">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onNavToggle}
+          aria-label="Toggle navigation"
+          className="lg:hidden p-1.5 rounded hover:bg-[#25364a] text-[#a8b8cb] focus:outline-none focus:ring-2 focus:ring-[#f5b800]"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <a
+          href={appUrl || '/'}
+          className="flex items-center gap-3 hover:opacity-90 transition-opacity"
+          title={appUrl || 'Dashboard'}
+        >
+          <img src="/favicon.svg" alt="Padduck" className="w-8 h-8" />
+          <span className="text-xl font-bold tracking-tight">Padduck</span>
+          <span className="text-[#a8b8cb] text-sm hidden sm:inline">IP Address Management</span>
+        </a>
+      </div>
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onSearchClick}
@@ -43,7 +55,7 @@ export default function Header({ darkMode, onSearchClick }) {
         {user?.role === 'admin' && (
           <Link
             to="/admin"
-            className="text-sm bg-[#0a1f3a] hover:bg-[#25364a] px-3 py-1 rounded transition border border-[#25364a]"
+            className="hidden sm:block text-sm bg-[#0a1f3a] hover:bg-[#25364a] px-3 py-1 rounded transition border border-[#25364a]"
           >
             Admin
           </Link>

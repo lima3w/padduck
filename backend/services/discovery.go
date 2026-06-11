@@ -86,7 +86,7 @@ type discoveryRepo interface {
 	CreateDiscoveryConflict(ctx context.Context, deviceID int64, fieldName, discoveredValue string, currentValue *string, confidenceScore float64, source string) (*models.DiscoveryConflict, error)
 	ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error)
 	// Auto-add IPs (#item5)
-	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
 }
 
 // maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
@@ -273,7 +273,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			if r.ptr != nil {
 				hostname = *r.ptr
 			}
-			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "assigned", nil, nil, nil, r.ptr)
+			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "assigned", nil, nil, nil, r.ptr, nil)
 			if createErr != nil {
 				log.Printf("[discovery] auto-add IP %s in subnet %d: %v", r.ip, subnetID, createErr)
 			} else {
@@ -739,7 +739,7 @@ func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64
 		}
 		// Auto-add: if alive and no existing IP record, create one.
 		if res.IsAlive && ipAddrID == nil && job.AutoAddIPs && res.SubnetID > 0 {
-			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "assigned", nil, nil, nil, nil)
+			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "assigned", nil, nil, nil, nil, nil)
 			if createErr != nil {
 				log.Printf("agent %d: auto-add IP %s in subnet %d: %v", agentID, res.IPAddress, res.SubnetID, createErr)
 			} else {

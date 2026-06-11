@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import CustomFieldForm from '../components/CustomFieldForm'
-import { api } from '../api/client'
+import { api, getFeatures } from '../api/client'
+import { normalizeFeatures } from '../utils/features'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
 import PageSpinner from '../components/PageSpinner'
@@ -26,7 +27,7 @@ const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', mod
 
 const COL_LABELS = { vendor_model: 'Vendor / Model', location: 'Location', ips: 'IPs', status: 'Status' }
 
-function ColToggle({ cols, setCols }) {
+function ColToggle({ cols, setCols, labels }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="relative">
@@ -36,7 +37,7 @@ function ColToggle({ cols, setCols }) {
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 py-1">
-          {Object.entries(COL_LABELS).map(([key, label]) => (
+          {Object.entries(labels).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
               <input type="checkbox" checked={cols[key] !== false} onChange={e => setCols(c => ({ ...c, [key]: e.target.checked }))} className="rounded" />
               {label}
@@ -61,7 +62,8 @@ export default function DevicesPage() {
   const [filterOnline, setFilterOnline] = useState(savedFilters.filterOnline)
   const [isFiltered, setIsFiltered] = useState(false)
   const [cols, setCols] = useState(() => loadColPrefs(COL_KEY, DEFAULT_COLS, LEGACY_COL_KEY))
-  const col = (name) => cols[name] !== false
+  const [locationsEnabled, setLocationsEnabled] = useState(true)
+  const col = (name) => cols[name] !== false && (name !== 'location' || locationsEnabled)
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -87,7 +89,11 @@ export default function DevicesPage() {
     loadDeviceTypes()
     load(1)
     loadCfDefs()
-    loadLocations()
+    getFeatures().then(res => {
+      const f = normalizeFeatures(res.data)
+      setLocationsEnabled(f.locations !== false)
+      if (f.locations !== false) loadLocations()
+    }).catch(() => loadLocations())
   }, [])
 
   useEffect(() => {
@@ -310,7 +316,7 @@ export default function DevicesPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Devices</h1>
         <div className="flex items-center gap-2">
-          <ColToggle cols={cols} setCols={setCols} />
+          <ColToggle cols={cols} setCols={setCols} labels={locationsEnabled ? COL_LABELS : Object.fromEntries(Object.entries(COL_LABELS).filter(([k]) => k !== 'location'))} />
           {isAdmin && (
             <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
               {downloading ? 'Exporting...' : 'Export CSV'}
@@ -352,7 +358,7 @@ export default function DevicesPage() {
             <option value="true">Online only</option>
             <option value="false">Offline only</option>
           </select>
-          {locations.length > 0 && (
+          {locationsEnabled && locations.length > 0 && (
             <select
               value={filterLocationId}
               onChange={e => setFilterLocationId(e.target.value)}
@@ -433,6 +439,7 @@ export default function DevicesPage() {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
@@ -518,6 +525,7 @@ export default function DevicesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {!isFiltered && total > DEFAULT_LIMIT && (
@@ -604,6 +612,7 @@ export default function DevicesPage() {
                 onChange={e => setForm(f => ({ ...f, os_version: e.target.value }))}
               />
             </div>
+            {locationsEnabled && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (optional)</label>
               <select
@@ -621,7 +630,8 @@ export default function DevicesPage() {
                 ))}
               </select>
             </div>
-            {form.location_id && (
+            )}
+            {locationsEnabled && form.location_id && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack (optional)</label>

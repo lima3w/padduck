@@ -457,3 +457,37 @@ func (h *Handler) BulkReleaseIPs(c *fiber.Ctx) error {
 		"released_count": count,
 	})
 }
+
+// BulkDeleteIPsRequest is the body for POST /api/v1/admin/ip-addresses/bulk-delete
+type BulkDeleteIPsRequest struct {
+	IPIDs []int64 `json:"ip_ids"`
+}
+
+// BulkDeleteIPs handles POST /api/v1/admin/ip-addresses/bulk-delete
+func (h *Handler) BulkDeleteIPs(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+		return nil
+	}
+
+	req := new(BulkDeleteIPsRequest)
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if len(req.IPIDs) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ip_ids must not be empty"})
+	}
+
+	var deleted int
+	for _, id := range req.IPIDs {
+		if err := h.service.DeleteIPAddress(c.Context(), id); err != nil {
+			reqLogger(c).Error("bulk delete IP failed", "ip_id", id, "error", err)
+			continue
+		}
+		deleted++
+	}
+
+	return c.JSON(fiber.Map{
+		"deleted_count": deleted,
+	})
+}

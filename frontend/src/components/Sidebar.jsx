@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { getPendingRequestCount } from '../api/requests'
 import { getDnsZones, getFeatures, checkForUpdates } from '../api/client'
 import { DEFAULT_FEATURES, normalizeFeatures } from '../utils/features'
@@ -7,13 +8,18 @@ import { getCachedUser } from '../utils/storageKeys'
 
 const SECTION_HEADER = 'mt-2 pt-3 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/50 uppercase tracking-wider border-t border-[#25364a]'
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
+  const location = useLocation()
+
+  useEffect(() => {
+    onClose?.()
+  }, [location.pathname])
 
   const [pendingCount, setPendingCount] = useState(0)
   const [dnsConfigured, setDnsConfigured] = useState(true)
-  const [features, setFeatures] = useState(DEFAULT_FEATURES)
+  const [features, setFeatures] = useState(null)
   const [version, setVersion] = useState(null)
 
   useEffect(() => {
@@ -70,8 +76,21 @@ export default function Sidebar() {
   }, [])
 
   return (
-    <aside className="w-48 bg-[#07162b] text-[#f4f7fa] h-full min-h-0 flex flex-col border-r border-[#25364a]">
-      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-4">
+    <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#07162b] text-[#f4f7fa] flex flex-col border-r border-[#25364a] transition-transform duration-200 ease-in-out lg:relative lg:inset-auto lg:z-auto lg:w-48 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="flex items-center justify-between px-4 pt-4 pb-2 lg:hidden shrink-0">
+        <span className="text-sm font-semibold text-[#a8b8cb]">Navigation</span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close navigation"
+          className="p-1.5 rounded hover:bg-[#0d2848] text-[#a8b8cb] focus:outline-none focus:ring-2 focus:ring-[#f5b800]"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-4 pt-2 lg:pt-4">
         <NavLink
           to="/"
           end
@@ -93,7 +112,7 @@ export default function Sidebar() {
         >
           Networks
         </NavLink>
-        {features.devices && (
+        {features?.devices && (
           <NavLink
             to="/devices"
             className={({ isActive }) =>
@@ -118,10 +137,10 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        {(features.locations || features.racks) && (
+        {(features?.locations || features?.racks) && (
           <div className={SECTION_HEADER}>Physical</div>
         )}
-        {features.locations && (
+        {features?.locations && (
           <NavLink
             to="/locations"
             className={({ isActive }) =>
@@ -133,7 +152,7 @@ export default function Sidebar() {
             Locations
           </NavLink>
         )}
-        {features.racks && (
+        {features?.racks && (
           <NavLink
             to="/racks"
             className={({ isActive }) =>
@@ -146,7 +165,7 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        {features.bgp && (
+        {features?.bgp && (
           <NavLink
             to="/autonomous-systems"
             className={({ isActive }) =>
@@ -159,10 +178,10 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        {(features.nat || features.firewall || features.dhcp || features.circuits) && (
+        {(features?.nat || features?.firewall || features?.dhcp || features?.circuits) && (
           <div className={SECTION_HEADER}>Network Services</div>
         )}
-        {features.nat && (
+        {features?.nat && (
           <NavLink
             to="/nat-rules"
             className={({ isActive }) =>
@@ -174,7 +193,7 @@ export default function Sidebar() {
             NAT Rules
           </NavLink>
         )}
-        {features.firewall && (
+        {features?.firewall && (
           <NavLink
             to="/firewall-zones"
             className={({ isActive }) =>
@@ -186,7 +205,7 @@ export default function Sidebar() {
             Firewall Zones
           </NavLink>
         )}
-        {features.dhcp && (
+        {features?.dhcp && (
           <NavLink
             to="/dhcp"
             className={({ isActive }) =>
@@ -198,7 +217,7 @@ export default function Sidebar() {
             DHCP
           </NavLink>
         )}
-        {features.circuits && (
+        {features?.circuits && (
           <NavLink
             to="/circuits"
             className={({ isActive }) =>
@@ -211,7 +230,7 @@ export default function Sidebar() {
           </NavLink>
         )}
 
-        {features.customers && (
+        {features?.customers && (
           <>
             <div className={SECTION_HEADER}>Customers</div>
             <NavLink
@@ -227,10 +246,10 @@ export default function Sidebar() {
           </>
         )}
 
-        {(features.vlans || features.vrfs) && (
+        {(features?.vlans || features?.vrfs) && (
           <div className={SECTION_HEADER}>VLANs &amp; VRFs</div>
         )}
-        {features.vlans && (
+        {features?.vlans && (
           <NavLink
             to="/vlans"
             className={({ isActive }) =>
@@ -242,7 +261,7 @@ export default function Sidebar() {
             VLANs
           </NavLink>
         )}
-        {features.vrfs && (
+        {features?.vrfs && (
           <NavLink
             to="/vrfs"
             className={({ isActive }) =>
@@ -289,7 +308,6 @@ export default function Sidebar() {
         >
           Reports
         </NavLink>
-
         {isAdmin && (
           <>
             <div className={SECTION_HEADER}>Admin</div>

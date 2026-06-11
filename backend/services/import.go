@@ -77,7 +77,7 @@ type ImportRepo interface {
 	CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error)
 	// IPs
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
-	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord *string) (*models.IPAddress, error)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
 	// VLANs / VRFs
 	ListAllVLANs(ctx context.Context) ([]*models.VLAN, error)
 	ListAllVRFs(ctx context.Context) ([]*models.VRF, error)
@@ -256,7 +256,7 @@ func (s *ImportService) ImportIPsCSV(ctx context.Context, r io.Reader) (*ImportR
 			macAddress = &mac
 		}
 
-		_, err = s.repo.CreateIPAddress(ctx, subnetID, address, hostname, status, assignedTo, nil, macAddress, nil)
+		_, err = s.repo.CreateIPAddress(ctx, subnetID, address, hostname, status, assignedTo, nil, macAddress, nil, nil)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: address, Message: err.Error()})
@@ -618,7 +618,7 @@ func (s *ImportService) importPHPIpamIPs(ctx context.Context, r io.Reader) (*Imp
 		state := strings.TrimSpace(rec["state"])
 		status := phpIpamStateToStatus(state)
 
-		_, err = s.repo.CreateIPAddress(ctx, subnetID, ip, hostname, status, nil, nil, nil, nil)
+		_, err = s.repo.CreateIPAddress(ctx, subnetID, ip, hostname, status, nil, nil, nil, nil, nil)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: ip, Message: err.Error()})

@@ -304,7 +304,7 @@ export default function ScanJobsPage() {
                   <li key={job.id}>
                     <button
                       onClick={() => selectJob(job)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition ${
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${
                         selectedJob?.id === job.id
                           ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
                           : ''
@@ -420,7 +420,7 @@ export default function ScanJobsPage() {
                         <EmptyRow colSpan={5} message="No results yet." />
                       ) : (
                         results.filter(r => !hideDown || r.isAlive).map((r) => (
-                          <tr key={r.id} className="hover:bg-gray-50">
+                          <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-4 py-2 font-mono text-xs text-gray-900">{r.ipAddress}</td>
                             <td className="px-4 py-2">
                               {r.isAlive ? (

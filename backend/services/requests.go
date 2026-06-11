@@ -247,7 +247,11 @@ func (s *Service) ApproveIPRequest(ctx context.Context, requestID, reviewerID in
 			// Create new IP address record
 			purpose := ir.Purpose
 			dnsName := ir.DNSName
-			ipAddr, err = s.repository.CreateIPAddress(ctx, ir.SubnetID, *ir.RequestedIP, dnsName, "assigned", &purpose, nil, nil, nil)
+			var dnsNamePtr *string
+			if dnsName != "" {
+				dnsNamePtr = &dnsName
+			}
+			ipAddr, err = s.repository.CreateIPAddress(ctx, ir.SubnetID, *ir.RequestedIP, dnsName, "assigned", &purpose, nil, nil, nil, dnsNamePtr)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create IP: %w", err)
 			}
