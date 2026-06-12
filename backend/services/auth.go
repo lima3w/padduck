@@ -219,6 +219,9 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 
 	user, err := s.repository.GetUserByUsername(ctx, username)
 	if err != nil {
+		// Burn a bcrypt comparison so this path takes as long as a wrong
+		// password, preventing username enumeration via response timing.
+		utils.DummyVerifyPassword(password)
 		// Record attempt even for unknown usernames (best-effort)
 		s.ProcessFailedLogin(ctx, 0, username, ipAddress, userAgent, "user not found")
 		return nil, fmt.Errorf("user not found")
@@ -231,6 +234,8 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 	}
 
 	if user.PasswordHash == "" {
+		// Equalize timing with the password-check path (see not-found case above)
+		utils.DummyVerifyPassword(password)
 		s.ProcessFailedLogin(ctx, user.ID, username, ipAddress, userAgent, "no password set")
 		return nil, fmt.Errorf("user has no password set")
 	}
