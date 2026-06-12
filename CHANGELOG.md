@@ -7,6 +7,11 @@
 - **Account lockout response confirmed account existence**: The lockout check ran before password verification, so the distinct 429 "account locked" response let anyone confirm an account exists by triggering lockout with bogus attempts. The check now runs after password verification: locked accounts still reject the correct password, but callers without valid credentials get the same generic failure as for nonexistent accounts. (#76)
 - **Avatar uploads not validated as images**: Custom avatars were stored as client-supplied base64 data URLs with the declared media type trusted and later served back as the Content-Type. Uploads must now decode as a real PNG/JPEG/GIF/WebP within 4096x4096, the stored media type is rewritten to the decoded format, and avatar responses send `X-Content-Type-Options: nosniff`. (#77)
 - **SSRF regression tests for webhook deliveries**: The dial-time SSRF guard (`internal/netguard`) was already in place; added regression tests pinning cloud metadata endpoints (IPv4 and IPv6), RFC 1918 ranges, and IPv4-mapped-IPv6 bypass attempts. (#74)
+- **Stored XSS via URL custom fields**: URL-type custom field values were rendered directly into anchor hrefs, so a `javascript:` value became a clickable script link. Values are now linked only when they use `http://`/`https://`; anything else renders as plain text. (#69)
+- **Admin-configured appUrl rendered unchecked**: The header logo link used the admin-configured `appUrl` without scheme validation; it is now accepted only when it is an http(s) URL. (#73)
+- **Content-Security-Policy header**: The frontend nginx config now sends a same-origin CSP (scripts/fonts/styles/connections restricted to `'self'`, with allowances only for inline style attributes, Gravatar images, and data: image previews). (#70)
+- **Self-hosted Inter font**: The Inter typeface is now bundled via `@fontsource/inter` instead of loaded from fonts.googleapis.com — no more third-party requests on page load, and `font-src` is locked to `'self'`. (#71)
+- **HSTS documentation**: New "Production: TLS and HSTS" section in getting-started.md with nginx/Caddy/Traefik examples, since TLS (and therefore HSTS) terminates upstream of the bundled containers. (#72)
 
 ## v1.31.24
 
