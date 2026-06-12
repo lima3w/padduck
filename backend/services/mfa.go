@@ -38,6 +38,10 @@ const (
 	challengeTTL  = 5 * time.Minute
 )
 
+// backupCodeBcryptCost is a var so integration tests can drop it to
+// bcrypt.MinCost; production always runs at DefaultCost.
+var backupCodeBcryptCost = bcrypt.DefaultCost
+
 type MFAService struct {
 	repository    *repository.Repository
 	encryptionKey []byte
@@ -103,7 +107,7 @@ func (s *MFAService) ConfirmTOTP(ctx context.Context, userID int64, code string)
 		return nil, err
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	if err := s.repository.UpsertMFASettings(ctx, userID, true, &now); err != nil {
 		return nil, err
 	}
@@ -133,7 +137,7 @@ func (s *MFAService) RegenerateBackupCodes(ctx context.Context, userID int64, co
 	if err := s.VerifyTOTPOrBackupCode(ctx, userID, code); err != nil {
 		return nil, err
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	return s.regenerateBackupCodes(ctx, userID, &now)
 }
 
@@ -148,7 +152,7 @@ func (s *MFAService) regenerateBackupCodes(ctx context.Context, userID int64, ts
 		code := strings.ToUpper(hex.EncodeToString(raw))
 		code = code[:6] + "-" + code[6:]
 		codes[i] = code
-		h, err := bcrypt.GenerateFromPassword([]byte(code), bcrypt.DefaultCost)
+		h, err := bcrypt.GenerateFromPassword([]byte(code), backupCodeBcryptCost)
 		if err != nil {
 			return nil, err
 		}
@@ -229,7 +233,10 @@ func (s *MFAService) CreateChallenge(ctx context.Context, userID int64) (string,
 	hash := sha256.Sum256([]byte(raw))
 	hashHex := hex.EncodeToString(hash[:])
 
-	_, err := s.repository.CreateMFAChallenge(ctx, userID, hashHex, time.Now().Add(challengeTTL))
+	// The expires_at column is TIMESTAMP (no time zone): pgx stores the
+	// wall-clock and reads it back as UTC, so the write must be in UTC or
+	// challenges are instantly expired on any host running behind UTC.
+	_, err := s.repository.CreateMFAChallenge(ctx, userID, hashHex, time.Now().UTC().Add(challengeTTL))
 	if err != nil {
 		return "", err
 	}
