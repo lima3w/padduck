@@ -132,3 +132,25 @@ func TestRunJobCancelledContext(t *testing.T) {
 	results := runJob(ctx, job)
 	_ = results // result count is non-deterministic, just ensure no panic/hang
 }
+
+func TestValidateServerURL(t *testing.T) {
+	tests := []struct {
+		url           string
+		allowInsecure bool
+		wantErr       bool
+	}{
+		{"https://padduck.example.com", false, false},
+		{"http://padduck.example.com", false, true},  // cleartext token requires opt-in
+		{"http://padduck.example.com", true, false},  // explicit opt-in
+		{"ftp://padduck.example.com", false, true},
+		{"ftp://padduck.example.com", true, true}, // opt-in does not unlock other schemes
+		{"padduck.example.com", false, true},      // not absolute
+		{"", false, true},
+	}
+	for _, tt := range tests {
+		err := validateServerURL(tt.url, tt.allowInsecure)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("validateServerURL(%q, %v): err=%v, wantErr=%v", tt.url, tt.allowInsecure, err, tt.wantErr)
+		}
+	}
+}
