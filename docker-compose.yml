@@ -14,6 +14,23 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+    # Security hardening: prevent privilege escalation and drop all capabilities
+    # except the two that the official Postgres init script needs (it starts as
+    # root, chowns the data directory, then drops to the postgres user).
+    # CHOWN and FOWNER are re-added so it can change ownership of ./data/db on
+    # first boot. read_only is not applied because Postgres writes extensively
+    # to its data volume and internal paths (/tmp, /var/run/postgresql) — fully
+    # mapping those with tmpfs is brittle across minor Postgres upgrades.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - FOWNER
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
 
   backend:
     image: ghcr.io/lima3w/padduck-backend:${IMAGE_TAG:-v1.31.24}
@@ -38,6 +55,25 @@ services:
       timeout: 5s
       retries: 6
       start_period: 20s
+    # Security hardening: read-only root filesystem with tmpfs for writable
+    # runtime paths. The backend entrypoint runs as root, chowns /app/data,
+    # then drops to the unprivileged app user via su-exec, so CHOWN, SETUID,
+    # and SETGID must be retained. The backend writes the generated admin
+    # password to /run/ipam/ and may use /tmp for scratch space — covered by
+    # tmpfs mounts.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run
 
   frontend:
     image: ghcr.io/lima3w/padduck-frontend:${IMAGE_TAG:-v1.31.24}
@@ -59,3 +95,25 @@ services:
       timeout: 5s
       retries: 6
       start_period: 10s
+    # Security hardening: read-only root filesystem with tmpfs for the paths
+    # nginx needs to write at runtime (pid file, temp/cache/log directories).
+    # nginx serves on port 3000 (>1024) so NET_BIND_SERVICE is not needed.
+    # The nginx master process starts as root, chowns the cache subdirectories
+    # in /var/cache/nginx (tmpfs), then drops to the nginx worker user, so
+    # CHOWN, SETUID, and SETGID must be retained. The IPv6 init script handles
+    # a read-only /etc/nginx/conf.d gracefully (it exits without error).
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /var/cache/nginx
+      - /var/log/nginx
