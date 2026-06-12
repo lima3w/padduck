@@ -161,7 +161,7 @@ jobs:
           labels: ${{ steps.meta-frontend.outputs.labels }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2.6.2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda  # v3.0.0
         with:
           tag_name: ${{ steps.version.outputs.version }}
           body: ${{ steps.changelog.outputs.notes }}
@@ -192,7 +192,7 @@ jobs:
           GOOS=windows GOARCH=amd64 go build -o ../dist/padduck-agent-windows-amd64.exe .
 
       - name: Upload agent binaries to GitHub Release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2.6.2
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda  # v3.0.0
         with:
           tag_name: ${{ needs.release.outputs.version }}
           files: |
