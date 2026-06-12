@@ -85,7 +85,7 @@ build:
 
 ## frontend-install: install frontend dependencies
 frontend-install:
-	cd $(FRONTEND_DIR) && npm install
+	cd $(FRONTEND_DIR) && npm ci
 
 ## frontend-build: verify the frontend compiles cleanly
 frontend-build:
