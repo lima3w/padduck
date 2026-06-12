@@ -34,5 +34,16 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.js',
+    coverage: {
+      provider: 'v8',
+      // Regression floor, set just below current coverage of test-imported
+      // files (49.7/41.8/33.9/17.4 as of v1.31.25). Ratchet up as tests grow.
+      thresholds: {
+        lines: 45,
+        statements: 38,
+        branches: 30,
+        functions: 15,
+      },
+    },
   },
 })

@@ -286,8 +286,9 @@ export default function NetworksPage() {
         <Modal title={modal === 'create' ? 'New Network' : 'Edit Network'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label htmlFor="network-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input
+                id="network-name"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -295,8 +296,9 @@ export default function NetworksPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label htmlFor="network-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <input
+                id="network-description"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}

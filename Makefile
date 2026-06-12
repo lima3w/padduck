@@ -104,7 +104,7 @@ frontend-lint:
 ## frontend-test: run frontend unit tests (non-watch mode)
 frontend-test:
 	@echo "→ frontend tests"
-	cd $(FRONTEND_DIR) && npm test
+	cd $(FRONTEND_DIR) && npm run test:coverage
 
 ## frontend-build: verify the frontend compiles cleanly
 frontend-build:
