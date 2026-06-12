@@ -12,6 +12,12 @@
 - **Content-Security-Policy header**: The frontend nginx config now sends a same-origin CSP (scripts/fonts/styles/connections restricted to `'self'`, with allowances only for inline style attributes, Gravatar images, and data: image previews). (#70)
 - **Self-hosted Inter font**: The Inter typeface is now bundled via `@fontsource/inter` instead of loaded from fonts.googleapis.com — no more third-party requests on page load, and `font-src` is locked to `'self'`. (#71)
 - **HSTS documentation**: New "Production: TLS and HSTS" section in getting-started.md with nginx/Caddy/Traefik examples, since TLS (and therefore HSTS) terminates upstream of the bundled containers. (#72)
+- **Agent: server-supplied CIDR size capped**: A hostile or compromised server could send the agent an arbitrarily broad CIDR (e.g. `0.0.0.0/0`) and OOM it or use it as a mass scanner. Prefixes broader than `/16` are now rejected, and IPs are iterated lazily instead of materialized up front. (#78)
+- **Agent: plain-HTTP server URL requires opt-in**: The agent silently sent its bearer token in cleartext when `PADDUCK_SERVER_URL` was `http://`. Startup now fails unless `PADDUCK_ALLOW_INSECURE=true` is set, which logs a prominent warning instead. (#79)
+- **Agent: container runs as non-root**: The agent image now runs as a dedicated `padduck` user, with `cap_net_raw` granted to the ping binary at build time so ICMP scanning still works without extra runtime flags. Also fixes the agent image build (builder bumped to go 1.26.4 to match go.mod). (#80)
+- **Backup/restore: password no longer visible in `ps`**: The scripts passed the full `DATABASE_URL` (password included) as a `pg_dump`/`psql` argument. The password is now split out and passed via `PGPASSWORD`. (#81)
+- **Backup dumps owner-only**: `backup.sh` now sets `umask 077` — dumps (which contain password hashes and encrypted credentials) are created `600` in a `700` directory. (#82)
+- **Backup/restore: `DATABASE_URL` required**: The `postgres://padduck:padduck@localhost` fallback is gone; both scripts fail with a clear error when `DATABASE_URL` is unset. (#83)
 
 ## v1.31.24
 
