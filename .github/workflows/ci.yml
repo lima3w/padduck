@@ -101,6 +101,10 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Audit frontend dependencies
+        working-directory: ./frontend
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Lint frontend
         working-directory: ./frontend
         run: npm run lint

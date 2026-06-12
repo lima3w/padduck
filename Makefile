@@ -1,4 +1,4 @@
-.PHONY: ci-local test vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install check-migrations sbom help
+.PHONY: ci-local test vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-audit check-migrations sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -14,7 +14,7 @@ GOVULNCHECK_MIN_GO ?= go1.26.4
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
 ## ci-local: run all checks that must pass before pushing (mirrors Gitea CI)
-ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-build
+ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-build frontend-audit
 	@echo "✓ ci-local passed"
 
 ## test: run backend unit tests with race detector
@@ -91,6 +91,11 @@ frontend-install:
 frontend-build:
 	@echo "→ frontend build"
 	cd $(FRONTEND_DIR) && npm run build --silent
+
+## frontend-audit: scan frontend production dependencies for known vulnerabilities
+frontend-audit:
+	@echo "→ npm audit"
+	cd $(FRONTEND_DIR) && npm audit --omit=dev --audit-level=high
 
 ## sbom: generate dependency SBOM from vendored Go modules and npm lockfile
 sbom:
