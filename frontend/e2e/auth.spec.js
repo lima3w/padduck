@@ -12,7 +12,7 @@ test('rejects wrong credentials with a generic error', async ({ page }) => {
 
 test('logs in and lands on the dashboard', async ({ page }) => {
   await loginAsAdmin(page)
-  await expect(page.getByText('Networks', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Recent Activity' })).toBeVisible()
 })
 
 test('redirects unauthenticated visitors to login', async ({ page }) => {
