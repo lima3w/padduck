@@ -29,6 +29,7 @@
 - **User queries crashed on passwordless users**: Every user SELECT/RETURNING scanned `password_hash` into a non-nullable string, so any user with a NULL hash (first-boot admin, the plain CreateUser path) broke the query. Now COALESCEd to the empty string the service layer already expects. (found by #90)
 - **Device lists crashed for devices without a type**: All seven device list/get queries scanned NULL device-type columns from the LEFT JOIN into non-nullable fields. The shared column list is now NULL-safe. (found by #90)
 - **Password-reset rollback was broken**: The `20260513_001_create_sessions` down migration deleted session-timeout keys from `config` while the up migration inserts into `configs` — any rollback past that point failed mid-chain. (found by #99)
+- **All local-time database writes audited and fixed**: The four UTC-skew bugs found by the test campaign were instances of one pattern (`time.Now()` written to TIMESTAMP columns). All 47 remaining `time.Now()` sites were audited and the fifteen DB-bound ones fixed (notification retries, OAuth2 state, email verification, impersonation sessions, webhook retries, IP leases, retention cutoffs, and more); a repository-package test now fails on any bare `time.Now()` so the pattern cannot return. (#111)
 - **API token expiry skewed on non-UTC deployments**: Token expiry, rotation grace, and session absolute-expiry were written with local time and read back as UTC — extended tokens expired five hours early on a UTC-5 host. All expiry writes now use UTC. (found by #102)
 
 ### Testing
