@@ -174,7 +174,7 @@ func (w *WebhookService) ProcessQueue(ctx context.Context) {
 		newRetryCount := delivery.RetryCount + 1
 		var nextRetryAt *time.Time
 		if newRetryCount < maxWebhookRetries {
-			t := time.Now().Add(time.Duration(newRetryCount*newRetryCount) * time.Minute)
+			t := time.Now().UTC().Add(time.Duration(newRetryCount*newRetryCount) * time.Minute)
 			nextRetryAt = &t
 		}
 		var statusPtr *int

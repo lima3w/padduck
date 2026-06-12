@@ -345,7 +345,7 @@ func (rs *ReportsService) RunScheduledReport(ctx context.Context, report *models
 		}
 	}
 
-	err = rs.repo.UpdateScheduledReportRunTime(ctx, report.ID, time.Now())
+	err = rs.repo.UpdateScheduledReportRunTime(ctx, report.ID, time.Now().UTC())
 	if err == nil {
 		rs.clearReportCache()
 	}

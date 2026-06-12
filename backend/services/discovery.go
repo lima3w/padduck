@@ -687,7 +687,7 @@ func (d *DiscoveryService) MarkOfflineStale(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	threshold := time.Now().Add(-15 * time.Minute)
+	threshold := time.Now().UTC().Add(-15 * time.Minute)
 	for _, a := range agents {
 		if a.IsActive && a.LastSeen != nil && a.LastSeen.Before(threshold) {
 			if _, err := d.repository.UpdateScanAgentActive(ctx, a.ID, false); err != nil {

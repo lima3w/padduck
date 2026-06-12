@@ -82,7 +82,7 @@ func (d *DNSService) CheckDNS(ctx context.Context, ipID int64) error {
 		ptrRecord = strings.TrimSuffix(ptrs[0], ".")
 	}
 
-	return d.svc.repository.UpdateIPDNSFields(ctx, ipID, ptrRecord, json.RawMessage(records), time.Now())
+	return d.svc.repository.UpdateIPDNSFields(ctx, ipID, ptrRecord, json.RawMessage(records), time.Now().UTC())
 }
 
 // CheckAllDNS iterates every IP address with a dns_name set and runs CheckDNS on each.

@@ -564,7 +564,7 @@ func (r *Repository) UpdateScanRetentionSettings(ctx context.Context, rawHistory
 // PruneScanHistory deletes scan_results and scan_runs older than the given number of days.
 // Also deletes associated scan_run_changes via CASCADE.
 func (r *Repository) PruneScanHistory(ctx context.Context, olderThanDays int) (int64, error) {
-	cutoff := time.Now().AddDate(0, 0, -olderThanDays)
+	cutoff := time.Now().UTC().AddDate(0, 0, -olderThanDays)
 	res, err := r.db.Exec(ctx, `DELETE FROM scan_results WHERE scanned_at < $1`, cutoff)
 	if err != nil {
 		return 0, err

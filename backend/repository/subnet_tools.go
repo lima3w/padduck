@@ -372,5 +372,5 @@ func computeIsExpired(expiresAt *time.Time) bool {
 	if expiresAt == nil {
 		return false
 	}
-	return time.Now().After(*expiresAt)
+	return time.Now().UTC().After(*expiresAt)
 }

@@ -214,7 +214,7 @@ func (s *Service) AssignIPAddressWithLease(ctx context.Context, id int64, assign
 		return nil, fmt.Errorf("assigned_to cannot be empty")
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	assignedAtTime := now
 	var expiresAtTime *time.Time
 

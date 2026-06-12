@@ -65,3 +65,15 @@ Full documentation is on the [GitHub Wiki](https://github.com/lima3w/padduck/wik
 - [User Guide](https://github.com/lima3w/padduck/wiki/User-Guide)
 - [API Documentation](https://github.com/lima3w/padduck/wiki/API-Documentation)
 - [Troubleshooting](https://github.com/lima3w/padduck/wiki/Troubleshooting)
+
+## Development Conventions
+
+- **Timestamps must be written in UTC.** The schema uses `TIMESTAMP` (without
+  time zone) columns: pgx stores a `time.Time`'s wall-clock digits as-is and
+  reads them back as UTC, so any local-time value written to the database — or
+  passed as a SQL query parameter — is wrong by the host's UTC offset. Always
+  use `time.Now().UTC()` for values that reach the database. The repository
+  package enforces this with a test (`repository/utc_guard_test.go`);
+  service-layer code must apply the same rule when constructing times for
+  repository calls. Read-side comparisons against scanned values
+  (`time.Now().After(row.ExpiresAt)`) compare instants and are safe either way.

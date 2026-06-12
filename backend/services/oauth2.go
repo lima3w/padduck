@@ -131,7 +131,7 @@ func (s *OAuth2Service) GetAuthURL(ctx context.Context, redirectURI string) (str
 		return "", "", fmt.Errorf("generating state: %w", err)
 	}
 
-	if err := s.repository.SaveOAuth2State(ctx, state, redirectURI, time.Now().Add(10*time.Minute)); err != nil {
+	if err := s.repository.SaveOAuth2State(ctx, state, redirectURI, time.Now().UTC().Add(10*time.Minute)); err != nil {
 		return "", "", fmt.Errorf("saving state: %w", err)
 	}
 

@@ -290,7 +290,7 @@ func (s *Service) StartImpersonation(ctx context.Context, targetUserID, adminID 
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	expiry := time.Now().Add(1 * time.Hour)
+	expiry := time.Now().UTC().Add(1 * time.Hour)
 	_, err = s.repository.CreateImpersonationSession(ctx, targetUserID, adminID, tokenHash,
 		"impersonation", ipAddress, userAgent, expiry)
 	if err != nil {
