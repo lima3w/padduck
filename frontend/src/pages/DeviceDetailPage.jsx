@@ -5,6 +5,7 @@ import CustomFieldForm from '../components/CustomFieldForm'
 import ChangeHistory from '../components/ChangeHistory'
 import FingerprintPanel from '../components/FingerprintPanel'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
+import SafeUrlLink from '../components/SafeUrlLink'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
 import {
@@ -404,7 +405,7 @@ export default function DeviceDetailPage() {
                     <dt className="text-gray-500 dark:text-gray-400">{def.label}</dt>
                     <dd className={`font-medium ${isPast ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'}`}>
                       {def.fieldType === 'url' && val ? (
-                        <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">{val}</a>
+                        <SafeUrlLink value={val} />
                       ) : def.fieldType === 'checkbox' ? (
                         val === 'true' ? 'Yes' : 'No'
                       ) : val || '—'}

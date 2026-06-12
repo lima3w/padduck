@@ -1,3 +1,5 @@
+import SafeUrlLink from './SafeUrlLink'
+
 export default function CustomFieldForm({ definitions, values, onChange, readOnly }) {
   if (!definitions || definitions.length === 0) return null
 
@@ -19,9 +21,7 @@ export default function CustomFieldForm({ definitions, values, onChange, readOnl
             {readOnly ? (
               <div className={`text-sm ${isDatePast ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
                 {def.fieldType === 'url' && val ? (
-                  <a href={val} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">
-                    {val}
-                  </a>
+                  <SafeUrlLink value={val} />
                 ) : def.fieldType === 'checkbox' ? (
                   val === 'true' || val === true ? 'Yes' : 'No'
                 ) : (
