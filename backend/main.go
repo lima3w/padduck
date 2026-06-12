@@ -23,18 +23,48 @@ import (
 	"padduck/services"
 )
 
+// logLevelFromEnv maps LOG_LEVEL to a slog level. The default is warn:
+// warnings and errors only. Set LOG_LEVEL=info for request/operational
+// logging or LOG_LEVEL=debug for full verbosity.
+func logLevelFromEnv(raw string) (slog.Level, bool) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "debug":
+		return slog.LevelDebug, true
+	case "info":
+		return slog.LevelInfo, true
+	case "", "warn", "warning":
+		return slog.LevelWarn, true
+	case "error":
+		return slog.LevelError, true
+	default:
+		return slog.LevelWarn, false
+	}
+}
+
 func initLogging() {
+	rawLevel := os.Getenv("LOG_LEVEL")
+	level, known := logLevelFromEnv(rawLevel)
+
+	// ENVIRONMENT controls only the output format; LOG_LEVEL controls verbosity.
 	env := os.Getenv("ENVIRONMENT")
+	format := "text"
 	var h slog.Handler
 	if env == "production" {
-		h = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})
+		format = "json"
+		h = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 	} else {
-		h = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})
+		h = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 	}
 	// SetDefault also bridges the standard log package so existing log.Printf calls
-	// will flow through the structured handler.
+	// will flow through the structured handler (at info level).
 	slog.SetDefault(slog.New(h))
 	log.SetFlags(0) // slog adds timestamps; suppress duplicate from log package
+
+	if !known {
+		slog.Warn("unrecognized LOG_LEVEL, falling back to warn", "value", rawLevel)
+	}
+	// Emitted at warn so the active configuration is visible under the default level.
+	slog.Warn("logging configured", "level", level.String(), "format", format)
 }
 
 func initAdminPassword(ctx context.Context, svc *services.Service) error {
