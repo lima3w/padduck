@@ -199,6 +199,40 @@ SCREENSHOT: The subnet detail page showing one assigned IP with its "Assigned to
 
 ---
 
+## Production: TLS and HSTS
+
+By default the frontend binds only to `127.0.0.1` (loopback), so plain HTTP
+from the local machine works for development but the port is not reachable from
+the network. This is intentional: in production, Padduck **must** be placed
+behind a TLS-terminating reverse proxy (nginx, Caddy, Traefik, etc.).
+
+### Architecture
+
+```
+Internet → reverse proxy (TLS) → 127.0.0.1:3000 (frontend container)
+                                       ↓ (internal Docker network)
+                                  backend:8080
+```
+
+The reverse proxy terminates HTTPS and forwards to `127.0.0.1:3000` on the
+same host. Session cookies are automatically marked Secure when the request
+arrives over HTTPS (`SESSION_COOKIE_SECURE=auto`).
+
+Set `TRUSTED_PROXIES` in `.env` to the IP or CIDR of your reverse proxy so the
+backend correctly extracts the client IP from `X-Real-IP` headers.
+
+### Override the bind address
+
+If you need the frontend reachable on all interfaces (not recommended for
+production), set `FRONTEND_BIND=0.0.0.0` in `.env`:
+
+```env
+FRONTEND_BIND=0.0.0.0
+FRONTEND_PORT=3000
+```
+
+---
+
 ## Next steps
 
 - **Add more subnets and structure** — see [User Guide → Sections and Subnets](user-guide.md#sections)

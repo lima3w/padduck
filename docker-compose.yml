@@ -43,7 +43,13 @@ services:
     image: ghcr.io/lima3w/padduck-frontend:${IMAGE_TAG:-v1.31.24}
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      # Bind to loopback only so the UI is not exposed on all interfaces
+      # without TLS. Access via http://localhost:3000 for local use.
+      # For production, place a TLS-terminating reverse proxy (nginx, Caddy,
+      # Traefik) in front and point it at 127.0.0.1:${FRONTEND_PORT:-3000}.
+      # To bind on all interfaces (not recommended), override FRONTEND_BIND:
+      #   FRONTEND_BIND=0.0.0.0
+      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-3000}:3000"
     depends_on:
       backend:
         condition: service_healthy
