@@ -113,6 +113,56 @@ SCREENSHOT: The Padduck login screen showing the username and password fields.
 
 ---
 
+## Production: TLS and HSTS
+
+The bundled frontend container serves plain HTTP on port 3000 and is intended to sit behind a TLS-terminating reverse proxy in any shared deployment. Sessions are cookie-based; without TLS, credentials and session cookies cross the network in cleartext.
+
+Set the `Strict-Transport-Security` (HSTS) header **at the layer that terminates TLS** — it must not be set on a plain-HTTP backend response. Examples:
+
+**nginx**
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name padduck.example.com;
+    # ... ssl_certificate / ssl_certificate_key ...
+
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Caddy** (sets HSTS automatically when it serves HTTPS, but to be explicit):
+
+```caddyfile
+padduck.example.com {
+    header Strict-Transport-Security "max-age=63072000; includeSubDomains"
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+**Traefik** (dynamic configuration):
+
+```yaml
+http:
+  middlewares:
+    hsts:
+      headers:
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+```
+
+Also set `TRUSTED_PROXIES` to your proxy's address so the backend sees real client IPs, and consider `SESSION_COOKIE_SECURE=true` once TLS is in place (the default `auto` detects HTTPS via `X-Forwarded-Proto`).
+
+---
+
 ## First real task
 
 Once you're logged in, here is the happy path for recording your first subnet and allocating an IP.
