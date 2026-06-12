@@ -8,5 +8,10 @@ import '@fontsource/inter/800.css'
 import '@fontsource/inter/900.css'
 import './src/index.css'
 import App from './src/App'
+import { AppErrorBoundary } from './src/components/ErrorBoundary'
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>
+)

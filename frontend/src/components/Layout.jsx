@@ -4,6 +4,7 @@ import Header from './Header'
 import Sidebar from './Sidebar'
 import CommandPalette from './CommandPalette'
 import { useDarkMode } from '../hooks/useDarkMode'
+import { RouteErrorBoundary } from './ErrorBoundary'
 
 export default function Layout() {
   const darkMode = useDarkMode()
@@ -47,7 +48,9 @@ export default function Layout() {
         )}
         <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
         <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto p-3 sm:p-6 focus:outline-none">
-          <Outlet />
+          <RouteErrorBoundary resetKey={location.pathname}>
+            <Outlet />
+          </RouteErrorBoundary>
         </main>
       </div>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
