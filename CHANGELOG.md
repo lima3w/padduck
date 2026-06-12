@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.27
+
+### Changes
+- **GitHub Actions major version bumps** (Dependabot): actions/checkout 4.3.1 → 6.0.3, actions/setup-node 4.4.0 → 6.4.0, actions/setup-go 5.6.0 → 6.4.0, docker/login-action 3.7.0 → 4.2.0, softprops/action-gh-release 2.6.2 → 3.0.0. All are the Node 20 → 24 runtime migration; reviewed against our usage with no breaking changes (caching is configured explicitly, the Go toolchain is pinned, and only the wiki workflow pushes — with its own token URL). All pins kept as commit SHAs.
+
 ## v1.31.26
 
 ### Bug Fixes
