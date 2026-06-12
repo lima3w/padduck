@@ -2,17 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ChangeHistory from '../components/ChangeHistory'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
-import {
-  assignSubnetToVlan,
-  getNetworks,
-  getSubnetsPaginated,
-  getVlan,
-  getVlanDomains,
-  getVlanGroups,
-  getVlanSubnets,
-  removeSubnetFromVlan,
-  updateVlan,
-} from '../api/client'
+import { getNetworks, getSubnetsPaginated } from '../api/ipam'
+import { assignSubnetToVlan, getVlan, getVlanDomains, getVlanGroups, getVlanSubnets, removeSubnetFromVlan, updateVlan } from '../api/vlans'
 import Modal from '../components/Modal'
 import { getCachedUser } from '../utils/storageKeys'
 

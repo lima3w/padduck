@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getDashboardSummary, getDashboardRecentActivity, api, getInactiveIPs } from '../api/client'
+import { api } from '../api/client'
+import { getDashboardSummary, getDashboardRecentActivity } from '../api/app'
+import { getInactiveIPs } from '../api/admin'
 import { getCachedUser } from '../utils/storageKeys'
 
 function formatRelativeTime(isoString) {

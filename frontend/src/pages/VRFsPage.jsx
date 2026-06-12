@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
-import { getVrfs, createVrf, updateVrf, deleteVrf } from '../api/client'
+import { getVrfs, createVrf, updateVrf, deleteVrf } from '../api/vlans'
 import { downloadFile } from '../utils/download'
 import { getCachedUser } from '../utils/storageKeys'
 

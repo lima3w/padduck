@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getScanProfiles, createScanProfile, updateScanProfile, deleteScanProfile } from '../api/client'
+import { getScanProfiles, createScanProfile, updateScanProfile, deleteScanProfile } from '../api/admin'
 import Modal from '../components/Modal'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { listDiscoveryConflicts, resolveDiscoveryConflict } from '../api/client'
+import { listDiscoveryConflicts, resolveDiscoveryConflict } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 

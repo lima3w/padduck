@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
-import { getNameservers, createNameserver, updateNameserver, deleteNameserver } from '../api/client'
+import { getNameservers, createNameserver, updateNameserver, deleteNameserver } from '../api/dns'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import { getCachedUser } from '../utils/storageKeys'

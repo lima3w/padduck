@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getIntegrationTemplates } from '../api/client'
+import { getIntegrationTemplates } from '../api/admin'
 
 export default function IntegrationTemplatesPage() {
   const [templates, setTemplates] = useState([])

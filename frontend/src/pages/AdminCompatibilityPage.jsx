@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import {
-  getV2CompatibilityWarnings,
-  getV2DeprecationReport,
-  getV2MigrationReadiness,
-} from '../api/client'
+import { getV2CompatibilityWarnings, getV2DeprecationReport, getV2MigrationReadiness } from '../api/admin'
 import { downloadFile } from '../utils/download'
 
 const STATUS_STYLES = {

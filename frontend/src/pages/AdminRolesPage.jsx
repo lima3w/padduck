@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
-import {
-  getAdminRoles,
-  createRole,
-  updateRole,
-  deleteRole,
-  addPermissionToRole,
-  removePermissionFromRole,
-  listAvailablePermissions,
-} from '../api/client'
+import { getAdminRoles, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, listAvailablePermissions } from '../api/admin'
 
 // Role model has no JSON tags — PascalCase: ID, Name, Description, IsSystem, Permissions, CreatedAt, UpdatedAt
 // RolePermission: ID, RoleID, Permission, ResourceType (*string), ResourceID (*int64), CreatedAt

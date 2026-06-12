@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import * as client from '../api/client'
+import * as client from '../api/auth'
 import { getCachedUser, setCachedUser } from '../utils/storageKeys'
 import { gravatarUrl } from '../utils/md5'
 

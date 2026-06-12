@@ -3,9 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import DevicesPage from '../pages/DevicesPage'
 
+vi.mock('../api/app', () => ({
+  getFeatures: vi.fn(),
+}))
+
 vi.mock('../api/client', () => ({
   api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
-  getFeatures: vi.fn(),
 }))
 
 vi.mock('../api/locations', () => ({ getLocations: vi.fn(() => Promise.resolve([])) }))
@@ -24,7 +27,8 @@ vi.mock('../utils/storageKeys', () => ({
   LEGACY_STORAGE_KEYS: {},
 }))
 
-import { api, getFeatures } from '../api/client'
+import { api } from '../api/client'
+import { getFeatures } from '../api/app'
 
 const deviceRows = [
   { id: 1, hostname: 'edge-router-01', vendor: 'Cisco', model: 'ASR1001', isOnline: true, ipCount: 2 },

@@ -1,19 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import {
-  getNetwork,
-  getSubnet,
-  getSubnetsPaginated,
-  createSubnet,
-  updateSubnet,
-  deleteSubnet,
-  searchSubnets,
-  getSubnetTree,
-  getNameservers,
-  getVlans,
-  getCustomFields,
-  api,
-} from '../api/client'
+import { api } from '../api/client'
+import { getNetwork, getSubnet, getSubnetsPaginated, createSubnet, updateSubnet, deleteSubnet, searchSubnets, getSubnetTree } from '../api/ipam'
+import { getNameservers } from '../api/dns'
+import { getVlans } from '../api/vlans'
+import { getCustomFields } from '../api/admin'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import SubnetTree from '../components/SubnetTree'

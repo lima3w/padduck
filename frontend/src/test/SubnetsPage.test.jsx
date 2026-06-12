@@ -2,7 +2,19 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import SubnetsPage from '../pages/SubnetsPage'
 
+vi.mock('../api/admin', () => ({
+  getCustomFields: vi.fn(),
+}))
+
 vi.mock('../api/client', () => ({
+  api: { get: vi.fn(), post: vi.fn() },
+}))
+
+vi.mock('../api/dns', () => ({
+  getNameservers: vi.fn(),
+}))
+
+vi.mock('../api/ipam', () => ({
   getNetwork: vi.fn(),
   getSubnet: vi.fn(),
   getSubnetsPaginated: vi.fn(),
@@ -11,10 +23,10 @@ vi.mock('../api/client', () => ({
   deleteSubnet: vi.fn(),
   searchSubnets: vi.fn(),
   getSubnetTree: vi.fn(),
-  getNameservers: vi.fn(),
+}))
+
+vi.mock('../api/vlans', () => ({
   getVlans: vi.fn(),
-  getCustomFields: vi.fn(),
-  api: { get: vi.fn(), post: vi.fn() },
 }))
 
 vi.mock('../api/locations', () => ({ getLocations: vi.fn(() => Promise.resolve([])) }))
@@ -30,7 +42,10 @@ vi.mock('../utils/storageKeys', () => ({
   LEGACY_STORAGE_KEYS: {},
 }))
 
-import { getNetwork, getSubnetsPaginated, getNameservers, getVlans, getCustomFields } from '../api/client'
+import { getNetwork, getSubnetsPaginated } from '../api/ipam'
+import { getNameservers } from '../api/dns'
+import { getVlans } from '../api/vlans'
+import { getCustomFields } from '../api/admin'
 
 const subnets = [
   { id: 11, networkAddress: '10.10.0.0', prefixLength: 24, description: 'office lan', totalIps: 254, usedIps: 10 },

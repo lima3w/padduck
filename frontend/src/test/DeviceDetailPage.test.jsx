@@ -2,7 +2,11 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import DeviceDetailPage from '../pages/DeviceDetailPage'
 
-vi.mock('../api/client', () => ({
+vi.mock('../api/admin', () => ({
+  getCustomFields: vi.fn(),
+}))
+
+vi.mock('../api/devices', () => ({
   getDevice: vi.fn(),
   updateDevice: vi.fn(),
   getDeviceTypes: vi.fn(),
@@ -13,8 +17,10 @@ vi.mock('../api/client', () => ({
   createDeviceInterface: vi.fn(),
   updateDeviceInterface: vi.fn(),
   deleteDeviceInterface: vi.fn(),
-  getCustomFields: vi.fn(),
   getDeviceSNMPCredentials: vi.fn(),
+}))
+
+vi.mock('../api/ipam', () => ({
   searchIPAddressesGlobal: vi.fn(),
 }))
 
@@ -29,7 +35,8 @@ vi.mock('../components/ChangeHistory', () => ({ default: () => null }))
 vi.mock('../components/FingerprintPanel', () => ({ default: () => null }))
 vi.mock('../components/ObjectRelationshipsPanel', () => ({ default: () => null }))
 
-import { getDevice, getDeviceTypes, getDeviceIPs, getDeviceInterfaces, getCustomFields } from '../api/client'
+import { getDevice, getDeviceTypes, getDeviceIPs, getDeviceInterfaces } from '../api/devices'
+import { getCustomFields } from '../api/admin'
 
 const device = {
   id: 5,

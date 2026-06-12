@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getApiTokenAnalytics } from '../api/client'
+import { getApiTokenAnalytics } from '../api/admin'
 
 export default function APITokenAnalyticsPage() {
   const [tokens, setTokens] = useState([])

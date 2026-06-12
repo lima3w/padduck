@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createDHCPLease, createDHCPServer, deleteDHCPLease, deleteDHCPServer, getDHCPLeases, getDHCPServers, updateDHCPLease, updateDHCPServer } from '../api/client'
+import { createDHCPLease, createDHCPServer, deleteDHCPLease, deleteDHCPServer, getDHCPLeases, getDHCPServers, updateDHCPLease, updateDHCPServer } from '../api/modules'
 import { getLocations } from '../api/locations'
 import Modal from '../components/Modal'
 

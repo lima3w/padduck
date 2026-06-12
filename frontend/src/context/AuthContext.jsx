@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import * as client from '../api/client'
+import * as client from '../api/auth'
 import { clearCachedUser, getCachedUser, setCachedUser } from '../utils/storageKeys'
 
 const AuthContext = createContext(null)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getSystemHealth } from '../api/client'
+import { getSystemHealth } from '../api/admin'
 
 function StatusBadge({ status }) {
   const s = (status || '').toLowerCase()

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { globalSearch } from '../api/client'
+import { globalSearch } from '../api/ipam'
 
 function buildItems(data) {
   const items = []

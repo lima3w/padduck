@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import * as client from '../api/client'
+import * as client from '../api/admin'
 
 const ACTION_LABELS = {
   login: 'Login',

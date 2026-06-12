@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  createAutonomousSystem,
-  deleteAutonomousSystem,
-  getAutonomousSystems,
-  updateAutonomousSystem,
-} from '../api/client'
+import { createAutonomousSystem, deleteAutonomousSystem, getAutonomousSystems, updateAutonomousSystem } from '../api/modules'
 import Modal from '../components/Modal'
 
 const EMPTY_FORM = { asn: '', name: '', description: '', type: 'external', rir: '' }

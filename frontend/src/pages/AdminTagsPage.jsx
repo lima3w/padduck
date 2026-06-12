@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTags, createTag, updateTag, deleteTag } from '../api/client'
+import { getTags, createTag, updateTag, deleteTag } from '../api/ipam'
 import Modal from '../components/Modal'
 import TagBadge from '../components/TagBadge'
 import PageSpinner from '../components/PageSpinner'

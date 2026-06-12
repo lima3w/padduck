@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { getDnsZones } from '../api/client'
+import { getDnsZones } from '../api/dns'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 

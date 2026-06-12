@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getDnsZoneRecords } from '../api/client'
+import { getDnsZoneRecords } from '../api/dns'
 
 const RECORD_TYPES = ['All', 'A', 'AAAA', 'PTR', 'CNAME', 'MX']
 

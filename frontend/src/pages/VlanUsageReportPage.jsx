@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getVlanUsageReport } from '../api/client'
+import { getVlanUsageReport } from '../api/vlans'
 
 function UtilBar({ pct }) {
   const clamped = Math.max(0, Math.min(100, pct || 0))

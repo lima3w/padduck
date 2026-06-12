@@ -1,14 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
-import {
-  getVlans,
-  createVlan,
-  updateVlan,
-  deleteVlan,
-  getVlanDomains,
-  getVlanGroups,
-} from '../api/client'
+import { getVlans, createVlan, updateVlan, deleteVlan, getVlanDomains, getVlanGroups } from '../api/vlans'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'

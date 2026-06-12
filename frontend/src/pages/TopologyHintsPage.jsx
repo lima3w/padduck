@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { listTopologyHints, updateTopologyHintStatus } from '../api/client'
+import { listTopologyHints, updateTopologyHintStatus } from '../api/admin'
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },

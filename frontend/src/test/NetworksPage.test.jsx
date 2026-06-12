@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import NetworksPage from '../pages/NetworksPage'
 
-vi.mock('../api/client', () => ({
+vi.mock('../api/ipam', () => ({
   getNetworksPaginated: vi.fn(),
   createNetwork: vi.fn(),
   updateNetwork: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('../utils/storageKeys', () => ({
   getCachedUser: vi.fn(),
 }))
 
-import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork } from '../api/client'
+import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork } from '../api/ipam'
 import { getCachedUser } from '../utils/storageKeys'
 
 const fixtures = [

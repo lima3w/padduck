@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { listPrivacyVersions, createPrivacyVersion, getConsentReport } from '../api/client'
+import { listPrivacyVersions, createPrivacyVersion, getConsentReport } from '../api/admin'
 
 function formatDate(str) {
   if (!str) return '—'

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import * as client from '../api/client'
+import { approveUser, checkForUpdates, getAdminConfig, getNotificationStats, listPendingApprovals, purgeAuditLogs, rejectUser, testSMTP, updateAdminConfig } from '../api/admin'
+import { checkAllDns, testDnsConnection, testTechnitiumConnection } from '../api/dns'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { testDnsConnection, testTechnitiumConnection } from '../api/client'
 
 const CONFIG_KEYS_BY_TAB = {
   registration: [
@@ -158,8 +158,8 @@ export default function AdminSettingsPage() {
     setLoading(true)
     try {
       const [configRes, approvalsRes] = await Promise.all([
-        client.getAdminConfig(),
-        client.listPendingApprovals(),
+        getAdminConfig(),
+        listPendingApprovals(),
       ])
       const loadedConfig = configRes.data.config || {}
       const featureDefaults = {}
@@ -195,7 +195,7 @@ export default function AdminSettingsPage() {
           .filter((key) => Object.prototype.hasOwnProperty.call(config, key))
           .map((key) => [key, config[key]])
       )
-      await client.updateAdminConfig(updates)
+      await updateAdminConfig(updates)
       showMessage('Settings saved successfully')
       if (activeTab === 'features') {
         window.setTimeout(() => {
@@ -215,7 +215,7 @@ export default function AdminSettingsPage() {
       return
     }
     try {
-      await client.testSMTP(testEmail)
+      await testSMTP(testEmail)
       showMessage('Test email sent to ' + testEmail)
     } catch (err) {
       showMessage('SMTP test failed: ' + (err.response?.data?.error || err.message), 'error')
@@ -224,7 +224,7 @@ export default function AdminSettingsPage() {
 
   const handleApprove = async (id) => {
     try {
-      await client.approveUser(id)
+      await approveUser(id)
       showMessage('User approved')
       setApprovals((prev) => prev.filter((a) => a.id !== id))
     } catch (err) {
@@ -235,7 +235,7 @@ export default function AdminSettingsPage() {
   const handleReject = async (id) => {
     const reason = window.prompt('Rejection reason (optional):') ?? ''
     try {
-      await client.rejectUser(id, reason)
+      await rejectUser(id, reason)
       showMessage('User rejected')
       setApprovals((prev) => prev.filter((a) => a.id !== id))
     } catch (err) {
@@ -255,7 +255,7 @@ export default function AdminSettingsPage() {
     if (!window.confirm('Delete all audit log entries older than the configured retention period?')) return
     setPurging(true)
     try {
-      const res = await client.purgeAuditLogs()
+      const res = await purgeAuditLogs()
       showMessage(res.data.message || 'Audit logs purged')
     } catch (err) {
       showMessage('Purge failed: ' + (err.response?.data?.error || err.message), 'error')
@@ -294,7 +294,7 @@ export default function AdminSettingsPage() {
   const handleDnsBulkCheck = async () => {
     setDnsBulkStatus('running')
     try {
-      await client.checkAllDns()
+      await checkAllDns()
       setDnsBulkStatus({ ok: true, message: 'DNS bulk check started in background' })
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Failed to start DNS check'
@@ -305,7 +305,7 @@ export default function AdminSettingsPage() {
   const loadNotifStats = async () => {
     setNotifStatsLoading(true)
     try {
-      const res = await client.getNotificationStats()
+      const res = await getNotificationStats()
       setNotifStats(res.data)
     } catch {
       setNotifStats(null)
@@ -318,7 +318,7 @@ export default function AdminSettingsPage() {
     setCheckingUpdates(true)
     setUpdateStatus(null)
     try {
-      const res = await client.checkForUpdates()
+      const res = await checkForUpdates()
       setUpdateStatus({ ok: true, data: res.data })
     } catch (err) {
       setUpdateStatus({

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getReconciliationReport } from '../api/client'
+import { getReconciliationReport } from '../api/admin'
 
 function Panel({ title, count, children }) {
   return (

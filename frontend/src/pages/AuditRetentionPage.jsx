@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAuditRetention, updateAuditRetention, pruneAuditLogs } from '../api/client'
+import { getAuditRetention, updateAuditRetention, pruneAuditLogs } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 

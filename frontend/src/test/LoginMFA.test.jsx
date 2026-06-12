@@ -9,16 +9,20 @@ vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ login: authLogin }),
 }))
 
-vi.mock('../api/client', () => ({
-  getAuthProviders: vi.fn(),
+vi.mock('../api/app', () => ({
   getPublicInfo: vi.fn(),
+}))
+
+vi.mock('../api/auth', () => ({
+  getAuthProviders: vi.fn(),
   login: vi.fn(),
   ldapLogin: vi.fn(),
   verifyMFA: vi.fn(),
   resendVerification: vi.fn(),
 }))
 
-import { getAuthProviders, getPublicInfo, login, verifyMFA } from '../api/client'
+import { getAuthProviders, login, verifyMFA } from '../api/auth'
+import { getPublicInfo } from '../api/app'
 
 function renderLogin() {
   return render(

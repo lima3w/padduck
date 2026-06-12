@@ -1,14 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  createFirewallZone,
-  createFirewallZoneMapping,
-  deleteFirewallZone,
-  deleteFirewallZoneMapping,
-  getFirewallZoneMappings,
-  getFirewallZones,
-  updateFirewallZone,
-  updateFirewallZoneMapping,
-} from '../api/client'
+import { createFirewallZone, createFirewallZoneMapping, deleteFirewallZone, deleteFirewallZoneMapping, getFirewallZoneMappings, getFirewallZones, updateFirewallZone, updateFirewallZoneMapping } from '../api/modules'
 import Modal from '../components/Modal'
 
 const ZONE_EMPTY = { name: '', description: '', color: '#2563eb', status: 'active' }

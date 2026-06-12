@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  createWebhookEndpoint,
-  deleteWebhookEndpoint,
-  getWebhookDeliveries,
-  getWebhookEndpoints,
-  getWebhookFailureGroups,
-  replayWebhookDelivery,
-  updateWebhookEndpoint,
-} from '../api/client'
+import { createWebhookEndpoint, deleteWebhookEndpoint, getWebhookDeliveries, getWebhookEndpoints, getWebhookFailureGroups, replayWebhookDelivery, updateWebhookEndpoint } from '../api/admin'
 import Modal from '../components/Modal'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'

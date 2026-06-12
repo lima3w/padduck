@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { exportAuditLog } from '../api/client'
+import { exportAuditLog } from '../api/admin'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function AuditExportPage() {

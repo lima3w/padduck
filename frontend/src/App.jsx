@@ -3,7 +3,7 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
-import { getFeatures } from './api/client'
+import { getFeatures } from './api/app'
 import { normalizeFeatures } from './utils/features'
 import { getStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/client'
+import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/ipam'
 import { submitSubnetRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'

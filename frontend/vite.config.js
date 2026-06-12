@@ -37,14 +37,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       // Regression floor, set just below current coverage of test-imported
-      // files (45/38.8/27.7/16.1 as of v1.31.25). The denominator grows as
-      // tests import more pages, so recalibrate when adding suites for large
-      // untested pages; otherwise ratchet up as coverage grows.
+      // files (38.7/36.5/28.2/21.2 as of the v1.31.25 api-module split). The
+      // denominator moves when imports restructure or tests pull in large
+      // untested pages, so recalibrate then; otherwise ratchet up as
+      // coverage grows.
       thresholds: {
-        lines: 43,
-        statements: 36,
-        branches: 25,
-        functions: 14,
+        lines: 36,
+        statements: 34,
+        branches: 26,
+        functions: 19,
       },
     },
   },

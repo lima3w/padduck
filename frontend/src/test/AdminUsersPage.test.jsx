@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import AdminUsersPage from '../pages/AdminUsersPage'
 
-vi.mock('../api/client', () => ({
+vi.mock('../api/admin', () => ({
   getAdminUsers: vi.fn(),
   getAdminRoles: vi.fn(),
   getUserRoles: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock('../api/locations', () => ({
   getLocations: vi.fn(),
 }))
 
-import { getAdminUsers, getAdminRoles, getUserRoles } from '../api/client'
+import { getAdminUsers, getAdminRoles, getUserRoles } from '../api/admin'
 import { getLocations } from '../api/locations'
 
 describe('AdminUsersPage', () => {

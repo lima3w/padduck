@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createCircuitProvider, createLogicalCircuit, createPhysicalCircuit, deleteCircuitProvider, deleteLogicalCircuit, deletePhysicalCircuit, getCircuitProviders, getCustomers, getLogicalCircuits, getPhysicalCircuits, updateCircuitProvider, updateLogicalCircuit, updatePhysicalCircuit } from '../api/client'
+import { createCircuitProvider, createLogicalCircuit, createPhysicalCircuit, deleteCircuitProvider, deleteLogicalCircuit, deletePhysicalCircuit, getCircuitProviders, getCustomers, getLogicalCircuits, getPhysicalCircuits, updateCircuitProvider, updateLogicalCircuit, updatePhysicalCircuit } from '../api/modules'
 import { getLocations } from '../api/locations'
 import Modal from '../components/Modal'
 

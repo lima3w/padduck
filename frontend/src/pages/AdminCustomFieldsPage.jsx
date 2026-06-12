@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
-import {
-  getCustomFields, createCustomField, updateCustomField,
-  deleteCustomField, reorderCustomFields,
-} from '../api/client'
+import { getCustomFields, createCustomField, updateCustomField, deleteCustomField, reorderCustomFields } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'

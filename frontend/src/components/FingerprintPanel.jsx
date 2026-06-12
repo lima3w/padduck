@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getDeviceFingerprint, buildDeviceFingerprint } from '../api/client'
+import { getDeviceFingerprint, buildDeviceFingerprint } from '../api/devices'
 
 export default function FingerprintPanel({ deviceId, deviceIp }) {
   const [fp, setFp] = useState(null)

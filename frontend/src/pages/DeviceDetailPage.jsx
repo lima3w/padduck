@@ -8,13 +8,9 @@ import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import SafeUrlLink from '../components/SafeUrlLink'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
-import {
-  getDevice, updateDevice, getDeviceTypes,
-  getDeviceIPs, associateDeviceIP, disassociateDeviceIP,
-  getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface,
-  getCustomFields, getDeviceSNMPCredentials,
-  searchIPAddressesGlobal,
-} from '../api/client'
+import { searchIPAddressesGlobal } from '../api/ipam'
+import { getDevice, updateDevice, getDeviceTypes, getDeviceIPs, associateDeviceIP, disassociateDeviceIP, getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface, getDeviceSNMPCredentials } from '../api/devices'
+import { getCustomFields } from '../api/admin'
 import { getCachedUser } from '../utils/storageKeys'
 
 const MEDIA_TYPES = ['copper', 'fiber', 'SFP', 'SFP+', 'QSFP', 'other']

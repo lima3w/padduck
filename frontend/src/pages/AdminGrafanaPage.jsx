@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { generateTokenForMe } from '../api/client'
+import { generateTokenForMe } from '../api/auth'
 
 const METRICS = [
   { name: 'subnet_utilization', desc: 'All subnets with CIDR, network, used/total IPs, and utilisation %' },

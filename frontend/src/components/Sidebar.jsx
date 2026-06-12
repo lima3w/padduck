@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
 import { getPendingRequestCount } from '../api/requests'
-import { getDnsZones, getFeatures, checkForUpdates } from '../api/client'
+import { getDnsZones } from '../api/dns'
+import { getFeatures } from '../api/app'
+import { checkForUpdates } from '../api/admin'
 import { DEFAULT_FEATURES, normalizeFeatures } from '../utils/features'
 import { getCachedUser } from '../utils/storageKeys'
 

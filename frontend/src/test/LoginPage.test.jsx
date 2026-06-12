@@ -6,12 +6,16 @@ vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ login: vi.fn() }),
 }))
 
-vi.mock('../api/client', () => ({
-  getAuthProviders: vi.fn(),
+vi.mock('../api/app', () => ({
   getPublicInfo: vi.fn(),
 }))
 
-import { getAuthProviders, getPublicInfo } from '../api/client'
+vi.mock('../api/auth', () => ({
+  getAuthProviders: vi.fn(),
+}))
+
+import { getAuthProviders } from '../api/auth'
+import { getPublicInfo } from '../api/app'
 
 describe('LoginPage', () => {
   beforeEach(() => {

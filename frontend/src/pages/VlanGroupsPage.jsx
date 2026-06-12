@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
-import {
-  getVlanGroups,
-  createVlanGroup,
-  updateVlanGroup,
-  deleteVlanGroup,
-} from '../api/client'
+import { getVlanGroups, createVlanGroup, updateVlanGroup, deleteVlanGroup } from '../api/vlans'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import TableActions from '../components/TableActions'
