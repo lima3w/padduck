@@ -51,7 +51,7 @@ Configuration is read from environment variables. Docker Compose will also read 
 | `MFA_ENCRYPTION_KEY` | generated if unset | Optional override; 64 hex characters; generate with `openssl rand -hex 32` |
 | `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
 | `FRONTEND_PORT` | `3000` | Host port the UI is exposed on |
-| `IMAGE_TAG` | `latest` | Pin to a specific release (e.g. `v1.30.0`) |
+| `IMAGE_TAG` | `v1.31.24` | Pinned release version. To upgrade, set `IMAGE_TAG=v<new>` in `.env`, then run `docker compose pull && docker compose up -d` |
 
 Update checks can be enabled under **Admin Settings → Updates**. The backend checks the GitHub releases API automatically — no configuration required.
 
