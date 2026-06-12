@@ -493,6 +493,7 @@ func (h *Handler) GetMyAvatar(c *fiber.Ctx) error {
 		decoded, decErr := base64.StdEncoding.DecodeString(raw[idx+1:])
 		if decErr == nil {
 			c.Set("Content-Type", mediaType)
+			c.Set("X-Content-Type-Options", "nosniff")
 			c.Set("Cache-Control", "private, max-age=3600")
 			return c.Send(decoded)
 		}

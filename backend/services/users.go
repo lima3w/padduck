@@ -1,13 +1,22 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"net/mail"
+	"strings"
 	"time"
+
+	_ "golang.org/x/image/webp"
 
 	"padduck/models"
 	"padduck/utils"
@@ -310,5 +319,44 @@ func (s *Service) UpdateUserAvatar(ctx context.Context, userID int64, source str
 	if source == "gravatar" {
 		data = nil
 	}
+	if data != nil {
+		normalized, err := validateAvatarImage(*data)
+		if err != nil {
+			return err
+		}
+		data = &normalized
+	}
 	return s.repository.UpdateUserAvatar(ctx, userID, source, data)
+}
+
+const maxAvatarDimension = 4096
+
+// validateAvatarImage checks that a data-URL avatar actually decodes as a
+// supported image and returns the value to store, with the media type in the
+// data-URL header rewritten to match the decoded format. Client-declared
+// types are never trusted: the stored header (which GetMyAvatar serves as
+// Content-Type) always reflects the real content.
+func validateAvatarImage(dataURL string) (string, error) {
+	header, payload, found := strings.Cut(dataURL, ",")
+	if !found || !strings.HasPrefix(header, "data:image/") || !strings.HasSuffix(header, ";base64") {
+		return "", fmt.Errorf("avatar data must be a base64 image data URL")
+	}
+	raw, err := base64.StdEncoding.DecodeString(payload)
+	if err != nil {
+		return "", fmt.Errorf("avatar data is not valid base64")
+	}
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(raw))
+	if err != nil {
+		return "", fmt.Errorf("avatar data is not a recognized image")
+	}
+	switch format {
+	case "jpeg", "png", "gif", "webp":
+		// supported
+	default:
+		return "", fmt.Errorf("unsupported avatar image format: %s", format)
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width > maxAvatarDimension || cfg.Height > maxAvatarDimension {
+		return "", fmt.Errorf("avatar image dimensions must be between 1x1 and %dx%d", maxAvatarDimension, maxAvatarDimension)
+	}
+	return "data:image/" + format + ";base64," + payload, nil
 }
