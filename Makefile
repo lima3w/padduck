@@ -1,4 +1,4 @@
-.PHONY: ci-local test vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-audit check-migrations sbom help
+.PHONY: ci-local test vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -13,8 +13,8 @@ GOVULNCHECK_VERSION ?= v1.3.0
 GOVULNCHECK_MIN_GO ?= go1.26.4
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
-## ci-local: run all checks that must pass before pushing (mirrors Gitea CI)
-ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-build frontend-audit
+## ci-local: run all checks that must pass before pushing (mirrors GitHub CI)
+ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-install frontend-audit frontend-lint frontend-test frontend-build
 	@echo "✓ ci-local passed"
 
 ## test: run backend unit tests with race detector
@@ -86,6 +86,16 @@ build:
 ## frontend-install: install frontend dependencies
 frontend-install:
 	cd $(FRONTEND_DIR) && npm ci
+
+## frontend-lint: run ESLint on the frontend source
+frontend-lint:
+	@echo "→ frontend lint"
+	cd $(FRONTEND_DIR) && npm run lint
+
+## frontend-test: run frontend unit tests (non-watch mode)
+frontend-test:
+	@echo "→ frontend tests"
+	cd $(FRONTEND_DIR) && npm test
 
 ## frontend-build: verify the frontend compiles cleanly
 frontend-build:
