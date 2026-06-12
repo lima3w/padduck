@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import UserMenu from './UserMenu'
 import { api } from '../api/client'
+import { isSafeHttpUrl } from '../utils/url'
 
 export default function Header({ darkMode, onSearchClick, onNavToggle }) {
   const { user } = useAuth()
@@ -10,7 +11,9 @@ export default function Header({ darkMode, onSearchClick, onNavToggle }) {
 
   useEffect(() => {
     api.get('/public-info').then(res => {
-      if (res.data?.appUrl) setAppUrl(res.data.appUrl)
+      // Admin-configured value; only accept http(s) so a misconfigured
+      // javascript:/data: URL can never become the logo link.
+      if (isSafeHttpUrl(res.data?.appUrl)) setAppUrl(res.data.appUrl)
     }).catch(() => {})
   }, [])
 
