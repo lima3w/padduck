@@ -18,6 +18,18 @@
 - **Backup/restore: password no longer visible in `ps`**: The scripts passed the full `DATABASE_URL` (password included) as a `pg_dump`/`psql` argument. The password is now split out and passed via `PGPASSWORD`. (#81)
 - **Backup dumps owner-only**: `backup.sh` now sets `umask 077` — dumps (which contain password hashes and encrypted credentials) are created `600` in a `700` directory. (#82)
 - **Backup/restore: `DATABASE_URL` required**: The `postgres://padduck:padduck@localhost` fallback is gone; both scripts fail with a clear error when `DATABASE_URL` is unset. (#83)
+- **docker-compose: `POSTGRES_PASSWORD` required**: The compose file no longer defaults the database password to `padduck`; startup fails with a clear message until it is set in `.env`. `MFA_ENCRYPTION_KEY` keeps its auto-generation behavior (the backend creates a persistent key on first boot). (#84)
+- **docker-compose: hardened service security options**: All services now run with `no-new-privileges:true` and `cap_drop: ALL` (with only the capabilities each service actually needs re-added); backend and frontend containers run with read-only root filesystems and tmpfs mounts. Verified against a full stack boot with healthy services. (#87)
+- **GitHub Actions pinned to commit SHAs**: All third-party actions across the five workflow files are pinned to full commit SHAs (each verified against its release tag) with Dependabot configured to keep them updated weekly. (#100)
+
+### Changes
+- **docker-compose: `IMAGE_TAG` defaults to a pinned release** (`v1.31.24`) instead of `latest`, making deployments reproducible; upgrade instructions documented in `.env.example` and the README. (#85)
+- **docker-compose: frontend binds to loopback by default**: The frontend port now binds to `127.0.0.1` (override with `FRONTEND_BIND=0.0.0.0`); the documented production architecture places a TLS-terminating reverse proxy in front. (#86)
+- **Releases are now gated on tests**: `release.yml` calls the CI workflow (`workflow_call`) and the release job requires it to pass — a failing backend or frontend test blocks the image push, the GitHub release, and the agent binary uploads. (#98)
+- **Frontend error boundaries**: A top-level error boundary replaces the blank-screen failure mode with a friendly error page, and a per-route boundary keeps the header/sidebar usable when a single page crashes (auto-resets on navigation). (#92)
+- **`make ci-local` now matches GitHub CI**: the local gate runs `npm ci`, `npm audit`, `npm run lint`, and `npm test` in the same order as the remote pipeline, and `frontend-install` uses `npm ci` for reproducible installs. `npm audit --omit=dev --audit-level=high` also runs in the remote frontend CI job (currently 0 findings). (#88, #89, #95)
+- **Agent HTTP layer tested**: httptest-based coverage for heartbeat, job fetch, result posting, endpoint construction, and a full poll cycle — agent module coverage rose from 23% to 72%. (#107)
+- **OpenAPI spec version unstuck**: `info.version` was pinned at 1.26.0 since the v1.26 SDK stabilization even though the API surface changed in v1.28; it now reads 1.31.25 and the contract test documents the policy (the spec version tracks the release that last changed the API contract). (#108)
 
 ## v1.31.24
 
