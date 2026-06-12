@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import * as client from '../api/client'
+import * as client from '../api/auth'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()

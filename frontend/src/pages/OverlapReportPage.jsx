@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getOverlapReport } from '../api/client'
+import { getOverlapReport } from '../api/admin'
 
 export default function OverlapReportPage() {
   const [overlaps, setOverlaps] = useState([])

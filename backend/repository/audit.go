@@ -214,7 +214,7 @@ func (r *Repository) UpdateAuditRetentionSettings(ctx context.Context, retention
 
 // PruneAuditLogs deletes audit_logs entries older than retentionDays. Returns count deleted.
 func (r *Repository) PruneAuditLogs(ctx context.Context, retentionDays int) (int64, error) {
-	before := time.Now().AddDate(0, 0, -retentionDays)
+	before := time.Now().UTC().AddDate(0, 0, -retentionDays)
 	result, err := r.db.Exec(ctx, `DELETE FROM audit_logs WHERE created_at < $1`, before)
 	if err != nil {
 		return 0, err

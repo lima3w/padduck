@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAdminRoles, listRolePresets, getRolePresetDiff } from '../api/client'
+import { getAdminRoles, listRolePresets, getRolePresetDiff } from '../api/admin'
 
 export default function RolePresetsPage() {
   const [presets, setPresets] = useState([])

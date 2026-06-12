@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getBreakGlassStatus, activateBreakGlass, endBreakGlass } from '../api/client'
+import { getBreakGlassStatus, activateBreakGlass, endBreakGlass } from '../api/admin'
 
 function formatDatetime(str) {
   if (!str) return '—'

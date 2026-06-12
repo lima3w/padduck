@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -119,13 +119,13 @@ func (w *WebhookService) Queue(ctx context.Context, event WebhookEvent) {
 
 	payload, err := json.Marshal(event)
 	if err != nil {
-		log.Printf("webhook: failed to marshal event %s: %v", event.EventType, err)
+		slog.Warn("webhook: failed to marshal event", "event", event.EventType, "error", err)
 		return
 	}
 
 	endpoints, err := w.repo.ListActiveWebhookEndpoints(ctx)
 	if err != nil {
-		log.Printf("webhook: failed to load endpoints: %v", err)
+		slog.Warn("webhook: failed to load endpoints", "error", err)
 		return
 	}
 	for _, endpoint := range endpoints {
@@ -136,7 +136,7 @@ func (w *WebhookService) Queue(ctx context.Context, event WebhookEvent) {
 			continue
 		}
 		if _, err := w.repo.CreateWebhookDelivery(ctx, endpoint.ID, event.EventType, string(payload)); err != nil {
-			log.Printf("webhook: failed to queue delivery endpoint=%d event=%s: %v", endpoint.ID, event.EventType, err)
+			slog.Warn("webhook: failed to queue delivery", "endpoint_id", endpoint.ID, "event", event.EventType, "error", err)
 		}
 	}
 }
@@ -144,7 +144,7 @@ func (w *WebhookService) Queue(ctx context.Context, event WebhookEvent) {
 func (w *WebhookService) ProcessQueue(ctx context.Context) {
 	deliveries, err := w.repo.GetPendingWebhookDeliveries(ctx, 50)
 	if err != nil {
-		log.Printf("webhook: failed to load pending deliveries: %v", err)
+		slog.Warn("webhook: failed to load pending deliveries", "error", err)
 		return
 	}
 	for _, delivery := range deliveries {
@@ -174,7 +174,7 @@ func (w *WebhookService) ProcessQueue(ctx context.Context) {
 		newRetryCount := delivery.RetryCount + 1
 		var nextRetryAt *time.Time
 		if newRetryCount < maxWebhookRetries {
-			t := time.Now().Add(time.Duration(newRetryCount*newRetryCount) * time.Minute)
+			t := time.Now().UTC().Add(time.Duration(newRetryCount*newRetryCount) * time.Minute)
 			nextRetryAt = &t
 		}
 		var statusPtr *int
@@ -182,7 +182,7 @@ func (w *WebhookService) ProcessQueue(ctx context.Context) {
 			statusPtr = &statusCode
 		}
 		if markErr := w.repo.MarkWebhookFailed(ctx, delivery.ID, errMsg, newRetryCount, nextRetryAt, statusPtr); markErr != nil {
-			log.Printf("webhook: failed to mark delivery failed id=%d: %v", delivery.ID, markErr)
+			slog.Warn("webhook: failed to mark delivery failed", "delivery_id", delivery.ID, "error", markErr)
 		}
 	}
 }

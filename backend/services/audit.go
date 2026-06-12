@@ -191,7 +191,7 @@ func (a *AuditService) PurgeOldLogs(ctx context.Context) (int64, error) {
 			retentionDays = days
 		}
 	}
-	before := time.Now().AddDate(0, 0, -retentionDays)
+	before := time.Now().UTC().AddDate(0, 0, -retentionDays)
 	return a.svc.repository.DeleteAuditLogsBefore(ctx, before)
 }
 

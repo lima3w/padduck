@@ -11,40 +11,5 @@ func TestNewRepository(t *testing.T) {
 	assert.NotNil(t, repo)
 }
 
-// Integration tests would require a live database connection
-// These are unit test stubs showing the testing pattern
-
-func TestCreateSection(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
-
-func TestGetSectionByID(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
-
-func TestListAllSections(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
-
-func TestUpdateSection(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
-
-func TestDeleteSection(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
-
-func TestCreateIPAddress(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
-
-func TestListIPAddressesBySubnet(t *testing.T) {
-	// Would require mock database
-	t.Skip("Requires database connection")
-}
+// DB-backed integration tests live in *_integration_test.go and run when
+// TEST_DATABASE_URL points at a Postgres instance (see testdb_test.go).

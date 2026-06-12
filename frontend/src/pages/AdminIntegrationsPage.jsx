@@ -1,14 +1,7 @@
 import { useState, useEffect } from 'react'
-import {
-  generateTokenForMe,
-  getAdminConfig,
-  getApiTokenAnalytics,
-  getAutomationPolicies,
-  getIntegrationTemplates,
-  testDnsConnection,
-  testTechnitiumConnection,
-  testLdapConnection,
-} from '../api/client'
+import { generateTokenForMe } from '../api/auth'
+import { testDnsConnection, testTechnitiumConnection } from '../api/dns'
+import { getAdminConfig, getApiTokenAnalytics, getAutomationPolicies, getIntegrationTemplates, testLdapConnection } from '../api/admin'
 
 const PLATFORMS = [
   {

@@ -41,12 +41,12 @@ func (s *Service) GenerateAPIToken(ctx context.Context, userID int64, tokenName,
 	if expiresInDays == 0 {
 		defaultDaysStr, _ := s.Config.GetCtx(ctx, "api_token_default_expiration_days")
 		if n, err := strconv.Atoi(defaultDaysStr); err == nil && n > 0 {
-			t := time.Now().Add(time.Duration(n) * 24 * time.Hour)
+			t := time.Now().UTC().Add(time.Duration(n) * 24 * time.Hour)
 			expiresAt = &t
 		}
 		// else: no expiry
 	} else if expiresInDays > 0 {
-		t := time.Now().Add(time.Duration(expiresInDays) * 24 * time.Hour)
+		t := time.Now().UTC().Add(time.Duration(expiresInDays) * 24 * time.Hour)
 		expiresAt = &t
 	}
 
@@ -128,7 +128,7 @@ func (s *Service) RotateAPIToken(ctx context.Context, tokenID, userID int64) (ne
 		}
 	}
 
-	graceExpiresAt = time.Now().Add(gracePeriod)
+	graceExpiresAt = time.Now().UTC().Add(gracePeriod)
 
 	// Mark old token as rotated
 	if err = s.repository.MarkAPITokenRotated(ctx, tokenID, graceExpiresAt); err != nil {
@@ -175,7 +175,7 @@ func (s *Service) ExtendAPIToken(ctx context.Context, tokenID, userID int64, day
 		}
 	}
 
-	newExpiresAt := time.Now().Add(time.Duration(days) * 24 * time.Hour)
+	newExpiresAt := time.Now().UTC().Add(time.Duration(days) * 24 * time.Hour)
 	return s.repository.ExtendAPIToken(ctx, tokenID, userID, newExpiresAt)
 }
 
@@ -219,18 +219,17 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 
 	user, err := s.repository.GetUserByUsername(ctx, username)
 	if err != nil {
+		// Burn a bcrypt comparison so this path takes as long as a wrong
+		// password, preventing username enumeration via response timing.
+		utils.DummyVerifyPassword(password)
 		// Record attempt even for unknown usernames (best-effort)
 		s.ProcessFailedLogin(ctx, 0, username, ipAddress, userAgent, "user not found")
 		return nil, fmt.Errorf("user not found")
 	}
 
-	// Check lockout before verifying password (fail-fast, prevents enumeration)
-	if locked, lockout, _ := s.IsAccountLocked(ctx, user.ID); locked {
-		_ = s.repository.CreateLoginAttempt(ctx, username, ipAddress, userAgent, false, "account locked")
-		return nil, fmt.Errorf("%w; locked until %s", ErrAccountLocked, lockout.UnlockAt.Format(time.RFC3339))
-	}
-
 	if user.PasswordHash == "" {
+		// Equalize timing with the password-check path (see not-found case above)
+		utils.DummyVerifyPassword(password)
 		s.ProcessFailedLogin(ctx, user.ID, username, ipAddress, userAgent, "no password set")
 		return nil, fmt.Errorf("user has no password set")
 	}
@@ -238,6 +237,17 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 	if !utils.VerifyPassword(user.PasswordHash, password) {
 		s.ProcessFailedLogin(ctx, user.ID, username, ipAddress, userAgent, "invalid password")
 		return nil, fmt.Errorf("invalid password")
+	}
+
+	// Check lockout only after the password is verified: a locked account
+	// still rejects the correct password, but callers without valid
+	// credentials get the generic failure above, so the distinct lockout
+	// response cannot be used to confirm an account exists. The same
+	// reasoning applies to the account-state errors below — they are only
+	// reachable with a correct password, so they leak nothing pre-auth.
+	if locked, lockout, _ := s.IsAccountLocked(ctx, user.ID); locked {
+		_ = s.repository.CreateLoginAttempt(ctx, username, ipAddress, userAgent, false, "account locked")
+		return nil, fmt.Errorf("%w; locked until %s", ErrAccountLocked, lockout.UnlockAt.Format(time.RFC3339))
 	}
 
 	switch user.State {
@@ -377,6 +387,12 @@ func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword
 		return 0, err
 	}
 
+	// A reset is account recovery: revoke every existing session so a
+	// possible intruder is logged out along with the old password.
+	if err := s.repository.DeleteAllUserSessions(ctx, resetRecord.UserID); err != nil {
+		return 0, fmt.Errorf("password reset but failed to revoke sessions: %w", err)
+	}
+
 	return resetRecord.UserID, nil
 }
 
@@ -390,8 +406,12 @@ func (s *Service) InitAdminPassword(ctx context.Context, password string) (bool,
 	return s.repository.InitAdminPassword(ctx, hash)
 }
 
-// ChangePassword verifies the current password and sets a new one for the given user.
-func (s *Service) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+// ChangePassword verifies the current password and sets a new one for the
+// given user. All of the user's other sessions are revoked; keepSessionToken
+// (the raw token of the session making the change) stays valid so the user is
+// not logged out of the browser they changed it from. Pass "" to revoke every
+// session.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword, keepSessionToken string) error {
 	user, err := s.repository.GetUserByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("user not found")
@@ -403,7 +423,23 @@ func (s *Service) ChangePassword(ctx context.Context, userID int64, currentPassw
 	if err != nil {
 		return fmt.Errorf("failed to hash password")
 	}
-	return s.repository.UpdateUserPassword(ctx, userID, hash)
+	if err := s.repository.UpdateUserPassword(ctx, userID, hash); err != nil {
+		return err
+	}
+
+	// A password change usually means the old password may be compromised:
+	// stale sessions must not survive it.
+	if keepSessionToken == "" {
+		if err := s.repository.DeleteAllUserSessions(ctx, userID); err != nil {
+			return fmt.Errorf("password changed but failed to revoke sessions: %w", err)
+		}
+		return nil
+	}
+	keepHash := sha256.Sum256([]byte(keepSessionToken))
+	if err := s.repository.DeleteUserSessionsExcept(ctx, userID, hex.EncodeToString(keepHash[:])); err != nil {
+		return fmt.Errorf("password changed but failed to revoke other sessions: %w", err)
+	}
+	return nil
 }
 
 // ForceResetAdminPassword unconditionally sets the admin password.

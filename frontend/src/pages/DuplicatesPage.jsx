@@ -1,20 +1,17 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getDuplicates } from '../api/client'
+import { useQuery } from '@tanstack/react-query'
+import { getDuplicates } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function DuplicatesPage() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    getDuplicates()
-      .then(res => setData(res.data))
-      .catch(() => setError('Failed to load duplicates report'))
-      .finally(() => setLoading(false))
-  }, [])
+  const duplicatesQuery = useQuery({
+    queryKey: ['reports', 'duplicates'],
+    queryFn: () => getDuplicates().then(r => r.data),
+  })
+  const data = duplicatesQuery.data ?? null
+  const loading = duplicatesQuery.isLoading
+  const error = duplicatesQuery.isError ? 'Failed to load duplicates report' : null
 
   if (loading) return <PageSpinner message="Checking for duplicates..." />
 

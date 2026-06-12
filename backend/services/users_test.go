@@ -1,7 +1,12 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -299,4 +304,67 @@ func TestEnumerateCIDR_Slash30(t *testing.T) {
 func TestEnumerateCIDR_Invalid(t *testing.T) {
 	_, err := enumerateCIDR("not-an-ip", 24)
 	assert.Error(t, err)
+}
+
+func encodeTestPNG(t *testing.T, width, height int) string {
+	t.Helper()
+	var buf bytes.Buffer
+	require.NoError(t, png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, width, height))))
+	return base64.StdEncoding.EncodeToString(buf.Bytes())
+}
+
+func TestValidateAvatarImage(t *testing.T) {
+	pngPayload := encodeTestPNG(t, 64, 64)
+
+	var jpegBuf bytes.Buffer
+	require.NoError(t, jpeg.Encode(&jpegBuf, image.NewRGBA(image.Rect(0, 0, 64, 64)), nil))
+	jpegPayload := base64.StdEncoding.EncodeToString(jpegBuf.Bytes())
+
+	scriptPayload := base64.StdEncoding.EncodeToString([]byte("#!/bin/sh\necho pwned\n"))
+
+	t.Run("valid png", func(t *testing.T) {
+		out, err := validateAvatarImage("data:image/png;base64," + pngPayload)
+		require.NoError(t, err)
+		assert.Equal(t, "data:image/png;base64,"+pngPayload, out)
+	})
+
+	t.Run("declared type is rewritten to real format", func(t *testing.T) {
+		// JPEG bytes declared as PNG: must store the real type
+		out, err := validateAvatarImage("data:image/png;base64," + jpegPayload)
+		require.NoError(t, err)
+		assert.Equal(t, "data:image/jpeg;base64,"+jpegPayload, out)
+	})
+
+	t.Run("script disguised as png", func(t *testing.T) {
+		_, err := validateAvatarImage("data:image/png;base64," + scriptPayload)
+		assert.ErrorContains(t, err, "not a recognized image")
+	})
+
+	t.Run("svg rejected", func(t *testing.T) {
+		svg := base64.StdEncoding.EncodeToString([]byte(`<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`))
+		_, err := validateAvatarImage("data:image/svg+xml;base64," + svg)
+		assert.ErrorContains(t, err, "not a recognized image")
+	})
+
+	t.Run("invalid base64", func(t *testing.T) {
+		_, err := validateAvatarImage("data:image/png;base64,!!!not-base64!!!")
+		assert.ErrorContains(t, err, "not valid base64")
+	})
+
+	t.Run("not a data url", func(t *testing.T) {
+		_, err := validateAvatarImage("https://example.com/avatar.png")
+		assert.ErrorContains(t, err, "data URL")
+	})
+
+	t.Run("oversized dimensions", func(t *testing.T) {
+		_, err := validateAvatarImage("data:image/png;base64," + encodeTestPNG(t, 1, maxAvatarDimension+1))
+		assert.ErrorContains(t, err, "dimensions")
+	})
+}
+
+func TestUpdateUserAvatar_RejectsNonImage(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+	data := "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte("not an image"))
+	err := svc.UpdateUserAvatar(context.Background(), 1, "custom", &data)
+	assert.ErrorContains(t, err, "not a recognized image")
 }

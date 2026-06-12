@@ -8,11 +8,27 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// TestOpenAPIContractStableV1 asserts the OpenAPI spec's info.version and
+// x-api-contract fields.
+//
+// Versioning policy: info.version tracks the app release that last changed the
+// API contract (added/removed/modified paths, schemas, or parameters).  Update
+// this constant — and the spec file — whenever an API-surface change is merged.
+// The assertion intentionally fails if the spec version is changed without
+// updating this test, and vice-versa, so both stay in sync.
+//
+// Evidence of staleness that prompted the v1.26.0 → v1.31.25 bump:
+//   - info.version was set to 1.26.0 in commit 92e7176 ("Complete v1.26 API SDK stabilization").
+//   - Commit 37b176e ("feat: complete v1.28 compatibility readiness") later added four new
+//     API paths and a new response component to the spec without bumping the version.
+//   - The app is currently at v1.31.x, so the 1.26.0 pin was stale.
+const wantSpecVersion = "1.31.25"
+
 func TestOpenAPIContractStableV1(t *testing.T) {
 	spec := readOpenAPISpec(t)
 	info := spec["info"].(map[string]any)
-	if got := info["version"]; got != "1.26.0" {
-		t.Fatalf("info.version = %v, want 1.26.0", got)
+	if got := info["version"]; got != wantSpecVersion {
+		t.Fatalf("info.version = %v, want %s", got, wantSpecVersion)
 	}
 	if got := info["x-api-contract"]; got != "stable-v1" {
 		t.Fatalf("info.x-api-contract = %v, want stable-v1", got)

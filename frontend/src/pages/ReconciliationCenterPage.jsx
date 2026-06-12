@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { getReconciliationReport } from '../api/client'
+import { useQuery } from '@tanstack/react-query'
+import { getReconciliationReport } from '../api/admin'
 
 function Panel({ title, count, children }) {
   return (
@@ -139,16 +139,15 @@ function SubnetOverlapsPanel({ items }) {
 }
 
 export default function ReconciliationCenterPage() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    getReconciliationReport()
-      .then(res => setData(res.data))
-      .catch(err => setError(err?.response?.data?.error || 'Failed to load reconciliation data'))
-      .finally(() => setLoading(false))
-  }, [])
+  const reportQuery = useQuery({
+    queryKey: ['reports', 'reconciliation'],
+    queryFn: () => getReconciliationReport().then(r => r.data),
+  })
+  const data = reportQuery.data ?? null
+  const loading = reportQuery.isLoading
+  const error = reportQuery.isError
+    ? (reportQuery.error?.response?.data?.error || 'Failed to load reconciliation data')
+    : null
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">

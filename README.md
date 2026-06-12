@@ -23,14 +23,15 @@ file is required on the host.
 mkdir padduck
 cd padduck
 curl -fsSLO https://raw.githubusercontent.com/lima3w/padduck/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/lima3w/padduck/main/.env.example -o .env
+# Edit .env and set POSTGRES_PASSWORD to a strong value before continuing
 docker compose pull
 docker compose up -d
 ```
 
-On first startup, the backend creates a persistent MFA encryption key in
-`./data/backend/mfa-encryption-key` if `MFA_ENCRYPTION_KEY` is not set. Before
-using this in a shared or production environment, create a `.env` file and set a
-strong `POSTGRES_PASSWORD`.
+`POSTGRES_PASSWORD` is **required** — the stack will not start without it. On
+first startup, the backend creates a persistent MFA encryption key in
+`./data/backend/mfa-encryption-key` if `MFA_ENCRYPTION_KEY` is not set.
 
 Open `http://localhost:3000` and log in as `admin`. The generated password is
 printed to the backend log on first boot.
@@ -42,7 +43,7 @@ Configuration is read from environment variables. Docker Compose will also read 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `POSTGRES_USER` | `padduck` | PostgreSQL username |
-| `POSTGRES_PASSWORD` | `padduck` | PostgreSQL password |
+| `POSTGRES_PASSWORD` | **required** | PostgreSQL password — must be set in `.env` before first run |
 | `POSTGRES_DB` | `padduck` | PostgreSQL database name |
 | `DATABASE_URL` | derived | Overrides the individual PostgreSQL variables |
 | `ADMIN_PASSWORD` | _(generated)_ | Initial admin password; printed to logs on first boot if unset |
@@ -50,7 +51,8 @@ Configuration is read from environment variables. Docker Compose will also read 
 | `MFA_ENCRYPTION_KEY` | generated if unset | Optional override; 64 hex characters; generate with `openssl rand -hex 32` |
 | `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
 | `FRONTEND_PORT` | `3000` | Host port the UI is exposed on |
-| `IMAGE_TAG` | `latest` | Pin to a specific release (e.g. `v1.30.0`) |
+| `FRONTEND_BIND` | `127.0.0.1` | Network interface the frontend port binds to. Defaults to loopback; place a TLS-terminating reverse proxy in front for production. Set to `0.0.0.0` only with additional network-level access control |
+| `IMAGE_TAG` | `v1.31.24` | Pinned release version. To upgrade, set `IMAGE_TAG=v<new>` in `.env`, then run `docker compose pull && docker compose up -d` |
 
 Update checks can be enabled under **Admin Settings → Updates**. The backend checks the GitHub releases API automatically — no configuration required.
 
@@ -63,3 +65,15 @@ Full documentation is on the [GitHub Wiki](https://github.com/lima3w/padduck/wik
 - [User Guide](https://github.com/lima3w/padduck/wiki/User-Guide)
 - [API Documentation](https://github.com/lima3w/padduck/wiki/API-Documentation)
 - [Troubleshooting](https://github.com/lima3w/padduck/wiki/Troubleshooting)
+
+## Development Conventions
+
+- **Timestamps must be written in UTC.** The schema uses `TIMESTAMP` (without
+  time zone) columns: pgx stores a `time.Time`'s wall-clock digits as-is and
+  reads them back as UTC, so any local-time value written to the database — or
+  passed as a SQL query parameter — is wrong by the host's UTC offset. Always
+  use `time.Now().UTC()` for values that reach the database. The repository
+  package enforces this with a test (`repository/utc_guard_test.go`);
+  service-layer code must apply the same rule when constructing times for
+  repository calls. Read-side comparisons against scanned values
+  (`time.Now().After(row.ExpiresAt)`) compare instants and are safe either way.

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getIdentityPolicies, updateIdentityPolicies, getSessionRisk } from '../api/client'
+import { getIdentityPolicies, updateIdentityPolicies, getSessionRisk } from '../api/admin'
 
 function formatDatetime(str) {
   if (!str) return '—'

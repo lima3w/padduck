@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/client'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/ipam'
 import { submitSubnetRequest } from '../api/requests'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -19,70 +20,86 @@ export default function NetworksPage() {
   const user = getCachedUser()
   const canCreateSubnet = user?.role === 'admin'
 
-  const [networks, setSections] = useState([])
-  const [total, setTotal] = useState(0)
+  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searching, setSearching] = useState(false)
-  const [isSearchActive, setIsSearchActive] = useState(false)
+  const [searchResults, setSearchResults] = useState(null) // null = not searching
+  const [actionError, setActionError] = useState(null)
   const [modal, setModal] = useState(null) // null | 'create' | { edit: network } | { requestSubnet: network|null }
   const [form, setForm] = useState({ name: '', description: '' })
   const [subnetReqForm, setSubnetReqForm] = useState(SUBNET_REQUEST_EMPTY)
   const [subnetReqError, setSubnetReqError] = useState(null)
   const [subnetReqSuccess, setSubnetReqSuccess] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  const [saving, setSaving] = useState(false)
+  const [requestSubmitting, setRequestSubmitting] = useState(false)
   const [downloading, setDownloading] = useState(false)
+
+  const listQuery = useQuery({
+    queryKey: ['networks', page],
+    queryFn: () => getNetworksPaginated(page, DEFAULT_LIMIT).then(r => r.data),
+    placeholderData: keepPreviousData,
+  })
+
+  const isSearchActive = searchResults !== null
+  const listData = listQuery.data
+  const networks = isSearchActive
+    ? searchResults.items
+    : (listData?.data ?? (Array.isArray(listData) ? listData : []))
+  const total = isSearchActive
+    ? searchResults.total
+    : (listData?.total ?? (Array.isArray(listData) ? listData.length : 0))
+  const loading = listQuery.isLoading
+  const error = actionError ?? (listQuery.isError ? 'Failed to load networks' : null)
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['networks'] })
+
+  const saveMutation = useMutation({
+    mutationFn: ({ id, body }) => (id ? updateNetwork(id, body) : createNetwork(body)),
+    onSuccess: () => {
+      setModal(null)
+      invalidate()
+    },
+    onError: () => setActionError('Failed to save network'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteNetwork(id),
+    onSuccess: () => {
+      setDeleteConfirm(null)
+      invalidate()
+    },
+    onError: () => setActionError('Failed to delete network'),
+  })
+
+  const saving = saveMutation.isPending || requestSubmitting
 
   async function handleExport() {
     setDownloading(true)
     try { await downloadFile('/api/v1/admin/reports/export/networks', 'networks.csv') }
-    catch { setError('Export failed') }
+    catch { setActionError('Export failed') }
     finally { setDownloading(false) }
-  }
-
-  useEffect(() => { load(1) }, [])
-
-  async function load(p = page) {
-    try {
-      setLoading(true)
-      setSearchQuery('')
-      setIsSearchActive(false)
-      const res = await getNetworksPaginated(p, DEFAULT_LIMIT)
-      const data = res.data
-      setSections(data.data ?? data)
-      setTotal(data.total ?? (Array.isArray(data) ? data.length : 0))
-    } catch {
-      setError('Failed to load networks')
-    } finally {
-      setLoading(false)
-    }
   }
 
   function handlePageChange(newPage) {
     setPage(newPage)
-    load(newPage)
   }
 
   async function handleSearch(e) {
     e.preventDefault()
     if (!searchQuery.trim()) {
-      setIsSearchActive(false)
-      load(1)
+      setSearchResults(null)
       return
     }
     try {
       setSearching(true)
-      setIsSearchActive(true)
       const res = await searchNetworks(searchQuery)
       const data = res.data
-      setSections(Array.isArray(data) ? data : (data.data ?? []))
-      setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
+      const items = Array.isArray(data) ? data : (data.data ?? [])
+      setSearchResults({ items, total: Array.isArray(data) ? data.length : (data.total ?? items.length) })
       setPage(1)
     } catch {
-      setError('Failed to search networks')
+      setActionError('Failed to search networks')
     } finally {
       setSearching(false)
     }
@@ -90,8 +107,7 @@ export default function NetworksPage() {
 
   function handleClearSearch() {
     setSearchQuery('')
-    setIsSearchActive(false)
-    load(1)
+    setSearchResults(null)
   }
 
   function openCreate() {
@@ -104,32 +120,17 @@ export default function NetworksPage() {
     setModal({ edit: network })
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault()
-    setSaving(true)
-    try {
-      if (modal === 'create') {
-        await createNetwork({ name: form.name, description: form.description, created_by: 1 })
-      } else {
-        await updateNetwork(modal.edit.id, { name: form.name, description: form.description })
-      }
-      setModal(null)
-      load(page)
-    } catch {
-      setError('Failed to save network')
-    } finally {
-      setSaving(false)
+    if (modal === 'create') {
+      saveMutation.mutate({ body: { name: form.name, description: form.description, created_by: 1 } })
+    } else {
+      saveMutation.mutate({ id: modal.edit.id, body: { name: form.name, description: form.description } })
     }
   }
 
-  async function handleDelete(id) {
-    try {
-      await deleteNetwork(id)
-      setDeleteConfirm(null)
-      load(page)
-    } catch {
-      setError('Failed to delete network')
-    }
+  function handleDelete(id) {
+    deleteMutation.mutate(id)
   }
 
   function openSubnetRequest(network) {
@@ -142,7 +143,7 @@ export default function NetworksPage() {
   async function handleSubnetRequestSubmit(e) {
     e.preventDefault()
     setSubnetReqError(null)
-    setSaving(true)
+    setRequestSubmitting(true)
     try {
       await submitSubnetRequest({
         network_id: subnetReqForm.network_id ? parseInt(subnetReqForm.network_id) : null,
@@ -155,7 +156,7 @@ export default function NetworksPage() {
     } catch (err) {
       setSubnetReqError(err.response?.data?.error || 'Failed to submit request')
     } finally {
-      setSaving(false)
+      setRequestSubmitting(false)
     }
   }
 
@@ -286,8 +287,9 @@ export default function NetworksPage() {
         <Modal title={modal === 'create' ? 'New Network' : 'Edit Network'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label htmlFor="network-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input
+                id="network-name"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -295,8 +297,9 @@ export default function NetworksPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label htmlFor="network-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               <input
+                id="network-description"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}

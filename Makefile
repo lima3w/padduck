@@ -1,4 +1,4 @@
-.PHONY: ci-local test vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install check-migrations sbom help
+.PHONY: ci-local test test-integration e2e vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -13,14 +13,32 @@ GOVULNCHECK_VERSION ?= v1.3.0
 GOVULNCHECK_MIN_GO ?= go1.26.4
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
-## ci-local: run all checks that must pass before pushing (mirrors Gitea CI)
-ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-build
+## ci-local: run all checks that must pass before pushing (mirrors GitHub CI)
+ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-install frontend-audit frontend-lint frontend-test frontend-build
 	@echo "✓ ci-local passed"
 
 ## test: run backend unit tests with race detector
 test:
 	@echo "→ backend tests"
 	cd $(BACKEND_DIR) && go test -mod=vendor -race -count=1 ./...
+
+## test-integration: run DB-backed tests against a throwaway Postgres container
+test-integration:
+	@echo "→ backend DB integration tests (throwaway Postgres)"
+	docker run -d --rm --name padduck-test-pg -e POSTGRES_PASSWORD=test -p 127.0.0.1:55432:5432 postgres:18 >/dev/null
+	@trap 'docker stop padduck-test-pg >/dev/null' EXIT; \
+	timeout 60 sh -c 'until docker exec padduck-test-pg pg_isready -U postgres -q; do sleep 1; done'; \
+	cd $(BACKEND_DIR) && TEST_DATABASE_URL="postgres://postgres:test@127.0.0.1:55432/postgres?sslmode=disable" \
+		go test -mod=vendor -race -count=1 ./...
+
+## e2e: boot the stack from the working tree and run the Playwright suite
+e2e:
+	@echo "→ end-to-end tests (full stack via docker compose)"
+	POSTGRES_PASSWORD=e2e-db-password ADMIN_PASSWORD=e2e-admin-password FRONTEND_PORT=3210 \
+		docker compose -f docker-compose.yml -f docker-compose.e2e.yml -p padduck-e2e up -d --build --wait
+	@trap 'POSTGRES_PASSWORD=e2e-db-password docker compose -p padduck-e2e -f docker-compose.yml -f docker-compose.e2e.yml down -v' EXIT; \
+	timeout 90 sh -c 'until curl -fsS http://127.0.0.1:3210/health >/dev/null 2>&1; do sleep 2; done'; \
+	cd $(FRONTEND_DIR) && E2E_BASE_URL=http://127.0.0.1:3210 npx playwright test
 
 ## check-migrations: verify migration files use paired, single-direction sql-migrate annotations
 check-migrations:
@@ -85,12 +103,27 @@ build:
 
 ## frontend-install: install frontend dependencies
 frontend-install:
-	cd $(FRONTEND_DIR) && npm install
+	cd $(FRONTEND_DIR) && npm ci
+
+## frontend-lint: run ESLint on the frontend source
+frontend-lint:
+	@echo "→ frontend lint"
+	cd $(FRONTEND_DIR) && npm run lint
+
+## frontend-test: run frontend unit tests (non-watch mode)
+frontend-test:
+	@echo "→ frontend tests"
+	cd $(FRONTEND_DIR) && npm run test:coverage
 
 ## frontend-build: verify the frontend compiles cleanly
 frontend-build:
 	@echo "→ frontend build"
 	cd $(FRONTEND_DIR) && npm run build --silent
+
+## frontend-audit: scan frontend production dependencies for known vulnerabilities
+frontend-audit:
+	@echo "→ npm audit"
+	cd $(FRONTEND_DIR) && npm audit --omit=dev --audit-level=high
 
 ## sbom: generate dependency SBOM from vendored Go modules and npm lockfile
 sbom:

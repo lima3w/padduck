@@ -80,7 +80,7 @@ func (r *Repository) CreateDiscoveryConflict(ctx context.Context, deviceID int64
 
 // ResolveDiscoveryConflict marks a conflict as accepted or rejected.
 func (r *Repository) ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error) {
-	now := time.Now()
+	now := time.Now().UTC()
 	c := &models.DiscoveryConflict{}
 	err := r.db.QueryRow(ctx, `
 		UPDATE discovery_conflicts

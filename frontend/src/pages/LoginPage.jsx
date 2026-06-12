@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import * as client from '../api/client'
+import { getPublicInfo } from '../api/app'
+import { getAuthProviders, ldapLogin, login as apiLogin, resendVerification, verifyMFA } from '../api/auth'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -27,11 +28,11 @@ export default function LoginPage() {
   const [registrationEnabled, setRegistrationEnabled] = useState(true)
 
   useEffect(() => {
-    client.getAuthProviders()
+    getAuthProviders()
       .then((res) => setProviders(res.data || {}))
       .catch(() => {}) // 404 or network error — silently ignore
 
-    client.getPublicInfo()
+    getPublicInfo()
       .then((res) => setRegistrationEnabled(res.data?.registrationEnabled !== false))
       .catch(() => {})
   }, [])
@@ -45,8 +46,8 @@ export default function LoginPage() {
 
     try {
       const response = useLdap
-        ? await client.ldapLogin(username, password)
-        : await client.login(username, password)
+        ? await ldapLogin(username, password)
+        : await apiLogin(username, password)
       const data = response.data
 
       if (data.mfaRequired) {
@@ -74,7 +75,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const response = await client.verifyMFA(mfaChallenge, mfaCode)
+      const response = await verifyMFA(mfaChallenge, mfaCode)
       login(response.data.user)
       navigate('/')
     } catch (err) {
@@ -94,7 +95,7 @@ export default function LoginPage() {
     if (!resendEmail) return
     setResendStatus('sending')
     try {
-      await client.resendVerification(resendEmail)
+      await resendVerification(resendEmail)
       setResendStatus('sent')
     } catch {
       setResendStatus('error')

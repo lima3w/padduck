@@ -34,11 +34,13 @@ and frontend images are published to GitHub Container Registry.
 curl -fsSLO https://raw.githubusercontent.com/lima3w/padduck/main/docker-compose.yml
 ```
 
-Before using this in a shared or production environment, create a `.env` file
-and set a strong `POSTGRES_PASSWORD`. You can start from the example file:
+**`POSTGRES_PASSWORD` is required** — the stack will not start without it. Copy
+the example file and set a strong value before running `docker compose up`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lima3w/padduck/main/.env.example -o .env
+# Edit .env and set POSTGRES_PASSWORD to a strong value, e.g.:
+#   openssl rand -base64 32
 ```
 
 See the [Configuration](#configuration) section below for all available variables.
@@ -78,11 +80,12 @@ All settings are read from environment variables. Docker Compose interpolates th
 | Variable | Default | Description |
 |---|---|---|
 | `POSTGRES_USER` | `padduck` | PostgreSQL user created at first boot |
-| `POSTGRES_PASSWORD` | `padduck` | **Change before any shared deployment** |
+| `POSTGRES_PASSWORD` | **required** | Must be set in `.env` before first run; the stack will not start without it |
 | `POSTGRES_DB` | `padduck` | Database name |
 | `DATABASE_URL` | *(derived)* | Full connection string; overrides the three variables above when set |
 | `SERVER_PORT` | `8080` | Port the backend listens on inside the container |
-| `ENVIRONMENT` | `production` | Set to `development` for debug-level text logs; `production` emits JSON logs |
+| `ENVIRONMENT` | `production` | Controls the log format: `production` emits JSON logs, anything else emits text logs |
+| `LOG_LEVEL` | `warn` | Log verbosity: `warn` (warnings and errors only), `info` (adds operational logging such as scan job lifecycle), `debug` (full verbosity), or `error`. Unknown values fall back to `warn` with a startup notice |
 | `MFA_ENCRYPTION_KEY` | generated if unset | Optional override for the backend-managed persistent key. Must be 64 hex characters. Generate with `openssl rand -hex 32` |
 | `ADMIN_PASSWORD` | *(auto-generated)* | Leave empty to auto-generate on first boot; set to use a specific password |
 | `RESET_ADMIN_PASSWORD` | `false` | Set to `true` to force-reset the admin password on next boot, then remove the variable |
@@ -110,6 +113,78 @@ curl -s http://localhost:3000/health
 Then open `http://localhost:3000` in your browser and log in with username `admin` and the password from the startup log.
 
 SCREENSHOT: The Padduck login screen showing the username and password fields.
+
+---
+
+## Production: TLS and HSTS
+
+By default the frontend binds only to `127.0.0.1` (loopback), so plain HTTP
+from the local machine works for development but the port is not reachable from
+the network. This is intentional: in production, Padduck **must** be placed
+behind a TLS-terminating reverse proxy (nginx, Caddy, Traefik, etc.). Sessions
+are cookie-based; without TLS, credentials and session cookies cross the
+network in cleartext.
+
+### Architecture
+
+```
+Internet → reverse proxy (TLS) → 127.0.0.1:3000 (frontend container)
+                                       ↓ (internal Docker network)
+                                  backend:8080
+```
+
+The reverse proxy terminates HTTPS and forwards to `127.0.0.1:3000` on the
+same host. Session cookies are automatically marked Secure when the request
+arrives over HTTPS (`SESSION_COOKIE_SECURE=auto`).
+
+If you need the frontend reachable on all interfaces (not recommended for
+production), set `FRONTEND_BIND=0.0.0.0` in `.env`.
+
+### HSTS
+
+Set the `Strict-Transport-Security` (HSTS) header **at the layer that terminates TLS** — it must not be set on a plain-HTTP backend response. Examples:
+
+**nginx**
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name padduck.example.com;
+    # ... ssl_certificate / ssl_certificate_key ...
+
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Caddy** (sets HSTS automatically when it serves HTTPS, but to be explicit):
+
+```caddyfile
+padduck.example.com {
+    header Strict-Transport-Security "max-age=63072000; includeSubDomains"
+    reverse_proxy 127.0.0.1:3000
+}
+```
+
+**Traefik** (dynamic configuration):
+
+```yaml
+http:
+  middlewares:
+    hsts:
+      headers:
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+```
+
+Also set `TRUSTED_PROXIES` to your proxy's address so the backend sees real client IPs, and consider `SESSION_COOKIE_SECURE=true` once TLS is in place (the default `auto` detects HTTPS via `X-Forwarded-Proto`).
 
 ---
 

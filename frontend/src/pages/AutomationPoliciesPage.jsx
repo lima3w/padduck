@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAutomationPolicies, createAutomationPolicy, updateAutomationPolicy, deleteAutomationPolicy } from '../api/client'
+import { getAutomationPolicies, createAutomationPolicy, updateAutomationPolicy, deleteAutomationPolicy } from '../api/admin'
 
 const EMPTY_FORM = { name: '', workflow: '*', action: '*', effect: 'allow', message: '', conditions: '', enabled: true }
 

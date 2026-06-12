@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
-import { listTopologyHints, updateTopologyHintStatus } from '../api/client'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { listTopologyHints, updateTopologyHintStatus } from '../api/admin'
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
@@ -34,33 +35,32 @@ function statusBadge(status) {
 }
 
 export default function TopologyHintsPage() {
-  const [hints, setHints] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const [actionError, setActionError] = useState(null)
 
-  const fetchHints = useCallback(() => {
-    setLoading(true)
-    setError(null)
-    listTopologyHints(statusFilter)
-      .then(res => setHints(res.data?.hints ?? []))
-      .catch(() => setError('Failed to load topology hints'))
-      .finally(() => setLoading(false))
-  }, [statusFilter])
+  const hintsQuery = useQuery({
+    queryKey: ['topology', 'hints', statusFilter],
+    queryFn: () => listTopologyHints(statusFilter).then(res => res.data?.hints ?? []),
+  })
+  const hints = hintsQuery.data ?? []
+  const loading = hintsQuery.isLoading
+  const error = hintsQuery.isError ? 'Failed to load topology hints' : null
 
-  useEffect(() => {
-    fetchHints()
-  }, [fetchHints])
-
-  async function handleStatusUpdate(id, newStatus) {
-    setActionError(null)
-    try {
-      await updateTopologyHintStatus(id, newStatus)
-      fetchHints()
-    } catch (err) {
+  const statusMutation = useMutation({
+    mutationFn: ({ id, newStatus }) => updateTopologyHintStatus(id, newStatus),
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['topology', 'hints'] })
+    },
+    onError: (err, { id }) => {
       setActionError(err.response?.data?.error || `Failed to update hint #${id}`)
-    }
+    },
+  })
+
+  function handleStatusUpdate(id, newStatus) {
+    setActionError(null)
+    statusMutation.mutate({ id, newStatus })
   }
 
   return (

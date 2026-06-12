@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import * as client from '../api/client'
+import * as client from '../api/admin'
 
 const defaultConfig = {
   enabled: false,

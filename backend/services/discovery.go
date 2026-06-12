@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -275,12 +275,12 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			}
 			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "assigned", nil, nil, nil, r.ptr, nil)
 			if createErr != nil {
-				log.Printf("[discovery] auto-add IP %s in subnet %d: %v", r.ip, subnetID, createErr)
+				slog.Warn("discovery: auto-add IP failed", "ip", r.ip, "subnet_id", subnetID, "error", createErr)
 			} else {
 				id := newIP.ID
 				ipAddressID = &id
 				existingIPs[r.ip] = id
-				log.Printf("[discovery] auto-added IP %s to subnet %d (job=%d)", r.ip, subnetID, jobID)
+				slog.Info("discovery: auto-added IP", "ip", r.ip, "subnet_id", subnetID, "job_id", jobID)
 				if r.ptr != nil {
 					_ = d.repository.SetIPAddressPTRFromScan(ctx, id, *r.ptr, dnsOverwrite)
 				}
@@ -291,7 +291,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		if portScanEnabled && r.alive && ipAddressID != nil {
 			portResult := scanner.ScanPorts(ctx, r.ip, ports, portConcurrency, time.Second)
 			if err2 := d.repository.UpdateIPPortScan(ctx, *ipAddressID, portResult); err2 != nil {
-				log.Printf("port scan update error ip=%s: %v", r.ip, err2)
+				slog.Warn("discovery: port scan update failed", "ip", r.ip, "error", err2)
 			}
 		}
 
@@ -331,7 +331,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) error {
 	// Check in-flight (skip if already running)
 	if _, loaded := d.inFlight.LoadOrStore(job.ID, struct{}{}); loaded {
-		log.Printf("scan job %d already running, skipping", job.ID)
+		slog.Info("scan job already running, skipping", "job_id", job.ID)
 		return nil
 	}
 	defer d.inFlight.Delete(job.ID)
@@ -344,8 +344,8 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 	}
 	defer func() { <-d.semaphore }()
 
-	log.Printf("scan job %d started", job.ID)
-	defer log.Printf("scan job %d finished", job.ID)
+	slog.Info("scan job started", "job_id", job.ID)
+	defer slog.Info("scan job finished", "job_id", job.ID)
 
 	concurrency := job.PingConcurrency
 	if concurrency <= 0 {
@@ -360,7 +360,7 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 		runID = run.ID
 		prevAlive, _ = d.repository.GetLastAliveIPsForJob(ctx, job.ID)
 	} else {
-		log.Printf("scan job %d: create scan run error: %v", job.ID, err)
+		slog.Warn("scan job: create scan run failed", "job_id", job.ID, "error", err)
 	}
 
 	var totalNew, totalGone, totalChanged int
@@ -368,12 +368,12 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 	for _, subnetID := range job.SubnetIDs {
 		subnet, err := d.repository.GetSubnetByID(ctx, subnetID)
 		if err != nil {
-			log.Printf("scan job %d: get subnet %d error: %v", job.ID, subnetID, err)
+			slog.Warn("scan job: get subnet failed", "job_id", job.ID, "subnet_id", subnetID, "error", err)
 			continue
 		}
 		ips, err := d.repository.ListIPAddressesBySubnet(ctx, subnetID)
 		if err != nil {
-			log.Printf("scan job %d: list IPs for subnet %d error: %v", job.ID, subnetID, err)
+			slog.Warn("scan job: list IPs failed", "job_id", job.ID, "subnet_id", subnetID, "error", err)
 			continue
 		}
 		existingIPs := make(map[string]int64, len(ips))
@@ -396,13 +396,13 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 				jobCopy.ScanType = profile.ScanType
 				effectiveJob = &jobCopy
 			} else {
-				log.Printf("scan job %d: load profile %d for subnet %d error: %v", job.ID, *subnet.ScanProfileID, subnetID, profileErr)
+				slog.Warn("scan job: load scan profile failed", "job_id", job.ID, "profile_id", *subnet.ScanProfileID, "subnet_id", subnetID, "error", profileErr)
 			}
 		}
 
 		_, n, g, ch, err := d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, effectiveConcurrency, runID, prevAlive, effectiveJob)
 		if err != nil {
-			log.Printf("scan job %d: subnet %d scan error: %v", job.ID, subnetID, err)
+			slog.Warn("scan job: subnet scan failed", "job_id", job.ID, "subnet_id", subnetID, "error", err)
 		}
 		totalNew += n
 		totalGone += g
@@ -412,11 +412,11 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 	// Finish scan run (#211)
 	if runID > 0 {
 		if err := d.repository.FinishScanRun(ctx, runID, totalNew, totalGone, totalChanged); err != nil {
-			log.Printf("scan job %d: finish scan run error: %v", job.ID, err)
+			slog.Warn("scan job: finish scan run failed", "job_id", job.ID, "error", err)
 		}
 		// notify_on_change: log (full email notification would need notification service wiring)
 		if job.NotifyOnChange && (totalNew+totalGone+totalChanged) > 0 {
-			log.Printf("scan job %d: changes detected: new=%d gone=%d changed=%d (notify_on_change=true)", job.ID, totalNew, totalGone, totalChanged)
+			slog.Info("scan job: changes detected", "job_id", job.ID, "new", totalNew, "gone", totalGone, "changed", totalChanged)
 		}
 	}
 
@@ -687,11 +687,11 @@ func (d *DiscoveryService) MarkOfflineStale(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	threshold := time.Now().Add(-15 * time.Minute)
+	threshold := time.Now().UTC().Add(-15 * time.Minute)
 	for _, a := range agents {
 		if a.IsActive && a.LastSeen != nil && a.LastSeen.Before(threshold) {
 			if _, err := d.repository.UpdateScanAgentActive(ctx, a.ID, false); err != nil {
-				log.Printf("mark agent %d offline error: %v", a.ID, err)
+				slog.Warn("mark agent offline failed", "agent_id", a.ID, "error", err)
 			}
 		}
 	}
@@ -735,15 +735,15 @@ func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64
 		}
 		_, err := d.repository.CreateScanResult(ctx, jobID, res.SubnetID, ipAddrID, res.IPAddress, res.IsAlive, ms, nil, false)
 		if err != nil {
-			log.Printf("agent %d: store result for %s: %v", agentID, res.IPAddress, err)
+			slog.Warn("agent: store scan result failed", "agent_id", agentID, "ip", res.IPAddress, "error", err)
 		}
 		// Auto-add: if alive and no existing IP record, create one.
 		if res.IsAlive && ipAddrID == nil && job.AutoAddIPs && res.SubnetID > 0 {
 			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "assigned", nil, nil, nil, nil, nil)
 			if createErr != nil {
-				log.Printf("agent %d: auto-add IP %s in subnet %d: %v", agentID, res.IPAddress, res.SubnetID, createErr)
+				slog.Warn("agent: auto-add IP failed", "agent_id", agentID, "ip", res.IPAddress, "subnet_id", res.SubnetID, "error", createErr)
 			} else {
-				log.Printf("agent %d: auto-added IP %s to subnet %d", agentID, res.IPAddress, res.SubnetID)
+				slog.Info("agent: auto-added IP", "agent_id", agentID, "ip", res.IPAddress, "subnet_id", res.SubnetID)
 				_ = newIP
 			}
 		}
@@ -770,7 +770,7 @@ func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globa
 
 	creds, err := d.repository.GetDeviceSNMPByIPID(ctx, ipID)
 	if err != nil {
-		log.Printf("[discovery] snmpCredsForIP ip_id=%d: %v", ipID, err)
+		slog.Debug("discovery: no SNMP credentials for IP", "ip_id", ipID, "error", err)
 		return
 	}
 	if creds == nil {
@@ -983,7 +983,7 @@ func (d *DiscoveryService) StartRetentionPruner(ctx context.Context) {
 				return
 			case <-ticker.C:
 				if _, err := d.RunRetentionPrune(ctx); err != nil {
-					log.Printf("[retention] prune error: %v", err)
+					slog.Warn("scan retention prune failed", "error", err)
 				}
 			}
 		}

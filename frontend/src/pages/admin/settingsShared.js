@@ -1,0 +1,122 @@
+// Config keys saved per settings tab, and the feature toggle catalog.
+export const CONFIG_KEYS_BY_TAB = {
+  registration: [
+    'app_url',
+    'registration_enabled',
+    'require_email_verification',
+    'require_admin_approval',
+  ],
+  smtp: [
+    'smtp_host',
+    'smtp_port',
+    'smtp_username',
+    'smtp_password',
+    'smtp_from',
+    'smtp_tls',
+  ],
+  audit: ['audit_log_retention_days'],
+  alerts: ['default_alert_threshold_pct'],
+  dns: [
+    'pdns_enabled',
+    'pdns_api_url',
+    'pdns_api_key',
+    'pdns_default_zone',
+    'pdns_ptr_zones',
+    'technitium_url',
+    'technitium_token',
+    'technitium_default_zone',
+    'technitium_skip_tls',
+    'dns_zone_filter_mode',
+    'dns_zone_filter_list',
+    'dns_zone_filter_auto_allow',
+    'dns_auto_add_ips_enabled',
+    'dns_auto_remove_ips_enabled',
+  ],
+  scanner: [
+    'scanner_resolve_hostnames',
+    'scanner_snmp_community',
+    'scanner_snmp_version',
+    'scanner_port_scan_enabled',
+    'scanner_port_list',
+  ],
+  features: [
+    'feature_customers_enabled',
+    'feature_vlans_enabled',
+    'feature_vrfs_enabled',
+    'feature_racks_enabled',
+    'feature_locations_enabled',
+    'feature_bgp_enabled',
+    'feature_devices_enabled',
+    'feature_nat_enabled',
+    'feature_firewall_enabled',
+    'feature_dhcp_enabled',
+    'feature_circuits_enabled',
+    'anonymous_api_enabled',
+  ],
+  updates: [
+    'update_check_enabled',
+  ],
+}
+
+export const FEATURE_TOGGLES = [
+  {
+    key: 'feature_customers_enabled',
+    title: 'Customers',
+    description: 'Customer records and customer navigation.',
+  },
+  {
+    key: 'feature_vlans_enabled',
+    title: 'VLANs',
+    description: 'VLANs, VLAN domains, VLAN groups, and VLAN usage reports.',
+  },
+  {
+    key: 'feature_vrfs_enabled',
+    title: 'VRFs',
+    description: 'VRF records and VRF navigation.',
+  },
+  {
+    key: 'feature_racks_enabled',
+    title: 'Racks',
+    description: 'Rack records, rack details, and rack device lists.',
+  },
+  {
+    key: 'feature_locations_enabled',
+    title: 'Locations',
+    description: 'Location records, location hierarchy, and location details.',
+  },
+  {
+    key: 'feature_bgp_enabled',
+    title: 'BGP / AS Numbers',
+    description: 'Autonomous system records and BGP navigation.',
+  },
+  {
+    key: 'feature_devices_enabled',
+    title: 'Devices',
+    description: 'Device inventory, device types, interfaces, and device IP associations.',
+  },
+  {
+    key: 'feature_nat_enabled',
+    title: 'NAT Rules',
+    description: 'NAT mapping records and NAT navigation.',
+  },
+  {
+    key: 'feature_firewall_enabled',
+    title: 'Firewall Zones',
+    description: 'Firewall zone records, zone mappings, and firewall navigation.',
+  },
+  {
+    key: 'feature_dhcp_enabled',
+    title: 'DHCP',
+    description: 'DHCP server and lease records.',
+  },
+  {
+    key: 'feature_circuits_enabled',
+    title: 'Circuits',
+    description: 'Circuit providers, physical circuits, and logical circuits.',
+  },
+  {
+    key: 'anonymous_api_enabled',
+    title: 'Anonymous API Access',
+    description: 'Allow unauthenticated read-only IP queries via GET /api/v1/query/ip. Additive — no existing behavior changes.',
+  },
+]

@@ -76,6 +76,21 @@ sudo install -m 755 -o root -g root padduck-agent /usr/local/bin/padduck-agent
 
 The agent binary itself needs no special capabilities or setuid bit.
 
+## Running in Docker
+
+The published image already runs as a dedicated non-root user (`padduck`,
+created in the Dockerfile) with `USER` set. The bundled `ping` binary is
+granted `cap_net_raw` via file capabilities at build time, and Docker's
+default capability bounding set includes `NET_RAW`, so no extra runtime
+flags, sysctls, or `--cap-add` options are needed:
+
+```bash
+docker run -e PADDUCK_SERVER_URL=... -e PADDUCK_AGENT_TOKEN=... ghcr.io/lima3w/padduck-agent
+```
+
+If you run the container with `--cap-drop ALL`, add `--cap-add NET_RAW`
+back so ping keeps working.
+
 ## Running as a systemd Service
 
 Create `/etc/systemd/system/padduck-agent.service`:

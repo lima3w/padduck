@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createNATRule, deleteNATRule, getCustomers, getNATRules, updateNATRule } from '../api/client'
+import { createNATRule, deleteNATRule, getCustomers, getNATRules, updateNATRule } from '../api/modules'
 import Modal from '../components/Modal'
 
 const EMPTY = { name: '', type: 'static', internal_cidr: '', external_cidr: '', protocol: 'any', internal_port: '', external_port: '', customer_id: '', description: '', status: 'active' }

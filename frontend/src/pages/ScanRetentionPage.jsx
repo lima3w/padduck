@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getScanRetention, updateScanRetention, runScanRetentionPrune } from '../api/client'
+import { getScanRetention, updateScanRetention, runScanRetentionPrune } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 

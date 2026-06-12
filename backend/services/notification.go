@@ -403,7 +403,7 @@ func (n *NotificationService) Queue(ctx context.Context, userID int64, tmplName 
 		}
 
 		// 3. Rate-limit: no more than 10 notifications per hour per user.
-		count, err := n.repo.CountRecentNotificationsSent(ctx, userID, time.Now().Add(-1*time.Hour))
+		count, err := n.repo.CountRecentNotificationsSent(ctx, userID, time.Now().UTC().Add(-1*time.Hour))
 		if err != nil {
 			return fmt.Errorf("notification queue: count recent notifications for user %d: %w", userID, err)
 		}
@@ -489,7 +489,7 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 		delay := retryDelay(newRetryCount)
 		var nextRetryAt *time.Time
 		if delay != nil {
-			t := time.Now().Add(*delay)
+			t := time.Now().UTC().Add(*delay)
 			nextRetryAt = &t
 		}
 		errMsg := sendErr.Error()

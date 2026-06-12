@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import * as client from '../api/client'
+import * as client from '../api/auth'
 
 export default function RegisterPage() {
   const navigate = useNavigate()

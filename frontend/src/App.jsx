@@ -3,7 +3,7 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
-import { getFeatures } from './api/client'
+import { getFeatures } from './api/app'
 import { normalizeFeatures } from './utils/features'
 import { getStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
 
@@ -15,7 +15,7 @@ const NetworksPage = lazy(() => import('./pages/NetworksPage'))
 const SubnetsPage = lazy(() => import('./pages/SubnetsPage'))
 const IPAddressesPage = lazy(() => import('./pages/IPAddressesPage'))
 const AdminOverviewPage = lazy(() => import('./pages/AdminOverviewPage'))
-const AdminSettingsPage = lazy(() => import('./pages/AdminSettingsPage'))
+const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
 const AuditLogPage = lazy(() => import('./pages/AuditLogPage'))
 const AuditRetentionPage = lazy(() => import('./pages/AuditRetentionPage'))
 const AuditPage = lazy(() => import('./pages/AuditPage'))

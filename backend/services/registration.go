@@ -135,7 +135,7 @@ func (s *RegistrationService) sendVerificationEmail(ctx context.Context, user *m
 	if err != nil {
 		return err
 	}
-	expiresAt := time.Now().Add(24 * time.Hour)
+	expiresAt := time.Now().UTC().Add(24 * time.Hour)
 
 	if _, err := s.repository.CreateEmailVerification(ctx, user.ID, tokenHash, expiresAt); err != nil {
 		return err

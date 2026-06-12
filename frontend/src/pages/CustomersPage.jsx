@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { createCustomer, createCustomerAssociation, deleteCustomer, deleteCustomerAssociation, getCustomerAssociations, getCustomers, updateCustomer } from '../api/client'
+import { createCustomer, createCustomerAssociation, deleteCustomer, deleteCustomerAssociation, getCustomerAssociations, getCustomers, updateCustomer } from '../api/modules'
 import Modal from '../components/Modal'
 
 const EMPTY_FORM = { name: '', description: '', email: '', phone: '', notes: '' }

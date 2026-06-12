@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
-import {
-  getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser,
-  adminUnlockUser, suspendUser, unsuspendUser, impersonateUser,
-  sendPasswordResetEmail, updateUserEmail, gdprDeleteUser,
-  bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers,
-  getBreakGlassStatus, activateBreakGlass, endBreakGlass,
-} from '../api/client'
+import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser, adminUnlockUser, suspendUser, unsuspendUser, impersonateUser, sendPasswordResetEmail, updateUserEmail, gdprDeleteUser, bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers, getBreakGlassStatus, activateBreakGlass, endBreakGlass } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'

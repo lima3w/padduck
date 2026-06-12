@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getPrivacyPolicyVersion, acceptPrivacyPolicy, getCurrentUser } from '../api/client'
+import { getPrivacyPolicyVersion, acceptPrivacyPolicy, getCurrentUser } from '../api/auth'
 import { getCachedUser, setCachedUser } from '../utils/storageKeys'
 
 export default function PrivacyConsentBanner() {

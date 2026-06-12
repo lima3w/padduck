@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Database restore script for Padduck
 # Usage: ./scripts/restore.sh <backup_file>
-# Env vars: DATABASE_URL (default: postgres://padduck:padduck@localhost:5432/padduck)
+# Env vars: DATABASE_URL (required), e.g. postgres://user:pass@host:5432/padduck
 set -euo pipefail
 
 if [ $# -lt 1 ]; then
@@ -11,7 +11,11 @@ if [ $# -lt 1 ]; then
 fi
 
 BACKUP_FILE="$1"
-DATABASE_URL="${DATABASE_URL:-postgres://padduck:padduck@localhost:5432/padduck}"
+: "${DATABASE_URL:?DATABASE_URL must be set (e.g. postgres://user:pass@host:5432/padduck)}"
+
+# shellcheck source=tools/lib/db_url.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/db_url.sh"
+strip_url_password # sets SAFE_DATABASE_URL and exports PGPASSWORD
 
 if [ ! -f "${BACKUP_FILE}" ]; then
   echo "[restore] Error: file not found: ${BACKUP_FILE}"
@@ -29,9 +33,9 @@ fi
 echo "[restore] Restoring from ${BACKUP_FILE}..."
 
 if [[ "${BACKUP_FILE}" == *.gz ]]; then
-  gunzip -c "${BACKUP_FILE}" | psql "${DATABASE_URL}"
+  gunzip -c "${BACKUP_FILE}" | psql "${SAFE_DATABASE_URL}"
 else
-  psql "${DATABASE_URL}" < "${BACKUP_FILE}"
+  psql "${SAFE_DATABASE_URL}" < "${BACKUP_FILE}"
 fi
 
 echo "[restore] Done."
