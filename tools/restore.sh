@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Database restore script for Padduck
 # Usage: ./scripts/restore.sh <backup_file>
-# Env vars: DATABASE_URL (default: postgres://padduck:padduck@localhost:5432/padduck)
+# Env vars: DATABASE_URL (required), e.g. postgres://user:pass@host:5432/padduck
 set -euo pipefail
 
 if [ $# -lt 1 ]; then
@@ -11,7 +11,7 @@ if [ $# -lt 1 ]; then
 fi
 
 BACKUP_FILE="$1"
-DATABASE_URL="${DATABASE_URL:-postgres://padduck:padduck@localhost:5432/padduck}"
+: "${DATABASE_URL:?DATABASE_URL must be set (e.g. postgres://user:pass@host:5432/padduck)}"
 
 # shellcheck source=tools/lib/db_url.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/db_url.sh"

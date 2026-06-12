@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Database backup script for Padduck
 # Usage: ./scripts/backup.sh [output_dir]
-# Env vars: DATABASE_URL (default: postgres://padduck:padduck@localhost:5432/padduck)
+# Env vars: DATABASE_URL (required), e.g. postgres://user:pass@host:5432/padduck
 set -euo pipefail
 
 # Dumps contain password hashes and encrypted credentials — keep them
 # owner-only (files 600, directories 700).
 umask 077
 
-DATABASE_URL="${DATABASE_URL:-postgres://padduck:padduck@localhost:5432/padduck}"
+: "${DATABASE_URL:?DATABASE_URL must be set (e.g. postgres://user:pass@host:5432/padduck)}"
 OUTPUT_DIR="${1:-./backups}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="${OUTPUT_DIR}/padduck_backup_${TIMESTAMP}.sql.gz"
