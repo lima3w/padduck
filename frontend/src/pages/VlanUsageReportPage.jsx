@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { getVlanUsageReport } from '../api/vlans'
 
 function UtilBar({ pct }) {
@@ -22,24 +22,18 @@ function UtilBar({ pct }) {
 }
 
 export default function VlanUsageReportPage() {
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await getVlanUsageReport()
-        const data = res.data
-        setRows(Array.isArray(data) ? data : (data?.vlans ?? data?.report ?? []))
-      } catch (err) {
-        setError(err.response?.data?.error || 'Failed to load VLAN usage report')
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+  const usageQuery = useQuery({
+    queryKey: ['vlans', 'usage-report'],
+    queryFn: () => getVlanUsageReport().then(r => {
+      const data = r.data
+      return Array.isArray(data) ? data : (data?.vlans ?? data?.report ?? [])
+    }),
+  })
+  const rows = usageQuery.data ?? []
+  const loading = usageQuery.isLoading
+  const error = usageQuery.isError
+    ? (usageQuery.error?.response?.data?.error || 'Failed to load VLAN usage report')
+    : null
 
   if (loading) return <p className="text-gray-500">Loading VLAN usage report...</p>
 

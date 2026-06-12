@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { getSystemHealth } from '../api/admin'
 
 function StatusBadge({ status }) {
@@ -31,25 +31,16 @@ function Card({ children, className = '' }) {
 }
 
 export default function DeploymentHealthPage() {
-  const [health, setHealth] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const fetchHealth = useCallback(() => {
-    setLoading(true)
-    setError(null)
-    getSystemHealth()
-      .then((res) => {
-        setHealth(res.data)
-      })
-      .catch((err) => {
-        setError(err?.response?.data?.error || err.message || 'Failed to load system health')
-      })
-      .finally(() => setLoading(false))
-  }, [])
-
-  useEffect(() => {
-    fetchHealth()
-  }, [fetchHealth])
+  const healthQuery = useQuery({
+    queryKey: ['admin', 'system-health'],
+    queryFn: () => getSystemHealth().then(r => r.data),
+  })
+  const health = healthQuery.data ?? null
+  const loading = healthQuery.isLoading || healthQuery.isFetching
+  const error = healthQuery.isError
+    ? (healthQuery.error?.response?.data?.error || healthQuery.error?.message || 'Failed to load system health')
+    : null
+  const fetchHealth = () => healthQuery.refetch()
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">

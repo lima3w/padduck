@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listDiscoveryConflicts, resolveDiscoveryConflict } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -10,11 +11,8 @@ function confidenceColor(score) {
 }
 
 export default function DiscoveryConflictsPage() {
-  const [conflicts, setConflicts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('pending')
-  const [resolving, setResolving] = useState(null)
   const [message, setMessage] = useState(null)
 
   function showMsg(text, type = 'success') {
@@ -22,30 +20,26 @@ export default function DiscoveryConflictsPage() {
     setTimeout(() => setMessage(null), 3000)
   }
 
-  const fetchConflicts = useCallback(() => {
-    setLoading(true)
-    setError(null)
-    listDiscoveryConflicts(statusFilter || '')
-      .then(res => setConflicts(res.data || []))
-      .catch(() => setError('Failed to load discovery conflicts'))
-      .finally(() => setLoading(false))
-  }, [statusFilter])
+  const conflictsQuery = useQuery({
+    queryKey: ['discovery', 'conflicts', statusFilter],
+    queryFn: () => listDiscoveryConflicts(statusFilter || '').then(res => res.data || []),
+  })
+  const conflicts = conflictsQuery.data ?? []
+  const loading = conflictsQuery.isLoading
+  const error = conflictsQuery.isError ? 'Failed to load discovery conflicts' : null
 
-  useEffect(() => {
-    fetchConflicts()
-  }, [fetchConflicts])
-
-  async function handleResolve(id, action) {
-    setResolving(id)
-    try {
-      await resolveDiscoveryConflict(id, action)
+  const resolveMutation = useMutation({
+    mutationFn: ({ id, action }) => resolveDiscoveryConflict(id, action),
+    onSuccess: (_res, { action }) => {
       showMsg(`Conflict ${action} successfully`)
-      fetchConflicts()
-    } catch {
-      showMsg('Failed to resolve conflict', 'error')
-    } finally {
-      setResolving(null)
-    }
+      queryClient.invalidateQueries({ queryKey: ['discovery', 'conflicts'] })
+    },
+    onError: () => showMsg('Failed to resolve conflict', 'error'),
+  })
+  const resolving = resolveMutation.isPending ? resolveMutation.variables?.id : null
+
+  function handleResolve(id, action) {
+    resolveMutation.mutate({ id, action })
   }
 
   const pendingCount = conflicts.filter(c => c.status === 'pending').length

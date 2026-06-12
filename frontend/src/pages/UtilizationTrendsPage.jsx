@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 
 function DeltaBadge({ delta }) {
@@ -25,26 +26,18 @@ function PctBar({ pct }) {
 }
 
 export default function UtilizationTrendsPage() {
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [sortKey, setSortKey] = useState('currentPct')
   const [sortDir, setSortDir] = useState('desc')
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
-    try {
-      setLoading(true)
-      setError('')
-      const { data } = await api.get('/admin/reports/utilization-trends')
-      setRows(Array.isArray(data) ? data : (data?.trends ?? []))
-    } catch {
-      setError('Failed to load utilization trends')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const trendsQuery = useQuery({
+    queryKey: ['reports', 'utilization-trends'],
+    queryFn: () => api.get('/admin/reports/utilization-trends').then(({ data }) =>
+      Array.isArray(data) ? data : (data?.trends ?? [])),
+  })
+  const rows = trendsQuery.data ?? []
+  const loading = trendsQuery.isLoading
+  const error = trendsQuery.isError ? 'Failed to load utilization trends' : ''
+  const load = () => trendsQuery.refetch()
 
   function toggleSort(key) {
     if (sortKey === key) {

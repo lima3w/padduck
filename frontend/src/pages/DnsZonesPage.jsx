@@ -1,39 +1,23 @@
-import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { getDnsZones } from '../api/dns'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function DnsZonesPage() {
   const navigate = useNavigate()
-  const [zones, setZones] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [configured, setConfigured] = useState(true)
+  const zonesQuery = useQuery({
+    queryKey: ['dns', 'zones'],
+    queryFn: () => getDnsZones().then(r => r.data),
+  })
 
-  useEffect(() => {
-    load()
-  }, [])
-
-  async function load() {
-    try {
-      setLoading(true)
-      setError(null)
-      const res = await getDnsZones()
-      const data = res.data
-      if (data?.configured === false) {
-        setConfigured(false)
-        setZones([])
-      } else {
-        setConfigured(true)
-        setZones(Array.isArray(data) ? data : (data?.zones ?? []))
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load DNS zones')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const data = zonesQuery.data
+  const configured = data?.configured !== false
+  const zones = configured ? (Array.isArray(data) ? data : (data?.zones ?? [])) : []
+  const loading = zonesQuery.isLoading
+  const error = zonesQuery.isError
+    ? (zonesQuery.error?.response?.data?.error || 'Failed to load DNS zones')
+    : null
 
   if (loading) return <PageSpinner message="Loading DNS zones..." />
 

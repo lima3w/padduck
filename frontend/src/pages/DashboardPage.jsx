@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getDashboardSummary, getDashboardRecentActivity } from '../api/app'
 import { getInactiveIPs } from '../api/admin'
@@ -69,41 +69,40 @@ export default function DashboardPage() {
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
-  const [summary, setSummary] = useState(null)
-  const [activity, setActivity] = useState([])
-  const [nearCapacity, setNearCapacity] = useState([])
-  const [driftedIPs, setDriftedIPs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const summaryQuery = useQuery({
+    queryKey: ['dashboard', 'summary'],
+    queryFn: () => getDashboardSummary().then(r => r.data),
+  })
+  const activityQuery = useQuery({
+    queryKey: ['dashboard', 'activity'],
+    queryFn: () => getDashboardRecentActivity().then(r => r.data),
+  })
+  // Best-effort panels: their failures must not take the dashboard down.
+  const nearCapacityQuery = useQuery({
+    queryKey: ['dashboard', 'near-capacity'],
+    queryFn: () => api.get('/admin/reports/subnets-near-capacity')
+      .then(r => (Array.isArray(r.data) ? r.data : []))
+      .catch(() => []),
+  })
+  const driftedQuery = useQuery({
+    queryKey: ['dashboard', 'drifted-ips'],
+    queryFn: () => api.get('/admin/reports/inactive-ips', { params: { days: 30 } })
+      .then(r => (r.data?.inactive ?? []).slice(0, 8))
+      .catch(() => []),
+  })
 
-  useEffect(() => { load() }, [])
+  const summary = summaryQuery.data ?? null
+  const activity = activityQuery.data ?? []
+  const nearCapacity = nearCapacityQuery.data ?? []
+  const driftedIPs = driftedQuery.data ?? []
+  const loading = summaryQuery.isLoading || activityQuery.isLoading
+  const error = summaryQuery.isError || activityQuery.isError ? 'Failed to load dashboard data' : null
 
-  async function load() {
-    try {
-      setLoading(true)
-      setError(null)
-      const [sumRes, actRes] = await Promise.all([
-        getDashboardSummary(),
-        getDashboardRecentActivity(),
-      ])
-      setSummary(sumRes.data)
-      setActivity(actRes.data)
-      // Load subnets near capacity (best-effort, non-blocking)
-      try {
-        const capRes = await api.get('/admin/reports/subnets-near-capacity')
-        setNearCapacity(Array.isArray(capRes.data) ? capRes.data : [])
-      } catch {}
-      // Load drifted IPs (best-effort, non-blocking)
-      try {
-        const driftRes = await api.get('/admin/reports/inactive-ips', { params: { days: 30 } })
-        const items = driftRes.data?.inactive ?? []
-        setDriftedIPs(items.slice(0, 8))
-      } catch {}
-    } catch {
-      setError('Failed to load dashboard data')
-    } finally {
-      setLoading(false)
-    }
+  const load = () => {
+    summaryQuery.refetch()
+    activityQuery.refetch()
+    nearCapacityQuery.refetch()
+    driftedQuery.refetch()
   }
 
   if (loading) {
