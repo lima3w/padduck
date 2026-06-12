@@ -2,6 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -151,6 +157,373 @@ func TestValidateServerURL(t *testing.T) {
 		err := validateServerURL(tt.url, tt.allowInsecure)
 		if (err != nil) != tt.wantErr {
 			t.Errorf("validateServerURL(%q, %v): err=%v, wantErr=%v", tt.url, tt.allowInsecure, err, tt.wantErr)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// agentEndpoint — path joining and scheme validation
+// ---------------------------------------------------------------------------
+
+func TestAgentEndpoint_PathJoining(t *testing.T) {
+	cases := []struct {
+		baseURL  string
+		path     string
+		wantSufx string // suffix the result must end with
+		wantErr  bool
+	}{
+		// Base URL without trailing slash.
+		{"https://example.com", "/api/v1/scan-agent/heartbeat", "/api/v1/scan-agent/heartbeat", false},
+		// Base URL with trailing slash — should not produce double slash.
+		{"https://example.com/", "/api/v1/scan-agent/heartbeat", "/api/v1/scan-agent/heartbeat", false},
+		// Base URL with a path prefix.
+		{"https://example.com/padduck", "/api/v1/scan-agent/heartbeat", "/padduck/api/v1/scan-agent/heartbeat", false},
+		// Base URL with path prefix and trailing slash.
+		{"https://example.com/padduck/", "/api/v1/scan-agent/heartbeat", "/padduck/api/v1/scan-agent/heartbeat", false},
+		// Query string and fragment must be stripped.
+		{"https://example.com?foo=bar#baz", "/api/v1/scan-agent/heartbeat", "/api/v1/scan-agent/heartbeat", false},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%s+%s", tc.baseURL, tc.path), func(t *testing.T) {
+			got, err := agentEndpoint(tc.baseURL, tc.path)
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("expected error, got %q", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !strings.HasSuffix(got, tc.wantSufx) {
+				t.Errorf("got %q, want suffix %q", got, tc.wantSufx)
+			}
+			// No query string or fragment in result.
+			if strings.ContainsAny(got, "?#") {
+				t.Errorf("result %q must not contain query or fragment", got)
+			}
+		})
+	}
+}
+
+func TestAgentEndpoint_SchemeRejection(t *testing.T) {
+	// Only http and https are accepted; anything else is an error.
+	_, err := agentEndpoint("ftp://example.com", "/path")
+	if err == nil {
+		t.Error("expected error for ftp:// scheme, got nil")
+	}
+}
+
+func TestAgentEndpoint_MissingHost(t *testing.T) {
+	_, err := agentEndpoint("https://", "/path")
+	if err == nil {
+		t.Error("expected error when host is empty, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// doHeartbeat
+// ---------------------------------------------------------------------------
+
+func TestDoHeartbeat_Success(t *testing.T) {
+	var gotMethod, gotPath, gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	client := srv.Client()
+	err := doHeartbeat(context.Background(), client, srv.URL, "test-token")
+	if err != nil {
+		t.Fatalf("doHeartbeat returned unexpected error: %v", err)
+	}
+	if gotMethod != http.MethodPost {
+		t.Errorf("method: got %q, want POST", gotMethod)
+	}
+	if gotPath != "/api/v1/scan-agent/heartbeat" {
+		t.Errorf("path: got %q, want /api/v1/scan-agent/heartbeat", gotPath)
+	}
+	if gotAuth != "Bearer test-token" {
+		t.Errorf("Authorization: got %q, want \"Bearer test-token\"", gotAuth)
+	}
+}
+
+func TestDoHeartbeat_NonOK(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+
+	client := srv.Client()
+	err := doHeartbeat(context.Background(), client, srv.URL, "tok")
+	if err == nil {
+		t.Fatal("expected error for non-200 status, got nil")
+	}
+	if !strings.Contains(err.Error(), "503") {
+		t.Errorf("error should mention status code 503, got: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// fetchJobs
+// ---------------------------------------------------------------------------
+
+func TestFetchJobs_ValidJSON(t *testing.T) {
+	payload := `[
+		{
+			"id": 42,
+			"name": "nightly",
+			"subnets": [{"id": 7, "cidr": "10.0.1.0/24"}],
+			"ping_concurrency": 5,
+			"scan_type": "icmp"
+		}
+	]`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, payload)
+	}))
+	defer srv.Close()
+
+	jobs, err := fetchJobs(context.Background(), srv.Client(), srv.URL, "tok")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(jobs) != 1 {
+		t.Fatalf("expected 1 job, got %d", len(jobs))
+	}
+	j := jobs[0]
+	if j.ID != 42 {
+		t.Errorf("job ID: got %d, want 42", j.ID)
+	}
+	if j.Name != "nightly" {
+		t.Errorf("job Name: got %q, want \"nightly\"", j.Name)
+	}
+	if j.PingConcurrency != 5 {
+		t.Errorf("ping_concurrency: got %d, want 5", j.PingConcurrency)
+	}
+	if j.ScanType != "icmp" {
+		t.Errorf("scan_type: got %q, want \"icmp\"", j.ScanType)
+	}
+	if len(j.Subnets) != 1 || j.Subnets[0].CIDR != "10.0.1.0/24" || j.Subnets[0].ID != 7 {
+		t.Errorf("subnets: got %+v", j.Subnets)
+	}
+}
+
+func TestFetchJobs_EmptyArray(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `[]`)
+	}))
+	defer srv.Close()
+
+	jobs, err := fetchJobs(context.Background(), srv.Client(), srv.URL, "tok")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(jobs) != 0 {
+		t.Errorf("expected empty slice, got %d jobs", len(jobs))
+	}
+}
+
+func TestFetchJobs_NonOK(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+
+	_, err := fetchJobs(context.Background(), srv.Client(), srv.URL, "bad-tok")
+	if err == nil {
+		t.Fatal("expected error for non-200 status, got nil")
+	}
+	if !strings.Contains(err.Error(), "401") {
+		t.Errorf("error should mention 401, got: %v", err)
+	}
+}
+
+func TestFetchJobs_MalformedJSON(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{not valid json`)
+	}))
+	defer srv.Close()
+
+	_, err := fetchJobs(context.Background(), srv.Client(), srv.URL, "tok")
+	if err == nil {
+		t.Fatal("expected JSON decode error, got nil")
+	}
+}
+
+func TestFetchJobs_BearerHeader(t *testing.T) {
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `[]`)
+	}))
+	defer srv.Close()
+
+	_, _ = fetchJobs(context.Background(), srv.Client(), srv.URL, "my-secret")
+	if gotAuth != "Bearer my-secret" {
+		t.Errorf("Authorization header: got %q, want \"Bearer my-secret\"", gotAuth)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// postResults
+// ---------------------------------------------------------------------------
+
+func TestPostResults_Payload(t *testing.T) {
+	type requestBody struct {
+		JobID   int64             `json:"job_id"`
+		Results []AgentScanResult `json:"results"`
+	}
+
+	var got requestBody
+	var gotContentType, gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotContentType = r.Header.Get("Content-Type")
+		gotAuth = r.Header.Get("Authorization")
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			http.Error(w, "bad body", http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	results := []AgentScanResult{
+		{SubnetID: 3, IPAddress: "10.0.0.1", IsAlive: true, ResponseTimeMs: 12},
+		{SubnetID: 3, IPAddress: "10.0.0.2", IsAlive: false},
+	}
+	err := postResults(context.Background(), srv.Client(), srv.URL, "post-token", 99, results)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotContentType != "application/json" {
+		t.Errorf("Content-Type: got %q, want application/json", gotContentType)
+	}
+	if gotAuth != "Bearer post-token" {
+		t.Errorf("Authorization: got %q, want \"Bearer post-token\"", gotAuth)
+	}
+	if got.JobID != 99 {
+		t.Errorf("job_id: got %d, want 99", got.JobID)
+	}
+	if len(got.Results) != 2 {
+		t.Fatalf("results count: got %d, want 2", len(got.Results))
+	}
+	if got.Results[0].IPAddress != "10.0.0.1" || !got.Results[0].IsAlive {
+		t.Errorf("first result: %+v", got.Results[0])
+	}
+	if got.Results[1].IPAddress != "10.0.0.2" || got.Results[1].IsAlive {
+		t.Errorf("second result: %+v", got.Results[1])
+	}
+}
+
+func TestPostResults_NonOK(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	err := postResults(context.Background(), srv.Client(), srv.URL, "tok", 1, nil)
+	if err == nil {
+		t.Fatal("expected error for non-200 status, got nil")
+	}
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf("error should mention 500, got: %v", err)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// runCycle — integration test using TEST-NET (192.0.2.0/30) so ping reports
+// "not alive" but terminates quickly without hanging or touching real hosts.
+// ---------------------------------------------------------------------------
+
+func TestRunCycle_FullCycle(t *testing.T) {
+	const token = "cycle-token"
+
+	// Track which endpoints were hit so we can assert all three were called.
+	var heartbeatCalled, jobsCalled, resultsCalled bool
+
+	// Capture the results payload posted back.
+	type resultPayload struct {
+		JobID   int64             `json:"job_id"`
+		Results []AgentScanResult `json:"results"`
+	}
+	var posted resultPayload
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify the bearer token on every request.
+		if r.Header.Get("Authorization") != "Bearer "+token {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		switch r.URL.Path {
+		case "/api/v1/scan-agent/heartbeat":
+			heartbeatCalled = true
+			w.WriteHeader(http.StatusOK)
+
+		case "/api/v1/scan-agent/jobs":
+			jobsCalled = true
+			// Return a single job with a /30 in TEST-NET — 2 host IPs, all dead.
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(w, `[{
+				"id": 1,
+				"name": "cycle-test",
+				"subnets": [{"id": 10, "cidr": "192.0.2.0/30"}],
+				"ping_concurrency": 2,
+				"scan_type": "icmp"
+			}]`)
+
+		case "/api/v1/scan-agent/results":
+			resultsCalled = true
+			if err := json.NewDecoder(r.Body).Decode(&posted); err != nil {
+				http.Error(w, "bad body", http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	client := srv.Client()
+	runCycle(context.Background(), client, srv.URL, token)
+
+	if !heartbeatCalled {
+		t.Error("heartbeat endpoint was not called")
+	}
+	if !jobsCalled {
+		t.Error("jobs endpoint was not called")
+	}
+	if !resultsCalled {
+		t.Error("results endpoint was not called")
+	}
+
+	// 192.0.2.0/30 has 2 host addresses: .1 and .2.
+	if posted.JobID != 1 {
+		t.Errorf("posted job_id: got %d, want 1", posted.JobID)
+	}
+	if len(posted.Results) != 2 {
+		t.Errorf("posted results count: got %d, want 2", len(posted.Results))
+	}
+	for _, r := range posted.Results {
+		if r.SubnetID != 10 {
+			t.Errorf("result subnet_id: got %d, want 10", r.SubnetID)
+		}
+		// All TEST-NET IPs must be unreachable.
+		if r.IsAlive {
+			t.Errorf("TEST-NET IP %s reported alive (unexpected)", r.IPAddress)
 		}
 	}
 }
