@@ -142,3 +142,53 @@ jobs:
           mkdir -p ci-artifacts
           cp sbom/dependency-sbom.cdx.json ci-artifacts/dependency-sbom.cdx.json
           sha256sum ci-artifacts/dependency-sbom.cdx.json
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+
+      - name: Build and boot the stack from the working tree
+        run: |
+          POSTGRES_PASSWORD=e2e-db-password ADMIN_PASSWORD=e2e-admin-password \
+            docker compose -f docker-compose.yml -f docker-compose.e2e.yml -p padduck-e2e up -d --build --wait
+          timeout 90 sh -c 'until curl -fsS http://127.0.0.1:3000/health >/dev/null 2>&1; do sleep 2; done'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: ./frontend
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright suite
+        working-directory: ./frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test
+
+      - name: Upload traces and report on failure
+        if: failure()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
+        with:
+          name: playwright-artifacts
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+
+      - name: Tear down the stack
+        if: always()
+        run: |
+          POSTGRES_PASSWORD=e2e-db-password \
+            docker compose -f docker-compose.yml -f docker-compose.e2e.yml -p padduck-e2e down -v

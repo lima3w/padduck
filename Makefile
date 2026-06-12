@@ -1,4 +1,4 @@
-.PHONY: ci-local test test-integration vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
+.PHONY: ci-local test test-integration e2e vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -30,6 +30,15 @@ test-integration:
 	timeout 60 sh -c 'until docker exec padduck-test-pg pg_isready -U postgres -q; do sleep 1; done'; \
 	cd $(BACKEND_DIR) && TEST_DATABASE_URL="postgres://postgres:test@127.0.0.1:55432/postgres?sslmode=disable" \
 		go test -mod=vendor -race -count=1 ./...
+
+## e2e: boot the stack from the working tree and run the Playwright suite
+e2e:
+	@echo "→ end-to-end tests (full stack via docker compose)"
+	POSTGRES_PASSWORD=e2e-db-password ADMIN_PASSWORD=e2e-admin-password FRONTEND_PORT=3210 \
+		docker compose -f docker-compose.yml -f docker-compose.e2e.yml -p padduck-e2e up -d --build --wait
+	@trap 'POSTGRES_PASSWORD=e2e-db-password docker compose -p padduck-e2e -f docker-compose.yml -f docker-compose.e2e.yml down -v' EXIT; \
+	timeout 90 sh -c 'until curl -fsS http://127.0.0.1:3210/health >/dev/null 2>&1; do sleep 2; done'; \
+	cd $(FRONTEND_DIR) && E2E_BASE_URL=http://127.0.0.1:3210 npx playwright test
 
 ## check-migrations: verify migration files use paired, single-direction sql-migrate annotations
 check-migrations:

@@ -1,0 +1,17 @@
+# Override for end-to-end testing: build the backend and frontend images from
+# the working tree instead of pulling pinned release images, and use fixed
+# credentials the Playwright suite knows.
+#
+#   POSTGRES_PASSWORD=e2e-db-password ADMIN_PASSWORD=e2e-admin-password \
+#     docker compose -f docker-compose.yml -f docker-compose.e2e.yml -p padduck-e2e up -d --build
+#
+# Or simply: make e2e
+services:
+  backend:
+    image: padduck-backend:e2e
+    build:
+      context: ./backend
+  frontend:
+    image: padduck-frontend:e2e
+    build:
+      context: ./frontend
