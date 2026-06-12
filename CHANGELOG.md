@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.31.25
+
+### Security
+- **Username enumeration via login timing**: Login attempts for nonexistent usernames (or accounts with no password set) returned immediately, skipping the ~100ms bcrypt comparison that runs for real users. A dummy bcrypt comparison now runs on those paths so all pre-MFA login failures take the same time. (#75)
+- **Account lockout response confirmed account existence**: The lockout check ran before password verification, so the distinct 429 "account locked" response let anyone confirm an account exists by triggering lockout with bogus attempts. The check now runs after password verification: locked accounts still reject the correct password, but callers without valid credentials get the same generic failure as for nonexistent accounts. (#76)
+- **Avatar uploads not validated as images**: Custom avatars were stored as client-supplied base64 data URLs with the declared media type trusted and later served back as the Content-Type. Uploads must now decode as a real PNG/JPEG/GIF/WebP within 4096x4096, the stored media type is rewritten to the decoded format, and avatar responses send `X-Content-Type-Options: nosniff`. (#77)
+- **SSRF regression tests for webhook deliveries**: The dial-time SSRF guard (`internal/netguard`) was already in place; added regression tests pinning cloud metadata endpoints (IPv4 and IPv6), RFC 1918 ranges, and IPv4-mapped-IPv6 bypass attempts. (#74)
+
 ## v1.31.24
 
 ### Bug Fixes
