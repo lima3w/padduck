@@ -88,7 +88,7 @@ func (s *Service) CreateWebSession(ctx context.Context, userID int64, ipAddress,
 	tokenHash := hex.EncodeToString(hash[:])
 
 	deviceName := parseDeviceName(userAgent)
-	absoluteExpiry := time.Now().Add(s.sessionAbsoluteTimeout(ctx))
+	absoluteExpiry := time.Now().UTC().Add(s.sessionAbsoluteTimeout(ctx))
 
 	_, err := s.repository.CreateSession(ctx, userID, tokenHash, deviceName, ipAddress, userAgent, absoluteExpiry)
 	if err != nil {

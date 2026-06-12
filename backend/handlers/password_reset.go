@@ -104,7 +104,9 @@ func (h *Handler) ChangeMyPassword(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "new password must be at least 8 characters"})
 	}
 
-	if err := h.service.ChangePassword(c.Context(), currentUser.ID, req.CurrentPassword, req.NewPassword); err != nil {
+	// Keep the session making the change alive; every other session for the
+	// user is revoked by the service.
+	if err := h.service.ChangePassword(c.Context(), currentUser.ID, req.CurrentPassword, req.NewPassword, c.Cookies(sessionCookieName)); err != nil {
 		if err.Error() == "current password is incorrect" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 		}

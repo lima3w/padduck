@@ -227,6 +227,15 @@ func (r *Repository) DeleteAllUserSessions(ctx context.Context, userID int64) er
 	return err
 }
 
+// DeleteUserSessionsExcept removes every session for a user except the one
+// with the given token hash (used to keep the current session alive when the
+// user changes their own password).
+func (r *Repository) DeleteUserSessionsExcept(ctx context.Context, userID int64, keepTokenHash string) error {
+	query := `DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2`
+	_, err := r.db.Exec(ctx, query, userID, keepTokenHash)
+	return err
+}
+
 func (r *Repository) DeleteExpiredSessions(ctx context.Context) error {
 	query := `DELETE FROM sessions WHERE absolute_expires_at < CURRENT_TIMESTAMP`
 	_, err := r.db.Exec(ctx, query)
