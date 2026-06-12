@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Padduck API
   description: Route-complete REST API specification for the current backend.
-  version: 1.26.0
+  version: 1.31.25
   x-api-contract: stable-v1
   contact:
     name: Padduck
