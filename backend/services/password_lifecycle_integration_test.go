@@ -18,7 +18,9 @@ import (
 func testAuthService(t *testing.T) (*Service, *repository.Repository, int64) {
 	t.Helper()
 	pool := testdb.Connect(t, "services")
-	testdb.Truncate(t, pool, "password_resets", "api_tokens", "sessions", "users")
+	testdb.Truncate(t, pool,
+		"password_resets", "api_tokens", "sessions",
+		"login_attempts", "account_lockouts", "security_notifications", "users")
 	repo := repository.NewRepository(pool)
 	svc := NewService(repo, testMFAKey)
 

@@ -55,7 +55,7 @@ func (s *Service) ProcessFailedLogin(ctx context.Context, userID int64, username
 	}
 
 	// Check if brute force threshold reached
-	since := time.Now().Add(-bruteForceWindow)
+	since := time.Now().UTC().Add(-bruteForceWindow)
 	count, err := s.repository.CountRecentFailedAttemptsByUsername(ctx, username, since)
 	if err != nil {
 		return
@@ -77,7 +77,7 @@ const (
 // IsIPThrottled returns true if the given IP address has accumulated too many
 // failed login attempts across any usernames within the throttle window.
 func (s *Service) IsIPThrottled(ctx context.Context, ipAddress string) (bool, error) {
-	since := time.Now().Add(-ipThrottleWindow)
+	since := time.Now().UTC().Add(-ipThrottleWindow)
 	count, err := s.repository.CountRecentFailedAttemptsByIPOnly(ctx, ipAddress, since)
 	if err != nil {
 		return false, err
@@ -90,7 +90,7 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 	lockoutCount, _ := s.repository.CountUserLockouts(ctx, userID)
 	lockoutCount++ // this will be the new lockout
 	duration := lockoutDuration(lockoutCount)
-	unlockAt := time.Now().Add(duration)
+	unlockAt := time.Now().UTC().Add(duration)
 
 	reason := fmt.Sprintf("%d failed login attempts within %s", failCount, bruteForceWindow)
 	lockout, err := s.repository.CreateAccountLockout(ctx, userID, unlockAt, reason, lockoutCount)
@@ -106,7 +106,7 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 	rawToken := hex.EncodeToString(tokenBytes)
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
-	tokenExpiry := time.Now().Add(24 * time.Hour)
+	tokenExpiry := time.Now().UTC().Add(24 * time.Hour)
 
 	if err := s.repository.SetUnlockToken(ctx, lockout.ID, tokenHash, tokenExpiry); err != nil {
 		return err
@@ -129,7 +129,7 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 
 // sendFailedLoginAlert sends a notification email about multiple failed login attempts (rate-limited).
 func (s *Service) sendFailedLoginAlert(ctx context.Context, userID int64, username, ipAddress string, count int) error {
-	since := time.Now().Add(-notifRateLimit)
+	since := time.Now().UTC().Add(-notifRateLimit)
 	recent, err := s.repository.CountRecentSecurityNotifications(ctx, userID, "failed_login_alert", since)
 	if err != nil || recent > 0 {
 		return err
@@ -198,7 +198,7 @@ func (s *Service) RequestUnlockEmail(ctx context.Context, username string) error
 	rawToken := hex.EncodeToString(tokenBytes)
 	hash := sha256.Sum256([]byte(rawToken))
 	tokenHash := hex.EncodeToString(hash[:])
-	tokenExpiry := time.Now().Add(24 * time.Hour)
+	tokenExpiry := time.Now().UTC().Add(24 * time.Hour)
 
 	if err := s.repository.SetUnlockToken(ctx, lockout.ID, tokenHash, tokenExpiry); err != nil {
 		return err
