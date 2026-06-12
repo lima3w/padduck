@@ -34,11 +34,13 @@ and frontend images are published to GitHub Container Registry.
 curl -fsSLO https://raw.githubusercontent.com/lima3w/padduck/main/docker-compose.yml
 ```
 
-Before using this in a shared or production environment, create a `.env` file
-and set a strong `POSTGRES_PASSWORD`. You can start from the example file:
+**`POSTGRES_PASSWORD` is required** — the stack will not start without it. Copy
+the example file and set a strong value before running `docker compose up`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/lima3w/padduck/main/.env.example -o .env
+# Edit .env and set POSTGRES_PASSWORD to a strong value, e.g.:
+#   openssl rand -base64 32
 ```
 
 See the [Configuration](#configuration) section below for all available variables.
@@ -78,7 +80,7 @@ All settings are read from environment variables. Docker Compose interpolates th
 | Variable | Default | Description |
 |---|---|---|
 | `POSTGRES_USER` | `padduck` | PostgreSQL user created at first boot |
-| `POSTGRES_PASSWORD` | `padduck` | **Change before any shared deployment** |
+| `POSTGRES_PASSWORD` | **required** | Must be set in `.env` before first run; the stack will not start without it |
 | `POSTGRES_DB` | `padduck` | Database name |
 | `DATABASE_URL` | *(derived)* | Full connection string; overrides the three variables above when set |
 | `SERVER_PORT` | `8080` | Port the backend listens on inside the container |

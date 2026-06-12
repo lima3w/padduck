@@ -23,14 +23,15 @@ file is required on the host.
 mkdir padduck
 cd padduck
 curl -fsSLO https://raw.githubusercontent.com/lima3w/padduck/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/lima3w/padduck/main/.env.example -o .env
+# Edit .env and set POSTGRES_PASSWORD to a strong value before continuing
 docker compose pull
 docker compose up -d
 ```
 
-On first startup, the backend creates a persistent MFA encryption key in
-`./data/backend/mfa-encryption-key` if `MFA_ENCRYPTION_KEY` is not set. Before
-using this in a shared or production environment, create a `.env` file and set a
-strong `POSTGRES_PASSWORD`.
+`POSTGRES_PASSWORD` is **required** — the stack will not start without it. On
+first startup, the backend creates a persistent MFA encryption key in
+`./data/backend/mfa-encryption-key` if `MFA_ENCRYPTION_KEY` is not set.
 
 Open `http://localhost:3000` and log in as `admin`. The generated password is
 printed to the backend log on first boot.
@@ -42,7 +43,7 @@ Configuration is read from environment variables. Docker Compose will also read 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `POSTGRES_USER` | `padduck` | PostgreSQL username |
-| `POSTGRES_PASSWORD` | `padduck` | PostgreSQL password |
+| `POSTGRES_PASSWORD` | **required** | PostgreSQL password — must be set in `.env` before first run |
 | `POSTGRES_DB` | `padduck` | PostgreSQL database name |
 | `DATABASE_URL` | derived | Overrides the individual PostgreSQL variables |
 | `ADMIN_PASSWORD` | _(generated)_ | Initial admin password; printed to logs on first boot if unset |
