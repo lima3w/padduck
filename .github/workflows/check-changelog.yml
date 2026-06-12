@@ -8,6 +8,9 @@ on:
 jobs:
   check-changelog:
     runs-on: ubuntu-latest
+    # Dependabot PRs only bump pinned action SHAs and cannot edit the
+    # changelog; their changes are recorded in the release notes instead.
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1

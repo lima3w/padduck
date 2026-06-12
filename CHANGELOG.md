@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.31.26
+
+### Bug Fixes
+- **docker-compose default `IMAGE_TAG` pointed at a nonexistent tag**: GHCR image tags have no `v` prefix (`1.31.25`, not `v1.31.25`), so the pinned default added in v1.31.25 could not be pulled by fresh deployments. The default is now `1.31.25` and the docs note the tag format.
+- **Changelog gate no longer blocks Dependabot**: the check-changelog workflow now skips Dependabot PRs, which only bump pinned action SHAs and cannot edit the changelog.
+
 ## v1.31.25
 
 ### Security

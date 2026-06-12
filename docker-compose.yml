@@ -33,7 +33,7 @@ services:
       - DAC_OVERRIDE
 
   backend:
-    image: ghcr.io/lima3w/padduck-backend:${IMAGE_TAG:-v1.31.24}
+    image: ghcr.io/lima3w/padduck-backend:${IMAGE_TAG:-1.31.25}
     restart: unless-stopped
     volumes:
       - ./data/backend:/app/data
@@ -76,7 +76,7 @@ services:
       - /run
 
   frontend:
-    image: ghcr.io/lima3w/padduck-frontend:${IMAGE_TAG:-v1.31.24}
+    image: ghcr.io/lima3w/padduck-frontend:${IMAGE_TAG:-1.31.25}
     restart: unless-stopped
     ports:
       # Bind to loopback only so the UI is not exposed on all interfaces
