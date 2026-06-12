@@ -4,6 +4,10 @@
 # Env vars: DATABASE_URL (default: postgres://padduck:padduck@localhost:5432/padduck)
 set -euo pipefail
 
+# Dumps contain password hashes and encrypted credentials — keep them
+# owner-only (files 600, directories 700).
+umask 077
+
 DATABASE_URL="${DATABASE_URL:-postgres://padduck:padduck@localhost:5432/padduck}"
 OUTPUT_DIR="${1:-./backups}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -14,6 +18,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/db_url.sh"
 strip_url_password # sets SAFE_DATABASE_URL and exports PGPASSWORD
 
 mkdir -p "${OUTPUT_DIR}"
+chmod 700 "${OUTPUT_DIR}"
 
 echo "[backup] Starting backup to ${BACKUP_FILE}"
 
