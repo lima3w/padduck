@@ -227,12 +227,6 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 		return nil, fmt.Errorf("user not found")
 	}
 
-	// Check lockout before verifying password (fail-fast, prevents enumeration)
-	if locked, lockout, _ := s.IsAccountLocked(ctx, user.ID); locked {
-		_ = s.repository.CreateLoginAttempt(ctx, username, ipAddress, userAgent, false, "account locked")
-		return nil, fmt.Errorf("%w; locked until %s", ErrAccountLocked, lockout.UnlockAt.Format(time.RFC3339))
-	}
-
 	if user.PasswordHash == "" {
 		// Equalize timing with the password-check path (see not-found case above)
 		utils.DummyVerifyPassword(password)
@@ -243,6 +237,17 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 	if !utils.VerifyPassword(user.PasswordHash, password) {
 		s.ProcessFailedLogin(ctx, user.ID, username, ipAddress, userAgent, "invalid password")
 		return nil, fmt.Errorf("invalid password")
+	}
+
+	// Check lockout only after the password is verified: a locked account
+	// still rejects the correct password, but callers without valid
+	// credentials get the generic failure above, so the distinct lockout
+	// response cannot be used to confirm an account exists. The same
+	// reasoning applies to the account-state errors below — they are only
+	// reachable with a correct password, so they leak nothing pre-auth.
+	if locked, lockout, _ := s.IsAccountLocked(ctx, user.ID); locked {
+		_ = s.repository.CreateLoginAttempt(ctx, username, ipAddress, userAgent, false, "account locked")
+		return nil, fmt.Errorf("%w; locked until %s", ErrAccountLocked, lockout.UnlockAt.Format(time.RFC3339))
 	}
 
 	switch user.State {
