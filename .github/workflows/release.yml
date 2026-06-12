@@ -1,13 +1,11 @@
 name: Release
 
+# Releases are deliberate: push a vX.Y.Z tag to cut one. Merging to main no
+# longer auto-tags — bump CHANGELOG.md in the PR, merge, then tag the commit.
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
-    paths-ignore:
-      - '.github/wiki/**'
 
 env:
   REGISTRY: ghcr.io
@@ -29,63 +27,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-        with:
-          fetch-depth: 0
 
       - name: Determine release version
         id: version
         run: |
           set -euo pipefail
 
-          version_from_changelog() {
-            awk '/^## v[0-9]+\.[0-9]+\.[0-9]+$/{print $2; exit}' CHANGELOG.md
-          }
-
-          latest_semver_tag() {
-            git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1
-          }
-
-          next_patch() {
-            local tag="${1#v}"
-            IFS=. read -r major minor patch <<< "${tag}"
-            printf 'v%s.%s.%s\n' "${major}" "${minor}" "$((patch + 1))"
-          }
-
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            version="$(version_from_changelog)"
-            latest="$(latest_semver_tag)"
-            if [ -z "${version}" ]; then
-              echo "ERROR: CHANGELOG.md must start with a vX.Y.Z section."
-              exit 1
-            fi
-            if [ -z "${latest}" ]; then
-              echo "ERROR: no existing semver tag found."
-              exit 1
-            fi
-
-            if git rev-parse -q --verify "refs/tags/${version}" >/dev/null; then
-              tagged_sha="$(git rev-list -n1 "${version}")"
-              if [ "${tagged_sha}" != "${GITHUB_SHA}" ]; then
-                expected="$(next_patch "${latest}")"
-                echo "ERROR: CHANGELOG.md top version ${version} is already released (tagged at ${tagged_sha})."
-                echo "Add a '## ${expected}' section to CHANGELOG.md and push a new commit."
-                exit 1
-              fi
-            else
-              expected="$(next_patch "${latest}")"
-              if [ "${version}" != "${expected}" ]; then
-                echo "ERROR: CHANGELOG.md top version must be ${expected}; found ${version}."
-                echo "Latest release tag is ${latest}; patch version must increment on main pushes."
-                exit 1
-              fi
-
-              git config user.name "github-actions[bot]"
-              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-              git tag -a "${version}" -m "${version}" "${GITHUB_SHA}"
-              git push origin "refs/tags/${version}"
-            fi
+          # The workflow only triggers on tag pushes, so the version is the tag.
+          version="${GITHUB_REF_NAME}"
+          if ! printf '%s\n' "${version}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: ${version} is not a vX.Y.Z release tag."
+            exit 1
           fi
 
           version_no_v="${version#v}"

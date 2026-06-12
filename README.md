@@ -77,3 +77,21 @@ Full documentation is on the [GitHub Wiki](https://github.com/lima3w/padduck/wik
   service-layer code must apply the same rule when constructing times for
   repository calls. Read-side comparisons against scanned values
   (`time.Now().After(row.ExpiresAt)`) compare instants and are safe either way.
+
+## Releasing
+
+Releases are deliberate — pushing to `main` does **not** publish anything.
+To cut a release:
+
+1. In the release PR, add a `## vX.Y.Z` section at the top of `CHANGELOG.md`
+   (the changelog gate enforces this on every PR).
+2. Merge to `main`.
+3. When ready to release, tag that commit and push the tag:
+   ```bash
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   ```
+
+The tag push triggers `release.yml`, which runs the full test suite (backend,
+frontend, e2e) and only then publishes the GHCR images and the GitHub release.
+Multiple PRs can land on `main` between releases; they all ship in the next
+tag. Image tags on GHCR have no `v` prefix (`1.31.27`).
