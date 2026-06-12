@@ -176,22 +176,16 @@ func runJob(ctx context.Context, job ScanJob) []AgentScanResult {
 	var mu sync.Mutex
 
 	for _, sn := range job.Subnets {
-		ips, err := enumerateCIDR(sn.CIDR)
-		if err != nil {
-			log.Printf("job %d: enumerate %s: %v", job.ID, sn.CIDR, err)
-			continue
-		}
-
 		sem := make(chan struct{}, concurrency)
 		var wg sync.WaitGroup
 
-		for _, ip := range ips {
+		err := forEachHostIP(sn.CIDR, func(ipStr string) bool {
 			if ctx.Err() != nil {
-				break
+				return false
 			}
 			wg.Add(1)
 			sem <- struct{}{}
-			go func(ipStr string) {
+			go func() {
 				defer wg.Done()
 				defer func() { <-sem }()
 
@@ -207,7 +201,11 @@ func runJob(ctx context.Context, job ScanJob) []AgentScanResult {
 				mu.Lock()
 				results = append(results, res)
 				mu.Unlock()
-			}(ip)
+			}()
+			return true
+		})
+		if err != nil {
+			log.Printf("job %d: enumerate %s: %v", job.ID, sn.CIDR, err)
 		}
 		wg.Wait()
 	}
@@ -229,29 +227,40 @@ func pingHost(host string, timeout time.Duration) (bool, int64) {
 	return true, elapsed
 }
 
-// enumerateCIDR returns all host IPs in a subnet (excluding network and broadcast).
-func enumerateCIDR(cidr string) ([]string, error) {
+// minCIDRPrefix is the broadest subnet the agent will scan. The CIDR comes
+// from the server, so a compromised server could otherwise send 0.0.0.0/0 and
+// turn the agent into an internet-wide scanner (or OOM it).
+const minCIDRPrefix = 16
+
+// forEachHostIP calls fn for every host IP in a subnet (excluding network and
+// broadcast), without materializing the address list. Iteration stops early
+// when fn returns false.
+func forEachHostIP(cidr string, fn func(ip string) bool) error {
 	_, ipNet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	base := ipNet.IP.To4()
 	if base == nil {
-		return nil, fmt.Errorf("only IPv4 supported")
+		return fmt.Errorf("only IPv4 supported")
+	}
+	if ones, _ := ipNet.Mask.Size(); ones < minCIDRPrefix {
+		return fmt.Errorf("refusing to scan %s: prefix /%d is broader than the /%d limit", cidr, ones, minCIDRPrefix)
 	}
 	// Compute broadcast address: base | ~mask
 	broadcast := make(net.IP, 4)
 	for i := 0; i < 4; i++ {
 		broadcast[i] = base[i] | ^ipNet.Mask[i]
 	}
-	var ips []string
 	for cur := cloneIP(base); ipNet.Contains(cur); incrementIP(cur) {
 		if cur.Equal(net.IP(ipNet.IP)) || cur.Equal(broadcast) {
 			continue
 		}
-		ips = append(ips, cur.String())
+		if !fn(cur.String()) {
+			return nil
+		}
 	}
-	return ips, nil
+	return nil
 }
 
 func cloneIP(ip net.IP) net.IP {
