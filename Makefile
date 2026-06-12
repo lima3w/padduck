@@ -1,4 +1,4 @@
-.PHONY: ci-local test vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
+.PHONY: ci-local test test-integration vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -21,6 +21,15 @@ ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-insta
 test:
 	@echo "→ backend tests"
 	cd $(BACKEND_DIR) && go test -mod=vendor -race -count=1 ./...
+
+## test-integration: run DB-backed tests against a throwaway Postgres container
+test-integration:
+	@echo "→ backend DB integration tests (throwaway Postgres)"
+	docker run -d --rm --name padduck-test-pg -e POSTGRES_PASSWORD=test -p 127.0.0.1:55432:5432 postgres:18 >/dev/null
+	@trap 'docker stop padduck-test-pg >/dev/null' EXIT; \
+	timeout 60 sh -c 'until docker exec padduck-test-pg pg_isready -U postgres -q; do sleep 1; done'; \
+	cd $(BACKEND_DIR) && TEST_DATABASE_URL="postgres://postgres:test@127.0.0.1:55432/postgres?sslmode=disable" \
+		go test -mod=vendor -race -count=1 ./...
 
 ## check-migrations: verify migration files use paired, single-direction sql-migrate annotations
 check-migrations:

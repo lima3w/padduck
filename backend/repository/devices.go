@@ -77,7 +77,10 @@ func (r *Repository) ListDeviceTypes(ctx context.Context) ([]*models.DeviceType,
 }
 
 const deviceSelectCols = `d.id, d.hostname, d.description, d.type_id, d.network_id, d.vendor, d.model, d.os_version, d.is_online, d.last_ping_at, d.location_id, d.rack_id, d.rack_unit_start, d.rack_unit_size, d.created_at, d.updated_at`
-const deviceTypeSelectCols = `dt.id, dt.name, COALESCE(dt.icon, ''), dt.description, dt.created_at, dt.updated_at`
+// NULL-safe for LEFT JOINs against devices with no type: dt.id scans into a
+// nullable temp that gates whether the type is attached, so the COALESCE
+// fallbacks below are placeholders that are never exposed.
+const deviceTypeSelectCols = `dt.id, COALESCE(dt.name, ''), COALESCE(dt.icon, ''), dt.description, COALESCE(dt.created_at, to_timestamp(0)), COALESCE(dt.updated_at, to_timestamp(0))`
 
 func scanDevice(row pgx.Row) (*models.Device, error) {
 	d := &models.Device{}

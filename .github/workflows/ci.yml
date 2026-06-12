@@ -18,6 +18,19 @@ jobs:
   backend-ci:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
@@ -69,6 +82,8 @@ jobs:
 
       - name: Test backend
         working-directory: ./backend
+        env:
+          TEST_DATABASE_URL: postgres://postgres:test@127.0.0.1:5432/postgres?sslmode=disable
         run: go test -mod=vendor -race -count=1 ./...
 
       - name: Build agent
