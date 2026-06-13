@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v5"
 	"padduck/models"
 )
 
@@ -82,7 +81,7 @@ const deviceSelectCols = `d.id, d.hostname, d.description, d.type_id, d.network_
 // fallbacks below are placeholders that are never exposed.
 const deviceTypeSelectCols = `dt.id, COALESCE(dt.name, ''), COALESCE(dt.icon, ''), dt.description, COALESCE(dt.created_at, to_timestamp(0)), COALESCE(dt.updated_at, to_timestamp(0))`
 
-func scanDevice(row pgx.Row) (*models.Device, error) {
+func scanDevice(row interface{ Scan(dest ...any) error }) (*models.Device, error) {
 	d := &models.Device{}
 	err := row.Scan(
 		&d.ID, &d.Hostname, &d.Description, &d.TypeID, &d.NetworkID,
@@ -403,7 +402,7 @@ func (r *Repository) UnlinkIPFromDevice(ctx context.Context, deviceID, ipID int6
 
 const ifaceSelectCols = `id, device_id, name, description, speed_mbps, media_type, vlan_id, ip_address_id, connected_to_device_id, connected_to_interface_id, created_at, updated_at`
 
-func scanInterface(row pgx.Row) (*models.DeviceInterface, error) {
+func scanInterface(row interface{ Scan(dest ...any) error }) (*models.DeviceInterface, error) {
 	i := &models.DeviceInterface{}
 	err := row.Scan(
 		&i.ID, &i.DeviceID, &i.Name, &i.Description, &i.SpeedMbps, &i.MediaType,
