@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
 import { submitIPRequest } from '../api/requests'
+import { getDevices } from '../api/devices'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
@@ -214,13 +215,12 @@ function PortBadges({ portOpen }) {
   )
 }
 
-const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
+const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
 const COLUMN_LABELS = {
   address: 'Address',
   hostname: 'Hostname',
   status: 'Status',
   tag: 'Tag',
-  assigned_to: 'Assigned To',
   device: 'Device',
   mac_address: 'MAC Address',
   dns_name: 'DNS Name',
@@ -228,7 +228,7 @@ const COLUMN_LABELS = {
   last_seen: 'Last Seen',
   services: 'Services',
 }
-const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'assigned_to']
+const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'device']
 
 const LS_KEY = STORAGE_KEYS.ipColumns
 const LEGACY_LS_KEY = LEGACY_STORAGE_KEYS.ipColumns
@@ -345,18 +345,27 @@ export default function IPAddressesPage() {
   const [bulkReleasing, setBulkReleasing] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+  const [devices, setDevices] = useState([])
 
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
     load(1)
     loadCfDefs()
+    loadDevices()
   }, [subnetID])
 
   async function loadCfDefs() {
     try {
       const res = await getCustomFields('ip_address')
       setCfDefs(Array.isArray(res.data) ? res.data : [])
+    } catch {}
+  }
+
+  async function loadDevices() {
+    try {
+      const res = await getDevices({ limit: 1000 })
+      setDevices(res.data?.data ?? res.data ?? [])
     } catch {}
   }
 
@@ -482,12 +491,12 @@ export default function IPAddressesPage() {
 
   function openCreate() {
     const prefix = networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
-    setForm({ address: prefix, hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
+    setForm({ address: prefix, hostname: '', status: 'available', device_id: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
     setModal('create')
   }
 
   function openAssign(ip) {
-    setForm({ assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', lease_duration_days: '' })
+    setForm({ device_id: '', tag_id: '', mac_address: '', ptr_record: '', lease_duration_days: '' })
     setModal({ assign: ip })
   }
 
@@ -535,10 +544,11 @@ export default function IPAddressesPage() {
     setSaving(true)
     try {
       const days = parseInt(form.lease_duration_days)
+      const deviceId = form.device_id ? parseInt(form.device_id) : null
       if (days > 0) {
-        await assignIPAddressWithLease(modal.assign.id, { assigned_to: form.assigned_to, lease_duration_days: days })
+        await assignIPAddressWithLease(modal.assign.id, { device_id: deviceId, lease_duration_days: days })
       } else {
-        await assignIPAddress(modal.assign.id, { assigned_to: form.assigned_to })
+        await assignIPAddress(modal.assign.id, { device_id: deviceId })
       }
       setModal(null)
       load(page)
@@ -946,7 +956,6 @@ export default function IPAddressesPage() {
               {col('hostname') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>}
               {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
               {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
-              {col('assigned_to') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Assigned To</th>}
               {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
               {col('mac_address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th>}
               {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
@@ -980,16 +989,6 @@ export default function IPAddressesPage() {
                   </td>
                 )}
                 {col('tag') && <td className="px-4 py-3"><TagBadge tag={ip.tag} /></td>}
-                {col('assigned_to') && (
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {ip.assignedTo || '—'}
-                    {ip.expiresAt && (
-                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                        {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
-                      </span>
-                    )}
-                  </td>
-                )}
                 {col('device') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                     {ip.deviceId ? (
@@ -997,6 +996,11 @@ export default function IPAddressesPage() {
                         {ip.device?.hostname || `#${ip.deviceId}`}
                       </Link>
                     ) : '—'}
+                    {ip.expiresAt && (
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                        {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
+                      </span>
+                    )}
                   </td>
                 )}
                 {col('mac_address') && <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400 text-xs">{ip.macAddress || '—'}</td>}
@@ -1179,14 +1183,17 @@ export default function IPAddressesPage() {
         <Modal title={`Assign ${modal.assign.Address}`} onClose={() => setModal(null)}>
           <form onSubmit={handleAssign} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="server name or user"
-                value={form.assigned_to}
-                onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
-                required
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                value={form.device_id}
+                onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
+              >
+                <option value="">— None —</option>
+                {devices.map(d => (
+                  <option key={d.id} value={d.id}>{d.hostname}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -279,6 +279,12 @@ type IPTag struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// DeviceSummary is a minimal device representation embedded in IP address responses.
+type DeviceSummary struct {
+	ID       int64  `json:"id"`
+	Hostname string `json:"hostname"`
+}
+
 // IPAddress represents an individual IP address
 type IPAddress struct {
 	ID             int64              `json:"id"`
@@ -286,7 +292,6 @@ type IPAddress struct {
 	Address        string             `json:"address"`
 	Hostname       string             `json:"hostname"`
 	Status         string             `json:"status"`
-	AssignedTo     *string            `json:"assigned_to,omitempty"`
 	AssignedAt     *time.Time         `json:"assigned_at,omitempty"`
 	ExpiresAt      *time.Time         `json:"expires_at,omitempty"`
 	TagID          *int64             `json:"tag_id,omitempty"`
@@ -298,6 +303,7 @@ type IPAddress struct {
 	DNSRecords     *string            `json:"dns_records,omitempty"` // JSON string
 	DNSLastChecked *time.Time         `json:"dns_last_checked,omitempty"`
 	DeviceID       *int64             `json:"device_id,omitempty"`
+	Device         *DeviceSummary     `json:"device,omitempty"`
 	InterfaceName  *string            `json:"interface_name,omitempty"`
 	IsPrimary      bool               `json:"is_primary"`
 	PortOpen       map[string]bool    `json:"port_open,omitempty"`
@@ -944,7 +950,7 @@ type InactiveIPReport struct {
 	Hostname     string     `json:"hostname"`
 	SubnetCIDR   string     `json:"subnet_cidr"`
 	NetworkName  string     `json:"section_name"`
-	AssignedTo   *string    `json:"assigned_to,omitempty"`
+	DeviceID     *int64     `json:"device_id,omitempty"`
 	LastSeen     *time.Time `json:"last_seen,omitempty"`
 	DaysInactive int        `json:"days_inactive"`
 }

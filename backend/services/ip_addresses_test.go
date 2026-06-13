@@ -96,23 +96,17 @@ func TestAssignIPAddress_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("id zero returns invalid IP address ID", func(t *testing.T) {
-		_, err := svc.AssignIPAddress(ctx, 0, "somedevice")
+		_, err := svc.AssignIPAddress(ctx, 0, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid IP address ID")
 	})
 
 	t.Run("id negative returns invalid IP address ID", func(t *testing.T) {
-		_, err := svc.AssignIPAddress(ctx, -1, "somedevice")
+		_, err := svc.AssignIPAddress(ctx, -1, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid IP address ID")
 	})
 
-	t.Run("valid id with empty assignedTo", func(t *testing.T) {
-		// id=1 passes the id guard; assignedTo="" triggers the next guard
-		_, err := svc.AssignIPAddress(ctx, 1, "")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assigned_to cannot be empty")
-	})
 }
 
 func TestReleaseIPAddress_InvalidID(t *testing.T) {
@@ -204,22 +198,17 @@ func TestAllocateIPAddress_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("subnetID zero", func(t *testing.T) {
-		_, err := svc.AllocateIPAddress(ctx, 0, "device1")
+		_, err := svc.AllocateIPAddress(ctx, 0, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid subnet ID")
 	})
 
 	t.Run("subnetID negative", func(t *testing.T) {
-		_, err := svc.AllocateIPAddress(ctx, -1, "device1")
+		_, err := svc.AllocateIPAddress(ctx, -1, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid subnet ID")
 	})
 
-	t.Run("valid subnetID with empty assignedTo", func(t *testing.T) {
-		_, err := svc.AllocateIPAddress(ctx, 1, "")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assigned_to cannot be empty")
-	})
 }
 
 func TestGetSubnetUtilization_InvalidSubnetID(t *testing.T) {

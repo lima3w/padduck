@@ -12,15 +12,16 @@ import (
 
 // IP Address operations
 
-// ipSelectCols is the column list for ip_addresses JOINed with ip_tags
-const ipSelectCols = `ip.id, ip.subnet_id, host(ip.address), ip.hostname, ip.status, ip.assigned_to,
+// ipSelectCols is the column list for ip_addresses JOINed with ip_tags and devices
+const ipSelectCols = `ip.id, ip.subnet_id, host(ip.address), ip.hostname, ip.status,
 	ip.tag_id, t.id, t.name, t.colour, t.description, t.is_system, t.created_at,
 	ip.last_seen, ip.mac_address, ip.ptr_record,
 	ip.dns_name, ip.dns_records::text, ip.dns_last_checked,
 	ip.port_open,
-	ip.created_at, ip.updated_at`
+	ip.created_at, ip.updated_at,
+	ip.device_id, dv.hostname`
 
-const ipFromJoin = `FROM ip_addresses ip LEFT JOIN ip_tags t ON ip.tag_id = t.id`
+const ipFromJoin = `FROM ip_addresses ip LEFT JOIN ip_tags t ON ip.tag_id = t.id LEFT JOIN devices dv ON ip.device_id = dv.id`
 
 func scanIP(row interface {
 	Scan(dest ...any) error
@@ -34,14 +35,17 @@ func scanIP(row interface {
 	var tagIsSystem *bool
 	var tagCreatedAt *time.Time
 	var portOpenRaw []byte
+	var deviceID *int64
+	var deviceHostname *string
 
 	err := row.Scan(
-		&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo,
+		&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status,
 		&tagID, &tagIDInner, &tagName, &tagColour, &tagDesc, &tagIsSystem, &tagCreatedAt,
 		&ip.LastSeen, &ip.MACAddress, &ip.PTRRecord,
 		&ip.DNSName, &ip.DNSRecords, &ip.DNSLastChecked,
 		&portOpenRaw,
 		&ip.CreatedAt, &ip.UpdatedAt,
+		&deviceID, &deviceHostname,
 	)
 	if err != nil {
 		return nil, err
@@ -62,15 +66,19 @@ func scanIP(row interface {
 			ip.PortOpen = nil
 		}
 	}
+	ip.DeviceID = deviceID
+	if deviceID != nil && deviceHostname != nil {
+		ip.Device = &models.DeviceSummary{ID: *deviceID, Hostname: *deviceHostname}
+	}
 	return ip, nil
 }
 
-func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
+func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
 	var id int64
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, assigned_to, tag_id, mac_address, ptr_record, dns_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-		subnetID, address, hostname, status, assignedTo, tagID, macAddress, ptrRecord, dnsName,
+		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, tag_id, mac_address, ptr_record, dns_name)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		subnetID, address, hostname, status, tagID, macAddress, ptrRecord, dnsName,
 	).Scan(&id)
 	if err != nil {
 		return nil, err
@@ -103,13 +111,13 @@ func (r *Repository) ListIPAddressesBySubnet(ctx context.Context, subnetID int64
 	return ips, rows.Err()
 }
 
-func (r *Repository) UpdateIPAddressStatus(ctx context.Context, id int64, status string, assignedTo *string) (*models.IPAddress, error) {
+func (r *Repository) UpdateIPAddressStatus(ctx context.Context, id int64, status string, deviceID *int64) (*models.IPAddress, error) {
 	query := `WITH upd AS (
-		UPDATE ip_addresses SET status = $2, assigned_to = $3, updated_at = CURRENT_TIMESTAMP
+		UPDATE ip_addresses SET status = $2, device_id = $3, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1 RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, status, assignedTo)
+	row := r.db.QueryRow(ctx, query, id, status, deviceID)
 	return scanIP(row)
 }
 
@@ -150,7 +158,7 @@ func (r *Repository) ListAvailableIPsBySubnet(ctx context.Context, subnetID int6
 
 // AllocateIPAddress atomically finds and assigns the next available IP
 // Uses a transaction with SERIALIZABLE isolation to prevent duplicate allocation
-func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, assignedTo string) (*models.IPAddress, error) {
+func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64) (*models.IPAddress, error) {
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
 	if err != nil {
 		return nil, err
@@ -166,8 +174,8 @@ func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, assi
 	}
 
 	// Atomically update the IP status to 'assigned'
-	updateQuery := `UPDATE ip_addresses SET status = 'assigned', assigned_to = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
-	_, err = tx.Exec(ctx, updateQuery, assignedTo, ipID)
+	updateQuery := `UPDATE ip_addresses SET status = 'assigned', device_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
+	_, err = tx.Exec(ctx, updateQuery, deviceID, ipID)
 	if err != nil {
 		return nil, err
 	}
@@ -219,13 +227,13 @@ func (r *Repository) GetSubnetUtilizationCounts(ctx context.Context, subnetID in
 }
 
 // UpdateIPAddressWithLease updates IP with lease information
-func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, status string, assignedTo *string, assignedAt *time.Time, expiresAt *time.Time) (*models.IPAddress, error) {
+func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, status string, deviceID *int64, assignedAt *time.Time, expiresAt *time.Time) (*models.IPAddress, error) {
 	query := `WITH upd AS (
-		UPDATE ip_addresses SET status = $2, assigned_to = $3, assigned_at = $4, expires_at = $5, updated_at = CURRENT_TIMESTAMP
+		UPDATE ip_addresses SET status = $2, device_id = $3, assigned_at = $4, expires_at = $5, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $1 RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, status, assignedTo, assignedAt, expiresAt)
+	row := r.db.QueryRow(ctx, query, id, status, deviceID, assignedAt, expiresAt)
 	return scanIP(row)
 }
 

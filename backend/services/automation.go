@@ -103,13 +103,12 @@ func (a *AutomationService) Evaluate(ctx context.Context, req AutomationRequest)
 	return &PolicyDecision{Allowed: true, Values: req.Values}, nil
 }
 
-func (a *AutomationService) AllocateIPAddress(ctx context.Context, subnetID int64, assignedTo string, dryRun bool) (*models.IPAddress, *PolicyDecision, error) {
+func (a *AutomationService) AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64, dryRun bool) (*models.IPAddress, *PolicyDecision, error) {
 	decision, err := a.Evaluate(ctx, AutomationRequest{
 		Workflow: "ip_address",
 		Action:   "allocate",
 		Values: map[string]string{
 			"subnet_id":    strconv.FormatInt(subnetID, 10),
-			"assigned_to":  assignedTo,
 			"requested_by": "automation",
 		},
 		DryRun: dryRun,
@@ -117,7 +116,7 @@ func (a *AutomationService) AllocateIPAddress(ctx context.Context, subnetID int6
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
-	ip, err := a.svc.AllocateIPAddress(ctx, subnetID, assignedTo)
+	ip, err := a.svc.AllocateIPAddress(ctx, subnetID, deviceID)
 	return ip, decision, err
 }
 

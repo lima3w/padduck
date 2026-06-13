@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"padduck/models"
 	"padduck/services"
@@ -18,7 +20,7 @@ type CreateIPAddressRequest struct {
 }
 
 type AssignIPAddressRequest struct {
-	AssignedTo string  `json:"assigned_to"`
+	DeviceID   *int64  `json:"device_id"`
 	TagID      *int64  `json:"tag_id"`
 	MACAddress *string `json:"mac_address"`
 	PTRRecord  *string `json:"ptr_record"`
@@ -141,17 +143,21 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.AssignIPAddress(c.Context(), int64(id), req.AssignedTo)
+	ip, err := h.service.AssignIPAddress(c.Context(), int64(id), req.DeviceID)
 	if err != nil {
 		reqLogger(c).Error("error assigning IP address", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	uid, uname := auditUserFromCtx(c)
+	auditVals := map[string]string{}
+	if req.DeviceID != nil {
+		auditVals["device_id"] = fmt.Sprintf("%d", *req.DeviceID)
+	}
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "ip_assigned",
 		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
-		NewValues: map[string]string{"assigned_to": req.AssignedTo},
+		NewValues: auditVals,
 	})
 
 	return c.JSON(ip)
@@ -242,7 +248,7 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 	}
 
 	type AllocateRequest struct {
-		AssignedTo string `json:"assigned_to"`
+		DeviceID *int64 `json:"device_id"`
 	}
 
 	req := new(AllocateRequest)
@@ -250,17 +256,21 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.AllocateIPAddress(c.Context(), int64(subnetID), req.AssignedTo)
+	ip, err := h.service.AllocateIPAddress(c.Context(), int64(subnetID), req.DeviceID)
 	if err != nil {
 		reqLogger(c).Error("error allocating IP address", "subnet_id", subnetID, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
 	}
 
 	uid, uname := auditUserFromCtx(c)
+	auditVals := map[string]string{}
+	if req.DeviceID != nil {
+		auditVals["device_id"] = fmt.Sprintf("%d", *req.DeviceID)
+	}
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "ip_allocated",
 		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
-		NewValues: map[string]string{"assigned_to": req.AssignedTo},
+		NewValues: auditVals,
 	})
 
 	return c.Status(fiber.StatusCreated).JSON(ip)
@@ -286,7 +296,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 }
 
 type AssignWithLeaseRequest struct {
-	AssignedTo        string `json:"assigned_to"`
+	DeviceID          *int64 `json:"device_id"`
 	LeaseDurationDays int    `json:"lease_duration_days"`
 }
 
@@ -305,7 +315,7 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 	}
 
-	ip, err := h.service.AssignIPAddressWithLease(c.Context(), int64(id), req.AssignedTo, req.LeaseDurationDays)
+	ip, err := h.service.AssignIPAddressWithLease(c.Context(), int64(id), req.DeviceID, req.LeaseDurationDays)
 	if err != nil {
 		reqLogger(c).Error("error assigning IP address with lease", "id", id, "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})

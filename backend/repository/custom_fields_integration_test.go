@@ -176,9 +176,9 @@ func TestSearchIPAddressesWithCustomFields_Integration(t *testing.T) {
 	networkID := createTestNetwork(t, r)
 	subnetID := createTestSubnet(t, r, networkID, "192.168.50.0", 24)
 
-	web, err := r.CreateIPAddress(ctx, subnetID, "192.168.50.10", "web-01", "assigned", strPtr("web"), nil, nil, nil, nil)
+	web, err := r.CreateIPAddress(ctx, subnetID, "192.168.50.10", "web-01", "assigned", nil, nil, nil, nil)
 	require.NoError(t, err)
-	db, err := r.CreateIPAddress(ctx, subnetID, "192.168.50.20", "db-01", "assigned", strPtr("db"), nil, nil, nil, nil)
+	db, err := r.CreateIPAddress(ctx, subnetID, "192.168.50.20", "db-01", "assigned", nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	roleDef := createTestCFDef(t, r, "ip_address", "service_role", "dropdown", 1)

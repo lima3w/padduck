@@ -1,6 +1,8 @@
 // Devices, interfaces, and fingerprints.
 import { api } from './client'
 
+export const getDevices = (params) => api.get('/devices', { params })
+
 export const getDeviceSNMPCredentials = (id) => api.get(`/devices/${id}/snmp-credentials`)
 
 export const getDevice = (id) => api.get(`/devices/${id}`)

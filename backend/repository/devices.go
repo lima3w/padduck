@@ -356,7 +356,7 @@ func (r *Repository) GetDeviceSNMPByIPID(ctx context.Context, ipID int64) (*mode
 // ListIPAddressesByDevice returns all IP addresses linked to a device.
 func (r *Repository) ListIPAddressesByDevice(ctx context.Context, deviceID int64) ([]*models.IPAddress, error) {
 	query := `
-		SELECT id, subnet_id, address::text, hostname, status, assigned_to, created_at, updated_at,
+		SELECT id, subnet_id, address::text, hostname, status, created_at, updated_at,
 		       device_id, interface_name, is_primary
 		FROM ip_addresses
 		WHERE device_id=$1
@@ -371,7 +371,7 @@ func (r *Repository) ListIPAddressesByDevice(ctx context.Context, deviceID int64
 	for rows.Next() {
 		ip := &models.IPAddress{}
 		if err := rows.Scan(
-			&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.AssignedTo,
+			&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status,
 			&ip.CreatedAt, &ip.UpdatedAt, &ip.DeviceID, &ip.InterfaceName, &ip.IsPrimary,
 		); err != nil {
 			return nil, err

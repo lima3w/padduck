@@ -525,7 +525,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 				continue // already exists
 			}
 			hn := dnsName
-			_, createErr := d.svc.repository.CreateIPAddress(ctx, subnetID, ipStr, hn, "active", nil, nil, nil, nil, nil)
+			_, createErr := d.svc.repository.CreateIPAddress(ctx, subnetID, ipStr, hn, "active", nil, nil, nil, nil)
 			if createErr != nil {
 				log.Printf("[dns-sync] create IP %s in subnet %d: %v", ipStr, subnetID, createErr)
 			} else {
