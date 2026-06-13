@@ -364,6 +364,7 @@ export default function IPAddressesPage() {
   const [sortCol, setSortCol] = useState('')
   const [sortDir, setSortDir] = useState('asc')
   const [hideAvailable, setHideAvailable] = useState(false)
+  const [fullRange, setFullRange] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -387,7 +388,7 @@ export default function IPAddressesPage() {
     } catch {}
   }
 
-  async function load(p = page, col = sortCol, dir = sortDir, hide = hideAvailable) {
+  async function load(p = page, col = sortCol, dir = sortDir, hide = hideAvailable, full = fullRange) {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -396,7 +397,7 @@ export default function IPAddressesPage() {
       setIsSearchActive(false)
       const [subRes, ipRes, tagRes] = await Promise.all([
         getSubnet(subnetID),
-        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, hide),
+        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, hide, full),
         getTags(),
       ])
       setSubnet(subRes.data)
@@ -427,7 +428,13 @@ export default function IPAddressesPage() {
   function handleHideAvailable(checked) {
     setHideAvailable(checked)
     setPage(1)
-    load(1, sortCol, sortDir, checked)
+    load(1, sortCol, sortDir, checked, fullRange)
+  }
+
+  function handleFullRange(checked) {
+    setFullRange(checked)
+    setPage(1)
+    load(1, sortCol, sortDir, hideAvailable, checked)
   }
 
   function toggleColumn(col) {
@@ -528,9 +535,9 @@ export default function IPAddressesPage() {
     return octets.slice(0, 3).join('.') + '.'
   }
 
-  function openCreate() {
-    const prefix = networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
-    setForm({ address: prefix, hostname: '', status: 'available', device_id: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
+  function openCreate(prefillAddress) {
+    const addr = prefillAddress || networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
+    setForm({ address: addr, hostname: '', status: 'available', device_id: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
     setModal('create')
   }
 
@@ -979,16 +986,34 @@ export default function IPAddressesPage() {
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {total} address{total !== 1 ? 'es' : ''}
+            {fullRange && subnet && !subnet.networkAddress?.includes(':') && (
+              <span className="ml-2 text-xs text-blue-500 dark:text-blue-400">full range</span>
+            )}
           </p>
-          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={hideAvailable}
-              onChange={e => handleHideAvailable(e.target.checked)}
-              className="rounded"
-            />
-            Hide unassigned
-          </label>
+          <div className="flex items-center gap-4">
+            {!fullRange && (
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hideAvailable}
+                  onChange={e => handleHideAvailable(e.target.checked)}
+                  className="rounded"
+                />
+                Hide unassigned
+              </label>
+            )}
+            {subnet && !subnet.networkAddress?.includes(':') && (
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={fullRange}
+                  onChange={e => handleFullRange(e.target.checked)}
+                  className="rounded"
+                />
+                Show all IPs
+              </label>
+            )}
+          </div>
         </div>
       )}
 
@@ -1002,15 +1027,15 @@ export default function IPAddressesPage() {
                   <input type="checkbox" checked={ips.length > 0 && ips.every(ip => selected.has(ip.id))} onChange={e => e.target.checked ? setSelected(new Set(ips.map(ip => ip.id))) : setSelected(new Set())} />
                 </th>
               )}
-              {col('address') && <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('hostname') && <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('status') && <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('address') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th> : <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('hostname') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th> : <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('status') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th> : <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
               {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
               {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
-              {col('mac_address') && <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('mac_address') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th> : <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
               {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
-              {col('last_seen') && <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('last_seen') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th> : <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
               {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Services</th>}
               {searchableFields.map(d => (
                 <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
@@ -1023,17 +1048,17 @@ export default function IPAddressesPage() {
               <EmptyRow colSpan={visibleCols.length + searchableFields.length + 1} message="No IP addresses yet." />
             )}
             {ips.map(ip => (
-              <tr key={ip.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+              <tr key={ip.virtual ? `v-${ip.address}` : ip.id} className={`border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${ip.virtual ? 'opacity-50' : ''}`}>
                 {isAdmin && (
                   <td className="px-3 py-2 w-8">
-                    <input type="checkbox" checked={selected.has(ip.id)} onChange={() => toggleSelect(ip.id)} />
+                    {!ip.virtual && <input type="checkbox" checked={selected.has(ip.id)} onChange={() => toggleSelect(ip.id)} />}
                   </td>
                 )}
                 {col('address') && <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.address}</td>}
                 {col('hostname') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.hostname || '—'}</td>}
                 {col('status') && (
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ip.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ip.virtual ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500' : STATUS_COLORS[ip.status] || 'bg-gray-100 text-gray-600'}`}>
                       {ip.status}
                     </span>
                   </td>
@@ -1097,26 +1122,32 @@ export default function IPAddressesPage() {
                   )
                 })}
                 <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
-                  {ip.status !== 'assigned' && (
-                    <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
-                  )}
-                  {ip.status === 'assigned' && (
+                  {ip.virtual ? (
+                    isAdmin && <button onClick={() => openCreate(ip.address)} className="text-gray-400 hover:text-green-600 text-xs">Create</button>
+                  ) : (
                     <>
-                      <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
-                      {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
-                        <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
+                      <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
+                      {ip.status !== 'assigned' && (
+                        <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
+                      )}
+                      {ip.status === 'assigned' && (
+                        <>
+                          <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
+                          {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
+                            <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
+                          )}
+                        </>
+                      )}
+                      {deleteConfirm === ip.id ? (
+                        <>
+                          <span className="text-red-600 text-xs">Confirm?</span>
+                          <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                       )}
                     </>
-                  )}
-                  {deleteConfirm === ip.id ? (
-                    <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
-                      <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
-                    </>
-                  ) : (
-                    <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                   )}
                 </td>
               </tr>

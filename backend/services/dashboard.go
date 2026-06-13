@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strings"
 	"time"
 
 	"padduck/models"
@@ -200,6 +201,30 @@ func (s *Service) ListSubnetsPaginatedWithOptions(ctx context.Context, networkID
 // ListIPAddressesPaginated returns a paginated list of IP addresses for a subnet.
 func (s *Service) ListIPAddressesPaginated(ctx context.Context, subnetID int64, page, limit int) ([]*models.IPAddress, int64, error) {
 	return s.ListIPAddressesPaginatedWithOptions(ctx, subnetID, page, limit, repository.ListOptions{})
+}
+
+// ListIPAddressesFullRange returns every address in the subnet's IPv4 CIDR range merged with
+// recorded IP rows. Virtual entries (status "available", Virtual=true) are synthesised for
+// addresses that have no database row.
+func (s *Service) ListIPAddressesFullRange(ctx context.Context, subnetID int64, page, limit int) ([]*models.IPAddress, int64, error) {
+	if subnetID <= 0 {
+		return nil, 0, fmt.Errorf("invalid subnet ID")
+	}
+	subnet, err := s.repository.GetSubnetByID(ctx, subnetID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if strings.Contains(subnet.NetworkAddress, ":") {
+		return nil, 0, fmt.Errorf("full range view is not supported for IPv6 subnets")
+	}
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 200 {
+		limit = 25
+	}
+	offset := (page - 1) * limit
+	return s.repository.ListIPAddressesFullRange(ctx, subnetID, subnet.NetworkAddress, subnet.PrefixLength, offset, limit)
 }
 
 func (s *Service) ListIPAddressesPaginatedWithOptions(ctx context.Context, subnetID int64, page, limit int, opts repository.ListOptions) ([]*models.IPAddress, int64, error) {

@@ -96,6 +96,18 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		return nil
 	}
 
+	if c.QueryBool("full_range") {
+		page, limit, _ := parseListOptions(c)
+		ips, total, err := h.service.ListIPAddressesFullRange(c.Context(), int64(subnetID), page, limit)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		if ips == nil {
+			ips = make([]*models.IPAddress, 0)
+		}
+		return c.JSON(fiber.Map{"data": ips, "total": total, "page": page, "limit": limit})
+	}
+
 	page := c.QueryInt("page", 0)
 	limit := c.QueryInt("limit", 0)
 

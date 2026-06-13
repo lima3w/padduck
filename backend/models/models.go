@@ -310,6 +310,7 @@ type IPAddress struct {
 	CreatedAt      time.Time          `json:"created_at"`
 	UpdatedAt      time.Time          `json:"updated_at"`
 	CustomFields   map[string]*string `json:"custom_fields,omitempty"`
+	Virtual        bool               `json:"virtual,omitempty"`
 }
 
 // Role represents a named set of permissions

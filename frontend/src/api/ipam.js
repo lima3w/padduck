@@ -45,8 +45,17 @@ export const getNetworksPaginated = (page = 1, limit = 25) =>
 export const getSubnetsPaginated = (networkID, page = 1, limit = 25) =>
   api.get(`/networks/${networkID}/subnets`, { params: { page, limit } })
 
-export const getIPAddressesPaginated = (subnetID, page = 1, limit = 25, sort = '', order = 'asc', hideAvailable = false) =>
-  api.get(`/subnets/${subnetID}/ip-addresses`, { params: { page, limit, ...(sort && { sort, order }), ...(hideAvailable && { hide_available: true }) } })
+export const getIPAddressesPaginated = (subnetID, page = 1, limit = 25, sort = '', order = 'asc', hideAvailable = false, fullRange = false) =>
+  api.get(`/subnets/${subnetID}/ip-addresses`, {
+    params: {
+      page,
+      limit,
+      ...(fullRange ? { full_range: true } : {
+        ...(sort && { sort, order }),
+        ...(hideAvailable && { hide_available: true }),
+      }),
+    },
+  })
 
 export const searchNetworks = (query, limit = 50, offset = 0) =>
   api.post('/networks/search', { query, limit, offset })
