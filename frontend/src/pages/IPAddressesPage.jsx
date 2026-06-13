@@ -474,6 +474,13 @@ export default function IPAddressesPage() {
     load(1)
   }
 
+  function normalizeMAC(val) {
+    const stripped = val.replace(/[:\-.\s]/g, '').toLowerCase()
+    if (stripped === '') return ''
+    if (stripped.length !== 12 || !/^[0-9a-f]{12}$/.test(stripped)) return val
+    return stripped.match(/.{2}/g).join(':')
+  }
+
   function ipInSubnet(ip, networkAddress, prefixLength) {
     const toNum = (addr) => addr.split('.').reduce((acc, o) => ((acc << 8) | Number(o)) >>> 0, 0)
     const mask = prefixLength === 0 ? 0 : ((-1 << (32 - prefixLength)) >>> 0)
@@ -1139,6 +1146,7 @@ export default function IPAddressesPage() {
                 placeholder="aa:bb:cc:dd:ee:ff"
                 value={form.mac_address}
                 onChange={e => setForm(f => ({ ...f, mac_address: e.target.value }))}
+                onBlur={e => setForm(f => ({ ...f, mac_address: normalizeMAC(e.target.value) }))}
               />
             </div>
             <div>
@@ -1303,6 +1311,7 @@ export default function IPAddressesPage() {
                 placeholder="aa:bb:cc:dd:ee:ff"
                 value={form.mac_address}
                 onChange={e => setForm(f => ({ ...f, mac_address: e.target.value }))}
+                onBlur={e => setForm(f => ({ ...f, mac_address: normalizeMAC(e.target.value) }))}
               />
             </div>
             <div>

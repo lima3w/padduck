@@ -16,6 +16,7 @@ import (
 
 	"padduck/internal/export"
 	"padduck/models"
+	"padduck/utils"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -248,7 +249,13 @@ func (s *ImportService) ImportIPsCSV(ctx context.Context, r io.Reader) (*ImportR
 
 		var macAddress *string
 		if mac := strings.TrimSpace(rec["mac_address"]); mac != "" {
-			macAddress = &mac
+			normalized, macErr := utils.NormalizeMAC(mac)
+			if macErr != nil {
+				result.Failed++
+				result.Errors = append(result.Errors, ImportRowError{Row: row, Value: address, Message: macErr.Error()})
+				continue
+			}
+			macAddress = &normalized
 		}
 
 		_, err = s.repo.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, macAddress, nil, nil)

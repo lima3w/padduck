@@ -15,6 +15,7 @@ import (
 
 	"padduck/internal/scanner"
 	"padduck/models"
+	"padduck/utils"
 )
 
 // DiscoveryService handles network scanning and IP detection
@@ -302,7 +303,9 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			if err2 == nil && snmpResult != nil {
 				mac := ""
 				if len(snmpResult.Interfaces) > 0 {
-					mac = snmpResult.Interfaces[0].MACAddress
+					if normalized, normErr := utils.NormalizeMAC(snmpResult.Interfaces[0].MACAddress); normErr == nil {
+						mac = normalized
+					}
 				}
 				_ = d.repository.UpdateIPFromSNMP(ctx, *ipAddressID, mac, snmpResult.SysName)
 			}

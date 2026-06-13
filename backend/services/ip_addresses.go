@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"padduck/models"
+	"padduck/utils"
 )
 
 // CreateIPAddress creates a new IP address record
@@ -39,6 +40,14 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 		return nil, fmt.Errorf("IP address %s is not within subnet %s/%d", address, subnet.NetworkAddress, subnet.PrefixLength)
 	}
 
+	if macAddress != nil && *macAddress != "" {
+		normalized, err := utils.NormalizeMAC(*macAddress)
+		if err != nil {
+			return nil, err
+		}
+		macAddress = &normalized
+	}
+
 	ip, err := s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, tagID, macAddress, ptrRecord, dnsName)
 	if err != nil {
 		return nil, normalizeCreateIPAddressError(err, address)
@@ -65,6 +74,15 @@ func (s *Service) UpdateIPAddressMeta(ctx context.Context, id int64, hostname st
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
+
+	if macAddress != nil && *macAddress != "" {
+		normalized, err := utils.NormalizeMAC(*macAddress)
+		if err != nil {
+			return nil, err
+		}
+		macAddress = &normalized
+	}
+
 	ip, err := s.repository.UpdateIPAddressFull(ctx, id, hostname, tagID, macAddress, ptrRecord, dnsName)
 	if err != nil {
 		return nil, err
