@@ -256,7 +256,7 @@ func (r *Repository) ListIPAddressesFullRange(
 	const query = `
 		SELECT
 			COALESCE(ip.id, 0)::bigint,
-			($1::inet + ($2::bigint + s))::text,
+			host($1::inet + ($2::bigint + s)),
 			COALESCE(ip.subnet_id, $4)::bigint,
 			COALESCE(ip.hostname, ''),
 			COALESCE(ip.status, 'available'),
