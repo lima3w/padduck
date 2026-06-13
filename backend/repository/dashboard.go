@@ -271,7 +271,7 @@ func (r *Repository) ListIPAddressesFullRange(
 			(ip.id IS NULL) AS is_virtual
 		FROM generate_series(0, $3::bigint - 1) s
 		LEFT JOIN ip_addresses ip
-			ON ip.address = ($1::inet + ($2::bigint + s))::text
+			ON ip.address = ($1::inet + ($2::bigint + s))
 			AND ip.subnet_id = $4
 		LEFT JOIN ip_tags t ON ip.tag_id = t.id
 		LEFT JOIN devices dv ON ip.device_id = dv.id`
