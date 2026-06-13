@@ -18,7 +18,7 @@ func (h *Handler) ListScanAgents(c *fiber.Ctx) error {
 	agents, err := h.service.Discovery.ListAgents(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing scan agents", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(agents)
 }
@@ -33,14 +33,14 @@ func (h *Handler) CreateScanAgent(c *fiber.Ctx) error {
 		TTLDays int    `json:"ttl_days"` // 0 = no expiry
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.TTLDays < 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ttl_days must be >= 0 (0 = no expiry)"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "ttl_days must be >= 0 (0 = no expiry)")
 	}
 	agent, rawToken, err := h.service.Discovery.CreateAgent(c.Context(), req.Name, req.TTLDays)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"agent": agent,
@@ -55,11 +55,11 @@ func (h *Handler) GetScanAgent(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid agent ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid agent ID")
 	}
 	agent, err := h.service.Discovery.GetAgent(c.Context(), int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan agent not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan agent not found")
 	}
 	return c.JSON(agent)
 }
@@ -71,7 +71,7 @@ func (h *Handler) RotateScanAgentToken(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid agent ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid agent ID")
 	}
 	var req struct {
 		TTLDays *int `json:"ttl_days"` // nil = preserve existing expiry, 0 = clear expiry
@@ -83,7 +83,7 @@ func (h *Handler) RotateScanAgentToken(c *fiber.Ctx) error {
 	}
 	agent, rawToken, err := h.service.Discovery.RotateToken(c.Context(), int64(id), ttlDays)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to rotate token"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to rotate token")
 	}
 	return c.JSON(fiber.Map{
 		"agent": agent,
@@ -98,10 +98,10 @@ func (h *Handler) DeleteScanAgent(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid agent ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid agent ID")
 	}
 	if err := h.service.Discovery.DeleteAgent(c.Context(), int64(id)); err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan agent not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan agent not found")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -120,12 +120,12 @@ func agentFromContext(c *fiber.Ctx) (*models.ScanAgent, bool) {
 func (h *Handler) AgentAuthMiddleware(c *fiber.Ctx) error {
 	auth := c.Get("Authorization")
 	if !strings.HasPrefix(auth, "Bearer ") {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "missing or invalid authorization"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "missing or invalid authorization")
 	}
 	rawToken := strings.TrimPrefix(auth, "Bearer ")
 	agent, err := h.service.Discovery.AuthenticateAgent(c.Context(), rawToken)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid or inactive agent token"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid or inactive agent token")
 	}
 	c.Locals("scan_agent", agent)
 	return c.Next()
@@ -150,11 +150,11 @@ type agentJobResponse struct {
 func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 	agent, ok := agentFromContext(c)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 	jobs, err := h.service.Discovery.GetJobsForAgent(c.Context(), agent.ID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	// Enrich each job with subnet CIDRs so the agent can scan without extra round-trips.
@@ -186,20 +186,20 @@ func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 func (h *Handler) AgentPostResults(c *fiber.Ctx) error {
 	agent, ok := agentFromContext(c)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 	var req struct {
 		JobID   int64                      `json:"job_id"`
 		Results []services.AgentScanResult `json:"results"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.JobID == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "job_id is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "job_id is required")
 	}
 	if err := h.service.Discovery.AcceptAgentResults(c.Context(), agent.ID, req.JobID, req.Results); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(fiber.Map{"message": "results accepted"})
 }
@@ -208,7 +208,7 @@ func (h *Handler) AgentPostResults(c *fiber.Ctx) error {
 func (h *Handler) AgentHeartbeat(c *fiber.Ctx) error {
 	agent, ok := agentFromContext(c)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 	var req struct {
 		Version      *string  `json:"version"`
@@ -223,7 +223,7 @@ func (h *Handler) AgentHeartbeat(c *fiber.Ctx) error {
 	}
 	if err := h.service.Discovery.HeartbeatAgent(c.Context(), agent.ID, req.Version, req.Capabilities, req.Status, req.LastError); err != nil {
 		reqLogger(c).Error("agent heartbeat error", "agent_id", agent.ID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(fiber.Map{"message": "ok"})
 }
@@ -236,7 +236,7 @@ func (h *Handler) GetAgentHealthSummary(c *fiber.Ctx) error {
 	}
 	agents, err := h.service.Discovery.ListAgents(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	// Compute effective status: if last_seen is >5 min ago, mark offline
 	now := time.Now()

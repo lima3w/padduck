@@ -37,7 +37,7 @@ type UpdateSubnetRequest struct {
 func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 	networkID, err := c.ParamsInt("networkID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
@@ -45,7 +45,7 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 
 	req := new(CreateSubnetRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	subnet, err := h.service.CreateSubnet(c.Context(), int64(networkID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
@@ -55,7 +55,7 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": overlapErr.Error(), "conflicting_cidr": overlapErr.ConflictingCIDR})
 		}
 		reqLogger(c).Error("error creating subnet", "network_id", networkID, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -76,13 +76,13 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
 	subnet, err := h.service.GetSubnet(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting subnet", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(subnet)
@@ -93,7 +93,7 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 	networkID, err := c.ParamsInt("networkID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
@@ -107,7 +107,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 		subnets, total, err := h.service.ListSubnetsPaginatedWithOptions(c.Context(), int64(networkID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing subnets", "network_id", networkID, "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if subnets == nil {
 			subnets = make([]*models.Subnet, 0)
@@ -123,7 +123,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 	subnets, err := h.service.ListSubnets(c.Context(), int64(networkID))
 	if err != nil {
 		reqLogger(c).Error("error listing subnets", "network_id", networkID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if subnets == nil {
 		subnets = make([]*models.Subnet, 0)
@@ -135,7 +135,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(id)}); err != nil {
 		return nil
@@ -143,13 +143,13 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 
 	req := new(UpdateSubnetRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error updating subnet", "id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -167,13 +167,13 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 func (h *Handler) GetOverlapReport(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	pairs, err := h.service.OverlapReport(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error generating overlap report", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if pairs == nil {
@@ -187,7 +187,7 @@ func (h *Handler) GetOverlapReport(c *fiber.Ctx) error {
 func (h *Handler) DeleteSubnet(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetDelete, services.ResourceScope{Type: "subnet", ID: int64(id)}); err != nil {
 		return nil
@@ -195,7 +195,7 @@ func (h *Handler) DeleteSubnet(c *fiber.Ctx) error {
 
 	if err := h.service.DeleteSubnet(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting subnet", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)

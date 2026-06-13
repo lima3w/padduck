@@ -16,7 +16,7 @@ func (h *Handler) ListCustomerAssociations(c *fiber.Ctx) error {
 	}
 	items, err := h.service.ListCustomerAssociations(c.Context(), customerID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(items)
 }
@@ -24,7 +24,7 @@ func (h *Handler) ListCustomerAssociations(c *fiber.Ctx) error {
 func (h *Handler) CreateCustomerAssociation(c *fiber.Ctx) error {
 	req := new(repository.CustomerAssociationParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2CustomerWrite); err != nil {
 		return nil
@@ -39,7 +39,7 @@ func (h *Handler) CreateCustomerAssociation(c *fiber.Ctx) error {
 func (h *Handler) DeleteCustomerAssociation(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid customer association ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid customer association ID")
 	}
 	if err := h.permCheck(c, services.PermV2CustomerDelete); err != nil {
 		return nil

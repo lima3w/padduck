@@ -38,7 +38,7 @@ func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
 	q := c.Query("q")
 	result, err := h.service.GlobalSearch(c.Context(), q, 5)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, err.Error())
 	}
 	return c.JSON(result)
 }
@@ -51,13 +51,13 @@ func (h *Handler) SearchNetworks(c *fiber.Ctx) error {
 
 	req := new(SearchRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	sections, err := h.service.SearchNetworks(c.Context(), req.Query, req.Limit, req.Offset)
 	if err != nil {
 		reqLogger(c).Error("error searching sections", "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	if sections == nil {
@@ -71,7 +71,7 @@ func (h *Handler) SearchNetworks(c *fiber.Ctx) error {
 func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 	networkID, err := c.ParamsInt("networkID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
@@ -79,13 +79,13 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 
 	req := new(SearchRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	subnets, err := h.service.SearchSubnets(c.Context(), int64(networkID), req.Query, req.Limit, req.Offset, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error searching subnets", "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	if subnets == nil {
@@ -99,7 +99,7 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
 		return nil
@@ -107,7 +107,7 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 
 	req := new(IPSearchRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	opts := services.IPSearchOptions{
@@ -123,7 +123,7 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 	ips, err := h.service.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset, opts)
 	if err != nil {
 		reqLogger(c).Error("error searching IP addresses", "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	if ips == nil {
@@ -143,7 +143,7 @@ func (h *Handler) SearchIPAddressesGlobal(c *fiber.Ctx) error {
 	ips, err := h.service.SearchIPAddressesGlobal(c.Context(), q)
 	if err != nil {
 		reqLogger(c).Error("error searching IP addresses globally", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "search failed"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "search failed")
 	}
 	if ips == nil {
 		ips = make([]*models.IPAddress, 0)

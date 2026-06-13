@@ -14,7 +14,7 @@ func (h *Handler) ListDiscoveryConflicts(c *fiber.Ctx) error {
 	conflicts, err := h.service.Discovery.ListDiscoveryConflicts(c.Context(), status)
 	if err != nil {
 		reqLogger(c).Error("error listing discovery conflicts", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if conflicts == nil {
 		return c.JSON([]interface{}{})
@@ -29,11 +29,11 @@ func (h *Handler) GetDiscoveryConflict(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid conflict ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid conflict ID")
 	}
 	conflict, err := h.service.Discovery.GetDiscoveryConflict(c.Context(), int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "conflict not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "conflict not found")
 	}
 	return c.JSON(conflict)
 }
@@ -46,14 +46,14 @@ func (h *Handler) ResolveDiscoveryConflict(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid conflict ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid conflict ID")
 	}
 
 	var req struct {
 		Action string `json:"action"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	reviewedBy := "operator"
@@ -63,7 +63,7 @@ func (h *Handler) ResolveDiscoveryConflict(c *fiber.Ctx) error {
 
 	conflict, err := h.service.Discovery.ResolveDiscoveryConflict(c.Context(), int64(id), req.Action, reviewedBy)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(conflict)
 }

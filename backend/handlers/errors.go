@@ -21,14 +21,17 @@ type ValidationField struct {
 type ErrorCode string
 
 const (
-	ErrBadRequest         ErrorCode = "BAD_REQUEST"
-	ErrUnauthorized       ErrorCode = "UNAUTHORIZED"
-	ErrForbidden          ErrorCode = "FORBIDDEN"
-	ErrNotFound           ErrorCode = "NOT_FOUND"
-	ErrConflict           ErrorCode = "CONFLICT"
-	ErrValidation         ErrorCode = "VALIDATION_ERROR"
-	ErrInternalServer     ErrorCode = "INTERNAL_SERVER_ERROR"
-	ErrServiceUnavailable ErrorCode = "SERVICE_UNAVAILABLE"
+	ErrBadRequest          ErrorCode = "BAD_REQUEST"
+	ErrUnauthorized        ErrorCode = "UNAUTHORIZED"
+	ErrForbidden           ErrorCode = "FORBIDDEN"
+	ErrNotFound            ErrorCode = "NOT_FOUND"
+	ErrConflict            ErrorCode = "CONFLICT"
+	ErrValidation          ErrorCode = "VALIDATION_ERROR"
+	ErrPayloadTooLarge     ErrorCode = "PAYLOAD_TOO_LARGE"
+	ErrTooManyRequests     ErrorCode = "TOO_MANY_REQUESTS"
+	ErrBadGateway          ErrorCode = "BAD_GATEWAY"
+	ErrInternalServer      ErrorCode = "INTERNAL_SERVER_ERROR"
+	ErrServiceUnavailable  ErrorCode = "SERVICE_UNAVAILABLE"
 )
 
 // RespondError sends a standardized error response

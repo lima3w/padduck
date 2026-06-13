@@ -18,9 +18,7 @@ const agentVersionPath = "./data/agent/version.txt"
 // GET /api/v1/agent/download
 func (h *Handler) DownloadAgentBinary(c *fiber.Ctx) error {
 	if _, err := os.Stat(agentBinaryPath); os.IsNotExist(err) {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "agent binary not available — place the padduck-agent binary at ./data/agent/padduck-agent on the server",
-		})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "agent binary not available — place the padduck-agent binary at ./data/agent/padduck-agent on the server")
 	}
 
 	c.Set("Content-Disposition", `attachment; filename="padduck-agent"`)

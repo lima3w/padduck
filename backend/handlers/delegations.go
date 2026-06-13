@@ -36,13 +36,13 @@ func (h *Handler) ListDelegations(c *fiber.Ctx) error {
 
 	subnetID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
 	delegations, err := h.service.ListDelegations(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error listing delegations", "subnet_id", subnetID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if delegations == nil {
 		delegations = make([]*models.IPv6Delegation, 0)
@@ -58,15 +58,15 @@ func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
 
 	subnetID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
 	req := new(createDelegationRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.DelegatedPrefix == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "delegated_prefix is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "delegated_prefix is required")
 	}
 
 	d := &models.IPv6Delegation{
@@ -82,7 +82,7 @@ func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
 	result, err := h.service.CreateDelegation(c.Context(), d)
 	if err != nil {
 		reqLogger(c).Error("error creating delegation", "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -103,15 +103,15 @@ func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid delegation ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid delegation ID")
 	}
 
 	req := new(updateDelegationRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.DelegatedPrefix == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "delegated_prefix is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "delegated_prefix is required")
 	}
 
 	d := &models.IPv6Delegation{
@@ -126,7 +126,7 @@ func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
 	result, err := h.service.UpdateDelegation(c.Context(), int64(id), d)
 	if err != nil {
 		reqLogger(c).Error("error updating delegation", "id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -147,12 +147,12 @@ func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid delegation ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid delegation ID")
 	}
 
 	if err := h.service.DeleteDelegation(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting delegation", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -173,13 +173,13 @@ func (h *Handler) GetNetworkTopology(c *fiber.Ctx) error {
 
 	networkID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 
 	topology, err := h.service.GetRepository().GetNetworkTopology(c.Context(), int64(networkID))
 	if err != nil {
 		reqLogger(c).Error("error getting section topology", "network_id", networkID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(topology)

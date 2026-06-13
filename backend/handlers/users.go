@@ -34,10 +34,10 @@ type UserDetailResponse struct {
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 	if user.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	page := c.QueryInt("page", 0)
@@ -53,7 +53,7 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 		users, total, err := h.service.ListUsersPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing users", "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		response := make([]UserDetailResponse, 0, len(users))
 		for _, u := range users {
@@ -79,7 +79,7 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	users, err := h.service.ListAllUsers(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing users", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	response := make([]UserDetailResponse, 0)
@@ -103,21 +103,21 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 func (h *Handler) GetUser(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user not found in context")
 	}
 
 	if currentUser.ID != int64(userID) && currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "cannot view other users"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "cannot view other users")
 	}
 
 	user, err := h.service.GetUserByID(c.Context(), int64(userID))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "user not found")
 	}
 
 	return c.JSON(UserDetailResponse{
@@ -136,19 +136,19 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 	if currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	req := new(CreateUserRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Username == "" || req.Email == "" || req.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username, email, and password required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username, email, and password required")
 	}
 
 	role := req.Role
@@ -156,19 +156,19 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		role = "user"
 	}
 	if role != "admin" && role != "user" && role != "viewer" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid role"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role")
 	}
 
 	hash, err := utils.HashPassword(req.Password)
 	if err != nil {
 		reqLogger(c).Error("error hashing password", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create user"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create user")
 	}
 
 	user, err := h.service.CreateUserWithPassword(c.Context(), req.Username, req.Email, hash, role)
 	if err != nil {
 		reqLogger(c).Error("error creating user", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create user"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create user")
 	}
 
 	adminID, adminName := auditUserFromCtx(c)
@@ -194,27 +194,27 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	req := new(UpdateUserRoleRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Role != "admin" && req.Role != "user" && req.Role != "viewer" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid role"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role")
 	}
 
 	user, err := h.service.UpdateUserRole(c.Context(), int64(userID), req.Role)
 	if err != nil {
 		reqLogger(c).Error("error updating user role", "user_id", userID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update user"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to update user")
 	}
 
 	adminID, adminName := auditUserFromCtx(c)
@@ -240,21 +240,21 @@ func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	if currentUser.ID == int64(userID) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot delete your own account"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "cannot delete your own account")
 	}
 
 	if err := h.service.DeleteUser(c.Context(), int64(userID)); err != nil {
 		reqLogger(c).Error("error deleting user", "user_id", userID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete user"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete user")
 	}
 
 	adminID, adminName := auditUserFromCtx(c)

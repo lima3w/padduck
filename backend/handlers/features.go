@@ -44,7 +44,7 @@ func (h *Handler) requireFeature(configKey string) fiber.Handler {
 		if h.featureEnabled(c, configKey) {
 			return c.Next()
 		}
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "feature disabled"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "feature disabled")
 	}
 }
 

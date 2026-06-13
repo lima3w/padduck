@@ -18,7 +18,7 @@ import (
 func (h *Handler) GetAuditLogs(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	filter := buildAuditFilter(c)
@@ -46,7 +46,7 @@ func (h *Handler) GetAuditLogs(c *fiber.Ctx) error {
 func (h *Handler) ExportAuditLogs(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	filter := buildAuditFilter(c)
@@ -90,7 +90,7 @@ func (h *Handler) ExportAuditLogs(c *fiber.Ctx) error {
 func (h *Handler) PurgeAuditLogs(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
 	}
 
 	deleted, err := h.service.Audit.PurgeOldLogs(c.Context())

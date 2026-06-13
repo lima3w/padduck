@@ -20,7 +20,7 @@ type UpdateNetworkRequest struct {
 func (h *Handler) CreateNetwork(c *fiber.Ctx) error {
 	req := new(CreateNetworkRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2NetworkWrite); err != nil {
 		return nil
@@ -37,7 +37,7 @@ func (h *Handler) CreateNetwork(c *fiber.Ctx) error {
 	section, err := h.service.CreateNetwork(c.Context(), req.Name, req.Description, createdBy)
 	if err != nil {
 		reqLogger(c).Error("error creating section", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -57,13 +57,13 @@ func (h *Handler) GetNetwork(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 
 	section, err := h.service.GetNetwork(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting section", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(section)
@@ -85,7 +85,7 @@ func (h *Handler) ListNetworks(c *fiber.Ctx) error {
 		sections, total, err := h.service.ListNetworksPaginatedWithOptions(c.Context(), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing sections", "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if sections == nil {
 			sections = make([]*models.Network, 0)
@@ -101,7 +101,7 @@ func (h *Handler) ListNetworks(c *fiber.Ctx) error {
 	sections, err := h.service.ListNetworks(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing sections", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if sections == nil {
 		sections = make([]*models.Network, 0)
@@ -113,7 +113,7 @@ func (h *Handler) ListNetworks(c *fiber.Ctx) error {
 func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 	if err := h.permCheck(c, services.PermV2NetworkWrite, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
 		return nil
@@ -121,13 +121,13 @@ func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 
 	req := new(UpdateNetworkRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	section, err := h.service.UpdateNetwork(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating section", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -144,7 +144,7 @@ func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 func (h *Handler) DeleteNetwork(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 	if err := h.permCheck(c, services.PermV2NetworkDelete, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
 		return nil
@@ -152,7 +152,7 @@ func (h *Handler) DeleteNetwork(c *fiber.Ctx) error {
 
 	if err := h.service.DeleteNetwork(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting section", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)

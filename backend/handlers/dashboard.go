@@ -14,7 +14,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 	summary, err := h.service.GetDashboardSummary(c.Context())
 	if err != nil {
 		reqLogger(c).Error("GetDashboardSummary failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(summary)
@@ -29,7 +29,7 @@ func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
 	activities, err := h.service.GetDashboardRecentActivity(c.Context())
 	if err != nil {
 		reqLogger(c).Error("GetDashboardRecentActivity failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(activities)
@@ -39,7 +39,7 @@ func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
 func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
 	networkID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid section ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
 		return nil
@@ -48,7 +48,7 @@ func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
 	tree, err := h.service.GetSubnetTree(c.Context(), int64(networkID))
 	if err != nil {
 		reqLogger(c).Error("GetSubnetTree failed", "error", err, "network_id", networkID)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(tree)

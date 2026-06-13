@@ -21,7 +21,7 @@ func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
 	days := 30
@@ -34,7 +34,7 @@ func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
 	points, err := h.service.Reports.GetUtilisationHistory(c.Context(), int64(id), days)
 	if err != nil {
 		reqLogger(c).Error("get utilisation history failed", "subnet_id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if points == nil {
@@ -57,7 +57,7 @@ func (h *Handler) GetUtilisationTrends(c *fiber.Ctx) error {
 	trends, err := h.service.Reports.GetUtilisationTrends(c.Context())
 	if err != nil {
 		reqLogger(c).Error("get utilisation trends failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if trends == nil {
@@ -87,7 +87,7 @@ func (h *Handler) GetSubnetsNearCapacity(c *fiber.Ctx) error {
 	subnets, err := h.service.Reports.GetSubnetsNearCapacity(c.Context(), threshold)
 	if err != nil {
 		reqLogger(c).Error("get subnets near capacity failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if subnets == nil {
@@ -131,7 +131,7 @@ func (h *Handler) ListScheduledReports(c *fiber.Ctx) error {
 	reports, err := h.service.Reports.ListScheduledReports(c.Context())
 	if err != nil {
 		reqLogger(c).Error("list scheduled reports failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if reports == nil {
@@ -149,11 +149,11 @@ func (h *Handler) CreateScheduledReport(c *fiber.Ctx) error {
 
 	req := new(createScheduledReportRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Name == "" || req.ReportType == "" || req.ScheduleCron == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "name, report_type and schedule_cron are required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "name, report_type and schedule_cron are required")
 	}
 
 	format := req.Format
@@ -179,7 +179,7 @@ func (h *Handler) CreateScheduledReport(c *fiber.Ctx) error {
 	)
 	if err != nil {
 		reqLogger(c).Error("create scheduled report failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(report)
@@ -193,12 +193,12 @@ func (h *Handler) GetScheduledReport(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid report ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid report ID")
 	}
 
 	report, err := h.service.Reports.GetScheduledReport(c.Context(), int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "report not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "report not found")
 	}
 
 	return c.JSON(report)
@@ -212,16 +212,16 @@ func (h *Handler) UpdateScheduledReport(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid report ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid report ID")
 	}
 
 	req := new(updateScheduledReportRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Name == "" || req.ReportType == "" || req.ScheduleCron == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "name, report_type and schedule_cron are required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "name, report_type and schedule_cron are required")
 	}
 
 	format := req.Format
@@ -241,7 +241,7 @@ func (h *Handler) UpdateScheduledReport(c *fiber.Ctx) error {
 	)
 	if err != nil {
 		reqLogger(c).Error("update scheduled report failed", "report_id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(report)
@@ -255,12 +255,12 @@ func (h *Handler) DeleteScheduledReport(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid report ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid report ID")
 	}
 
 	if err := h.service.Reports.DeleteScheduledReport(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("delete scheduled report failed", "report_id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.Status(fiber.StatusNoContent).Send(nil)
@@ -274,12 +274,12 @@ func (h *Handler) RunScheduledReportNow(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid report ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid report ID")
 	}
 
 	report, err := h.service.Reports.GetScheduledReport(c.Context(), int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "report not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "report not found")
 	}
 
 	if c.QueryBool("async") {
@@ -296,7 +296,7 @@ func (h *Handler) RunScheduledReportNow(c *fiber.Ctx) error {
 
 	if err := h.service.Reports.RunScheduledReport(c.Context(), report); err != nil {
 		reqLogger(c).Error("run scheduled report failed", "report_id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(fiber.Map{"message": "report executed successfully"})
@@ -317,7 +317,7 @@ func (h *Handler) ExportSubnets(c *fiber.Ctx) error {
 	data, filename, contentType, err := h.service.Reports.ExportSubnets(c.Context(), format)
 	if err != nil {
 		reqLogger(c).Error("export subnets failed", "format", format, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	c.Set("Content-Type", contentType)
@@ -333,12 +333,12 @@ func (h *Handler) ExportIPs(c *fiber.Ctx) error {
 
 	subnetIDStr := c.Query("subnet_id")
 	if subnetIDStr == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "subnet_id is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "subnet_id is required")
 	}
 
 	subnetID, err := strconv.ParseInt(subnetIDStr, 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet_id"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet_id")
 	}
 
 	format := c.Query("format", "csv")
@@ -346,7 +346,7 @@ func (h *Handler) ExportIPs(c *fiber.Ctx) error {
 	data, filename, contentType, err := h.service.Reports.ExportIPs(c.Context(), subnetID, format)
 	if err != nil {
 		reqLogger(c).Error("export IPs failed", "subnet_id", subnetID, "format", format, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	c.Set("Content-Type", contentType)
@@ -372,7 +372,7 @@ func (h *Handler) ExportInactiveIPs(c *fiber.Ctx) error {
 	data, filename, contentType, err := h.service.Reports.ExportInactiveIPs(c.Context(), days, format)
 	if err != nil {
 		reqLogger(c).Error("export inactive IPs failed", "days", days, "format", format, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	c.Set("Content-Type", contentType)
@@ -407,7 +407,7 @@ func (h *Handler) GetInactiveIPs(c *fiber.Ctx) error {
 	ips, err := h.service.Reports.GetInactiveIPs(c.Context(), days, networkID)
 	if err != nil {
 		reqLogger(c).Error("get inactive IPs failed", "days", days, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if ips == nil {
@@ -434,11 +434,11 @@ func (h *Handler) BulkReleaseIPs(c *fiber.Ctx) error {
 
 	req := new(BulkReleaseIPsRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if len(req.IPIDs) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ip_ids must not be empty"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "ip_ids must not be empty")
 	}
 
 	user, _ := c.Locals("user").(*models.User)
@@ -450,7 +450,7 @@ func (h *Handler) BulkReleaseIPs(c *fiber.Ctx) error {
 	count, err := h.service.Reports.BulkReleaseIPs(c.Context(), req.IPIDs, operatorID)
 	if err != nil {
 		reqLogger(c).Error("bulk release IPs failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(fiber.Map{
@@ -471,17 +471,17 @@ func (h *Handler) BulkDeleteIPs(c *fiber.Ctx) error {
 
 	req := new(BulkDeleteIPsRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if len(req.IPIDs) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ip_ids must not be empty"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "ip_ids must not be empty")
 	}
 
 	deleted, err := h.service.BulkDeleteIPAddresses(c.Context(), req.IPIDs)
 	if err != nil {
 		reqLogger(c).Error("bulk delete IPs failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete IP addresses"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete IP addresses")
 	}
 
 	return c.JSON(fiber.Map{

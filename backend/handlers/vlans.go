@@ -70,7 +70,7 @@ func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 		vlans, total, err := h.service.ListVLANsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing VLANs", "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if vlans == nil {
 			vlans = make([]*models.VLAN, 0)
@@ -86,7 +86,7 @@ func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 	vlans, err := h.service.ListVLANs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VLANs", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if vlans == nil {
@@ -102,13 +102,13 @@ func (h *Handler) GetVLAN(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
 
 	vlan, err := h.service.GetVLAN(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting VLAN", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(vlan)
@@ -120,13 +120,13 @@ func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
 	}
 	req := new(CreateVLANRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	vlan, err := h.service.CreateVLAN(c.Context(), req.VRFID, req.DomainID, req.GroupID, req.VlanID, req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating VLAN", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -142,7 +142,7 @@ func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
 func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
 	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
 		return nil
@@ -150,13 +150,13 @@ func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 
 	req := new(UpdateVLANRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	vlan, err := h.service.UpdateVLAN(c.Context(), int64(id), req.DomainID, req.GroupID, req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating VLAN", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -172,7 +172,7 @@ func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
 	if err := h.permCheck(c, services.PermV2VLANDelete, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
 		return nil
@@ -180,7 +180,7 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 
 	if err := h.service.DeleteVLAN(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting VLAN", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -199,13 +199,13 @@ func (h *Handler) GetVLANSubnets(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
 
 	subnets, err := h.service.GetVLANSubnets(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting VLAN subnets", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if subnets == nil {
@@ -218,7 +218,7 @@ func (h *Handler) GetVLANSubnets(c *fiber.Ctx) error {
 func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
 	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
 		return nil
@@ -226,7 +226,7 @@ func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
 
 	req := new(AssignSubnetToVLANRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: req.SubnetID}); err != nil {
 		return nil
@@ -235,7 +235,7 @@ func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
 	subnet, err := h.service.AssignSubnetToVLAN(c.Context(), int64(id), req.SubnetID)
 	if err != nil {
 		reqLogger(c).Error("error assigning subnet to VLAN", "subnet_id", req.SubnetID, "vlan_id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -252,11 +252,11 @@ func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
 func (h *Handler) RemoveSubnetFromVLAN(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
 		return nil
@@ -268,7 +268,7 @@ func (h *Handler) RemoveSubnetFromVLAN(c *fiber.Ctx) error {
 	subnet, err := h.service.RemoveSubnetFromVLAN(c.Context(), int64(id), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error removing subnet from VLAN", "subnet_id", subnetID, "vlan_id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -285,13 +285,13 @@ func (h *Handler) RemoveSubnetFromVLAN(c *fiber.Ctx) error {
 func (h *Handler) ListVLANsByVRF(c *fiber.Ctx) error {
 	vrfID, err := c.ParamsInt("vrfID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
 
 	vlans, err := h.service.ListVLANsByVRF(c.Context(), int64(vrfID))
 	if err != nil {
 		reqLogger(c).Error("error listing VLANs by VRF", "vrf_id", vrfID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if vlans == nil {
@@ -310,7 +310,7 @@ func (h *Handler) ListVLANDomains(c *fiber.Ctx) error {
 	domains, err := h.service.ListVLANDomains(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VLAN domains", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if domains == nil {
 		domains = make([]*models.VLANDomain, 0)
@@ -324,12 +324,12 @@ func (h *Handler) GetVLANDomain(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN domain ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN domain ID")
 	}
 	domain, err := h.service.GetVLANDomain(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting VLAN domain", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(domain)
 }
@@ -340,13 +340,13 @@ func (h *Handler) CreateVLANDomain(c *fiber.Ctx) error {
 	}
 	req := new(CreateVLANDomainRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	domain, err := h.service.CreateVLANDomain(c.Context(), req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating VLAN domain", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -365,17 +365,17 @@ func (h *Handler) UpdateVLANDomain(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN domain ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN domain ID")
 	}
 	req := new(UpdateVLANDomainRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	domain, err := h.service.UpdateVLANDomain(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating VLAN domain", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -394,12 +394,12 @@ func (h *Handler) DeleteVLANDomain(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN domain ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN domain ID")
 	}
 
 	if err := h.service.DeleteVLANDomain(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting VLAN domain", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -421,7 +421,7 @@ func (h *Handler) ListVLANGroups(c *fiber.Ctx) error {
 	groups, err := h.service.ListVLANGroups(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VLAN groups", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if groups == nil {
 		groups = make([]*models.VLANGroup, 0)
@@ -435,12 +435,12 @@ func (h *Handler) GetVLANGroup(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN group ID")
 	}
 	group, err := h.service.GetVLANGroup(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting VLAN group", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(group)
 }
@@ -451,13 +451,13 @@ func (h *Handler) CreateVLANGroup(c *fiber.Ctx) error {
 	}
 	req := new(CreateVLANGroupRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	group, err := h.service.CreateVLANGroup(c.Context(), req.Name, req.Description, req.Colour)
 	if err != nil {
 		reqLogger(c).Error("error creating VLAN group", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -476,17 +476,17 @@ func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN group ID")
 	}
 	req := new(UpdateVLANGroupRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	group, err := h.service.UpdateVLANGroup(c.Context(), int64(id), req.Name, req.Description, req.Colour)
 	if err != nil {
 		reqLogger(c).Error("error updating VLAN group", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -507,7 +507,7 @@ func (h *Handler) GetVLANUsageReport(c *fiber.Ctx) error {
 	report, err := h.service.GetVLANUsageReport(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error generating VLAN usage report", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(report)
@@ -519,12 +519,12 @@ func (h *Handler) DeleteVLANGroup(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VLAN group ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN group ID")
 	}
 
 	if err := h.service.DeleteVLANGroup(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting VLAN group", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)

@@ -17,7 +17,7 @@ func (h *Handler) ListNameservers(c *fiber.Ctx) error {
 	ns, err := h.service.ListNameservers(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing nameservers", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(ns)
 }
@@ -29,15 +29,15 @@ func (h *Handler) GetNameserver(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid nameserver ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid nameserver ID")
 	}
 	ns, err := h.service.GetNameserver(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "nameserver not found")
 		}
 		reqLogger(c).Error("error getting nameserver", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(ns)
 }
@@ -49,20 +49,20 @@ func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
 	}
 	req := new(repository.NameserverParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	req.Name = strings.TrimSpace(req.Name)
 	req.Server1 = strings.TrimSpace(req.Server1)
 	if req.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "nameserver name is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "nameserver name is required")
 	}
 	if req.Server1 == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "server1 is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "server1 is required")
 	}
 	ns, err := h.service.CreateNameserver(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating nameserver", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -79,27 +79,27 @@ func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid nameserver ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid nameserver ID")
 	}
 	req := new(repository.NameserverParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	req.Name = strings.TrimSpace(req.Name)
 	req.Server1 = strings.TrimSpace(req.Server1)
 	if req.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "nameserver name is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "nameserver name is required")
 	}
 	if req.Server1 == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "server1 is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "server1 is required")
 	}
 	ns, err := h.service.UpdateNameserver(c.Context(), int64(id), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "nameserver not found")
 		}
 		reqLogger(c).Error("error updating nameserver", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
@@ -116,14 +116,14 @@ func (h *Handler) DeleteNameserver(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid nameserver ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid nameserver ID")
 	}
 	if err := h.service.DeleteNameserver(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "nameserver not found"})
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "nameserver not found")
 		}
 		reqLogger(c).Error("error deleting nameserver", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	uid, uname := auditUserFromCtx(c)
 	id64 := int64(id)

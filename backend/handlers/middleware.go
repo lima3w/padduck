@@ -94,9 +94,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 func (h *Handler) RequireBearerAuth(c *fiber.Ctx) error {
 	auth := c.Get("Authorization")
 	if !strings.HasPrefix(auth, "Bearer ") {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Bearer token required for this endpoint",
-		})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Bearer token required for this endpoint")
 	}
 	return c.Next()
 }

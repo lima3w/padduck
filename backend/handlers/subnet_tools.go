@@ -31,15 +31,15 @@ func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
 
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
 	req := new(SplitSubnetRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.NewPrefixLen <= 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "new_prefix_len is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "new_prefix_len is required")
 	}
 
 	children, err := h.service.SplitSubnet(c.Context(), int64(id), req.NewPrefixLen)
@@ -52,7 +52,7 @@ func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
 			})
 		}
 		reqLogger(c).Error("split subnet error", "id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -77,16 +77,16 @@ func (h *Handler) MergeSubnets(c *fiber.Ctx) error {
 
 	req := new(MergeSubnetsRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if len(req.SubnetIDs) < 2 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "at least 2 subnet_ids required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "at least 2 subnet_ids required")
 	}
 
 	parent, err := h.service.MergeSubnets(c.Context(), req.SubnetIDs)
 	if err != nil {
 		reqLogger(c).Error("merge subnets error", "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -106,7 +106,7 @@ func (h *Handler) MergeSubnets(c *fiber.Ctx) error {
 func (h *Handler) ResizeSubnet(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(id)}); err != nil {
 		return nil
@@ -114,10 +114,10 @@ func (h *Handler) ResizeSubnet(c *fiber.Ctx) error {
 
 	req := new(ResizeSubnetRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.NewPrefix == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "new_prefix is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "new_prefix is required")
 	}
 
 	subnet, err := h.service.ResizeSubnet(c.Context(), int64(id), req.NewPrefix)
@@ -134,7 +134,7 @@ func (h *Handler) ResizeSubnet(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusConflict).JSON(resp)
 		}
 		reqLogger(c).Error("resize subnet error", "id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)

@@ -16,25 +16,25 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 		Code      string `json:"code"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.Challenge == "" || req.Code == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mfa_challenge and code are required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "mfa_challenge and code are required")
 	}
 
 	userID, err := h.service.MFA.CompleteChallenge(c.Context(), req.Challenge, req.Code)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvalidChallenge), errors.Is(err, services.ErrChallengeExpired):
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid or expired MFA challenge"})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid or expired MFA challenge")
 		case errors.Is(err, services.ErrChallengeCompleted):
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "MFA challenge already used"})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "MFA challenge already used")
 		case errors.Is(err, services.ErrInvalidTOTPCode):
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid MFA code"})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid MFA code")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "MFA verification failed"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "MFA verification failed")
 	}
 
 	user, err := h.service.GetUserByID(c.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "user not found"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "user not found")
 	}
 
 	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
@@ -43,7 +43,7 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 
 	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
 	}
 
 	uid := user.ID
@@ -71,7 +71,7 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 func (h *Handler) GetMFAStatus(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 	enabled, backupRemaining := h.service.MFA.GetMFAStatus(c.Context(), user.ID)
 	return c.JSON(fiber.Map{
@@ -85,16 +85,16 @@ func (h *Handler) GetMFAStatus(c *fiber.Ctx) error {
 func (h *Handler) SetupTOTP(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	secret, qrDataURL, err := h.service.MFA.SetupTOTP(c.Context(), user.ID, user.Username, user.Email)
 	if err != nil {
 		if errors.Is(err, services.ErrMFAAlreadyEnabled) {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "MFA is already enabled — disable it first"})
+			return RespondError(c, fiber.StatusConflict, ErrConflict, "MFA is already enabled — disable it first")
 		}
 		reqLogger(c).Error("TOTP setup error", "user_id", user.ID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to set up MFA"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to set up MFA")
 	}
 
 	return c.JSON(fiber.Map{
@@ -109,25 +109,25 @@ func (h *Handler) SetupTOTP(c *fiber.Ctx) error {
 func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	var req struct {
 		Code string `json:"code"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.Code == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "code is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "code is required")
 	}
 
 	backupCodes, err := h.service.MFA.ConfirmTOTP(c.Context(), user.ID, req.Code)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrMFANotSetup):
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "MFA setup not started — call /mfa/setup first"})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "MFA setup not started — call /mfa/setup first")
 		case errors.Is(err, services.ErrInvalidTOTPCode):
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid code"})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid code")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to confirm MFA"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to confirm MFA")
 	}
 
 	uid := user.ID
@@ -150,24 +150,24 @@ func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	var req struct {
 		Code string `json:"code"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.Code == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "code is required to disable MFA"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "code is required to disable MFA")
 	}
 
 	if err := h.service.MFA.DisableTOTP(c.Context(), user.ID, req.Code); err != nil {
 		switch {
 		case errors.Is(err, services.ErrMFANotEnabled):
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "MFA is not enabled"})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "MFA is not enabled")
 		case errors.Is(err, services.ErrInvalidTOTPCode):
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid code"})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid code")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to disable MFA"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to disable MFA")
 	}
 
 	uid := user.ID
@@ -187,22 +187,22 @@ func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 func (h *Handler) RegenerateBackupCodes(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok || user == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	var req struct {
 		Code string `json:"code"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.Code == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "current MFA code is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "current MFA code is required")
 	}
 
 	codes, err := h.service.MFA.RegenerateBackupCodes(c.Context(), user.ID, req.Code)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidTOTPCode) {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid code"})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid code")
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to regenerate codes"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to regenerate codes")
 	}
 
 	uid := user.ID

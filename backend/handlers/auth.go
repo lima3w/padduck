@@ -123,7 +123,7 @@ func (h *Handler) setSessionCookie(c *fiber.Ctx, token string) {
 func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user not found in context")
 	}
 
 	return c.JSON(UserResponse{
@@ -144,18 +144,18 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	req := new(GenerateTokenRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	token, err := h.service.GenerateAPIToken(c.Context(), userID, req.TokenName, req.Scope, req.ExpiresInDays)
 	if err != nil {
 		reqLogger(c).Error("error generating token", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -179,13 +179,13 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	tokens, err := h.service.ListUserTokens(c.Context(), userID)
 	if err != nil {
 		reqLogger(c).Error("error listing tokens", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	response := make([]ListTokensResponse, 0)
@@ -222,17 +222,15 @@ func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 func (h *Handler) Login(c *fiber.Ctx) error {
 	req := new(LoginRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Username == "" || req.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username and password required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username and password required")
 	}
 
 	if throttled, err := h.service.IsIPThrottled(c.Context(), c.IP()); err == nil && throttled {
-		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-			"error": "too many failed login attempts from this IP, please try again later",
-		})
+		return RespondError(c, fiber.StatusTooManyRequests, ErrTooManyRequests, "too many failed login attempts from this IP, please try again later")
 	}
 
 	ipAddress := c.IP()
@@ -244,11 +242,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		switch {
 		case err == services.ErrEmailNotVerified, err == services.ErrPendingApproval,
 			err == services.ErrAccountRejected, err == services.ErrAccountDisabled:
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusForbidden, ErrForbidden, err.Error())
 		case isAccountLocked(err):
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{"error": "account temporarily locked due to too many failed login attempts"})
+			return RespondError(c, fiber.StatusTooManyRequests, ErrTooManyRequests, "account temporarily locked due to too many failed login attempts")
 		}
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid username or password"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid username or password")
 	}
 
 	// MFA required — return challenge token instead of session
@@ -269,7 +267,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		reqLogger(c).Error("error creating session", "user_id", user.ID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create session"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
 	}
 
 	uid := user.ID
@@ -304,17 +302,17 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 func (h *Handler) Logout(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	token := c.Cookies(sessionCookieName)
 	if token == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "missing session cookie"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "missing session cookie")
 	}
 
 	if err := h.service.RevokeSession(c.Context(), userID, token); err != nil {
 		reqLogger(c).Error("error revoking session", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to logout"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to logout")
 	}
 
 	c.Cookie(&fiber.Cookie{
@@ -338,13 +336,13 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 func (h *Handler) ListMySessions(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	sessions, err := h.service.ListUserSessions(c.Context(), userID)
 	if err != nil {
 		reqLogger(c).Error("error listing sessions", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	response := make([]SessionResponse, 0, len(sessions))
@@ -366,17 +364,17 @@ func (h *Handler) ListMySessions(c *fiber.Ctx) error {
 func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	sessionID, err := c.ParamsInt("sessionID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid session ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid session ID")
 	}
 
 	if err := h.service.RevokeSessionByID(c.Context(), userID, int64(sessionID)); err != nil {
 		reqLogger(c).Error("error revoking session by ID", "session_id", sessionID, "error", err)
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "session not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "session not found")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -398,12 +396,12 @@ func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
 func (h *Handler) LogoutAllDevices(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	if err := h.service.RevokeAllSessions(c.Context(), userID); err != nil {
 		reqLogger(c).Error("error revoking all sessions", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -468,7 +466,7 @@ func (h *Handler) ExtendToken(c *fiber.Ctx) error {
 func (h *Handler) GetMyAvatar(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "unauthorized")
 	}
 	if user.AvatarSource != "custom" {
 		return c.Redirect(gravatarURL(user.Email, 256), fiber.StatusFound)
@@ -506,17 +504,17 @@ func (h *Handler) GetMyAvatar(c *fiber.Ctx) error {
 func (h *Handler) UpdateMyAvatar(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "unauthorized")
 	}
 	var req struct {
 		Source string  `json:"source"`
 		Data   *string `json:"data,omitempty"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.service.UpdateUserAvatar(c.Context(), user.ID, req.Source, req.Data); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(fiber.Map{"message": "avatar updated"})
 }

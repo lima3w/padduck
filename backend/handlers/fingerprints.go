@@ -12,7 +12,7 @@ func (h *Handler) GetDeviceFingerprint(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 	fp, err := h.service.Discovery.GetDeviceFingerprint(c.Context(), int64(id))
 	if err != nil {
@@ -28,7 +28,7 @@ func (h *Handler) BuildDeviceFingerprint(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid device ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 	var req struct {
 		DeviceIP  string  `json:"device_ip"`
@@ -37,11 +37,11 @@ func (h *Handler) BuildDeviceFingerprint(c *fiber.Ctx) error {
 		OpenPorts *string `json:"open_ports"` // comma-separated
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	fp, err := h.service.Discovery.BuildDeviceFingerprint(c.Context(), int64(id), req.DeviceIP, req.IsAlive, req.PTRRecord, req.OpenPorts)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, err.Error())
 	}
 	return c.JSON(fiber.Map{"fingerprint": fp})
 }
