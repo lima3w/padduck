@@ -22,14 +22,14 @@ var nonAdminUser = &models.User{ID: 2, Role: "user"}
 // ListUsers — GET /api/v1/users and GET /api/v1/admin/users
 // ---------------------------------------------------------------------------
 
-func TestListUsers_NoUser_Returns401(t *testing.T) {
+func TestListUsers_NoUser_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Get("/users", h.ListUsers)
 
 	resp, err := app.Test(httptest.NewRequest("GET", "/users", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
 func TestListUsers_NonAdmin_Returns403(t *testing.T) {
@@ -49,14 +49,14 @@ func TestListUsers_NonAdmin_Returns403(t *testing.T) {
 // CreateUser — POST /api/v1/users
 // ---------------------------------------------------------------------------
 
-func TestCreateUser_NoUser_Returns401(t *testing.T) {
+func TestCreateUser_NoUser_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
 	app.Post("/users", h.CreateUser)
 
 	resp, err := app.Test(httptest.NewRequest("POST", "/users", nil))
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
 func TestCreateUser_NonAdmin_Returns403(t *testing.T) {

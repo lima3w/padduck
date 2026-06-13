@@ -16,9 +16,8 @@ import (
 // GetAuditLogs handles GET /api/v1/admin/audit-logs
 // Supports query params: action, resource_type, username, ip, status, since, until, limit, offset
 func (h *Handler) GetAuditLogs(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	filter := buildAuditFilter(c)
@@ -44,9 +43,8 @@ func (h *Handler) GetAuditLogs(c *fiber.Ctx) error {
 // ExportAuditLogs handles GET /api/v1/admin/audit-logs/export
 // Returns a CSV download of matching audit log entries.
 func (h *Handler) ExportAuditLogs(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	filter := buildAuditFilter(c)
@@ -88,9 +86,8 @@ func (h *Handler) ExportAuditLogs(c *fiber.Ctx) error {
 // PurgeAuditLogs handles POST /api/v1/admin/audit-logs/purge
 // Deletes log entries older than the configured retention period.
 func (h *Handler) PurgeAuditLogs(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	deleted, err := h.service.Audit.PurgeOldLogs(c.Context())

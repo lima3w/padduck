@@ -2,15 +2,13 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"padduck/models"
 	"padduck/services"
 )
 
 // GetConfig handles GET /api/v1/admin/config
 func (h *Handler) GetConfig(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	configs, err := h.service.Config.ListCtx(c.Context())
@@ -43,9 +41,8 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 
 // UpdateConfig handles PUT /api/v1/admin/config
 func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	var updates map[string]string
@@ -157,9 +154,8 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 
 // TestSMTP handles POST /api/v1/admin/config/test-email
 func (h *Handler) TestSMTP(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	var req struct {

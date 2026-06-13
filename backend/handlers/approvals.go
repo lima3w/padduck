@@ -10,9 +10,8 @@ import (
 
 // ListPendingApprovals handles GET /api/v1/admin/approvals
 func (h *Handler) ListPendingApprovals(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	approvals, err := h.service.Registration.ListPendingApprovals(c.Context())
@@ -52,10 +51,10 @@ func (h *Handler) ListPendingApprovals(c *fiber.Ctx) error {
 
 // ApproveUser handles POST /api/v1/admin/approvals/:id/approve
 func (h *Handler) ApproveUser(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	currentUser := c.Locals("user").(*models.User)
 
 	approvalID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
@@ -80,10 +79,10 @@ func (h *Handler) ApproveUser(c *fiber.Ctx) error {
 
 // RejectUser handles POST /api/v1/admin/approvals/:id/reject
 func (h *Handler) RejectUser(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	currentUser := c.Locals("user").(*models.User)
 
 	approvalID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {

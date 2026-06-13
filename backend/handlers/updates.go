@@ -10,7 +10,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"padduck/internal/netguard"
-	"padduck/models"
 	"padduck/version"
 )
 
@@ -23,9 +22,8 @@ type releaseInfo struct {
 
 // CheckForUpdates handles GET /api/v1/admin/updates/check.
 func (h *Handler) CheckForUpdates(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	enabled, _ := h.service.Config.GetCtx(c.Context(), "update_check_enabled")

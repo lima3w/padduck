@@ -82,9 +82,8 @@ func (h *Handler) UpdateNotificationPreferences(c *fiber.Ctx) error {
 
 // GetNotificationStats handles GET /api/v1/admin/notification-stats
 func (h *Handler) GetNotificationStats(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	stats, err := h.service.GetNotificationStats(c.Context())
 	if err != nil {

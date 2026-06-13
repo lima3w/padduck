@@ -32,12 +32,8 @@ type UserDetailResponse struct {
 // ListUsers handles GET /api/v1/users (admin only)
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok {
-		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
-	}
-	if user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	page := c.QueryInt("page", 0)
@@ -134,12 +130,8 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 
 // CreateUser handles POST /api/v1/users (admin only)
 func (h *Handler) CreateUser(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok {
-		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
-	}
-	if currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	req := new(CreateUserRequest)
@@ -197,9 +189,8 @@ func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	req := new(UpdateUserRoleRequest)
@@ -243,10 +234,10 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	currentUser := c.Locals("user").(*models.User)
 
 	if currentUser.ID == int64(userID) {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "cannot delete your own account")
@@ -269,10 +260,10 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 
 // UpdateUserEmail handles PUT /api/v1/admin/users/:id/email
 func (h *Handler) UpdateUserEmail(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {
@@ -302,9 +293,8 @@ func (h *Handler) UpdateUserEmail(c *fiber.Ctx) error {
 
 // SendPasswordResetEmail handles POST /api/v1/admin/users/:id/send-password-reset
 func (h *Handler) SendPasswordResetEmail(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	id, err := c.ParamsInt("id")

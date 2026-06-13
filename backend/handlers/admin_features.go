@@ -21,10 +21,10 @@ func resourceIDPtr(id int64) *int64 {
 
 // SuspendUser handles POST /api/v1/admin/users/:id/suspend
 func (h *Handler) SuspendUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {
@@ -53,10 +53,10 @@ func (h *Handler) SuspendUser(c *fiber.Ctx) error {
 
 // UnsuspendUser handles POST /api/v1/admin/users/:id/unsuspend
 func (h *Handler) UnsuspendUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {
@@ -79,10 +79,10 @@ func (h *Handler) UnsuspendUser(c *fiber.Ctx) error {
 // ImpersonateUser handles POST /api/v1/admin/users/:id/impersonate
 // Returns a session token that authenticates as the target user
 func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	targetID, err := c.ParamsInt("id")
 	if err != nil {
@@ -125,10 +125,10 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 
 // BulkSuspendUsers handles POST /api/v1/admin/users/bulk-suspend
 func (h *Handler) BulkSuspendUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	var req struct {
 		UserIDs []int64 `json:"user_ids"`
@@ -151,9 +151,8 @@ func (h *Handler) BulkSuspendUsers(c *fiber.Ctx) error {
 
 // BulkActivateUsers handles POST /api/v1/admin/users/bulk-activate
 func (h *Handler) BulkActivateUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	var req struct {
@@ -172,10 +171,10 @@ func (h *Handler) BulkActivateUsers(c *fiber.Ctx) error {
 
 // BulkDeleteUsers handles POST /api/v1/admin/users/bulk-delete
 func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	var req struct {
 		UserIDs []int64 `json:"user_ids"`
@@ -219,10 +218,10 @@ func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
 // BulkImportUsers handles POST /api/v1/admin/users/bulk-import
 // Accepts multipart/form-data with a "file" field (CSV) and optional "default_password"
 func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -339,10 +338,10 @@ func (h *Handler) RequestDeletion(c *fiber.Ctx) error {
 
 // GDPRDeleteUser handles POST /api/v1/admin/users/:id/gdpr-delete
 func (h *Handler) GDPRDeleteUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {

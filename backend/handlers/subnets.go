@@ -165,9 +165,8 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 
 // GetOverlapReport handles GET /api/v1/admin/subnets/overlap-report
 func (h *Handler) GetOverlapReport(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	pairs, err := h.service.OverlapReport(c.Context())
