@@ -95,6 +95,15 @@ func (s *Service) UpdateIPAddressMeta(ctx context.Context, id int64, hostname st
 	return ip, nil
 }
 
+// QuickCreateIPAddress finds the most-specific subnet for addr and creates an IP record in it.
+func (s *Service) QuickCreateIPAddress(ctx context.Context, addr string) (*models.IPAddress, error) {
+	subnet, err := s.repository.FindSubnetForIP(ctx, addr)
+	if err != nil {
+		return nil, fmt.Errorf("no subnet found for %s", addr)
+	}
+	return s.CreateIPAddress(ctx, subnet.ID, addr, "", "assigned", nil, nil, nil, nil)
+}
+
 // GetIPAddress retrieves an IP address by ID
 func (s *Service) GetIPAddress(ctx context.Context, id int64) (*models.IPAddress, error) {
 	if id <= 0 {

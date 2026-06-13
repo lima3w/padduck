@@ -194,6 +194,13 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			snmpVersion = v
 		}
 	}
+	// Scan profile overrides take precedence over global config.
+	if job != nil && job.SNMPCommunityOverride != "" {
+		snmpCommunity = job.SNMPCommunityOverride
+	}
+	if job != nil && job.SNMPVersionOverride != "" {
+		snmpVersion = job.SNMPVersionOverride
+	}
 
 	ips, err := enumerateCIDR(networkAddr, prefixLen)
 	if err != nil {
@@ -394,9 +401,15 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 				if effectiveConcurrency <= 0 {
 					effectiveConcurrency = concurrency
 				}
-				// Build a shallow copy of job with profile-derived scan type
+				// Build a shallow copy of job with profile-derived settings
 				jobCopy := *job
 				jobCopy.ScanType = profile.ScanType
+				if profile.SNMPCommunity != nil && *profile.SNMPCommunity != "" {
+					jobCopy.SNMPCommunityOverride = *profile.SNMPCommunity
+				}
+				if profile.SNMPVersion != "" {
+					jobCopy.SNMPVersionOverride = profile.SNMPVersion
+				}
 				effectiveJob = &jobCopy
 			} else {
 				slog.Warn("scan job: load scan profile failed", "job_id", job.ID, "profile_id", *subnet.ScanProfileID, "subnet_id", subnetID, "error", profileErr)

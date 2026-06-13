@@ -668,6 +668,11 @@ export default function ScanJobsPage() {
                           <option value="snmp">SNMP</option>
                           <option value="ping+snmp">Ping + SNMP</option>
                         </select>
+                        {(settingsForm.scan_type === 'snmp' || settingsForm.scan_type === 'ping+snmp') && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            SNMP community string is set in <a href="/admin/settings?tab=scanner" className="underline hover:text-gray-600">Admin Settings → Scanner</a>. Per-subnet overrides can be configured in <a href="/scan-profiles" className="underline hover:text-gray-600">Scan Profiles</a>.
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Concurrency</label>
@@ -744,6 +749,11 @@ export default function ScanJobsPage() {
                 <option value="snmp">SNMP</option>
                 <option value="ping+snmp">Ping + SNMP</option>
               </select>
+              {(createForm.scan_type === 'snmp' || createForm.scan_type === 'ping+snmp') && (
+                <p className="text-xs text-gray-400 mt-1">
+                  SNMP community string is set in <a href="/admin/settings?tab=scanner" className="underline hover:text-gray-600">Admin Settings → Scanner</a>. Per-subnet overrides can be configured in <a href="/scan-profiles" className="underline hover:text-gray-600">Scan Profiles</a>.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Schedule (cron)</label>

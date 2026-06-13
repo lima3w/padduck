@@ -13,10 +13,11 @@ import (
 
 // Zone represents a PowerDNS zone.
 type Zone struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Kind string `json:"kind"`
-	URL  string `json:"url"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Kind   string `json:"kind"`
+	URL    string `json:"url"`
+	Serial uint32 `json:"serial"`
 }
 
 // RRSet is a resource record set inside a zone.

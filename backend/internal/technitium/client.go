@@ -19,6 +19,7 @@ type Zone struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Disabled bool   `json:"disabled"`
+	Serial   uint32 `json:"serial"`
 }
 
 // Record represents a single DNS record in a Technitium zone.

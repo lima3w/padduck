@@ -195,6 +195,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
 	ipAddress.Get("/search", h.SearchIPAddressesGlobal)
 	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
+	ipAddress.Post("/quick-create", h.QuickCreateIPAddress)
 
 	// VRFs routes
 	vrfs := protected.Group("/vrfs", h.requireFeature(featureVrfs))
