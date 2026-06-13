@@ -36,16 +36,14 @@ func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 			host(s.network_address) || '/' || s.prefix_length AS cidr,
 			s.description,
 			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END) AS used,
-			COUNT(ip.id) AS total
+			GREATEST((POWER(2, 32 - s.prefix_length) - 2)::bigint, 1) AS total
 		FROM subnets s
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
 		GROUP BY s.id, s.network_address, s.prefix_length, s.description
 		HAVING COUNT(ip.id) > 0
 		ORDER BY
-			CASE WHEN COUNT(ip.id) > 0
-				THEN COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END)::float / COUNT(ip.id)
-				ELSE 0
-			END DESC
+			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END)::float /
+			GREATEST((POWER(2, 32 - s.prefix_length) - 2)::bigint, 1) DESC
 		LIMIT 5`
 
 	topRows, err := r.db.Query(ctx, topQuery)

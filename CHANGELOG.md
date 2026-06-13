@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.28
+
+### Changes
+- **Top Utilised Subnets now uses CIDR-derived capacity**: utilisation percentage and ranking are calculated against the total addressable IPs in the subnet (`2^(32-prefix) - 2`, minimum 1), rather than the count of IP records entered. A /24 with 40 assigned IPs now shows ~15.7% instead of an inflated figure based on however many records exist.
+
 ## v1.31.27
 
 ### Changes
