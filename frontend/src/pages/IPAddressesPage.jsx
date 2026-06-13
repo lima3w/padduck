@@ -465,6 +465,12 @@ export default function IPAddressesPage() {
     load(1)
   }
 
+  function ipInSubnet(ip, networkAddress, prefixLength) {
+    const toNum = (addr) => addr.split('.').reduce((acc, o) => ((acc << 8) | Number(o)) >>> 0, 0)
+    const mask = prefixLength === 0 ? 0 : ((-1 << (32 - prefixLength)) >>> 0)
+    return (toNum(ip) & mask) === (toNum(networkAddress) & mask)
+  }
+
   function networkPrefix(networkAddress, prefixLength) {
     if (!networkAddress) return ''
     if (networkAddress.includes(':')) return networkAddress  // IPv6: use as-is
@@ -499,6 +505,10 @@ export default function IPAddressesPage() {
 
   async function handleCreate(e) {
     e.preventDefault()
+    if (subnet && !form.address.includes(':') && !ipInSubnet(form.address, subnet.networkAddress, subnet.prefixLength)) {
+      setError(`IP address must be within ${subnet.networkAddress}/${subnet.prefixLength}`)
+      return
+    }
     setSaving(true)
     try {
       await createIPAddress(subnetID, {

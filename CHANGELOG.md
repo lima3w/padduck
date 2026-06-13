@@ -3,6 +3,7 @@
 ## v1.31.28
 
 ### Bug Fixes
+- **IP addresses could be saved outside their subnet's CIDR**: the create-IP form pre-fills the network prefix but allowed users to backspace it and enter any address. The backend now validates that the submitted IP falls within the subnet's network address and prefix length before inserting; the frontend validates the same for IPv4 addresses and surfaces an inline error immediately.
 - **DHCP and Circuits pages showed "feature disabled" when the Locations (or Customers) feature was disabled**: both pages called `getLocations()` in the same `Promise.all` as their own feature-gated API calls. A 404 from a disabled secondary feature poisoned the whole load and surfaced the backend's "feature disabled" error message. Locations and Customers are now fetched independently with graceful fallbacks so the primary page data always loads.
 
 ### Changes

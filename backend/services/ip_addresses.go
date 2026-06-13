@@ -17,13 +17,26 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
 
-	if net.ParseIP(address) == nil {
+	parsedIP := net.ParseIP(address)
+	if parsedIP == nil {
 		return nil, fmt.Errorf("invalid IP address: %s", address)
 	}
 
 	validStatuses := map[string]bool{"available": true, "assigned": true, "reserved": true}
 	if !validStatuses[status] {
 		return nil, fmt.Errorf("invalid IP status: %s", status)
+	}
+
+	subnet, err := s.repository.GetSubnetByID(ctx, subnetID)
+	if err != nil {
+		return nil, fmt.Errorf("subnet not found: %w", err)
+	}
+	_, ipNet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength))
+	if err != nil {
+		return nil, fmt.Errorf("invalid subnet CIDR: %w", err)
+	}
+	if !ipNet.Contains(parsedIP) {
+		return nil, fmt.Errorf("IP address %s is not within subnet %s/%d", address, subnet.NetworkAddress, subnet.PrefixLength)
 	}
 
 	ip, err := s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, tagID, macAddress, ptrRecord, dnsName)
