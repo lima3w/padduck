@@ -4,6 +4,8 @@
 
 ### Bug Fixes
 - **Show all IPs displayed a /32 suffix after every address in full range view**: the generate_series SELECT expression cast the computed inet address to text (`::text`), which includes the host prefix length. Changed to `host()` to return the bare IP address, matching the existing behaviour of the regular IP list query.
+- **IP address global search never returned results**: `GET /ip-addresses/search` was registered after `GET /ip-addresses/:id` in the router, so Fiber matched the literal string "search" as an id parameter and called `GetIPAddress` instead of `SearchIPAddressesGlobal`. Static paths are now registered before the parameterised routes. This also resolves the "IP already exists" error on the device detail page — that error appeared because users hit quick-create on an address that already existed, since search had returned nothing.
+- **Edit IP dialog had no way to set or change the associated device**: the Edit IP modal now includes a device search field. Typing filters the loaded device list; selecting a device associates it with the IP; a clear button removes the association. The current device is pre-populated when the modal opens.
 
 ## v1.31.32
 
