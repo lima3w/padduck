@@ -58,7 +58,7 @@ func (h *Handler) GrafanaQuery(c *fiber.Ctx) error {
 
 	req := new(grafanaQueryRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	var responses []grafanaTableResponse

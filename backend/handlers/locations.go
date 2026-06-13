@@ -30,7 +30,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 		locs, total, err := h.service.ListLocationsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing locations", "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if locs == nil {
 			locs = make([]*models.Location, 0)
@@ -46,7 +46,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 	locs, err := h.service.ListLocations(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing locations", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if locs == nil {
 		locs = make([]*models.Location, 0)
@@ -62,7 +62,7 @@ func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 	tree, err := h.service.GetLocationTree(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error getting location tree", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(tree)
 }
@@ -74,16 +74,16 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	}
 	req := new(repository.LocationParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "location name is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name is required")
 	}
 	loc, err := h.service.CreateLocation(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating location", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.Status(fiber.StatusCreated).JSON(loc)
 }
@@ -95,15 +95,15 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid location ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid location ID")
 	}
 	loc, err := h.service.GetLocation(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "location not found")
 		}
 		reqLogger(c).Error("error getting location", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(loc)
 }
@@ -115,23 +115,23 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid location ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid location ID")
 	}
 	req := new(repository.LocationParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "location name is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name is required")
 	}
 	loc, err := h.service.UpdateLocation(c.Context(), int64(id), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "location not found")
 		}
 		reqLogger(c).Error("error updating location", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(loc)
 }
@@ -143,14 +143,14 @@ func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid location ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid location ID")
 	}
 	if err := h.service.DeleteLocation(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "location not found"})
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "location not found")
 		}
 		reqLogger(c).Error("error deleting location", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }

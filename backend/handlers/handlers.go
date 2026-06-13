@@ -69,9 +69,6 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Attach a unique request ID to every request
 	app.Use(RequestIDMiddleware)
 
-	// Add logging middleware
-	app.Use(h.loggingMiddleware)
-
 	// Grafana SimpleJSON datasource routes (v1.14.0 #236) — Bearer token auth, no CSRF
 	grafana := app.Group("/api/grafana")
 	grafana.Use(h.AuthMiddleware)
@@ -645,11 +642,3 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	log.Println("Routes registered successfully")
 }
 
-func (h *Handler) loggingMiddleware(c *fiber.Ctx) error {
-	// Always skip /health to avoid log noise from Docker/Kubernetes liveness probes.
-	if c.Path() == "/health" {
-		return c.Next()
-	}
-	log.Printf("%s %s", c.Method(), c.Path())
-	return c.Next()
-}

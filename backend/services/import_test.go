@@ -392,7 +392,7 @@ func TestImportFromPHPIpam_IPs_HappyPath(t *testing.T) {
 	assert.Equal(t, 1, result.Imported)
 	require.Len(t, repo.createdIPs, 1)
 	assert.Equal(t, "10.0.0.5", repo.createdIPs[0].Address)
-	assert.Equal(t, "active", repo.createdIPs[0].Status)
+	assert.Equal(t, "assigned", repo.createdIPs[0].Status)
 }
 
 func TestImportFromPHPIpam_IPs_StateMapping(t *testing.T) {
@@ -400,15 +400,15 @@ func TestImportFromPHPIpam_IPs_StateMapping(t *testing.T) {
 		state  string
 		expect string
 	}{
-		{"1", "active"},
-		{"used", "active"},
-		{"active", "active"},
+		{"1", "assigned"},
+		{"used", "assigned"},
+		{"active", "assigned"},
 		{"2", "reserved"},
 		{"reserved", "reserved"},
-		{"3", "dhcp"},
-		{"dhcp", "dhcp"},
-		{"0", "inactive"},
-		{"unknown", "inactive"},
+		{"3", "assigned"},
+		{"dhcp", "assigned"},
+		{"0", "available"},
+		{"unknown", "available"},
 	}
 
 	for _, tt := range tests {

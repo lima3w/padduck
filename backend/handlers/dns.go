@@ -32,7 +32,7 @@ func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
 	}
 	if err := h.service.DNS.TestPDNSConnection(c.Context()); err != nil {
 		reqLogger(c).Error("PowerDNS connection test failed", "error", err)
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "PowerDNS connection failed"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "PowerDNS connection failed")
 	}
 	return c.JSON(fiber.Map{"status": "ok"})
 }
@@ -59,7 +59,7 @@ func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 	}
 	if err != nil {
 		reqLogger(c).Error("Technitium connection test failed", "error", err)
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "Technitium connection failed"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "Technitium connection failed")
 	}
 	return c.JSON(fiber.Map{"status": "ok"})
 }
@@ -74,7 +74,7 @@ func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 	zones, configured, err := h.service.DNS.ListDNSZones(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing DNS zones", "error", err)
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "DNS provider error"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "DNS provider error")
 	}
 	if !configured {
 		return c.JSON(fiber.Map{"configured": false, "zones": []interface{}{}})
@@ -167,13 +167,13 @@ func (h *Handler) GetDNSZoneRecords(c *fiber.Ctx) error {
 	}
 	zone := c.Params("zone")
 	if zone == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "zone name is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "zone name is required")
 	}
 	typeFilter := c.Query("type")
 	records, err := h.service.DNS.GetDNSZoneRecords(c.Context(), zone, typeFilter)
 	if err != nil {
 		reqLogger(c).Error("error getting DNS zone records", "zone", zone, "error", err)
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "DNS provider error"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "DNS provider error")
 	}
 	return c.JSON(fiber.Map{"zone": zone, "records": records})
 }

@@ -39,7 +39,7 @@ type UpdateIPMetaRequest struct {
 func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
 		return nil
@@ -47,13 +47,13 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 
 	req := new(CreateIPAddressRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error creating IP address", "subnet_id", subnetID, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -73,13 +73,13 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
 	ip, err := h.service.GetIPAddress(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting IP address", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(ip)
@@ -90,7 +90,7 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
 		return nil
@@ -100,7 +100,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		page, limit, _ := parseListOptions(c)
 		ips, total, err := h.service.ListIPAddressesFullRange(c.Context(), int64(subnetID), page, limit)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
 		if ips == nil {
 			ips = make([]*models.IPAddress, 0)
@@ -116,7 +116,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		ips, total, err := h.service.ListIPAddressesPaginatedWithOptions(c.Context(), int64(subnetID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if ips == nil {
 			ips = make([]*models.IPAddress, 0)
@@ -132,7 +132,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 	ips, err := h.service.ListIPAddresses(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if ips == nil {
 		ips = make([]*models.IPAddress, 0)
@@ -147,18 +147,18 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
 	req := new(AssignIPAddressRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	ip, err := h.service.AssignIPAddress(c.Context(), int64(id), req.DeviceID)
 	if err != nil {
 		reqLogger(c).Error("error assigning IP address", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -182,13 +182,13 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
 	ip, err := h.service.ReleaseIPAddress(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error releasing IP address", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -207,12 +207,12 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
 	if err := h.service.DeleteIPAddress(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting IP address", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -232,18 +232,18 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
 	req := new(UpdateIPMetaRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error updating IP meta", "id", id, "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	return c.JSON(ip)
@@ -259,14 +259,14 @@ func (h *Handler) QuickCreateIPAddress(c *fiber.Ctx) error {
 		Address string `json:"address"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if req.Address == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "address is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "address is required")
 	}
 	ip, err := h.service.QuickCreateIPAddress(c.Context(), req.Address)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.Status(fiber.StatusCreated).JSON(ip)
 }
@@ -275,7 +275,7 @@ func (h *Handler) QuickCreateIPAddress(c *fiber.Ctx) error {
 func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
 		return nil
@@ -287,13 +287,13 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 
 	req := new(AllocateRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	ip, err := h.service.AllocateIPAddress(c.Context(), int64(subnetID), req.DeviceID)
 	if err != nil {
 		reqLogger(c).Error("error allocating IP address", "subnet_id", subnetID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -314,7 +314,7 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2SubnetRead, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
 		return nil
@@ -323,7 +323,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 	utilization, err := h.service.GetSubnetUtilization(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error getting subnet utilization", "subnet_id", subnetID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(utilization)
@@ -338,7 +338,7 @@ type AssignWithLeaseRequest struct {
 func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
 		return nil
@@ -346,13 +346,13 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 
 	req := new(AssignWithLeaseRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	ip, err := h.service.AssignIPAddressWithLease(c.Context(), int64(id), req.DeviceID, req.LeaseDurationDays)
 	if err != nil {
 		reqLogger(c).Error("error assigning IP address with lease", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(ip)
@@ -362,7 +362,7 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
 		return nil
@@ -371,7 +371,7 @@ func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 	expired, err := h.service.IsIPLeaseExpired(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error checking IP lease status", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(fiber.Map{"expired": expired})
@@ -381,7 +381,7 @@ func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid IP address ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPRelease); err != nil {
 		return nil
@@ -390,7 +390,7 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 	ip, err := h.service.ReleaseExpiredLease(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error releasing expired lease", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(ip)
@@ -402,7 +402,7 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 func (h *Handler) GetNextAvailableIP(c *fiber.Ctx) error {
 	subnetID, err := c.ParamsInt("subnetID")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
 		return nil
@@ -410,7 +410,7 @@ func (h *Handler) GetNextAvailableIP(c *fiber.Ctx) error {
 	ip, err := h.service.FindNextAvailableIP(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error finding next available IP", "subnet_id", subnetID, "error", err)
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "no available IP addresses in subnet"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "no available IP addresses in subnet")
 	}
 	return c.JSON(ip)
 }

@@ -10,14 +10,13 @@ import (
 
 // ListPendingApprovals handles GET /api/v1/admin/approvals
 func (h *Handler) ListPendingApprovals(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	approvals, err := h.service.Registration.ListPendingApprovals(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to list approvals"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to list approvals")
 	}
 
 	type approvalWithUser struct {
@@ -52,21 +51,21 @@ func (h *Handler) ListPendingApprovals(c *fiber.Ctx) error {
 
 // ApproveUser handles POST /api/v1/admin/approvals/:id/approve
 func (h *Handler) ApproveUser(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	currentUser := c.Locals("user").(*models.User)
 
 	approvalID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid approval ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid approval ID")
 	}
 
 	reviewerID := currentUser.ID
 
 	if err := h.service.Registration.ApproveUser(c.Context(), approvalID, reviewerID); err != nil {
 		reqLogger(c).Error("approve user failed", "approval_id", approvalID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	adminID, adminName := auditUserFromCtx(c)
@@ -80,28 +79,28 @@ func (h *Handler) ApproveUser(c *fiber.Ctx) error {
 
 // RejectUser handles POST /api/v1/admin/approvals/:id/reject
 func (h *Handler) RejectUser(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	currentUser := c.Locals("user").(*models.User)
 
 	approvalID, err := strconv.ParseInt(c.Params("id"), 10, 64)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid approval ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid approval ID")
 	}
 
 	var req struct {
 		Reason string `json:"reason"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	reviewerID := currentUser.ID
 
 	if err := h.service.Registration.RejectUser(c.Context(), approvalID, reviewerID, req.Reason); err != nil {
 		reqLogger(c).Error("reject user failed", "approval_id", approvalID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	adminID, adminName := auditUserFromCtx(c)

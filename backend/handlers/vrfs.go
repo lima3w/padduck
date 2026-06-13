@@ -38,7 +38,7 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 		vrfs, total, err := h.service.ListVRFsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing VRFs", "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if vrfs == nil {
 			vrfs = make([]*models.VRF, 0)
@@ -54,7 +54,7 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 	vrfs, err := h.service.ListVRFs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VRFs", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if vrfs == nil {
@@ -70,13 +70,13 @@ func (h *Handler) GetVRF(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
 
 	vrf, err := h.service.GetVRF(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting VRF", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	return c.JSON(vrf)
@@ -85,7 +85,7 @@ func (h *Handler) GetVRF(c *fiber.Ctx) error {
 func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 	req := new(CreateVRFRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2VRFWrite); err != nil {
 		return nil
@@ -94,7 +94,7 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 	vrf, err := h.service.CreateVRF(c.Context(), req.Name, req.RouteDistinguisher, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating VRF", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -110,7 +110,7 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
 	if err := h.permCheck(c, services.PermV2VRFWrite, services.ResourceScope{Type: "vrf", ID: int64(id)}); err != nil {
 		return nil
@@ -118,13 +118,13 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 
 	req := new(UpdateVRFRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	vrf, err := h.service.UpdateVRF(c.Context(), int64(id), req.Name, req.RouteDistinguisher, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating VRF", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)
@@ -140,7 +140,7 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid VRF ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
 	if err := h.permCheck(c, services.PermV2VRFDelete, services.ResourceScope{Type: "vrf", ID: int64(id)}); err != nil {
 		return nil
@@ -148,7 +148,7 @@ func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 
 	if err := h.service.DeleteVRF(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting VRF", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	uid, uname := auditUserFromCtx(c)

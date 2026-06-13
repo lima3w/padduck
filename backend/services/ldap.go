@@ -3,11 +3,13 @@ package services
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	ldap "github.com/go-ldap/ldap/v3"
+	"github.com/jackc/pgx/v5/pgconn"
 	"padduck/models"
 	"padduck/repository"
 )
@@ -198,8 +200,7 @@ func (s *LDAPService) Authenticate(ctx context.Context, username, password strin
 	// Sync group memberships
 	groups := entry.GetAttributeValues("memberOf")
 	if err := s.SyncGroups(ctx, user.ID, groups); err != nil {
-		// Non-fatal — log but don't block login
-		_ = err
+		slog.Warn("ldap group sync failed", "user_id", user.ID, "error", err)
 	}
 
 	return user, nil
@@ -219,8 +220,12 @@ func (s *LDAPService) SyncGroups(ctx context.Context, userID int64, ldapGroups [
 
 	for _, m := range mappings {
 		if groupSet[strings.ToLower(m.LDAPGroupDN)] {
-			// Best-effort role assignment; ignore duplicates
-			_ = s.repository.AssignRoleToUser(ctx, userID, m.RoleID)
+			if err := s.repository.AssignRoleToUser(ctx, userID, m.RoleID); err != nil {
+				var pgErr *pgconn.PgError
+				if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
+					slog.Warn("ldap assign role failed", "user_id", userID, "role_id", m.RoleID, "error", err)
+				}
+			}
 		}
 	}
 	return nil

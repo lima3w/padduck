@@ -72,9 +72,8 @@ func builtinPresets() []PermissionPreset {
 // ---- Role management ----
 
 func (h *Handler) ListRoles(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	roles, err := h.service.ListRoles(c.Context())
 	if err != nil {
@@ -84,9 +83,8 @@ func (h *Handler) ListRoles(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetRole(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -105,9 +103,8 @@ type CreateRoleRequest struct {
 }
 
 func (h *Handler) CreateRole(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	req := new(CreateRoleRequest)
 	if err := c.BodyParser(req); err != nil {
@@ -126,9 +123,8 @@ type UpdateRoleRequest struct {
 }
 
 func (h *Handler) UpdateRole(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -146,9 +142,8 @@ func (h *Handler) UpdateRole(c *fiber.Ctx) error {
 }
 
 func (h *Handler) DeleteRole(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -169,9 +164,8 @@ type AddPermissionRequest struct {
 }
 
 func (h *Handler) AddPermissionToRole(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -189,9 +183,8 @@ func (h *Handler) AddPermissionToRole(c *fiber.Ctx) error {
 }
 
 func (h *Handler) RemovePermissionFromRole(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	permID, err := c.ParamsInt("perm_id")
 	if err != nil {
@@ -204,9 +197,8 @@ func (h *Handler) RemovePermissionFromRole(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListAvailablePermissions(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	return c.JSON(services.AllPermissions)
 }
@@ -214,9 +206,8 @@ func (h *Handler) ListAvailablePermissions(c *fiber.Ctx) error {
 // ---- User-role assignment ----
 
 func (h *Handler) GetUserRoles(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -235,10 +226,10 @@ type AssignRoleRequest struct {
 }
 
 func (h *Handler) AssignRoleToUser(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	user := c.Locals("user").(*models.User)
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
@@ -259,9 +250,8 @@ func (h *Handler) AssignRoleToUser(c *fiber.Ctx) error {
 }
 
 func (h *Handler) RemoveRoleFromUser(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(*models.User)
-	if !ok || user.Role != "admin" {
-		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "admin access required")
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {

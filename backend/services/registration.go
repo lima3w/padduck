@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -118,11 +118,11 @@ func (s *RegistrationService) Register(ctx context.Context, req RegisterRequest)
 
 	if requireVerification {
 		if err := s.sendVerificationEmail(ctx, user); err != nil {
-			log.Printf("failed to send verification email to %s: %v", user.Email, err)
+			slog.Error("failed to send verification email", "email", user.Email, "error", err)
 		}
 	} else if requireApproval {
 		if _, err := s.repository.CreateUserApproval(ctx, user.ID); err != nil {
-			log.Printf("failed to create approval record for user %d: %v", user.ID, err)
+			slog.Error("failed to create approval record", "user_id", user.ID, "error", err)
 		}
 		s.notifyAdminsOfPendingApproval(ctx, user)
 	}
@@ -179,7 +179,7 @@ func (s *RegistrationService) VerifyEmail(ctx context.Context, rawToken string) 
 
 	if requireApproval {
 		if _, err := s.repository.CreateUserApproval(ctx, user.ID); err != nil {
-			log.Printf("failed to create approval record for user %d: %v", user.ID, err)
+			slog.Error("failed to create approval record", "user_id", user.ID, "error", err)
 		}
 		s.notifyAdminsOfPendingApproval(ctx, user)
 	}
@@ -218,7 +218,7 @@ func (s *RegistrationService) ApproveUser(ctx context.Context, approvalID, revie
 	user, err := s.repository.GetUserByID(ctx, approval.UserID)
 	if err == nil {
 		if err := s.emailSvc.SendApprovedEmail(user.Email, user.Username); err != nil {
-			log.Printf("failed to send approval email to %s: %v", user.Email, err)
+			slog.Error("failed to send approval email", "email", user.Email, "error", err)
 		}
 	}
 
@@ -246,7 +246,7 @@ func (s *RegistrationService) RejectUser(ctx context.Context, approvalID, review
 	user, err := s.repository.GetUserByID(ctx, approval.UserID)
 	if err == nil {
 		if err := s.emailSvc.SendRejectedEmail(user.Email, user.Username, reason); err != nil {
-			log.Printf("failed to send rejection email to %s: %v", user.Email, err)
+			slog.Error("failed to send rejection email", "email", user.Email, "error", err)
 		}
 	}
 
@@ -269,7 +269,7 @@ func (s *RegistrationService) notifyAdminsOfPendingApproval(ctx context.Context,
 	for _, admin := range admins {
 		if admin.Role == "admin" && admin.Email != "" {
 			if err := s.emailSvc.SendApprovalRequestEmail(admin.Email, user.Username, user.Email); err != nil {
-				log.Printf("failed to notify admin %s: %v", admin.Email, err)
+				slog.Error("failed to notify admin of pending approval", "admin_email", admin.Email, "error", err)
 			}
 		}
 	}

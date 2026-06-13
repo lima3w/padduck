@@ -16,11 +16,11 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	}
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Username == "" || req.Email == "" || req.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "username, email, and password are required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username, email, and password are required")
 	}
 
 	result, err := h.service.Registration.Register(c.Context(), services.RegisterRequest{
@@ -31,16 +31,16 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrRegistrationDisabled):
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusForbidden, ErrForbidden, err.Error())
 		case errors.Is(err, services.ErrUsernameTaken),
 			errors.Is(err, services.ErrEmailTaken):
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "an account with those details already exists"})
+			return RespondError(c, fiber.StatusConflict, ErrConflict, "an account with those details already exists")
 		case errors.Is(err, services.ErrInvalidUsername),
 			errors.Is(err, services.ErrInvalidEmail),
 			errors.Is(err, services.ErrPasswordTooShort):
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "registration failed"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "registration failed")
 		}
 	}
 
@@ -67,17 +67,17 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 func (h *Handler) VerifyEmail(c *fiber.Ctx) error {
 	token := c.Query("token")
 	if token == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "token is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "token is required")
 	}
 
 	if err := h.service.Registration.VerifyEmail(c.Context(), token); err != nil {
 		switch {
 		case errors.Is(err, services.ErrVerificationInvalid):
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid or expired verification token"})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid or expired verification token")
 		case errors.Is(err, services.ErrVerificationAlreadyUsed):
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "verification token already used"})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "verification token already used")
 		default:
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "verification failed"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "verification failed")
 		}
 	}
 
@@ -90,7 +90,7 @@ func (h *Handler) ResendVerification(c *fiber.Ctx) error {
 		Email string `json:"email"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.Email == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "email is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "email is required")
 	}
 
 	_ = h.service.Registration.ResendVerification(c.Context(), req.Email)

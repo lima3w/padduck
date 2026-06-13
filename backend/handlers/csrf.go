@@ -79,7 +79,7 @@ func (h *Handler) CSRFMiddleware(c *fiber.Ctx) error {
 	}
 
 	if !h.validCSRFToken(c.Cookies(CSRFCookieName), c.Get(CSRFHeaderName)) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "csrf validation failed"})
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "csrf validation failed")
 	}
 
 	return c.Next()
@@ -90,7 +90,7 @@ func (h *Handler) CSRFMiddleware(c *fiber.Ctx) error {
 func (h *Handler) GetCSRFToken(c *fiber.Ctx) error {
 	token, err := h.newCSRFToken()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to generate token"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to generate token")
 	}
 
 	c.Cookie(&fiber.Cookie{

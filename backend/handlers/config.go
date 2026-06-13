@@ -2,20 +2,18 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"padduck/models"
 	"padduck/services"
 )
 
 // GetConfig handles GET /api/v1/admin/config
 func (h *Handler) GetConfig(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	configs, err := h.service.Config.ListCtx(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to load config"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load config")
 	}
 
 	sensitiveKeys := map[string]bool{
@@ -43,14 +41,13 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 
 // UpdateConfig handles PUT /api/v1/admin/config
 func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	var updates map[string]string
 	if err := c.BodyParser(&updates); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	allowed := map[string]bool{
@@ -121,7 +118,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	toWrite := make(map[string]string, len(updates))
 	for key, value := range updates {
 		if !allowed[key] {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "unknown config key: " + key})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "unknown config key: " + key)
 		}
 		// Don't overwrite sensitive fields if the redaction placeholder was sent back
 		if sensitiveConfigKeys[key] && value == "********" {
@@ -133,7 +130,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	// Apply all validated changes atomically.
 	if len(toWrite) > 0 {
 		if err := h.service.Config.SetMultiple(toWrite); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update config"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to update config")
 		}
 	}
 
@@ -157,21 +154,20 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 
 // TestSMTP handles POST /api/v1/admin/config/test-email
 func (h *Handler) TestSMTP(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	var req struct {
 		To string `json:"to"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.To == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "to address is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "to address is required")
 	}
 
 	if err := h.service.Email.Send(req.To, "IPAM SMTP Test", "This is a test email from IPAM."); err != nil {
 		reqLogger(c).Error("SMTP test failed", "error", err)
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "SMTP test failed"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "SMTP test failed")
 	}
 
 	return c.JSON(fiber.Map{"message": "Test email sent successfully"})

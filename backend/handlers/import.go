@@ -24,22 +24,22 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "file field is required")
 	}
 	if fh.Size > maxImportFileSize {
-		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
+		return RespondError(c, fiber.StatusRequestEntityTooLarge, ErrPayloadTooLarge, "file too large (max 5 MB)")
 	}
 
 	f, err := fh.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open uploaded file"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot open uploaded file")
 	}
 	defer f.Close()
 
 	if c.QueryBool("dry_run") {
 		result, err := h.service.Import.DryRunSubnetsCSV(c.Context(), f)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
 		return c.JSON(result)
 	}
@@ -47,7 +47,7 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 	if c.QueryBool("async") {
 		data, err := io.ReadAll(f)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot read uploaded file"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot read uploaded file")
 		}
 		job := h.service.Jobs.Enqueue("import", "Import subnets CSV", fiber.Map{"source": "subnets_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "importing subnets")
@@ -60,7 +60,7 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 
 	result, err := h.service.Import.ImportSubnetsCSV(c.Context(), f)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	return c.JSON(result)
@@ -75,22 +75,22 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "file field is required")
 	}
 	if fh.Size > maxImportFileSize {
-		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
+		return RespondError(c, fiber.StatusRequestEntityTooLarge, ErrPayloadTooLarge, "file too large (max 5 MB)")
 	}
 
 	f, err := fh.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open uploaded file"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot open uploaded file")
 	}
 	defer f.Close()
 
 	if c.QueryBool("dry_run") {
 		result, err := h.service.Import.DryRunIPsCSV(c.Context(), f)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
 		return c.JSON(result)
 	}
@@ -98,7 +98,7 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 	if c.QueryBool("async") {
 		data, err := io.ReadAll(f)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot read uploaded file"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot read uploaded file")
 		}
 		job := h.service.Jobs.Enqueue("import", "Import IPs CSV", fiber.Map{"source": "ips_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "importing IP addresses")
@@ -111,7 +111,7 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 
 	result, err := h.service.Import.ImportIPsCSV(c.Context(), f)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	return c.JSON(result)
@@ -127,20 +127,20 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 
 	kind := c.Query("kind")
 	if kind != "subnets" && kind != "ips" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "kind query param must be \"subnets\" or \"ips\""})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "kind query param must be \"subnets\" or \"ips\"")
 	}
 
 	fh, err := c.FormFile("file")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "file field is required")
 	}
 	if fh.Size > maxImportFileSize {
-		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
+		return RespondError(c, fiber.StatusRequestEntityTooLarge, ErrPayloadTooLarge, "file too large (max 5 MB)")
 	}
 
 	f, err := fh.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open uploaded file"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot open uploaded file")
 	}
 	defer f.Close()
 
@@ -154,7 +154,7 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 			result, dryErr = h.service.Import.DryRunPHPIpamIPsCSV(c.Context(), f)
 		}
 		if dryErr != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": dryErr.Error()})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, dryErr.Error())
 		}
 		return c.JSON(result)
 	}
@@ -162,7 +162,7 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 	if c.QueryBool("async") {
 		data, err := io.ReadAll(f)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot read uploaded file"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot read uploaded file")
 		}
 		job := h.service.Jobs.Enqueue("import", "Import phpIPAM "+kind, fiber.Map{"source": "phpipam", "kind": kind}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "importing phpIPAM "+kind)
@@ -175,7 +175,7 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 
 	result, err := h.service.Import.ImportFromPHPIpam(c.Context(), f, kind)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	return c.JSON(result)
@@ -207,7 +207,7 @@ func (h *Handler) ExportFullData(c *fiber.Ctx) error {
 	data, filename, contentType, err := h.service.Import.ExportFullData(c.Context(), format)
 	if err != nil {
 		reqLogger(c).Error("export full data failed", "format", format, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	c.Set("Content-Type", contentType)
@@ -234,7 +234,7 @@ func (h *Handler) ExportV2MigrationBundle(c *fiber.Ctx) error {
 	data, filename, contentType, err := h.service.Import.ExportV2MigrationBundle(c.Context())
 	if err != nil {
 		reqLogger(c).Error("export v2 migration bundle failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	c.Set("Content-Type", contentType)

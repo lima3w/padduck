@@ -12,15 +12,15 @@ func (h *Handler) GetScanJobHistory(c *fiber.Ctx) error {
 	}
 	jobID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	// Verify job exists
 	if _, err := h.service.Discovery.GetJob(c.Context(), int64(jobID)); err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan job not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan job not found")
 	}
 	runs, err := h.service.Discovery.ListScanRuns(c.Context(), int64(jobID))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(runs)
 }
@@ -32,11 +32,11 @@ func (h *Handler) GetScanRunDetail(c *fiber.Ctx) error {
 	}
 	runID, err := c.ParamsInt("run_id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid run ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid run ID")
 	}
 	run, changes, err := h.service.Discovery.GetScanRunWithChanges(c.Context(), int64(runID))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan run not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan run not found")
 	}
 	return c.JSON(fiber.Map{
 		"run":     run,

@@ -44,7 +44,7 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 		items, total, err := h.service.ListAutonomousSystemsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing autonomous systems", "error", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 		}
 		if items == nil {
 			items = make([]*models.AutonomousSystem, 0)
@@ -60,7 +60,7 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 	items, err := h.service.ListAutonomousSystems(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing autonomous systems", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if items == nil {
 		items = make([]*models.AutonomousSystem, 0)
@@ -74,7 +74,7 @@ func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid ID")
 	}
 	item, err := h.service.GetAutonomousSystem(c.Context(), int64(id))
 	if err != nil {
@@ -87,7 +87,7 @@ func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
 func (h *Handler) CreateAutonomousSystem(c *fiber.Ctx) error {
 	req := new(CreateAutonomousSystemRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2ASWrite); err != nil {
 		return nil
@@ -109,14 +109,14 @@ func (h *Handler) CreateAutonomousSystem(c *fiber.Ctx) error {
 func (h *Handler) UpdateAutonomousSystem(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid ID")
 	}
 	if err := h.permCheck(c, services.PermV2ASWrite, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}); err != nil {
 		return nil
 	}
 	req := new(UpdateAutonomousSystemRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	item, err := h.service.UpdateAutonomousSystem(c.Context(), int64(id), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
@@ -135,7 +135,7 @@ func (h *Handler) UpdateAutonomousSystem(c *fiber.Ctx) error {
 func (h *Handler) DeleteAutonomousSystem(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid ID")
 	}
 	if err := h.permCheck(c, services.PermV2ASDelete, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}); err != nil {
 		return nil

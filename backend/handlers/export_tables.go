@@ -21,7 +21,7 @@ func (h *Handler) ExportNetworksCSV(c *fiber.Ctx) error {
 	sections, _, err := h.service.ListNetworksPaginated(c.Context(), 1, 10000)
 	if err != nil {
 		reqLogger(c).Error("export sections CSV failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	var buf bytes.Buffer
@@ -38,7 +38,7 @@ func (h *Handler) ExportNetworksCSV(c *fiber.Ctx) error {
 	w.Flush()
 	if err := w.Error(); err != nil {
 		reqLogger(c).Error("export sections CSV flush failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	filename := "sections-" + time.Now().Format("20060102") + ".csv"
@@ -56,7 +56,7 @@ func (h *Handler) ExportDevicesCSV(c *fiber.Ctx) error {
 	devices, err := h.service.ListAllDevices(c.Context())
 	if err != nil {
 		reqLogger(c).Error("export devices CSV failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	var buf bytes.Buffer
@@ -94,7 +94,7 @@ func (h *Handler) ExportDevicesCSV(c *fiber.Ctx) error {
 	w.Flush()
 	if err := w.Error(); err != nil {
 		reqLogger(c).Error("export devices CSV flush failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	filename := "devices-" + time.Now().Format("20060102") + ".csv"
@@ -112,7 +112,7 @@ func (h *Handler) ExportVLANsCSV(c *fiber.Ctx) error {
 	vlans, err := h.service.ListVLANs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("export VLANs CSV failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	var buf bytes.Buffer
@@ -130,7 +130,7 @@ func (h *Handler) ExportVLANsCSV(c *fiber.Ctx) error {
 	w.Flush()
 	if err := w.Error(); err != nil {
 		reqLogger(c).Error("export VLANs CSV flush failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	filename := "vlans-" + time.Now().Format("20060102") + ".csv"
@@ -148,7 +148,7 @@ func (h *Handler) ExportVRFsCSV(c *fiber.Ctx) error {
 	vrfs, err := h.service.ListVRFs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("export VRFs CSV failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	var buf bytes.Buffer
@@ -166,7 +166,7 @@ func (h *Handler) ExportVRFsCSV(c *fiber.Ctx) error {
 	w.Flush()
 	if err := w.Error(); err != nil {
 		reqLogger(c).Error("export VRFs CSV flush failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	filename := "vrfs-" + time.Now().Format("20060102") + ".csv"

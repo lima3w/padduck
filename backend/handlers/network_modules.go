@@ -19,7 +19,7 @@ func (h *Handler) ListNATRules(c *fiber.Ctx) error {
 	items, err := h.service.ListNATRules(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing NAT rules", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if items == nil {
 		items = []*models.NATRule{}
@@ -33,7 +33,7 @@ func (h *Handler) GetNATRule(c *fiber.Ctx) error {
 	}
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid NAT rule ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid NAT rule ID")
 	}
 	item, err := h.service.GetNATRule(c.Context(), id)
 	if err != nil {
@@ -45,7 +45,7 @@ func (h *Handler) GetNATRule(c *fiber.Ctx) error {
 func (h *Handler) CreateNATRule(c *fiber.Ctx) error {
 	req := new(repository.NATRuleParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2NATWrite); err != nil {
 		return nil
@@ -60,11 +60,11 @@ func (h *Handler) CreateNATRule(c *fiber.Ctx) error {
 func (h *Handler) UpdateNATRule(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid NAT rule ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid NAT rule ID")
 	}
 	req := new(repository.NATRuleParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2NATWrite); err != nil {
 		return nil
@@ -79,7 +79,7 @@ func (h *Handler) UpdateNATRule(c *fiber.Ctx) error {
 func (h *Handler) DeleteNATRule(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid NAT rule ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid NAT rule ID")
 	}
 	if err := h.permCheck(c, services.PermV2NATDelete); err != nil {
 		return nil
@@ -96,7 +96,7 @@ func (h *Handler) ListFirewallZones(c *fiber.Ctx) error {
 	}
 	items, err := h.service.ListFirewallZones(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if items == nil {
 		items = []*models.FirewallZone{}
@@ -110,7 +110,7 @@ func (h *Handler) GetFirewallZone(c *fiber.Ctx) error {
 	}
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall zone ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall zone ID")
 	}
 	item, err := h.service.GetFirewallZone(c.Context(), id)
 	if err != nil {
@@ -122,7 +122,7 @@ func (h *Handler) GetFirewallZone(c *fiber.Ctx) error {
 func (h *Handler) CreateFirewallZone(c *fiber.Ctx) error {
 	req := new(repository.FirewallZoneParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
 		return nil
@@ -137,11 +137,11 @@ func (h *Handler) CreateFirewallZone(c *fiber.Ctx) error {
 func (h *Handler) UpdateFirewallZone(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall zone ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall zone ID")
 	}
 	req := new(repository.FirewallZoneParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
 		return nil
@@ -156,7 +156,7 @@ func (h *Handler) UpdateFirewallZone(c *fiber.Ctx) error {
 func (h *Handler) DeleteFirewallZone(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall zone ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall zone ID")
 	}
 	if err := h.permCheck(c, services.PermV2FirewallDelete); err != nil {
 		return nil
@@ -173,7 +173,7 @@ func (h *Handler) ListFirewallZoneMappings(c *fiber.Ctx) error {
 	}
 	items, err := h.service.ListFirewallZoneMappings(c.Context(), int64(c.QueryInt("zone_id", 0)))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if items == nil {
 		items = []*models.FirewallZoneMapping{}
@@ -184,7 +184,7 @@ func (h *Handler) ListFirewallZoneMappings(c *fiber.Ctx) error {
 func (h *Handler) CreateFirewallZoneMapping(c *fiber.Ctx) error {
 	req := new(repository.FirewallZoneMappingParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
 		return nil
@@ -199,11 +199,11 @@ func (h *Handler) CreateFirewallZoneMapping(c *fiber.Ctx) error {
 func (h *Handler) UpdateFirewallZoneMapping(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall mapping ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall mapping ID")
 	}
 	req := new(repository.FirewallZoneMappingParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
 		return nil
@@ -218,7 +218,7 @@ func (h *Handler) UpdateFirewallZoneMapping(c *fiber.Ctx) error {
 func (h *Handler) DeleteFirewallZoneMapping(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid firewall mapping ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall mapping ID")
 	}
 	if err := h.permCheck(c, services.PermV2FirewallDelete); err != nil {
 		return nil
@@ -235,7 +235,7 @@ func (h *Handler) ListDHCPServers(c *fiber.Ctx) error {
 	}
 	items, err := h.service.ListDHCPServers(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if items == nil {
 		items = []*models.DHCPServer{}
@@ -246,7 +246,7 @@ func (h *Handler) ListDHCPServers(c *fiber.Ctx) error {
 func (h *Handler) CreateDHCPServer(c *fiber.Ctx) error {
 	req := new(repository.DHCPServerParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
 		return nil
@@ -261,11 +261,11 @@ func (h *Handler) CreateDHCPServer(c *fiber.Ctx) error {
 func (h *Handler) UpdateDHCPServer(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid DHCP server ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid DHCP server ID")
 	}
 	req := new(repository.DHCPServerParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
 		return nil
@@ -280,7 +280,7 @@ func (h *Handler) UpdateDHCPServer(c *fiber.Ctx) error {
 func (h *Handler) DeleteDHCPServer(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid DHCP server ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid DHCP server ID")
 	}
 	if err := h.permCheck(c, services.PermV2DHCPDelete); err != nil {
 		return nil
@@ -297,7 +297,7 @@ func (h *Handler) ListDHCPLeases(c *fiber.Ctx) error {
 	}
 	items, err := h.service.ListDHCPLeases(c.Context(), int64(c.QueryInt("server_id", 0)))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	if items == nil {
 		items = []*models.DHCPLease{}
@@ -308,7 +308,7 @@ func (h *Handler) ListDHCPLeases(c *fiber.Ctx) error {
 func (h *Handler) CreateDHCPLease(c *fiber.Ctx) error {
 	req := new(repository.DHCPLeaseParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
 		return nil
@@ -323,11 +323,11 @@ func (h *Handler) CreateDHCPLease(c *fiber.Ctx) error {
 func (h *Handler) UpdateDHCPLease(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid DHCP lease ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid DHCP lease ID")
 	}
 	req := new(repository.DHCPLeaseParams)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
 		return nil
@@ -342,7 +342,7 @@ func (h *Handler) UpdateDHCPLease(c *fiber.Ctx) error {
 func (h *Handler) DeleteDHCPLease(c *fiber.Ctx) error {
 	id, err := parseID(c, "id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid DHCP lease ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid DHCP lease ID")
 	}
 	if err := h.permCheck(c, services.PermV2DHCPDelete); err != nil {
 		return nil

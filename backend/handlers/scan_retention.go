@@ -12,7 +12,7 @@ func (h *Handler) GetScanRetentionSettings(c *fiber.Ctx) error {
 	}
 	settings, err := h.service.Discovery.GetRetentionSettings(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(settings)
 }
@@ -28,11 +28,11 @@ func (h *Handler) UpdateScanRetentionSettings(c *fiber.Ctx) error {
 		RollupAfterDays int  `json:"rollup_after_days"`
 	}
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	settings, err := h.service.Discovery.UpdateRetentionSettings(c.Context(), req.RawHistoryDays, req.RollupAfterDays, req.RollupEnabled)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(settings)
 }
@@ -44,7 +44,7 @@ func (h *Handler) RunScanRetentionPrune(c *fiber.Ctx) error {
 	}
 	pruned, err := h.service.Discovery.RunRetentionPrune(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, err.Error())
 	}
 	return c.JSON(fiber.Map{"pruned": pruned})
 }

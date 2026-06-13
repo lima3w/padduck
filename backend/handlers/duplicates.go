@@ -13,7 +13,7 @@ func (h *Handler) GetDuplicates(c *fiber.Ctx) error {
 	result, err := h.service.Reports.GetDuplicates(c.Context())
 	if err != nil {
 		reqLogger(c).Error("get duplicates report failed", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(result)
 }

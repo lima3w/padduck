@@ -46,7 +46,7 @@ func (h *Handler) ListScanJobs(c *fiber.Ctx) error {
 	jobs, err := h.service.Discovery.ListJobs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing scan jobs", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(jobs)
 }
@@ -60,14 +60,14 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 
 	var req CreateScanJobRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	// If subnet_ids is empty but a CIDR string was provided, resolve it.
 	if len(req.SubnetIDs) == 0 && req.Subnet != "" {
 		sn, snErr := h.service.GetRepository().GetSubnetByCIDR(c.Context(), req.Subnet)
 		if snErr != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "subnet not found for CIDR: " + req.Subnet})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "subnet not found for CIDR: " + req.Subnet)
 		}
 		req.SubnetIDs = []int64{sn.ID}
 	}
@@ -86,11 +86,11 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 	}
 	job, err := h.service.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID, autoAddIPs)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	job, err = h.service.Discovery.UpdateJobFull(c.Context(), job.ID, job.Name, job.SubnetIDs, job.ScheduleCron, isActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, nil, autoAddIPs, discoverDNS, req.DNSOverwrite)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.Status(fiber.StatusCreated).JSON(job)
 }
@@ -102,11 +102,11 @@ func (h *Handler) GetScanJob(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	job, err := h.service.Discovery.GetJob(c.Context(), int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan job not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan job not found")
 	}
 	return c.JSON(job)
 }
@@ -118,16 +118,16 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	var req UpdateScanJobRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 	if len(req.SubnetIDs) == 0 && req.Subnet != "" {
 		sn, snErr := h.service.GetRepository().GetSubnetByCIDR(c.Context(), req.Subnet)
 		if snErr != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "subnet not found for CIDR: " + req.Subnet})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "subnet not found for CIDR: " + req.Subnet)
 		}
 		req.SubnetIDs = []int64{sn.ID}
 	}
@@ -141,7 +141,7 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 	}
 	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID, autoAddIPsUpdate, discoverDNSUpdate, req.DNSOverwrite)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(job)
 }
@@ -153,10 +153,10 @@ func (h *Handler) DeleteScanJob(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	if err := h.service.Discovery.DeleteJob(c.Context(), int64(id)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete scan job"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete scan job")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
@@ -168,11 +168,11 @@ func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	job, err := h.service.Discovery.GetJob(c.Context(), int64(id))
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "scan job not found"})
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan job not found")
 	}
 	bgJob := h.service.Jobs.Enqueue("scan", "Run scan job "+job.Name, fiber.Map{"scan_job_id": job.ID}, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 		reporter.Progress(0, 1, "running scan")
@@ -193,7 +193,7 @@ func (h *Handler) GetScanJobStatus(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	return c.JSON(fiber.Map{"running": h.service.Discovery.IsRunning(int64(id))})
 }
@@ -205,12 +205,12 @@ func (h *Handler) GetScanJobResults(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid job ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	limit := c.QueryInt("limit", 100)
 	results, err := h.service.Discovery.ListResults(c.Context(), int64(id), limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(results)
 }
@@ -222,12 +222,12 @@ func (h *Handler) GetSubnetScanResults(c *fiber.Ctx) error {
 	}
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid subnet ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	limit := c.QueryInt("limit", 100)
 	results, err := h.service.Discovery.ListSubnetResults(c.Context(), int64(id), limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(results)
 }

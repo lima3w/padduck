@@ -10,7 +10,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"padduck/internal/netguard"
-	"padduck/models"
 	"padduck/version"
 )
 
@@ -23,9 +22,8 @@ type releaseInfo struct {
 
 // CheckForUpdates handles GET /api/v1/admin/updates/check.
 func (h *Handler) CheckForUpdates(c *fiber.Ctx) error {
-	currentUser, ok := c.Locals("user").(*models.User)
-	if !ok || currentUser.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	enabled, _ := h.service.Config.GetCtx(c.Context(), "update_check_enabled")
@@ -42,27 +40,27 @@ func (h *Handler) CheckForUpdates(c *fiber.Ctx) error {
 
 	req, err := http.NewRequestWithContext(c.Context(), http.MethodGet, url, nil)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to build update request"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to build update request")
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	client := netguard.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "update check failed"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "update check failed")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": fmt.Sprintf("update source returned %d", resp.StatusCode)})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, fmt.Sprintf("update source returned %d", resp.StatusCode))
 	}
 
 	var rel releaseInfo
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "invalid update response"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "invalid update response")
 	}
 	latest := firstNonEmpty(rel.TagName, rel.Name)
 	if latest == "" {
-		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"error": "update response did not include a version"})
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "update response did not include a version")
 	}
 
 	return c.JSON(fiber.Map{

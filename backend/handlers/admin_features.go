@@ -21,25 +21,25 @@ func resourceIDPtr(id int64) *int64 {
 
 // SuspendUser handles POST /api/v1/admin/users/:id/suspend
 func (h *Handler) SuspendUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	var req struct {
 		Reason string `json:"reason"`
 	}
 	if err := c.BodyParser(&req); err != nil || req.Reason == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "reason is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "reason is required")
 	}
 
 	if err := h.service.SuspendUser(c.Context(), int64(userID), admin.ID, req.Reason); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	h.auditLog(c, services.AuditEntry{
@@ -53,18 +53,18 @@ func (h *Handler) SuspendUser(c *fiber.Ctx) error {
 
 // UnsuspendUser handles POST /api/v1/admin/users/:id/unsuspend
 func (h *Handler) UnsuspendUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	if err := h.service.UnsuspendUser(c.Context(), int64(userID)); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	h.auditLog(c, services.AuditEntry{
@@ -79,14 +79,14 @@ func (h *Handler) UnsuspendUser(c *fiber.Ctx) error {
 // ImpersonateUser handles POST /api/v1/admin/users/:id/impersonate
 // Returns a session token that authenticates as the target user
 func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	targetID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	var req struct {
@@ -96,16 +96,16 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 
 	if h.service.MFA.IsMFAEnabled(c.Context(), admin.ID) {
 		if req.MFACode == "" {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "MFA code required for impersonation"})
+			return RespondError(c, fiber.StatusForbidden, ErrForbidden, "MFA code required for impersonation")
 		}
 		if !h.service.MFA.ValidateTOTPCode(c.Context(), admin.ID, req.MFACode) {
-			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "invalid MFA code"})
+			return RespondError(c, fiber.StatusForbidden, ErrForbidden, "invalid MFA code")
 		}
 	}
 
 	token, err := h.service.StartImpersonation(c.Context(), int64(targetID), admin.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
 	h.setSessionCookie(c, token)
@@ -125,17 +125,17 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 
 // BulkSuspendUsers handles POST /api/v1/admin/users/bulk-suspend
 func (h *Handler) BulkSuspendUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	var req struct {
 		UserIDs []int64 `json:"user_ids"`
 		Reason  string  `json:"reason"`
 	}
 	if err := c.BodyParser(&req); err != nil || len(req.UserIDs) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user_ids required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "user_ids required")
 	}
 	if req.Reason == "" {
 		req.Reason = "bulk suspension"
@@ -144,44 +144,43 @@ func (h *Handler) BulkSuspendUsers(c *fiber.Ctx) error {
 	count, err := h.service.BulkSuspendUsers(c.Context(), req.UserIDs, admin.ID, req.Reason)
 	if err != nil {
 		reqLogger(c).Error("bulk suspend error", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(fiber.Map{"suspended": count})
 }
 
 // BulkActivateUsers handles POST /api/v1/admin/users/bulk-activate
 func (h *Handler) BulkActivateUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
 
 	var req struct {
 		UserIDs []int64 `json:"user_ids"`
 	}
 	if err := c.BodyParser(&req); err != nil || len(req.UserIDs) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user_ids required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "user_ids required")
 	}
 
 	count, err := h.service.BulkActivateUsers(c.Context(), req.UserIDs)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 	return c.JSON(fiber.Map{"activated": count})
 }
 
 // BulkDeleteUsers handles POST /api/v1/admin/users/bulk-delete
 func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	var req struct {
 		UserIDs []int64 `json:"user_ids"`
 	}
 	if err := c.BodyParser(&req); err != nil || len(req.UserIDs) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "user_ids required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "user_ids required")
 	}
 
 	// Filter out the admin's own ID to prevent self-deletion
@@ -195,15 +194,15 @@ func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
 	req.UserIDs = filtered
 
 	if len(req.UserIDs) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "no valid user IDs to delete"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "no valid user IDs to delete")
 	}
 
 	count, err := h.service.BulkDeleteUsers(c.Context(), req.UserIDs)
 	if err != nil {
 		if err.Error() == "cannot delete all admins" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	h.auditLog(c, services.AuditEntry{
@@ -219,24 +218,24 @@ func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
 // BulkImportUsers handles POST /api/v1/admin/users/bulk-import
 // Accepts multipart/form-data with a "file" field (CSV) and optional "default_password"
 func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "file field required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "file field required")
 	}
 
 	const maxBulkImportSize = 5 * 1024 * 1024 // 5 MB
 	if file.Size > maxBulkImportSize {
-		return c.Status(fiber.StatusRequestEntityTooLarge).JSON(fiber.Map{"error": "file too large (max 5 MB)"})
+		return RespondError(c, fiber.StatusRequestEntityTooLarge, ErrPayloadTooLarge, "file too large (max 5 MB)")
 	}
 
 	f, err := file.Open()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to open file"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to open file")
 	}
 	defer f.Close()
 
@@ -244,11 +243,11 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 	reader.TrimLeadingSpace = true
 	rows, err := reader.ReadAll()
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid CSV: " + err.Error()})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid CSV: " + err.Error())
 	}
 
 	if len(rows) < 2 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "CSV must have header row and at least one data row"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "CSV must have header row and at least one data row")
 	}
 
 	// Parse header to find column indices
@@ -261,7 +260,7 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 		}
 	}
 	if colIdx["username"] < 0 || colIdx["email"] < 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "CSV must have 'username' and 'email' columns"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "CSV must have 'username' and 'email' columns")
 	}
 
 	records := make([]services.BulkUserImportRecord, 0, len(rows)-1)
@@ -284,7 +283,7 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 
 	results, err := h.service.BulkImportUsers(c.Context(), records)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "import failed"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "import failed")
 	}
 
 	h.auditLog(c, services.AuditEntry{
@@ -301,12 +300,12 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 func (h *Handler) ExportMyData(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	data, err := h.service.ExportUserData(c.Context(), user.ID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to export data"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to export data")
 	}
 
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"user_%d_export_%s.json\"", user.ID, time.Now().Format("20060102")))
@@ -320,11 +319,11 @@ func (h *Handler) ExportMyData(c *fiber.Ctx) error {
 func (h *Handler) RequestDeletion(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	if err := h.service.RequestAccountDeletion(c.Context(), user.ID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to submit deletion request"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to submit deletion request")
 	}
 
 	h.auditLog(c, services.AuditEntry{
@@ -339,18 +338,18 @@ func (h *Handler) RequestDeletion(c *fiber.Ctx) error {
 
 // GDPRDeleteUser handles POST /api/v1/admin/users/:id/gdpr-delete
 func (h *Handler) GDPRDeleteUser(c *fiber.Ctx) error {
-	admin, ok := c.Locals("user").(*models.User)
-	if !ok || admin.Role != "admin" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "admin access required"})
+	if err := requireAdmin(c); err != nil {
+		return nil
 	}
+	admin := c.Locals("user").(*models.User)
 
 	userID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	if err := h.service.GDPRDeleteUser(c.Context(), int64(userID)); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to anonymize user"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to anonymize user")
 	}
 
 	h.auditLog(c, services.AuditEntry{
@@ -367,11 +366,11 @@ func (h *Handler) GDPRDeleteUser(c *fiber.Ctx) error {
 func (h *Handler) AcceptPrivacyPolicy(c *fiber.Ctx) error {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "not authenticated"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
 	if err := h.service.AcceptPrivacyPolicy(c.Context(), user.ID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to record consent"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to record consent")
 	}
 
 	return c.JSON(fiber.Map{"message": "privacy policy accepted"})

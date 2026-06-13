@@ -23,7 +23,7 @@ type LoginHistoryResponse struct {
 func (h *Handler) RequestUnlock(c *fiber.Ctx) error {
 	req := new(RequestUnlockRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	// Always return success to prevent username enumeration
@@ -41,12 +41,12 @@ func (h *Handler) RequestUnlock(c *fiber.Ctx) error {
 func (h *Handler) VerifyUnlock(c *fiber.Ctx) error {
 	token := c.Query("token")
 	if token == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "token is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "token is required")
 	}
 
 	if err := h.service.UnlockAccountByToken(c.Context(), token); err != nil {
 		if err == services.ErrInvalidUnlockToken {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid or expired unlock token"})
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid or expired unlock token")
 		}
 		reqLogger(c).Error("error unlocking account", "error", err)
 		return h.StatusInternalServerError(c, "Failed to unlock account", err.Error())
@@ -59,7 +59,7 @@ func (h *Handler) VerifyUnlock(c *fiber.Ctx) error {
 func (h *Handler) GetLoginHistory(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	attempts, err := h.service.GetLoginHistory(c.Context(), userID, 20)
@@ -87,12 +87,12 @@ func (h *Handler) GetLoginHistory(c *fiber.Ctx) error {
 func (h *Handler) AdminUnlockUser(c *fiber.Ctx) error {
 	adminID, ok := c.Locals("userID").(int64)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "user ID not found in context"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
 	targetID, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid user ID"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
 	if err := h.service.UnlockAccountByAdmin(c.Context(), int64(targetID), adminID); err != nil {

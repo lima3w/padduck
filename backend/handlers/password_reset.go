@@ -24,11 +24,11 @@ type PasswordResetResponse struct {
 func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 	req := new(RequestPasswordResetRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Email == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "email is required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "email is required")
 	}
 
 	if err := h.service.SendPasswordResetEmail(c.Context(), req.Email); err != nil {
@@ -45,27 +45,27 @@ func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 	req := new(ResetPasswordRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.Token == "" || req.Password == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "token and password required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "token and password required")
 	}
 
 	if len(req.Password) < 8 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "password must be at least 8 characters"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "password must be at least 8 characters")
 	}
 
 	passwordHash, err := utils.HashPassword(req.Password)
 	if err != nil {
 		reqLogger(c).Error("error hashing password", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to reset password"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to reset password")
 	}
 
 	userID, err := h.service.ResetPasswordWithToken(c.Context(), req.Token, passwordHash)
 	if err != nil {
 		reqLogger(c).Warn("password reset failed", "error", err)
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid or expired reset token"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid or expired reset token")
 	}
 
 	if userID > 0 {
@@ -88,30 +88,30 @@ type ChangePasswordRequest struct {
 func (h *Handler) ChangeMyPassword(c *fiber.Ctx) error {
 	currentUser, ok := c.Locals("user").(*models.User)
 	if !ok || currentUser == nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "unauthorized")
 	}
 
 	req := new(ChangePasswordRequest)
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
 	if req.CurrentPassword == "" || req.NewPassword == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "current_password and new_password are required"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "current_password and new_password are required")
 	}
 
 	if len(req.NewPassword) < 8 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "new password must be at least 8 characters"})
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "new password must be at least 8 characters")
 	}
 
 	// Keep the session making the change alive; every other session for the
 	// user is revoked by the service.
 	if err := h.service.ChangePassword(c.Context(), currentUser.ID, req.CurrentPassword, req.NewPassword, c.Cookies(sessionCookieName)); err != nil {
 		if err.Error() == "current password is incorrect" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, err.Error())
 		}
 		reqLogger(c).Error("error changing password", "user_id", currentUser.ID, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to change password"})
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to change password")
 	}
 
 	uid, uname := auditUserFromCtx(c)
