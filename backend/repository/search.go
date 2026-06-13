@@ -92,7 +92,7 @@ func (r *Repository) GlobalSearchSubnets(ctx context.Context, query string, limi
 
 func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64, filter ...IPSearchFilter) ([]*models.IPAddress, error) {
 	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
-	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2 OR ip.assigned_to ILIKE $2)`
+	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2)`
 	args := []interface{}{subnetID, "%" + query + "%"}
 	n := 3
 

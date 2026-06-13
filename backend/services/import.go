@@ -16,6 +16,7 @@ import (
 
 	"padduck/internal/export"
 	"padduck/models"
+	"padduck/utils"
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,7 +78,7 @@ type ImportRepo interface {
 	CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error)
 	// IPs
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
-	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
 	// VLANs / VRFs
 	ListAllVLANs(ctx context.Context) ([]*models.VLAN, error)
 	ListAllVRFs(ctx context.Context) ([]*models.VRF, error)
@@ -246,17 +247,18 @@ func (s *ImportService) ImportIPsCSV(ctx context.Context, r io.Reader) (*ImportR
 
 		hostname := strings.TrimSpace(rec["hostname"])
 
-		var assignedTo *string
-		if at := strings.TrimSpace(rec["assigned_to"]); at != "" {
-			assignedTo = &at
-		}
-
 		var macAddress *string
 		if mac := strings.TrimSpace(rec["mac_address"]); mac != "" {
-			macAddress = &mac
+			normalized, macErr := utils.NormalizeMAC(mac)
+			if macErr != nil {
+				result.Failed++
+				result.Errors = append(result.Errors, ImportRowError{Row: row, Value: address, Message: macErr.Error()})
+				continue
+			}
+			macAddress = &normalized
 		}
 
-		_, err = s.repo.CreateIPAddress(ctx, subnetID, address, hostname, status, assignedTo, nil, macAddress, nil, nil)
+		_, err = s.repo.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, macAddress, nil, nil)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: address, Message: err.Error()})
@@ -618,7 +620,7 @@ func (s *ImportService) importPHPIpamIPs(ctx context.Context, r io.Reader) (*Imp
 		state := strings.TrimSpace(rec["state"])
 		status := phpIpamStateToStatus(state)
 
-		_, err = s.repo.CreateIPAddress(ctx, subnetID, ip, hostname, status, nil, nil, nil, nil, nil)
+		_, err = s.repo.CreateIPAddress(ctx, subnetID, ip, hostname, status, nil, nil, nil, nil)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, ImportRowError{Row: row, Value: ip, Message: err.Error()})
@@ -780,7 +782,7 @@ func (s *ImportService) exportFullCSV(ctx context.Context, subnets []*models.Sub
 		return nil, "", "", fmt.Errorf("generate subnet CSV: %w", err)
 	}
 
-	ipHeaders := []string{"address", "hostname", "status", "subnet_cidr", "assigned_to", "mac_address"}
+	ipHeaders := []string{"address", "hostname", "status", "subnet_cidr", "mac_address"}
 	ipRows := make([]map[string]string, 0)
 	for _, sub := range subnets {
 		ips, err := s.repo.ListIPAddressesBySubnet(ctx, sub.ID)
@@ -794,7 +796,6 @@ func (s *ImportService) exportFullCSV(ctx context.Context, subnets []*models.Sub
 				"hostname":    ip.Hostname,
 				"status":      ip.Status,
 				"subnet_cidr": cidr,
-				"assigned_to": strPtrVal(ip.AssignedTo),
 				"mac_address": strPtrVal(ip.MACAddress),
 			})
 		}
@@ -823,7 +824,6 @@ func (s *ImportService) exportFullJSON(ctx context.Context, subnets []*models.Su
 		Hostname   string  `json:"hostname"`
 		Status     string  `json:"status"`
 		SubnetCIDR string  `json:"subnet_cidr"`
-		AssignedTo *string `json:"assigned_to,omitempty"`
 		MACAddress *string `json:"mac_address,omitempty"`
 	}
 
@@ -845,7 +845,6 @@ func (s *ImportService) exportFullJSON(ctx context.Context, subnets []*models.Su
 				Hostname:   ip.Hostname,
 				Status:     ip.Status,
 				SubnetCIDR: cidr,
-				AssignedTo: ip.AssignedTo,
 				MACAddress: ip.MACAddress,
 			})
 		}

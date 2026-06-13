@@ -326,7 +326,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 			ip.hostname,
 			host(s.network_address) || '/' || s.prefix_length AS subnet_cidr,
 			sec.name AS section_name,
-			ip.assigned_to,
+			ip.device_id,
 			ip.last_seen,
 			CASE
 				WHEN ip.last_seen IS NULL THEN $1
@@ -336,7 +336,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 		JOIN subnets s ON s.id = ip.subnet_id
 		JOIN networks sec ON sec.id = s.network_id
 		WHERE ip.status = 'assigned'
-		  AND (ip.device_id IS NOT NULL OR ip.assigned_to IS NOT NULL)
+		  AND ip.device_id IS NOT NULL
 		  AND (ip.last_seen IS NULL OR ip.last_seen < now() - ($1 * INTERVAL '1 day'))
 		  AND ip.address::text != s.gateway
 		  AND ($2::bigint IS NULL OR sec.id = $2)
@@ -354,7 +354,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 		if err := rows.Scan(
 			&rec.IPID, &rec.IPAddress, &rec.Hostname,
 			&rec.SubnetCIDR, &rec.NetworkName,
-			&rec.AssignedTo, &rec.LastSeen, &rec.DaysInactive,
+			&rec.DeviceID, &rec.LastSeen, &rec.DaysInactive,
 		); err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 func (r *Repository) BulkReleaseIPs(ctx context.Context, ipIDs []int64) (int64, error) {
 	tag, err := r.db.Exec(ctx,
 		`UPDATE ip_addresses
-		 SET status = 'available', assigned_to = NULL, device_id = NULL, updated_at = now()
+		 SET status = 'available', device_id = NULL, updated_at = now()
 		 WHERE id = ANY($1) AND status = 'assigned'`,
 		ipIDs,
 	)
@@ -637,7 +637,7 @@ type IPAgeRow struct {
 	IPID          int64
 	Address       string
 	Status        string
-	AssignedTo    string
+	DeviceID      *int64
 	DaysOld       int
 	DaysSinceSeen int
 }
@@ -649,7 +649,7 @@ func (r *Repository) GetIPAge(ctx context.Context) ([]*IPAgeRow, error) {
 			id,
 			address,
 			status,
-			COALESCE(assigned_to, '') AS assigned_to,
+			device_id,
 			EXTRACT(DAY FROM now() - created_at)::int AS days_old,
 			CASE WHEN last_seen IS NOT NULL THEN EXTRACT(DAY FROM now() - last_seen)::int ELSE -1 END AS days_since_seen
 		FROM ip_addresses
@@ -663,7 +663,7 @@ func (r *Repository) GetIPAge(ctx context.Context) ([]*IPAgeRow, error) {
 	var out []*IPAgeRow
 	for rows.Next() {
 		row := &IPAgeRow{}
-		if err := rows.Scan(&row.IPID, &row.Address, &row.Status, &row.AssignedTo, &row.DaysOld, &row.DaysSinceSeen); err != nil {
+		if err := rows.Scan(&row.IPID, &row.Address, &row.Status, &row.DeviceID, &row.DaysOld, &row.DaysSinceSeen); err != nil {
 			return nil, err
 		}
 		out = append(out, row)

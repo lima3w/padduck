@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
 import { submitIPRequest } from '../api/requests'
+import { getDevices } from '../api/devices'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
@@ -214,13 +215,27 @@ function PortBadges({ portOpen }) {
   )
 }
 
-const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'assigned_to', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
+function SortTh({ col, label, sortCol, sortDir, onSort }) {
+  const active = sortCol === col
+  return (
+    <th
+      className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium cursor-pointer select-none hover:text-gray-900 dark:hover:text-white whitespace-nowrap"
+      onClick={() => onSort(col)}
+    >
+      {label}
+      <span className="ml-1 inline-block w-3 text-center opacity-60">
+        {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+      </span>
+    </th>
+  )
+}
+
+const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
 const COLUMN_LABELS = {
   address: 'Address',
   hostname: 'Hostname',
   status: 'Status',
   tag: 'Tag',
-  assigned_to: 'Assigned To',
   device: 'Device',
   mac_address: 'MAC Address',
   dns_name: 'DNS Name',
@@ -228,7 +243,7 @@ const COLUMN_LABELS = {
   last_seen: 'Last Seen',
   services: 'Services',
 }
-const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'assigned_to']
+const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'device']
 
 const LS_KEY = STORAGE_KEYS.ipColumns
 const LEGACY_LS_KEY = LEGACY_STORAGE_KEYS.ipColumns
@@ -345,12 +360,18 @@ export default function IPAddressesPage() {
   const [bulkReleasing, setBulkReleasing] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+  const [devices, setDevices] = useState([])
+  const [sortCol, setSortCol] = useState('')
+  const [sortDir, setSortDir] = useState('asc')
+  const [hideAvailable, setHideAvailable] = useState(false)
+  const [fullRange, setFullRange] = useState(false)
 
   useEffect(() => {
     setPage(1)
     setIsSearchActive(false)
     load(1)
     loadCfDefs()
+    loadDevices()
   }, [subnetID])
 
   async function loadCfDefs() {
@@ -360,7 +381,14 @@ export default function IPAddressesPage() {
     } catch {}
   }
 
-  async function load(p = page) {
+  async function loadDevices() {
+    try {
+      const res = await getDevices({ limit: 1000 })
+      setDevices(res.data?.data ?? res.data ?? [])
+    } catch {}
+  }
+
+  async function load(p = page, col = sortCol, dir = sortDir, hide = hideAvailable, full = fullRange) {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -369,7 +397,7 @@ export default function IPAddressesPage() {
       setIsSearchActive(false)
       const [subRes, ipRes, tagRes] = await Promise.all([
         getSubnet(subnetID),
-        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT),
+        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, hide, full),
         getTags(),
       ])
       setSubnet(subRes.data)
@@ -387,6 +415,26 @@ export default function IPAddressesPage() {
   function handlePageChange(newPage) {
     setPage(newPage)
     load(newPage)
+  }
+
+  function handleSort(col) {
+    const newDir = sortCol === col && sortDir === 'asc' ? 'desc' : 'asc'
+    setSortCol(col)
+    setSortDir(newDir)
+    setPage(1)
+    load(1, col, newDir, hideAvailable)
+  }
+
+  function handleHideAvailable(checked) {
+    setHideAvailable(checked)
+    setPage(1)
+    load(1, sortCol, sortDir, checked, fullRange)
+  }
+
+  function handleFullRange(checked) {
+    setFullRange(checked)
+    setPage(1)
+    load(1, sortCol, sortDir, hideAvailable, checked)
   }
 
   function toggleColumn(col) {
@@ -465,6 +513,19 @@ export default function IPAddressesPage() {
     load(1)
   }
 
+  function normalizeMAC(val) {
+    const stripped = val.replace(/[:\-.\s]/g, '').toLowerCase()
+    if (stripped === '') return ''
+    if (stripped.length !== 12 || !/^[0-9a-f]{12}$/.test(stripped)) return val
+    return stripped.match(/.{2}/g).join(':')
+  }
+
+  function ipInSubnet(ip, networkAddress, prefixLength) {
+    const toNum = (addr) => addr.split('.').reduce((acc, o) => ((acc << 8) | Number(o)) >>> 0, 0)
+    const mask = prefixLength === 0 ? 0 : ((-1 << (32 - prefixLength)) >>> 0)
+    return (toNum(ip) & mask) === (toNum(networkAddress) & mask)
+  }
+
   function networkPrefix(networkAddress, prefixLength) {
     if (!networkAddress) return ''
     if (networkAddress.includes(':')) return networkAddress  // IPv6: use as-is
@@ -474,14 +535,14 @@ export default function IPAddressesPage() {
     return octets.slice(0, 3).join('.') + '.'
   }
 
-  function openCreate() {
-    const prefix = networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
-    setForm({ address: prefix, hostname: '', status: 'available', assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
+  function openCreate(prefillAddress) {
+    const addr = prefillAddress || networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
+    setForm({ address: addr, hostname: '', status: 'available', device_id: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
     setModal('create')
   }
 
   function openAssign(ip) {
-    setForm({ assigned_to: '', tag_id: '', mac_address: '', ptr_record: '', lease_duration_days: '' })
+    setForm({ device_id: '', tag_id: '', mac_address: '', ptr_record: '', lease_duration_days: '' })
     setModal({ assign: ip })
   }
 
@@ -499,6 +560,10 @@ export default function IPAddressesPage() {
 
   async function handleCreate(e) {
     e.preventDefault()
+    if (subnet && !form.address.includes(':') && !ipInSubnet(form.address, subnet.networkAddress, subnet.prefixLength)) {
+      setError(`IP address must be within ${subnet.networkAddress}/${subnet.prefixLength}`)
+      return
+    }
     setSaving(true)
     try {
       await createIPAddress(subnetID, {
@@ -525,10 +590,11 @@ export default function IPAddressesPage() {
     setSaving(true)
     try {
       const days = parseInt(form.lease_duration_days)
+      const deviceId = form.device_id ? parseInt(form.device_id) : null
       if (days > 0) {
-        await assignIPAddressWithLease(modal.assign.id, { assigned_to: form.assigned_to, lease_duration_days: days })
+        await assignIPAddressWithLease(modal.assign.id, { device_id: deviceId, lease_duration_days: days })
       } else {
-        await assignIPAddress(modal.assign.id, { assigned_to: form.assigned_to })
+        await assignIPAddress(modal.assign.id, { device_id: deviceId })
       }
       setModal(null)
       load(page)
@@ -917,9 +983,38 @@ export default function IPAddressesPage() {
       )}
 
       {!isSearchActive && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {total} address{total !== 1 ? 'es' : ''}
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {total} address{total !== 1 ? 'es' : ''}
+            {fullRange && subnet && !subnet.networkAddress?.includes(':') && (
+              <span className="ml-2 text-xs text-blue-500 dark:text-blue-400">full range</span>
+            )}
+          </p>
+          <div className="flex items-center gap-4">
+            {!fullRange && (
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hideAvailable}
+                  onChange={e => handleHideAvailable(e.target.checked)}
+                  className="rounded"
+                />
+                Hide unassigned
+              </label>
+            )}
+            {subnet && !subnet.networkAddress?.includes(':') && (
+              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={fullRange}
+                  onChange={e => handleFullRange(e.target.checked)}
+                  className="rounded"
+                />
+                Show all IPs
+              </label>
+            )}
+          </div>
+        </div>
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -932,16 +1027,15 @@ export default function IPAddressesPage() {
                   <input type="checkbox" checked={ips.length > 0 && ips.every(ip => selected.has(ip.id))} onChange={e => e.target.checked ? setSelected(new Set(ips.map(ip => ip.id))) : setSelected(new Set())} />
                 </th>
               )}
-              {col('address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th>}
-              {col('hostname') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>}
-              {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
+              {col('address') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th> : <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('hostname') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th> : <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('status') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th> : <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
               {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
-              {col('assigned_to') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Assigned To</th>}
               {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
-              {col('mac_address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th>}
+              {col('mac_address') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th> : <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
               {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
-              {col('last_seen') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>}
+              {col('last_seen') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th> : <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
               {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Services</th>}
               {searchableFields.map(d => (
                 <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
@@ -954,32 +1048,22 @@ export default function IPAddressesPage() {
               <EmptyRow colSpan={visibleCols.length + searchableFields.length + 1} message="No IP addresses yet." />
             )}
             {ips.map(ip => (
-              <tr key={ip.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+              <tr key={ip.virtual ? `v-${ip.address}` : ip.id} className={`border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${ip.virtual ? 'opacity-50' : ''}`}>
                 {isAdmin && (
                   <td className="px-3 py-2 w-8">
-                    <input type="checkbox" checked={selected.has(ip.id)} onChange={() => toggleSelect(ip.id)} />
+                    {!ip.virtual && <input type="checkbox" checked={selected.has(ip.id)} onChange={() => toggleSelect(ip.id)} />}
                   </td>
                 )}
                 {col('address') && <td className="px-4 py-3 font-mono font-medium text-gray-800 dark:text-gray-200">{ip.address}</td>}
                 {col('hostname') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{ip.hostname || '—'}</td>}
                 {col('status') && (
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[ip.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ip.virtual ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500' : STATUS_COLORS[ip.status] || 'bg-gray-100 text-gray-600'}`}>
                       {ip.status}
                     </span>
                   </td>
                 )}
                 {col('tag') && <td className="px-4 py-3"><TagBadge tag={ip.tag} /></td>}
-                {col('assigned_to') && (
-                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                    {ip.assignedTo || '—'}
-                    {ip.expiresAt && (
-                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                        {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
-                      </span>
-                    )}
-                  </td>
-                )}
                 {col('device') && (
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                     {ip.deviceId ? (
@@ -987,6 +1071,11 @@ export default function IPAddressesPage() {
                         {ip.device?.hostname || `#${ip.deviceId}`}
                       </Link>
                     ) : '—'}
+                    {ip.expiresAt && (
+                      <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                        {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
+                      </span>
+                    )}
                   </td>
                 )}
                 {col('mac_address') && <td className="px-4 py-3 font-mono text-gray-500 dark:text-gray-400 text-xs">{ip.macAddress || '—'}</td>}
@@ -1033,26 +1122,32 @@ export default function IPAddressesPage() {
                   )
                 })}
                 <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
-                  {ip.status !== 'assigned' && (
-                    <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
-                  )}
-                  {ip.status === 'assigned' && (
+                  {ip.virtual ? (
+                    isAdmin && <button onClick={() => openCreate(ip.address)} className="text-gray-400 hover:text-green-600 text-xs">Create</button>
+                  ) : (
                     <>
-                      <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
-                      {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
-                        <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
+                      <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
+                      {ip.status !== 'assigned' && (
+                        <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
+                      )}
+                      {ip.status === 'assigned' && (
+                        <>
+                          <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
+                          {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
+                            <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
+                          )}
+                        </>
+                      )}
+                      {deleteConfirm === ip.id ? (
+                        <>
+                          <span className="text-red-600 text-xs">Confirm?</span>
+                          <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                       )}
                     </>
-                  )}
-                  {deleteConfirm === ip.id ? (
-                    <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
-                      <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
-                    </>
-                  ) : (
-                    <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
                   )}
                 </td>
               </tr>
@@ -1125,6 +1220,7 @@ export default function IPAddressesPage() {
                 placeholder="aa:bb:cc:dd:ee:ff"
                 value={form.mac_address}
                 onChange={e => setForm(f => ({ ...f, mac_address: e.target.value }))}
+                onBlur={e => setForm(f => ({ ...f, mac_address: normalizeMAC(e.target.value) }))}
               />
             </div>
             <div>
@@ -1169,14 +1265,17 @@ export default function IPAddressesPage() {
         <Modal title={`Assign ${modal.assign.Address}`} onClose={() => setModal(null)}>
           <form onSubmit={handleAssign} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="server name or user"
-                value={form.assigned_to}
-                onChange={e => setForm(f => ({ ...f, assigned_to: e.target.value }))}
-                required
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                value={form.device_id}
+                onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
+              >
+                <option value="">— None —</option>
+                {devices.map(d => (
+                  <option key={d.id} value={d.id}>{d.hostname}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1286,6 +1385,7 @@ export default function IPAddressesPage() {
                 placeholder="aa:bb:cc:dd:ee:ff"
                 value={form.mac_address}
                 onChange={e => setForm(f => ({ ...f, mac_address: e.target.value }))}
+                onBlur={e => setForm(f => ({ ...f, mac_address: normalizeMAC(e.target.value) }))}
               />
             </div>
             <div>

@@ -239,26 +239,25 @@ func (s *Service) ApproveIPRequest(ctx context.Context, requestID, reviewerID in
 		}
 		if lookupErr == nil && existing != nil {
 			// Mark existing available IP as assigned
-			ipAddr, err = s.repository.UpdateIPAddressStatus(ctx, existing.ID, "assigned", &ir.Purpose)
+			ipAddr, err = s.repository.UpdateIPAddressStatus(ctx, existing.ID, "assigned", nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed to assign IP: %w", err)
 			}
 		} else {
 			// Create new IP address record
-			purpose := ir.Purpose
 			dnsName := ir.DNSName
 			var dnsNamePtr *string
 			if dnsName != "" {
 				dnsNamePtr = &dnsName
 			}
-			ipAddr, err = s.repository.CreateIPAddress(ctx, ir.SubnetID, *ir.RequestedIP, dnsName, "assigned", &purpose, nil, nil, nil, dnsNamePtr)
+			ipAddr, err = s.repository.CreateIPAddress(ctx, ir.SubnetID, *ir.RequestedIP, dnsName, "assigned", nil, nil, nil, dnsNamePtr)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create IP: %w", err)
 			}
 		}
 	} else {
 		// Auto-assign next free IP
-		ipAddr, err = s.repository.AllocateIPAddress(ctx, ir.SubnetID, ir.Purpose)
+		ipAddr, err = s.repository.AllocateIPAddress(ctx, ir.SubnetID, nil)
 		if err != nil {
 			return nil, fmt.Errorf("no available IPs in subnet: %w", err)
 		}

@@ -433,10 +433,10 @@ func TestPerformanceBudget_UtilisationTrendWorkflowUsesCachedRead(t *testing.T) 
 }
 
 func TestPerformanceBudget_InactiveIPWorkflowUsesParameterizedCachedRead(t *testing.T) {
-	assignedTo := "ops"
+	deviceID := int64(5)
 	repo := newStubRepo()
 	repo.inactiveIPs = []*models.InactiveIPReport{
-		{IPID: 1, IPAddress: "10.0.0.10", AssignedTo: &assignedTo, DaysInactive: 90},
+		{IPID: 1, IPAddress: "10.0.0.10", DeviceID: &deviceID, DaysInactive: 90},
 	}
 	svc := newTestReportsService(repo)
 	ctx := context.Background()

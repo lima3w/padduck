@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -36,16 +37,14 @@ func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 			host(s.network_address) || '/' || s.prefix_length AS cidr,
 			s.description,
 			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END) AS used,
-			COUNT(ip.id) AS total
+			GREATEST((POWER(2, 32 - s.prefix_length) - 2)::bigint, 1) AS total
 		FROM subnets s
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
 		GROUP BY s.id, s.network_address, s.prefix_length, s.description
 		HAVING COUNT(ip.id) > 0
 		ORDER BY
-			CASE WHEN COUNT(ip.id) > 0
-				THEN COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END)::float / COUNT(ip.id)
-				ELSE 0
-			END DESC
+			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END)::float /
+			GREATEST((POWER(2, 32 - s.prefix_length) - 2)::bigint, 1) DESC
 		LIMIT 5`
 
 	topRows, err := r.db.Query(ctx, topQuery)
@@ -192,9 +191,12 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 		args = append(args, opts.Status)
 		where += fmt.Sprintf(" AND ip.status = $%d", len(args))
 	}
+	if opts.HideAvailable {
+		where += " AND ip.status != 'available'"
+	}
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
-		where += fmt.Sprintf(" AND (ip.address::text ILIKE $%d OR ip.hostname ILIKE $%d OR ip.assigned_to ILIKE $%d)", len(args), len(args), len(args))
+		where += fmt.Sprintf(" AND (ip.address::text ILIKE $%d OR ip.hostname ILIKE $%d)", len(args), len(args))
 	}
 
 	var total int64
@@ -203,11 +205,13 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 	}
 
 	allowedSorts := map[string]string{
-		"address":    "ip.address",
-		"hostname":   "ip.hostname",
-		"status":     "ip.status",
-		"created_at": "ip.created_at",
-		"updated_at": "ip.updated_at",
+		"address":     "ip.address",
+		"hostname":    "ip.hostname",
+		"status":      "ip.status",
+		"mac_address": "ip.mac_address",
+		"last_seen":   "ip.last_seen",
+		"created_at":  "ip.created_at",
+		"updated_at":  "ip.updated_at",
 	}
 	sortCol := sortExpr(opts.Sort, "ip.address", allowedSorts)
 	args = append(args, opts.Limit, opts.Offset)
@@ -227,4 +231,122 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 		ips = append(ips, ip)
 	}
 	return ips, total, rows.Err()
+}
+
+// ListIPAddressesFullRange returns every address in the subnet's IPv4 CIDR range, merged
+// with any existing ip_addresses rows. Addresses with no database record are returned
+// with Virtual=true and status "available". Uses generate_series with an explicit offset
+// so only `limit` rows are generated — efficient even for large subnets.
+func (r *Repository) ListIPAddressesFullRange(
+	ctx context.Context,
+	subnetID int64,
+	networkAddr string,
+	prefixLength int,
+	offset, limit int,
+) ([]*models.IPAddress, int64, error) {
+	total := int64(1) << (32 - prefixLength)
+	remaining := total - int64(offset)
+	if remaining <= 0 {
+		return []*models.IPAddress{}, total, nil
+	}
+	if int64(limit) > remaining {
+		limit = int(remaining)
+	}
+
+	const query = `
+		SELECT
+			COALESCE(ip.id, 0)::bigint,
+			($1::inet + ($2::bigint + s))::text,
+			COALESCE(ip.subnet_id, $4)::bigint,
+			COALESCE(ip.hostname, ''),
+			COALESCE(ip.status, 'available'),
+			ip.tag_id,
+			t.id, t.name, t.colour, t.description, t.is_system, t.created_at,
+			ip.last_seen,
+			ip.mac_address, ip.ptr_record,
+			ip.dns_name, ip.dns_records::text, ip.dns_last_checked,
+			ip.port_open,
+			ip.created_at, ip.updated_at,
+			ip.device_id, dv.hostname,
+			(ip.id IS NULL) AS is_virtual
+		FROM generate_series(0, $3::bigint - 1) s
+		LEFT JOIN ip_addresses ip
+			ON ip.address = ($1::inet + ($2::bigint + s))::text
+			AND ip.subnet_id = $4
+		LEFT JOIN ip_tags t ON ip.tag_id = t.id
+		LEFT JOIN devices dv ON ip.device_id = dv.id`
+
+	rows, err := r.db.Query(ctx, query, networkAddr, int64(offset), int64(limit), subnetID)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	ips := make([]*models.IPAddress, 0, limit)
+	for rows.Next() {
+		ip, err := scanIPFull(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, total, rows.Err()
+}
+
+// scanIPFull scans a row produced by ListIPAddressesFullRange. Unlike scanIP it accepts
+// nullable created_at/updated_at (virtual IPs have no DB timestamps) and sets Virtual.
+func scanIPFull(row interface{ Scan(dest ...any) error }) (*models.IPAddress, error) {
+	ip := &models.IPAddress{}
+	var tagID, tagIDInner *int64
+	var tagName, tagColour, tagDesc *string
+	var tagIsSystem *bool
+	var tagCreatedAt *time.Time
+	var portOpenRaw []byte
+	var deviceID *int64
+	var deviceHostname *string
+	var subnetID int64
+	var createdAt, updatedAt *time.Time
+
+	err := row.Scan(
+		&ip.ID, &ip.Address, &subnetID, &ip.Hostname, &ip.Status,
+		&tagID, &tagIDInner, &tagName, &tagColour, &tagDesc, &tagIsSystem, &tagCreatedAt,
+		&ip.LastSeen, &ip.MACAddress, &ip.PTRRecord,
+		&ip.DNSName, &ip.DNSRecords, &ip.DNSLastChecked,
+		&portOpenRaw,
+		&createdAt, &updatedAt,
+		&deviceID, &deviceHostname,
+		&ip.Virtual,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	ip.SubnetID = subnetID
+	if createdAt != nil {
+		ip.CreatedAt = *createdAt
+	}
+	if updatedAt != nil {
+		ip.UpdatedAt = *updatedAt
+	}
+	ip.TagID = tagID
+	if tagIDInner != nil {
+		ip.Tag = &models.IPTag{
+			ID:          *tagIDInner,
+			Name:        *tagName,
+			Colour:      *tagColour,
+			Description: tagDesc,
+			IsSystem:    *tagIsSystem,
+			CreatedAt:   *tagCreatedAt,
+		}
+	}
+	if len(portOpenRaw) > 0 {
+		if err2 := json.Unmarshal(portOpenRaw, &ip.PortOpen); err2 != nil {
+			ip.PortOpen = nil
+		}
+	}
+	ip.DeviceID = deviceID
+	if deviceID != nil && deviceHostname != nil {
+		ip.Device = &models.DeviceSummary{ID: *deviceID, Hostname: *deviceHostname}
+	}
+	return ip, nil
 }

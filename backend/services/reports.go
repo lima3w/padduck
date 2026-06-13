@@ -385,12 +385,12 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 		if err != nil {
 			return nil, "", "", err
 		}
-		headers := []string{"ip_id", "ip_address", "hostname", "subnet_cidr", "section_name", "assigned_to", "days_inactive"}
+		headers := []string{"ip_id", "ip_address", "hostname", "subnet_cidr", "section_name", "device_id", "days_inactive"}
 		rows := make([]map[string]string, len(ips))
 		for i, ip := range ips {
-			assignedTo := ""
-			if ip.AssignedTo != nil {
-				assignedTo = *ip.AssignedTo
+			deviceID := ""
+			if ip.DeviceID != nil {
+				deviceID = strconv.FormatInt(*ip.DeviceID, 10)
 			}
 			rows[i] = map[string]string{
 				"ip_id":         strconv.FormatInt(ip.IPID, 10),
@@ -398,7 +398,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				"hostname":      ip.Hostname,
 				"subnet_cidr":   ip.SubnetCIDR,
 				"section_name":  ip.NetworkName,
-				"assigned_to":   assignedTo,
+				"device_id":     deviceID,
 				"days_inactive": strconv.Itoa(ip.DaysInactive),
 			}
 		}
@@ -447,18 +447,22 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 		if err != nil {
 			return nil, "", "", err
 		}
-		headers := []string{"ip_id", "address", "status", "assigned_to", "days_old", "days_since_seen"}
+		headers := []string{"ip_id", "address", "status", "device_id", "days_old", "days_since_seen"}
 		rows := make([]map[string]string, len(ips))
 		for i, ip := range ips {
 			daysSinceSeen := "never"
 			if ip.DaysSinceSeen >= 0 {
 				daysSinceSeen = strconv.Itoa(ip.DaysSinceSeen)
 			}
+			deviceID := ""
+			if ip.DeviceID != nil {
+				deviceID = strconv.FormatInt(*ip.DeviceID, 10)
+			}
 			rows[i] = map[string]string{
 				"ip_id":           strconv.FormatInt(ip.IPID, 10),
 				"address":         ip.Address,
 				"status":          ip.Status,
-				"assigned_to":     ip.AssignedTo,
+				"device_id":       deviceID,
 				"days_old":        strconv.Itoa(ip.DaysOld),
 				"days_since_seen": daysSinceSeen,
 			}
@@ -621,10 +625,6 @@ func cloneInactiveIPs(ips []*models.InactiveIPReport) []*models.InactiveIPReport
 			continue
 		}
 		clone := *ip
-		if ip.AssignedTo != nil {
-			assignedTo := *ip.AssignedTo
-			clone.AssignedTo = &assignedTo
-		}
 		if ip.LastSeen != nil {
 			lastSeen := *ip.LastSeen
 			clone.LastSeen = &lastSeen
@@ -808,18 +808,18 @@ func (rs *ReportsService) ExportIPs(ctx context.Context, subnetID int64, format 
 		return nil, "", "", err
 	}
 
-	headers := []string{"ip_address", "hostname", "status", "assigned_to"}
+	headers := []string{"ip_address", "hostname", "status", "device_id"}
 	rows := make([]map[string]string, len(ips))
 	for i, ip := range ips {
-		assignedTo := ""
-		if ip.AssignedTo != nil {
-			assignedTo = *ip.AssignedTo
+		deviceID := ""
+		if ip.DeviceID != nil {
+			deviceID = strconv.FormatInt(*ip.DeviceID, 10)
 		}
 		rows[i] = map[string]string{
-			"ip_address":  ip.Address,
-			"hostname":    ip.Hostname,
-			"status":      ip.Status,
-			"assigned_to": assignedTo,
+			"ip_address": ip.Address,
+			"hostname":   ip.Hostname,
+			"status":     ip.Status,
+			"device_id":  deviceID,
 		}
 	}
 	return buildReport(format, "IP Addresses", headers, rows)

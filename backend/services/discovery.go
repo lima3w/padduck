@@ -15,6 +15,7 @@ import (
 
 	"padduck/internal/scanner"
 	"padduck/models"
+	"padduck/utils"
 )
 
 // DiscoveryService handles network scanning and IP detection
@@ -86,7 +87,7 @@ type discoveryRepo interface {
 	CreateDiscoveryConflict(ctx context.Context, deviceID int64, fieldName, discoveredValue string, currentValue *string, confidenceScore float64, source string) (*models.DiscoveryConflict, error)
 	ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error)
 	// Auto-add IPs (#item5)
-	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, assignedTo *string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
 }
 
 // maxConcurrentJobsFromEnv reads SCAN_MAX_CONCURRENT_JOBS (default 4, min 1).
@@ -273,7 +274,7 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			if r.ptr != nil {
 				hostname = *r.ptr
 			}
-			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "assigned", nil, nil, nil, r.ptr, nil)
+			newIP, createErr := d.repository.CreateIPAddress(ctx, subnetID, r.ip, hostname, "assigned", nil, nil, r.ptr, nil)
 			if createErr != nil {
 				slog.Warn("discovery: auto-add IP failed", "ip", r.ip, "subnet_id", subnetID, "error", createErr)
 			} else {
@@ -302,7 +303,9 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 			if err2 == nil && snmpResult != nil {
 				mac := ""
 				if len(snmpResult.Interfaces) > 0 {
-					mac = snmpResult.Interfaces[0].MACAddress
+					if normalized, normErr := utils.NormalizeMAC(snmpResult.Interfaces[0].MACAddress); normErr == nil {
+						mac = normalized
+					}
 				}
 				_ = d.repository.UpdateIPFromSNMP(ctx, *ipAddressID, mac, snmpResult.SysName)
 			}
@@ -739,7 +742,7 @@ func (d *DiscoveryService) AcceptAgentResults(ctx context.Context, agentID int64
 		}
 		// Auto-add: if alive and no existing IP record, create one.
 		if res.IsAlive && ipAddrID == nil && job.AutoAddIPs && res.SubnetID > 0 {
-			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "assigned", nil, nil, nil, nil, nil)
+			newIP, createErr := d.repository.CreateIPAddress(ctx, res.SubnetID, res.IPAddress, "", "assigned", nil, nil, nil, nil)
 			if createErr != nil {
 				slog.Warn("agent: auto-add IP failed", "agent_id", agentID, "ip", res.IPAddress, "subnet_id", res.SubnetID, "error", createErr)
 			} else {

@@ -114,7 +114,7 @@ func (h *Handler) EvaluateAutomationPolicy(c *fiber.Ctx) error {
 func (h *Handler) AutomationAllocateIPAddress(c *fiber.Ctx) error {
 	var req struct {
 		SubnetID    int64  `json:"subnet_id"`
-		AssignedTo  string `json:"assigned_to"`
+		DeviceID    *int64 `json:"device_id"`
 		DryRun      bool   `json:"dry_run"`
 		Idempotency string `json:"idempotency_key"`
 	}
@@ -125,11 +125,10 @@ func (h *Handler) AutomationAllocateIPAddress(c *fiber.Ctx) error {
 	if req.SubnetID <= 0 {
 		fields = append(fields, ValidationField{Field: "subnet_id", Message: "subnet_id must be greater than zero"})
 	}
-	fields = append(fields, requiredFields(map[string]string{"assigned_to": req.AssignedTo})...)
 	if len(fields) > 0 {
 		return RespondValidationError(c, "validation failed", fields)
 	}
-	ip, decision, err := h.service.Automation.AllocateIPAddress(c.Context(), req.SubnetID, req.AssignedTo, req.DryRun)
+	ip, decision, err := h.service.Automation.AllocateIPAddress(c.Context(), req.SubnetID, req.DeviceID, req.DryRun)
 	return automationWriteResponse(c, ip, decision, err)
 }
 

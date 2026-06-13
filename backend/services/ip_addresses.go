@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"padduck/models"
+	"padduck/utils"
 )
 
 // CreateIPAddress creates a new IP address record
@@ -17,7 +18,8 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
 
-	if net.ParseIP(address) == nil {
+	parsedIP := net.ParseIP(address)
+	if parsedIP == nil {
 		return nil, fmt.Errorf("invalid IP address: %s", address)
 	}
 
@@ -26,7 +28,27 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 		return nil, fmt.Errorf("invalid IP status: %s", status)
 	}
 
-	ip, err := s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, nil, tagID, macAddress, ptrRecord, dnsName)
+	subnet, err := s.repository.GetSubnetByID(ctx, subnetID)
+	if err != nil {
+		return nil, fmt.Errorf("subnet not found: %w", err)
+	}
+	_, ipNet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength))
+	if err != nil {
+		return nil, fmt.Errorf("invalid subnet CIDR: %w", err)
+	}
+	if !ipNet.Contains(parsedIP) {
+		return nil, fmt.Errorf("IP address %s is not within subnet %s/%d", address, subnet.NetworkAddress, subnet.PrefixLength)
+	}
+
+	if macAddress != nil && *macAddress != "" {
+		normalized, err := utils.NormalizeMAC(*macAddress)
+		if err != nil {
+			return nil, err
+		}
+		macAddress = &normalized
+	}
+
+	ip, err := s.repository.CreateIPAddress(ctx, subnetID, address, hostname, status, tagID, macAddress, ptrRecord, dnsName)
 	if err != nil {
 		return nil, normalizeCreateIPAddressError(err, address)
 	}
@@ -52,6 +74,15 @@ func (s *Service) UpdateIPAddressMeta(ctx context.Context, id int64, hostname st
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
+
+	if macAddress != nil && *macAddress != "" {
+		normalized, err := utils.NormalizeMAC(*macAddress)
+		if err != nil {
+			return nil, err
+		}
+		macAddress = &normalized
+	}
+
 	ip, err := s.repository.UpdateIPAddressFull(ctx, id, hostname, tagID, macAddress, ptrRecord, dnsName)
 	if err != nil {
 		return nil, err
@@ -87,17 +118,12 @@ func (s *Service) ListIPAddresses(ctx context.Context, subnetID int64) ([]*model
 	return s.repository.ListIPAddressesBySubnet(ctx, subnetID)
 }
 
-// AssignIPAddress marks an IP as assigned to a user/device
-func (s *Service) AssignIPAddress(ctx context.Context, id int64, assignedTo string) (*models.IPAddress, error) {
+// AssignIPAddress marks an IP as assigned, optionally linking it to a device.
+func (s *Service) AssignIPAddress(ctx context.Context, id int64, deviceID *int64) (*models.IPAddress, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
 	}
-
-	if assignedTo == "" {
-		return nil, fmt.Errorf("assigned_to cannot be empty")
-	}
-
-	return s.repository.UpdateIPAddressStatus(ctx, id, "assigned", &assignedTo)
+	return s.repository.UpdateIPAddressStatus(ctx, id, "assigned", deviceID)
 }
 
 // ReleaseIPAddress marks an IP as available again
@@ -150,17 +176,12 @@ func (s *Service) FindNextAvailableIP(ctx context.Context, subnetID int64) (*mod
 	return availableIPs[0], nil
 }
 
-// AllocateIPAddress atomically finds and assigns the next available IP
-func (s *Service) AllocateIPAddress(ctx context.Context, subnetID int64, assignedTo string) (*models.IPAddress, error) {
+// AllocateIPAddress atomically finds and assigns the next available IP, optionally linking to a device.
+func (s *Service) AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64) (*models.IPAddress, error) {
 	if subnetID <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
-
-	if assignedTo == "" {
-		return nil, fmt.Errorf("assigned_to cannot be empty")
-	}
-
-	return s.repository.AllocateIPAddress(ctx, subnetID, assignedTo)
+	return s.repository.AllocateIPAddress(ctx, subnetID, deviceID)
 }
 
 // SubnetUtilization represents utilization statistics for a subnet
@@ -204,14 +225,10 @@ func (s *Service) GetSubnetUtilization(ctx context.Context, subnetID int64) (*Su
 	}, nil
 }
 
-// AssignIPAddressWithLease marks an IP as assigned with optional lease expiration
-func (s *Service) AssignIPAddressWithLease(ctx context.Context, id int64, assignedTo string, leaseDurationDays int) (*models.IPAddress, error) {
+// AssignIPAddressWithLease marks an IP as assigned with optional lease expiration, optionally linking to a device.
+func (s *Service) AssignIPAddressWithLease(ctx context.Context, id int64, deviceID *int64, leaseDurationDays int) (*models.IPAddress, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid IP address ID")
-	}
-
-	if assignedTo == "" {
-		return nil, fmt.Errorf("assigned_to cannot be empty")
 	}
 
 	now := time.Now().UTC()
@@ -223,7 +240,7 @@ func (s *Service) AssignIPAddressWithLease(ctx context.Context, id int64, assign
 		expiresAtTime = &expiresAt
 	}
 
-	return s.repository.UpdateIPAddressWithLease(ctx, id, "assigned", &assignedTo, &assignedAtTime, expiresAtTime)
+	return s.repository.UpdateIPAddressWithLease(ctx, id, "assigned", deviceID, &assignedAtTime, expiresAtTime)
 }
 
 // IsIPLeaseExpired checks if an IP's lease has expired

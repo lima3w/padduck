@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.31.28
+
+### Bug Fixes
+- **IP addresses could be saved outside their subnet's CIDR**: the create-IP form pre-fills the network prefix but allowed users to backspace it and enter any address. The backend now validates that the submitted IP falls within the subnet's network address and prefix length before inserting; the frontend validates the same for IPv4 addresses and surfaces an inline error immediately.
+- **DHCP and Circuits pages showed "feature disabled" when the Locations (or Customers) feature was disabled**: both pages called `getLocations()` in the same `Promise.all` as their own feature-gated API calls. A 404 from a disabled secondary feature poisoned the whole load and surfaced the backend's "feature disabled" error message. Locations and Customers are now fetched independently with graceful fallbacks so the primary page data always loads.
+
+### Changes
+- **Full range view for IPv4 subnets**: a "Show all IPs" checkbox on the IP address list reveals every address in the subnet's CIDR — including ones not yet in the database. Unrecorded addresses appear dimmed with an "available" badge and a "Create" action that opens the new-IP form pre-filled with that address. The view uses PostgreSQL `generate_series` with page-sized offset arithmetic so only one page of rows is generated at a time — efficient even for /8 subnets. IPv6 subnets are excluded (range too large to enumerate). Sort headers and the "Hide unassigned" filter are suppressed while the full range view is active.
+- **Sortable columns and hide-unassigned filter on IP address list**: clicking Address, Hostname, Status, MAC Address, or Last Seen headings sorts the full paginated list ascending/descending via the backend (arrows indicate active sort direction; inactive columns show ↕). A "Hide unassigned" checkbox above the table filters out available IPs server-side so only assigned and reserved addresses are shown.
+- **MAC address format validation and normalization**: MAC addresses are now validated and normalized to lowercase colon-separated form (`aa:bb:cc:dd:ee:ff`) wherever they are written. The backend accepts colon, dash, dot (Cisco), and unseparated hex formats — all stored as `aa:bb:cc:dd:ee:ff`. Invalid values are rejected with a descriptive error. The create-IP and edit-IP forms normalize the value on blur so users see the canonical form before saving.
+- **IP addresses now link to a device instead of storing a free-text "Assigned To" field**: the `assigned_to` column has been removed from `ip_addresses`. The assign-IP modal now shows a device picker drawn from existing device records. The linked device's hostname appears in the IP list under a "Device" column (with a link to the device detail page), and any lease-expiry badge moves there too. The `assigned_to` field has been removed from all reports, imports, exports, and automation responses.
+- **Top Utilised Subnets now uses CIDR-derived capacity**: utilisation percentage and ranking are calculated against the total addressable IPs in the subnet (`2^(32-prefix) - 2`, minimum 1), rather than the count of IP records entered. A /24 with 40 assigned IPs now shows ~15.7% instead of an inflated figure based on however many records exist.
+
 ## v1.31.27
 
 ### Changes

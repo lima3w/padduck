@@ -248,7 +248,7 @@ func (r *Repository) SearchIPAddressesWithCustomFields(ctx context.Context, subn
 	}
 
 	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
-	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2 OR ip.assigned_to ILIKE $2)`
+	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2)`
 	args := []interface{}{subnetID, "%" + query + "%"}
 	n := 3
 

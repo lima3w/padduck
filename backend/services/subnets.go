@@ -259,13 +259,13 @@ func (s *Service) CreateSubnet(ctx context.Context, networkID int64, networkAddr
 	_, ipNet, _ := net.ParseCIDR(cidr)
 	if autoFirst && ipNet != nil {
 		networkIP := ipNet.IP.String()
-		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil, nil); err != nil {
+		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, networkIP, "", "reserved", nil, nil, nil, nil); err != nil {
 			slog.Warn("auto-reserve first IP failed", "subnet_id", subnet.ID, "ip", networkIP, "error", err)
 		}
 	}
 	if autoLast && ipNet != nil {
 		bcastIP := broadcastAddr(ipNet)
-		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil, nil); err != nil {
+		if _, err := s.repository.CreateIPAddress(ctx, subnet.ID, bcastIP, "", "reserved", nil, nil, nil, nil); err != nil {
 			slog.Warn("auto-reserve last IP failed", "subnet_id", subnet.ID, "ip", bcastIP, "error", err)
 		}
 	}
