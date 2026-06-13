@@ -2,6 +2,9 @@
 
 ## v1.31.28
 
+### Bug Fixes
+- **DHCP and Circuits pages showed "feature disabled" when the Locations (or Customers) feature was disabled**: both pages called `getLocations()` in the same `Promise.all` as their own feature-gated API calls. A 404 from a disabled secondary feature poisoned the whole load and surfaced the backend's "feature disabled" error message. Locations and Customers are now fetched independently with graceful fallbacks so the primary page data always loads.
+
 ### Changes
 - **Top Utilised Subnets now uses CIDR-derived capacity**: utilisation percentage and ranking are calculated against the total addressable IPs in the subnet (`2^(32-prefix) - 2`, minimum 1), rather than the count of IP records entered. A /24 with 40 assigned IPs now shows ~15.7% instead of an inflated figure based on however many records exist.
 

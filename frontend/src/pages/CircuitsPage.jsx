@@ -21,15 +21,16 @@ export default function CircuitsPage() {
 
   async function load() {
     try {
-      const [p, pc, lc, locs, cust] = await Promise.all([getCircuitProviders(), getPhysicalCircuits(), getLogicalCircuits(), getLocations(), getCustomers()])
+      const [p, pc, lc] = await Promise.all([getCircuitProviders(), getPhysicalCircuits(), getLogicalCircuits()])
       setProviders(p.data || [])
       setPhysical(pc.data || [])
       setLogical(lc.data || [])
-      setLocations(Array.isArray(locs) ? locs : [])
-      setCustomers(cust.data || [])
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load circuits')
     }
+    const [locs, cust] = await Promise.allSettled([getLocations(), getCustomers()])
+    if (locs.status === 'fulfilled') setLocations(Array.isArray(locs.value) ? locs.value : [])
+    if (cust.status === 'fulfilled') setCustomers(cust.value.data || [])
   }
 
   async function saveProvider(e) {

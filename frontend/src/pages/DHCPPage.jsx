@@ -18,12 +18,17 @@ export default function DHCPPage() {
 
   async function load() {
     try {
-      const [serversRes, leasesRes, locationsRes] = await Promise.all([getDHCPServers(), getDHCPLeases(), getLocations()])
+      const [serversRes, leasesRes] = await Promise.all([getDHCPServers(), getDHCPLeases()])
       setServers(serversRes.data || [])
       setLeases(leasesRes.data || [])
-      setLocations(Array.isArray(locationsRes) ? locationsRes : [])
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load DHCP data')
+    }
+    try {
+      const locationsRes = await getLocations()
+      setLocations(Array.isArray(locationsRes) ? locationsRes : [])
+    } catch {
+      // Locations feature may be disabled; location dropdown will be empty
     }
   }
 
