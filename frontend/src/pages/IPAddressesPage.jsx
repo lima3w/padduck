@@ -363,7 +363,6 @@ export default function IPAddressesPage() {
   const [devices, setDevices] = useState([])
   const [sortCol, setSortCol] = useState('')
   const [sortDir, setSortDir] = useState('asc')
-  const [hideAvailable, setHideAvailable] = useState(false)
   const [fullRange, setFullRange] = useState(false)
 
   useEffect(() => {
@@ -388,7 +387,7 @@ export default function IPAddressesPage() {
     } catch {}
   }
 
-  async function load(p = page, col = sortCol, dir = sortDir, hide = hideAvailable, full = fullRange) {
+  async function load(p = page, col = sortCol, dir = sortDir, full = fullRange) {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -397,7 +396,7 @@ export default function IPAddressesPage() {
       setIsSearchActive(false)
       const [subRes, ipRes, tagRes] = await Promise.all([
         getSubnet(subnetID),
-        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, hide, full),
+        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, true, full),
         getTags(),
       ])
       setSubnet(subRes.data)
@@ -422,19 +421,13 @@ export default function IPAddressesPage() {
     setSortCol(col)
     setSortDir(newDir)
     setPage(1)
-    load(1, col, newDir, hideAvailable)
-  }
-
-  function handleHideAvailable(checked) {
-    setHideAvailable(checked)
-    setPage(1)
-    load(1, sortCol, sortDir, checked, fullRange)
+    load(1, col, newDir)
   }
 
   function handleFullRange(checked) {
     setFullRange(checked)
     setPage(1)
-    load(1, sortCol, sortDir, hideAvailable, checked)
+    load(1, sortCol, sortDir, checked)
   }
 
   function toggleColumn(col) {
@@ -511,6 +504,10 @@ export default function IPAddressesPage() {
     setAdvFilters({ tag_id: '', mac_address: '', ptr_record: '', is_assigned: '' })
     setSelected(new Set())
     load(1)
+  }
+
+  function filterMACInput(val) {
+    return val.replace(/[^0-9a-fA-F:\-.\s]/g, '')
   }
 
   function normalizeMAC(val) {
@@ -628,8 +625,8 @@ export default function IPAddressesPage() {
       })
       setModal(null)
       load(page)
-    } catch {
-      setError('Failed to update IP')
+    } catch(err) {
+      setError(err.response?.data?.error || 'Failed to update IP')
     } finally {
       setSaving(false)
     }
@@ -991,26 +988,17 @@ export default function IPAddressesPage() {
             )}
           </p>
           <div className="flex items-center gap-4">
-            {!fullRange && (
-              <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={hideAvailable}
-                  onChange={e => handleHideAvailable(e.target.checked)}
-                  className="rounded"
-                />
-                Hide unassigned
-              </label>
-            )}
             {subnet && !subnet.networkAddress?.includes(':') && (
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={fullRange}
-                  onChange={e => handleFullRange(e.target.checked)}
-                  className="rounded"
-                />
-                Show all IPs
+                <span>Show all IPs</span>
+                <button
+                  role="switch"
+                  aria-checked={fullRange}
+                  onClick={() => handleFullRange(!fullRange)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${fullRange ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${fullRange ? 'translate-x-5' : 'translate-x-1'}`} />
+                </button>
               </label>
             )}
           </div>
@@ -1219,7 +1207,7 @@ export default function IPAddressesPage() {
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="aa:bb:cc:dd:ee:ff"
                 value={form.mac_address}
-                onChange={e => setForm(f => ({ ...f, mac_address: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, mac_address: filterMACInput(e.target.value) }))}
                 onBlur={e => setForm(f => ({ ...f, mac_address: normalizeMAC(e.target.value) }))}
               />
             </div>
@@ -1384,7 +1372,7 @@ export default function IPAddressesPage() {
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="aa:bb:cc:dd:ee:ff"
                 value={form.mac_address}
-                onChange={e => setForm(f => ({ ...f, mac_address: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, mac_address: filterMACInput(e.target.value) }))}
                 onBlur={e => setForm(f => ({ ...f, mac_address: normalizeMAC(e.target.value) }))}
               />
             </div>

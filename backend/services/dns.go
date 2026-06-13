@@ -16,8 +16,9 @@ import (
 
 // ZoneInfo is a provider-agnostic zone summary used by the DNS zones UI.
 type ZoneInfo struct {
-	Name string `json:"name"`
-	Kind string `json:"kind"`
+	Name   string  `json:"name"`
+	Kind   string  `json:"kind"`
+	Serial *uint32 `json:"serial,omitempty"`
 }
 
 // RecordInfo is a provider-agnostic DNS record used by the DNS zones UI.
@@ -268,7 +269,12 @@ func (d *DNSService) ListDNSZones(ctx context.Context) ([]ZoneInfo, bool, error)
 		}
 		out := make([]ZoneInfo, len(raw))
 		for i, z := range raw {
-			out[i] = ZoneInfo{Name: z.Name, Kind: z.Kind}
+			zi := ZoneInfo{Name: z.Name, Kind: z.Kind}
+			if z.Serial != 0 {
+				s := z.Serial
+				zi.Serial = &s
+			}
+			out[i] = zi
 		}
 		return out, true, nil
 	}
@@ -280,7 +286,12 @@ func (d *DNSService) ListDNSZones(ctx context.Context) ([]ZoneInfo, bool, error)
 		}
 		out := make([]ZoneInfo, len(raw))
 		for i, z := range raw {
-			out[i] = ZoneInfo{Name: z.Name, Kind: z.Type}
+			zi := ZoneInfo{Name: z.Name, Kind: z.Type}
+			if z.Serial != 0 {
+				s := z.Serial
+				zi.Serial = &s
+			}
+			out[i] = zi
 		}
 		return out, true, nil
 	}

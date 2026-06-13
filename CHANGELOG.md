@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.31.29
+
+### Bug Fixes
+- **Adding a device interface with a VLAN ID always failed with a foreign key violation**: the VLAN ID field accepted a raw number that was sent as the VLAN's database primary key, but users naturally typed the 802.1Q tag number (e.g. 101) which rarely matches the DB ID. The field is now a dropdown populated from the configured VLANs list and submits the correct database ID. The interface table now shows the VLAN tag and name instead of the opaque DB ID.
+- **Scan profile SNMP settings were stored but never applied during discovery**: discovery jobs read SNMP community string and version from global config only, ignoring per-profile overrides. Profile SNMP fields are now copied onto the job at run time and applied after global config is read, so per-profile overrides take effect correctly.
+- **DNS zone serials not populated from Technitium or PowerDNS**: the `Zone` struct in both provider clients was missing the `serial` field, so the DNS Zones page always showed no serial. Both client structs and the provider-agnostic `ZoneInfo` type now include the serial.
+- **IP update errors returned a generic "Failed to update IP" message**: the `UpdateIPMeta` handler was returning HTTP 500 for all service errors (including user-input validation like an invalid MAC address), discarding the error message. It now returns HTTP 400 with the descriptive error string, consistent with the create-IP endpoint.
+
+### Changes
+- **IP address list toggle: replaced two checkboxes with a slide toggle**: the "Hide unassigned" and "Show all IPs" checkboxes have been replaced with a single slide toggle. Default (toggle off) hides unassigned addresses; toggling on shows the full CIDR range including unrecorded IPs. Full-range mode is paginated server-side so large subnets (e.g. /16) remain usable.
+- **DNS nameserver auto-populate is now opt-in**: when a Technitium DNS server is configured in Admin Settings, saving the DNS config now shows a "Also add as a nameserver" checkbox instead of silently creating a nameserver record. An optional name field lets the record be labelled before saving.
+- **Technitium nameserver hint in scan job settings**: when a scan job's type is set to SNMP or Ping+SNMP, a hint is shown below the selector explaining that the SNMP community string is set in Admin Settings → Scanner and that per-subnet overrides can be configured in Scan Profiles.
+- **MAC address input filters non-hex characters**: the MAC address fields on the IP address list page now silently drop any character that is not a hex digit, colon, dash, dot, or space as the user types, preventing accidental invalid input before submission.
+- **Device IP association: create IP if not found**: when searching for an IP to associate with a device and no match is found, a "Create [address] and select" button appears (shown when the search input looks like a valid IP address). Clicking it calls the quick-create endpoint which places the IP in the most-specific matching subnet and immediately selects it.
+
 ## v1.31.28
 
 ### Bug Fixes

@@ -168,7 +168,7 @@ export default function AdminSettingsPage() {
       {activeTab === 'approvals' && <ApprovalsTab approvals={approvals} handleApprove={handleApprove} handleReject={handleReject} />}
       {activeTab === 'audit' && config && <AuditTab {...configProps} showMessage={showMessage} />}
       {activeTab === 'alerts' && config && <AlertsTab {...configProps} />}
-      {activeTab === 'dns' && config && <DnsTab {...configProps} />}
+      {activeTab === 'dns' && config && <DnsTab {...configProps} showMessage={showMessage} />}
       {activeTab === 'scanner' && config && <ScannerTab {...configProps} />}
       {activeTab === 'features' && config && <FeaturesTab {...configProps} />}
       {activeTab === 'updates' && config && <UpdatesTab {...configProps} />}

@@ -8,7 +8,8 @@ import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import SafeUrlLink from '../components/SafeUrlLink'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
-import { searchIPAddressesGlobal } from '../api/ipam'
+import { searchIPAddressesGlobal, quickCreateIPAddress } from '../api/ipam'
+import { getVlans } from '../api/vlans'
 import { getDevice, updateDevice, getDeviceTypes, getDeviceIPs, associateDeviceIP, disassociateDeviceIP, getDeviceInterfaces, createDeviceInterface, updateDeviceInterface, deleteDeviceInterface, getDeviceSNMPCredentials } from '../api/devices'
 import { getCustomFields } from '../api/admin'
 import { getCachedUser } from '../utils/storageKeys'
@@ -33,6 +34,7 @@ export default function DeviceDetailPage() {
   const [ipSearch, setIpSearch] = useState('')
   const [ipSearchResults, setIpSearchResults] = useState([])
   const [ipSearching, setIpSearching] = useState(false)
+  const [ipCreating, setIpCreating] = useState(false)
   const [selectedIpLabel, setSelectedIpLabel] = useState('')
   const ipSearchTimer = useRef(null)
   const [deleteIfaceConfirm, setDeleteIfaceConfirm] = useState(null)
@@ -45,12 +47,21 @@ export default function DeviceDetailPage() {
   const [cfDefs, setCfDefs] = useState([])
   const [locations, setLocations] = useState([])
   const [racks, setRacks] = useState([])
+  const [vlanList, setVlanList] = useState([])
 
   useEffect(() => {
     loadAll()
     loadCfDefs()
     loadLocationsList()
+    loadVlanList()
   }, [id])
+
+  async function loadVlanList() {
+    try {
+      const res = await getVlans()
+      setVlanList(Array.isArray(res.data) ? res.data : [])
+    } catch {}
+  }
 
   async function loadLocationsList() {
     try {
@@ -194,6 +205,18 @@ export default function DeviceDetailPage() {
     setSelectedIpLabel(`${ip.address}${ip.hostname ? ` (${ip.hostname})` : ''}`)
     setIpSearch('')
     setIpSearchResults([])
+  }
+
+  async function handleQuickCreate(address) {
+    setIpCreating(true)
+    try {
+      const res = await quickCreateIPAddress(address)
+      selectIpResult(res.data)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create IP address')
+    } finally {
+      setIpCreating(false)
+    }
   }
 
   async function handleAssocSubmit(e) {
@@ -542,7 +565,9 @@ export default function DeviceDetailPage() {
                       {iface.speedMbps ? `${iface.speedMbps} Mbps` : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.mediaType || '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{iface.vlanId || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {iface.vlanId ? (() => { const v = vlanList.find(x => x.id === iface.vlanId); return v ? `VLAN ${v.vlanId} — ${v.name}` : `VLAN #${iface.vlanId}` })() : '—'}
+                    </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                       {iface.connectedToDeviceId ? (
                         <Link to={`/devices/${iface.connectedToDeviceId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
@@ -922,7 +947,19 @@ export default function DeviceDetailPage() {
                         <div className="px-3 py-2 text-sm text-gray-400">Searching…</div>
                       )}
                       {!ipSearching && ipSearchResults.length === 0 && ipSearch.trim() && (
-                        <div className="px-3 py-2 text-sm text-gray-400">No matching IPs found</div>
+                        <div>
+                          <div className="px-3 py-2 text-sm text-gray-400">No matching IPs found</div>
+                          {/^[\d.:a-fA-F]+$/.test(ipSearch.trim()) && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuickCreate(ipSearch.trim())}
+                              disabled={ipCreating}
+                              className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                            >
+                              {ipCreating ? 'Creating…' : `+ Create ${ipSearch.trim()} and select`}
+                            </button>
+                          )}
+                        </div>
                       )}
                       {ipSearchResults.map(ip => (
                         <button
@@ -1018,16 +1055,20 @@ export default function DeviceDetailPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">VLAN ID</label>
-              <input
-                type="number"
-                min="1"
-                max="4094"
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">VLAN</label>
+              <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="100"
                 value={ifaceForm.vlan_id}
                 onChange={e => setIfaceForm(f => ({ ...f, vlan_id: e.target.value }))}
-              />
+              >
+                <option value="">None</option>
+                {vlanList.map(v => (
+                  <option key={v.id} value={v.id}>VLAN {v.vlanId} — {v.name}</option>
+                ))}
+              </select>
+              {vlanList.length === 0 && (
+                <p className="text-xs text-gray-400 mt-1">No VLANs configured. Add them under <a href="/vlans" className="text-blue-500 hover:underline">VLANs</a>.</p>
+              )}
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>

@@ -1,10 +1,35 @@
 import { useState } from 'react'
-import { checkAllDns, testDnsConnection, testTechnitiumConnection } from '../../api/dns'
+import { checkAllDns, createNameserver, testDnsConnection, testTechnitiumConnection } from '../../api/dns'
 
-export default function DnsTab({ config, handleConfigChange, handleSaveConfig, saving }) {
+export default function DnsTab({ config, handleConfigChange, handleSaveConfig, saving, showMessage }) {
   const [dnsTestStatus, setDnsTestStatus] = useState(null) // null | 'testing' | { ok, message }
   const [technitiumTestStatus, setTechnitiumTestStatus] = useState(null) // null | 'testing' | { ok, message }
   const [dnsBulkStatus, setDnsBulkStatus] = useState(null) // null | 'running' | { ok, message }
+  const [addAsNs, setAddAsNs] = useState(false)
+  const [nsName, setNsName] = useState('Technitium DNS')
+
+  function extractHostname(url) {
+    try { return new URL(url).hostname } catch { return url }
+  }
+
+  async function handleSave() {
+    await handleSaveConfig()
+    if (addAsNs && config?.technitium_url) {
+      try {
+        await createNameserver({
+          name: nsName.trim() || 'Technitium DNS',
+          server1: extractHostname(config.technitium_url),
+          server2: null,
+          server3: null,
+          description: null,
+        })
+        showMessage('Nameserver added: ' + (nsName.trim() || 'Technitium DNS'))
+        setAddAsNs(false)
+      } catch (err) {
+        showMessage('Settings saved, but failed to add nameserver: ' + (err.response?.data?.error || err.message), 'error')
+      }
+    }
+  }
 
   const handleTestDns = async () => {
     setDnsTestStatus('testing')
@@ -188,6 +213,32 @@ export default function DnsTab({ config, handleConfigChange, handleSaveConfig, s
             >
               {technitiumTestStatus === 'testing' ? 'Testing...' : 'Test Connection'}
             </button>
+
+            {config?.technitium_url && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <label className="flex items-center gap-3 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={addAsNs}
+                    onChange={e => setAddAsNs(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Also add as a nameserver</span>
+                </label>
+                {addAsNs && (
+                  <div className="ml-7">
+                    <label className="block text-xs text-gray-600 mb-1">Nameserver name</label>
+                    <input
+                      type="text"
+                      value={nsName}
+                      onChange={e => setNsName(e.target.value)}
+                      placeholder="Technitium DNS"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
@@ -288,7 +339,7 @@ export default function DnsTab({ config, handleConfigChange, handleSaveConfig, s
           </div>
 
           <button
-            onClick={handleSaveConfig}
+            onClick={handleSave}
             disabled={saving}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
           >

@@ -90,6 +90,15 @@ func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subne
 	return scanSubnet(row)
 }
 
+// FindSubnetForIP returns the most-specific subnet (longest prefix) that contains ip.
+func (r *Repository) FindSubnetForIP(ctx context.Context, ip string) (*models.Subnet, error) {
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
+		WHERE $1::inet << set_masklen(s.network_address::inet, s.prefix_length)
+		ORDER BY s.prefix_length DESC LIMIT 1`
+	row := r.db.QueryRow(ctx, query, ip)
+	return scanSubnet(row)
+}
+
 // GetSubnetByCIDR looks up a subnet by CIDR notation (e.g. "192.168.1.0/24").
 // network_address stores only the host IP; prefix_length is in a separate column.
 func (r *Repository) GetSubnetByCIDR(ctx context.Context, cidr string) (*models.Subnet, error) {

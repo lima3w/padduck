@@ -529,6 +529,9 @@ type ScanJob struct {
 	AutoAddIPs      bool       `json:"auto_add_ips"`
 	DiscoverDNS     bool       `json:"discover_dns"`
 	DNSOverwrite    bool       `json:"dns_overwrite"`
+	// Transient: populated from scan profile at runtime, not stored in DB.
+	SNMPCommunityOverride string `json:"-"`
+	SNMPVersionOverride   string `json:"-"`
 }
 
 // ScanRun records a single execution of a scan job

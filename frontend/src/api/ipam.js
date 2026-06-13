@@ -69,6 +69,9 @@ export const searchIPAddresses = (subnetID, query, status = '', limit = 50, offs
 export const searchIPAddressesGlobal = (q) =>
   api.get('/ip-addresses/search', { params: { q } })
 
+export const quickCreateIPAddress = (address) =>
+  api.post('/ip-addresses/quick-create', { address })
+
 export const globalSearch = (q) =>
   api.get('/search', { params: { q } })
 

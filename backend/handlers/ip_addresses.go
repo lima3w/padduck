@@ -243,10 +243,32 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error updating IP meta", "id", id, "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(ip)
+}
+
+// QuickCreateIPAddress handles POST /api/v1/ip-addresses/quick-create
+// Finds the most-specific subnet for the given address and creates a new IP record in it.
+func (h *Handler) QuickCreateIPAddress(c *fiber.Ctx) error {
+	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+		return nil
+	}
+	var req struct {
+		Address string `json:"address"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+	if req.Address == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "address is required"})
+	}
+	ip, err := h.service.QuickCreateIPAddress(c.Context(), req.Address)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.Status(fiber.StatusCreated).JSON(ip)
 }
 
 // AllocateIPAddress handles POST /api/v1/subnets/:subnetID/ip-addresses/allocate
