@@ -3,12 +3,13 @@ package repository
 import "strings"
 
 type ListOptions struct {
-	Limit  int
-	Offset int
-	Sort   string
-	Order  string
-	Query  string
-	Status string
+	Limit         int
+	Offset        int
+	Sort          string
+	Order         string
+	Query         string
+	Status        string
+	HideAvailable bool
 }
 
 func orderDirection(order string) string {

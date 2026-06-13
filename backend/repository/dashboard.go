@@ -190,9 +190,12 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 		args = append(args, opts.Status)
 		where += fmt.Sprintf(" AND ip.status = $%d", len(args))
 	}
+	if opts.HideAvailable {
+		where += " AND ip.status != 'available'"
+	}
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
-		where += fmt.Sprintf(" AND (ip.address::text ILIKE $%d OR ip.hostname ILIKE $%d OR ip.assigned_to ILIKE $%d)", len(args), len(args), len(args))
+		where += fmt.Sprintf(" AND (ip.address::text ILIKE $%d OR ip.hostname ILIKE $%d)", len(args), len(args))
 	}
 
 	var total int64
@@ -201,11 +204,13 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 	}
 
 	allowedSorts := map[string]string{
-		"address":    "ip.address",
-		"hostname":   "ip.hostname",
-		"status":     "ip.status",
-		"created_at": "ip.created_at",
-		"updated_at": "ip.updated_at",
+		"address":     "ip.address",
+		"hostname":    "ip.hostname",
+		"status":      "ip.status",
+		"mac_address": "ip.mac_address",
+		"last_seen":   "ip.last_seen",
+		"created_at":  "ip.created_at",
+		"updated_at":  "ip.updated_at",
 	}
 	sortCol := sortExpr(opts.Sort, "ip.address", allowedSorts)
 	args = append(args, opts.Limit, opts.Offset)

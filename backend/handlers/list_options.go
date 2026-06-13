@@ -17,8 +17,9 @@ func parseListOptions(c *fiber.Ctx) (page int, limit int, opts repository.ListOp
 		limit = 25
 	}
 	opts.Sort = strings.TrimSpace(c.Query("sort"))
-	opts.Order = strings.TrimSpace(c.Query("order", c.Query("dir", "desc")))
+	opts.Order = strings.TrimSpace(c.Query("order", c.Query("dir", "asc")))
 	opts.Query = strings.TrimSpace(c.Query("q", c.Query("search")))
 	opts.Status = strings.TrimSpace(c.Query("status"))
+	opts.HideAvailable = c.Query("hide_available") == "true"
 	return page, limit, opts
 }

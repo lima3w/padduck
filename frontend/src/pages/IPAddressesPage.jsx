@@ -215,6 +215,21 @@ function PortBadges({ portOpen }) {
   )
 }
 
+function SortTh({ col, label, sortCol, sortDir, onSort }) {
+  const active = sortCol === col
+  return (
+    <th
+      className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium cursor-pointer select-none hover:text-gray-900 dark:hover:text-white whitespace-nowrap"
+      onClick={() => onSort(col)}
+    >
+      {label}
+      <span className="ml-1 inline-block w-3 text-center opacity-60">
+        {active ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+      </span>
+    </th>
+  )
+}
+
 const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
 const COLUMN_LABELS = {
   address: 'Address',
@@ -346,6 +361,9 @@ export default function IPAddressesPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
   const [devices, setDevices] = useState([])
+  const [sortCol, setSortCol] = useState('')
+  const [sortDir, setSortDir] = useState('asc')
+  const [hideAvailable, setHideAvailable] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -369,7 +387,7 @@ export default function IPAddressesPage() {
     } catch {}
   }
 
-  async function load(p = page) {
+  async function load(p = page, col = sortCol, dir = sortDir, hide = hideAvailable) {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -378,7 +396,7 @@ export default function IPAddressesPage() {
       setIsSearchActive(false)
       const [subRes, ipRes, tagRes] = await Promise.all([
         getSubnet(subnetID),
-        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT),
+        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, hide),
         getTags(),
       ])
       setSubnet(subRes.data)
@@ -396,6 +414,20 @@ export default function IPAddressesPage() {
   function handlePageChange(newPage) {
     setPage(newPage)
     load(newPage)
+  }
+
+  function handleSort(col) {
+    const newDir = sortCol === col && sortDir === 'asc' ? 'desc' : 'asc'
+    setSortCol(col)
+    setSortDir(newDir)
+    setPage(1)
+    load(1, col, newDir, hideAvailable)
+  }
+
+  function handleHideAvailable(checked) {
+    setHideAvailable(checked)
+    setPage(1)
+    load(1, sortCol, sortDir, checked)
   }
 
   function toggleColumn(col) {
@@ -944,9 +976,20 @@ export default function IPAddressesPage() {
       )}
 
       {!isSearchActive && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {total} address{total !== 1 ? 'es' : ''}
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {total} address{total !== 1 ? 'es' : ''}
+          </p>
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={hideAvailable}
+              onChange={e => handleHideAvailable(e.target.checked)}
+              className="rounded"
+            />
+            Hide unassigned
+          </label>
+        </div>
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -959,15 +1002,15 @@ export default function IPAddressesPage() {
                   <input type="checkbox" checked={ips.length > 0 && ips.every(ip => selected.has(ip.id))} onChange={e => e.target.checked ? setSelected(new Set(ips.map(ip => ip.id))) : setSelected(new Set())} />
                 </th>
               )}
-              {col('address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th>}
-              {col('hostname') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>}
-              {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
+              {col('address') && <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('hostname') && <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('status') && <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
               {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
               {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
-              {col('mac_address') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th>}
+              {col('mac_address') && <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
               {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
-              {col('last_seen') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th>}
+              {col('last_seen') && <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
               {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Services</th>}
               {searchableFields.map(d => (
                 <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
