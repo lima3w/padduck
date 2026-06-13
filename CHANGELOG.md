@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.31.32
+
+### Bug Fixes
+- **PHPIpam import silently discarded all IPs with non-reserved statuses**: `phpIpamStateToStatus` returned `"active"`, `"dhcp"`, and `"inactive"`, all of which violate the `ip_addresses.status` DB constraint (`available`, `assigned`, `reserved`). All INSERT rows were rejected. PHPIpam states 1/used/active and 3/dhcp now map to `"assigned"`; the default fallback maps to `"available"`.
+- **LDAP group sync errors were silently dropped**: the comment at the call site said "log but don't block login" but the error was discarded with `_ = err`. The error is now logged via `slog.Warn`.
+- **LDAP role assignment suppressed all errors, not just duplicate-key violations**: `AssignRoleToUser` errors were fully ignored. Non-duplicate errors (DB connectivity failures, permission issues) are now logged; only `23505 unique_violation` is still silently skipped.
+
+### Changes
+- **Bulk IP delete now issues a single query**: `BulkDeleteIPs` previously called `DeleteIPAddress` in a loop — one round-trip per ID. It now issues a single `DELETE … WHERE id = ANY($1) RETURNING id` and kicks off DNS cleanup goroutines for the deleted records.
+- **Handler error responses are now consistent**: 716 inline `c.Status(…).JSON(fiber.Map{"error": …})` calls across 47 handler files have been replaced with `RespondError`, which adds a structured `code` field alongside `error` and routes through the request logger.
+- **Service-layer logging migrated to structured slog**: 52 `log.Printf` calls across `dns.go`, `audit.go`, `notification.go`, `requests.go`, `reports.go`, and `registration.go` converted to `slog.Error`/`slog.Warn`/`slog.Info` with key-value pairs. `[tag]` prefixes dropped.
+- **Discovery service magic numbers extracted to named constants**: `defaultPingConcurrency` (20), `maxPingConcurrency` (100), `defaultScanResultLimit` (100), `maxScanResultLimit` (1000), `defaultPortList`, and `agentOfflineThreshold` (15 min) replace inline literals across `discovery.go`.
+- **Cron helpers moved to a dedicated file**: `matchesCron` and `validateCron` were defined in `discovery.go` but also consumed by `reports.go`. Extracted to `services/cron.go`.
+- **Repository and handler files split for maintainability**: `repository/devices.go` (845 lines) → 6 files; `repository/reports.go` (780 lines) → 4 files; `handlers/external_auth.go` (617 lines) → 4 files by auth provider.
+- **Large frontend page components split into focused sub-components**: `IPAddressesPage.jsx` (1,486 → ~580 lines), `UserSettingsPage.jsx` (1,187 → 60 lines), `DeviceDetailPage.jsx` (1,084 → 500 lines), `SubnetsPage.jsx` (1,032 → 771 lines). Extracted components live under `src/pages/ip/`, `src/pages/user/`, `src/pages/device/`, `src/pages/subnet/`.
+
+### Cleanup
+- Removed dead helper functions in `services/reports.go` (`cidrFromSubnet`, `parseIPNet`, `subnetNetworkName`) and a dead model sentinel in `services/mfa.go` that were kept alive only by `var _ =` guards.
+- Removed redundant `loggingMiddleware` in `handlers/handlers.go` — fully superseded by the Fiber logger registered in `main.go`.
+- Removed dead `Service.ListDevices` and `Repository.ListDevices` wrappers never called by any handler.
+- `scanDevice` and `scanInterface` in `repository/devices.go` now accept `interface{ Scan(...any) error }` instead of the concrete `pgx.Row`, consistent with all other scan helpers in the repository.
+
 ## v1.31.30
 
 ### Bug Fixes
