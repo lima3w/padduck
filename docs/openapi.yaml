@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Padduck API
   description: Route-complete REST API specification for the current backend.
-  version: 1.31.25
+  version: 1.31.32
   x-api-contract: stable-v1
   contact:
     name: Padduck
@@ -54,6 +54,12 @@ components:
     bearerToken:
       type: http
       scheme: bearer
+      description: >
+        API token issued from User Settings → API Tokens.
+        Tokens carry an optional scope. Endpoints tagged Admin require the
+        token scope to be "admin"; a token with any other scope (e.g. "read")
+        will receive 403 even if the issuing account has the admin role.
+        Browser sessions (session cookie) are not subject to scope restrictions.
     csrfToken:
       type: apiKey
       in: header
