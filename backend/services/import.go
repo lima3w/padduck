@@ -633,16 +633,16 @@ func (s *ImportService) importPHPIpamIPs(ctx context.Context, r io.Reader) (*Imp
 }
 
 // phpIpamStateToStatus maps PHPIpam state values to our IP status strings.
+// PHPIpam states: 1=used, 2=reserved, 3=dhcp, 0/4=offline/not-used.
+// Our constraint: status IN ('available', 'assigned', 'reserved').
 func phpIpamStateToStatus(state string) string {
 	switch strings.ToLower(state) {
-	case "1", "used", "active":
-		return "active"
+	case "1", "used", "active", "3", "dhcp":
+		return "assigned"
 	case "2", "reserved":
 		return "reserved"
-	case "3", "dhcp":
-		return "dhcp"
 	default:
-		return "inactive"
+		return "available"
 	}
 }
 
