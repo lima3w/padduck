@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.30
+
+### Bug Fixes
+- **Dockhand/Grype could not scan the frontend image on Docker 29 with the containerd image store**: the frontend image was published as a single Docker schema-v2 manifest, which Docker 29's containerd-backed `overlayfs` store exports as an incomplete archive (manifest descriptor only, no blobs). Both Trivy and Grype failed with "file blobs/sha256/… not found in tar". The release and deploy workflows now build the frontend image with `platforms: linux/amd64`, `provenance: mode=min`, and `sbom: true`, which causes `build-push-action` to publish an OCI image index. OCI indexes export correctly on Docker 29 and pass the scanner's local archive path.
+
 ## v1.31.29
 
 ### Bug Fixes
