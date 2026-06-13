@@ -18,6 +18,15 @@ import (
 	"padduck/utils"
 )
 
+const (
+	defaultPingConcurrency = 20
+	maxPingConcurrency     = 100
+	defaultScanResultLimit = 100
+	maxScanResultLimit     = 1000
+	defaultPortList        = "22,80,443,3306,5432,8080,8443"
+	agentOfflineThreshold  = 15 * time.Minute
+)
+
 // DiscoveryService handles network scanning and IP detection
 type DiscoveryService struct {
 	repository    discoveryRepo
@@ -156,12 +165,12 @@ func parsePorts(portList string) []string {
 // #210: performs SNMP scan when scan_type includes snmp.
 func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64, networkAddr string, prefixLen int, existingIPs map[string]int64, concurrency int, runID int64, prevAlive map[string]bool, job *models.ScanJob) ([]*models.ScanResult, int, int, int, error) {
 	if concurrency <= 0 {
-		concurrency = 20
+		concurrency = defaultPingConcurrency
 	}
 
 	resolveHostnames := true
 	portScanEnabled := false
-	portList := "22,80,443,3306,5432,8080,8443"
+	portList := defaultPortList
 
 	if d.config != nil {
 		if v, _ := d.config.Get("scanner_resolve_hostnames"); v == "false" {
@@ -359,7 +368,7 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 
 	concurrency := job.PingConcurrency
 	if concurrency <= 0 {
-		concurrency = 20
+		concurrency = defaultPingConcurrency
 	}
 
 	// Create scan run (#211)
@@ -489,10 +498,10 @@ func (d *DiscoveryService) UpdateJobFull(ctx context.Context, id int64, name str
 		}
 	}
 	if pingConcurrency <= 0 {
-		pingConcurrency = 20
+		pingConcurrency = defaultPingConcurrency
 	}
-	if pingConcurrency > 100 {
-		pingConcurrency = 100
+	if pingConcurrency > maxPingConcurrency {
+		pingConcurrency = maxPingConcurrency
 	}
 	validTypes := map[string]bool{"ping": true, "snmp": true, "ping+snmp": true}
 	if scanType == "" {
@@ -511,16 +520,16 @@ func (d *DiscoveryService) DeleteJob(ctx context.Context, id int64) error {
 
 // ListResults returns scan results for a job
 func (d *DiscoveryService) ListResults(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error) {
-	if limit <= 0 || limit > 1000 {
-		limit = 100
+	if limit <= 0 || limit > maxScanResultLimit {
+		limit = defaultScanResultLimit
 	}
 	return d.repository.ListScanResultsByJob(ctx, jobID, limit)
 }
 
 // ListSubnetResults returns scan results for a subnet
 func (d *DiscoveryService) ListSubnetResults(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error) {
-	if limit <= 0 || limit > 1000 {
-		limit = 100
+	if limit <= 0 || limit > maxScanResultLimit {
+		limit = defaultScanResultLimit
 	}
 	return d.repository.ListScanResultsBySubnet(ctx, subnetID, limit)
 }
@@ -665,7 +674,7 @@ func (d *DiscoveryService) MarkOfflineStale(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	threshold := time.Now().UTC().Add(-15 * time.Minute)
+	threshold := time.Now().UTC().Add(-agentOfflineThreshold)
 	for _, a := range agents {
 		if a.IsActive && a.LastSeen != nil && a.LastSeen.Before(threshold) {
 			if _, err := d.repository.UpdateScanAgentActive(ctx, a.ID, false); err != nil {
@@ -807,7 +816,7 @@ func (d *DiscoveryService) CreateScanProfile(ctx context.Context, name, scanType
 		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
 	}
 	if pingConcurrency <= 0 {
-		pingConcurrency = 20
+		pingConcurrency = defaultPingConcurrency
 	}
 	if snmpVersion == "" {
 		snmpVersion = "v2c"
@@ -838,7 +847,7 @@ func (d *DiscoveryService) UpdateScanProfile(ctx context.Context, id int64, name
 		return nil, fmt.Errorf("invalid scan_type: must be ping, snmp, or ping+snmp")
 	}
 	if pingConcurrency <= 0 {
-		pingConcurrency = 20
+		pingConcurrency = defaultPingConcurrency
 	}
 	if snmpVersion == "" {
 		snmpVersion = "v2c"
