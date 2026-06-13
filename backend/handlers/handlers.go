@@ -181,7 +181,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddresses.Post("/allocate", h.AllocateIPAddress)
 
 	// IP Addresses resource routes (top-level)
+	// Static paths must be registered before /:id to avoid the parameter capturing "search" or "quick-create".
 	ipAddress := protected.Group("/ip-addresses")
+	ipAddress.Get("/search", h.SearchIPAddressesGlobal)
+	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
+	ipAddress.Post("/quick-create", h.QuickCreateIPAddress)
 	ipAddress.Get("/:id", h.GetIPAddress)
 	ipAddress.Put("/:id", h.UpdateIPMeta)
 	ipAddress.Post("/:id/assign", h.AssignIPAddress)
@@ -190,9 +194,6 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Get("/:id/lease-status", h.IsIPLeaseExpired)
 	ipAddress.Post("/:id/release-expired", h.ReleaseExpiredLease)
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
-	ipAddress.Get("/search", h.SearchIPAddressesGlobal)
-	ipAddress.Post("/search/:subnetID", h.SearchIPAddresses)
-	ipAddress.Post("/quick-create", h.QuickCreateIPAddress)
 
 	// VRFs routes
 	vrfs := protected.Group("/vrfs", h.requireFeature(featureVrfs))
