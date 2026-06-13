@@ -2,6 +2,9 @@
 
 ## v1.31.32
 
+### Security
+- **API tokens with non-admin scope could reach admin-only endpoints**: 37 handlers used an inline `Role != "admin"` check that ignored the token scope entirely, allowing a scoped API token (e.g. read-only) issued to an admin-role account to reach admin-only operations. All inline checks have been consolidated to the `requireAdmin` helper, which additionally enforces that the token's scope must be `"admin"` (or absent, for browser sessions). The two "self OR admin" ownership patterns in user and request handlers are unaffected.
+
 ### Bug Fixes
 - **PHPIpam import silently discarded all IPs with non-reserved statuses**: `phpIpamStateToStatus` returned `"active"`, `"dhcp"`, and `"inactive"`, all of which violate the `ip_addresses.status` DB constraint (`available`, `assigned`, `reserved`). All INSERT rows were rejected. PHPIpam states 1/used/active and 3/dhcp now map to `"assigned"`; the default fallback maps to `"available"`.
 - **LDAP group sync errors were silently dropped**: the comment at the call site said "log but don't block login" but the error was discarded with `_ = err`. The error is now logged via `slog.Warn`.
