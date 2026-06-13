@@ -478,13 +478,10 @@ func (h *Handler) BulkDeleteIPs(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ip_ids must not be empty"})
 	}
 
-	var deleted int
-	for _, id := range req.IPIDs {
-		if err := h.service.DeleteIPAddress(c.Context(), id); err != nil {
-			reqLogger(c).Error("bulk delete IP failed", "ip_id", id, "error", err)
-			continue
-		}
-		deleted++
+	deleted, err := h.service.BulkDeleteIPAddresses(c.Context(), req.IPIDs)
+	if err != nil {
+		reqLogger(c).Error("bulk delete IPs failed", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to delete IP addresses"})
 	}
 
 	return c.JSON(fiber.Map{

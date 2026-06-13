@@ -132,9 +132,27 @@ func (r *Repository) UpdateIPAddressFull(ctx context.Context, id int64, hostname
 }
 
 func (r *Repository) DeleteIPAddress(ctx context.Context, id int64) error {
-	query := `DELETE FROM ip_addresses WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, id)
+	_, err := r.db.Exec(ctx, `DELETE FROM ip_addresses WHERE id = $1`, id)
 	return err
+}
+
+// BulkDeleteIPAddresses deletes all IP addresses whose IDs are in ids and
+// returns the IDs that were actually deleted (i.e. existed before the call).
+func (r *Repository) BulkDeleteIPAddresses(ctx context.Context, ids []int64) ([]int64, error) {
+	rows, err := r.db.Query(ctx, `DELETE FROM ip_addresses WHERE id = ANY($1) RETURNING id`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var deleted []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return deleted, err
+		}
+		deleted = append(deleted, id)
+	}
+	return deleted, rows.Err()
 }
 
 func (r *Repository) ListAvailableIPsBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error) {

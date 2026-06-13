@@ -167,6 +167,26 @@ func (s *Service) DeleteIPAddress(ctx context.Context, id int64) error {
 	return nil
 }
 
+// BulkDeleteIPAddresses deletes the given IPs in a single query. It fetches
+// the records first so DNS entries can be cleaned up asynchronously. Returns
+// the count of IPs that were actually deleted.
+func (s *Service) BulkDeleteIPAddresses(ctx context.Context, ids []int64) (int, error) {
+	// Fetch records before deletion for DNS cleanup.
+	ips := make([]*models.IPAddress, 0, len(ids))
+	for _, id := range ids {
+		ip, err := s.repository.GetIPAddressByID(ctx, id)
+		if err == nil {
+			ips = append(ips, ip)
+		}
+	}
+
+	deleted, err := s.repository.BulkDeleteIPAddresses(ctx, ids)
+	for _, ip := range ips {
+		go s.DNS.RemoveIPFromDNS(ctx, ip)
+	}
+	return len(deleted), err
+}
+
 // FindNextAvailableIP returns the next available IP in a subnet
 func (s *Service) FindNextAvailableIP(ctx context.Context, subnetID int64) (*models.IPAddress, error) {
 	if subnetID <= 0 {
