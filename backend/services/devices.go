@@ -20,14 +20,6 @@ func (s *Service) ListDeviceTypes(ctx context.Context) ([]*models.DeviceType, er
 	return s.repository.ListDeviceTypes(ctx)
 }
 
-// ListDevices returns a paginated list of devices.
-func (s *Service) ListDevices(ctx context.Context, limit, offset int) ([]*models.Device, int64, error) {
-	if limit <= 0 {
-		limit = 50
-	}
-	return s.repository.ListDevices(ctx, limit, offset)
-}
-
 func (s *Service) ListDevicesWithOptions(ctx context.Context, limit, offset int, opts repository.ListOptions) ([]*models.Device, int64, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50

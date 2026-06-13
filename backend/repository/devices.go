@@ -96,11 +96,6 @@ func scanDevice(row pgx.Row) (*models.Device, error) {
 	return d, nil
 }
 
-// ListDevices returns a paginated list of devices with their type and IP count.
-func (r *Repository) ListDevices(ctx context.Context, limit, offset int) ([]*models.Device, int64, error) {
-	return r.ListDevicesWithOptions(ctx, ListOptions{Limit: limit, Offset: offset})
-}
-
 func (r *Repository) ListDevicesWithOptions(ctx context.Context, opts ListOptions) ([]*models.Device, int64, error) {
 	args := []interface{}{}
 	where := ""
