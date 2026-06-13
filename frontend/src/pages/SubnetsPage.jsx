@@ -5,10 +5,8 @@ import { getNetwork, getSubnet, getSubnetsPaginated, createSubnet, updateSubnet,
 import { getNameservers } from '../api/dns'
 import { getVlans } from '../api/vlans'
 import { getCustomFields } from '../api/admin'
-import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import SubnetTree from '../components/SubnetTree'
-import CustomFieldForm from '../components/CustomFieldForm'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
@@ -16,30 +14,16 @@ import { getLocations } from '../api/locations'
 import { downloadFile } from '../utils/download'
 import { loadPrefs, savePrefs } from '../utils/listPrefs'
 import { getCachedUser, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '../utils/storageKeys'
+import SplitSubnetModal from './subnet/SplitSubnetModal'
+import MergeSubnetModal from './subnet/MergeSubnetModal'
+import ResizeSubnetModal from './subnet/ResizeSubnetModal'
+import SubnetFormModal from './subnet/SubnetFormModal'
 
 const DEFAULT_LIMIT = 25
 const FILTER_KEY = STORAGE_KEYS.subnetFilters
 const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.subnetFilters
 
 const EMPTY_FORM = { network_address: '', prefix_length: '24', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
-
-function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
-  if (!networkAddress || isNaN(newPrefix) || newPrefix <= currentPrefix || newPrefix > 32) return []
-  const parts = networkAddress.split('.').map(Number)
-  if (parts.length !== 4 || parts.some(isNaN)) return []
-  let base = 0
-  for (const p of parts) base = (base << 8) | p
-  base = base >>> 0
-  const count = Math.pow(2, newPrefix - currentPrefix)
-  const size = Math.pow(2, 32 - newPrefix)
-  const results = []
-  for (let i = 0; i < Math.min(count, 64); i++) {
-    const net = (base + i * size) >>> 0
-    const octets = [24, 16, 8, 0].map(s => (net >>> s) & 0xff)
-    results.push(`${octets.join('.')}/${newPrefix}`)
-  }
-  return results
-}
 
 export default function SubnetsPage() {
   const { networkID } = useParams()
@@ -728,304 +712,59 @@ export default function SubnetsPage() {
       )}
 
       {splitModal && (
-        <Modal title={`Split ${splitModal.subnet.networkAddress}/${splitModal.subnet.prefixLength}`} onClose={() => setSplitModal(null)}>
-          <div className="space-y-4">
-            {splitError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                <p>{splitError}</p>
-                {splitBlockingIPs.length > 0 && (
-                  <ul className="mt-2 space-y-0.5 font-mono text-xs">
-                    {splitBlockingIPs.map(ip => <li key={ip} className="text-red-600">{ip}</li>)}
-                  </ul>
-                )}
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Prefix Length</label>
-              <input
-                type="number"
-                min={splitModal.subnet.prefixLength + 1}
-                max={32}
-                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={splitPrefix}
-                onChange={e => setSplitPrefix(e.target.value)}
-              />
-            </div>
-            {splitPrefix && !isNaN(parseInt(splitPrefix)) && parseInt(splitPrefix) > splitModal.subnet.prefixLength && (
-              <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Preview — child CIDRs to create:</p>
-                <div className="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto">
-                  {splitCidrPreview(splitModal.subnet.networkAddress, splitModal.subnet.prefixLength, parseInt(splitPrefix)).map((c, i) => (
-                    <span key={i} className="font-mono text-xs bg-gray-50 dark:bg-gray-700 rounded px-2 py-1">{c}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setSplitModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-              <button
-                onClick={handleSplit}
-                disabled={splitting || !splitPrefix || isNaN(parseInt(splitPrefix)) || parseInt(splitPrefix) <= splitModal.subnet.prefixLength}
-                className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50"
-              >
-                {splitting ? 'Splitting...' : 'Split'}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <SplitSubnetModal
+          splitModal={splitModal}
+          splitPrefix={splitPrefix}
+          setSplitPrefix={setSplitPrefix}
+          splitting={splitting}
+          splitError={splitError}
+          splitBlockingIPs={splitBlockingIPs}
+          onSplit={handleSplit}
+          onClose={() => setSplitModal(null)}
+        />
       )}
 
       {mergeModal && (
-        <Modal title={`Merge with ${mergeModal.subnet.networkAddress}/${mergeModal.subnet.prefixLength}`} onClose={() => setMergeModal(null)}>
-          <div className="space-y-4">
-            {mergeError && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{mergeError}</div>}
-            {mergeModal.siblings.length === 0 ? (
-              <p className="text-sm text-gray-500">No sibling subnets with the same prefix length found in this network.</p>
-            ) : (
-              <>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Select subnets to merge with <strong className="font-mono">{mergeModal.subnet.networkAddress}/{mergeModal.subnet.prefixLength}</strong>:</p>
-                <div className="space-y-1 max-h-48 overflow-y-auto">
-                  {mergeModal.siblings.map(s => (
-                    <label key={s.id} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4"
-                        checked={mergeSelected.includes(s.id)}
-                        onChange={e => setMergeSelected(prev => e.target.checked ? [...prev, s.id] : prev.filter(id => id !== s.id))}
-                      />
-                      <span className="font-mono text-sm">{s.networkAddress}/{s.prefixLength}</span>
-                      {s.description && <span className="text-xs text-gray-400">{s.description}</span>}
-                    </label>
-                  ))}
-                </div>
-                {mergeSelected.length > 0 && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded text-sm text-blue-800 dark:text-blue-300">
-                    Merging {1 + mergeSelected.length} subnets with /{mergeModal.subnet.prefixLength - 1} prefix
-                  </div>
-                )}
-              </>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setMergeModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-              {mergeModal.siblings.length > 0 && (
-                <button
-                  onClick={handleMerge}
-                  disabled={merging || mergeSelected.length === 0}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
-                >
-                  {merging ? 'Merging...' : 'Merge'}
-                </button>
-              )}
-            </div>
-          </div>
-        </Modal>
+        <MergeSubnetModal
+          mergeModal={mergeModal}
+          mergeSelected={mergeSelected}
+          setMergeSelected={setMergeSelected}
+          merging={merging}
+          mergeError={mergeError}
+          onMerge={handleMerge}
+          onClose={() => setMergeModal(null)}
+        />
       )}
 
       {resizeModal && (
-        <Modal title={`Resize ${resizeModal.subnet.networkAddress}/${resizeModal.subnet.prefixLength}`} onClose={() => setResizeModal(null)}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New CIDR</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="192.168.0.0/23"
-                value={resizePrefix}
-                onChange={e => { setResizePrefix(e.target.value); setResizeError(null); setResizeConfirmText('') }}
-              />
-            </div>
-            {resizeError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm dark:bg-red-900/20 dark:border-red-700 dark:text-red-400">
-                <p className="font-medium mb-1">{resizeError.message}</p>
-                {(resizeError.conflictingIps?.length > 0 || resizeError.conflictingSubnets?.length > 0) && (
-                  <>
-                    {resizeError.conflictingIps?.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs font-semibold">Conflicting IPs:</p>
-                        <p className="font-mono text-xs">{resizeError.conflictingIps.join(', ')}</p>
-                      </div>
-                    )}
-                    {resizeError.conflictingSubnets?.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs font-semibold">Conflicting Subnets:</p>
-                        <p className="font-mono text-xs">{resizeError.conflictingSubnets.join(', ')}</p>
-                      </div>
-                    )}
-                    <div className="mt-3">
-                      <label className="block text-xs font-medium mb-1">Type CONFIRM to proceed anyway:</label>
-                      <input
-                        className="w-full border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400 dark:bg-gray-700 dark:border-gray-600"
-                        placeholder="CONFIRM"
-                        value={resizeConfirmText}
-                        onChange={e => setResizeConfirmText(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setResizeModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-              <button
-                onClick={handleResize}
-                disabled={resizing || !resizePrefix || (resizeError?.conflictingIps?.length > 0 && resizeConfirmText !== 'CONFIRM')}
-                className="px-4 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 disabled:opacity-50"
-              >
-                {resizing ? 'Resizing...' : 'Resize'}
-              </button>
-            </div>
-          </div>
-        </Modal>
+        <ResizeSubnetModal
+          resizeModal={resizeModal}
+          resizePrefix={resizePrefix}
+          setResizePrefix={setResizePrefix}
+          resizing={resizing}
+          resizeError={resizeError}
+          setResizeError={setResizeError}
+          resizeConfirmText={resizeConfirmText}
+          setResizeConfirmText={setResizeConfirmText}
+          onResize={handleResize}
+          onClose={() => setResizeModal(null)}
+        />
       )}
 
       {modal && (
-        <Modal title={modal === 'create' ? 'New Subnet' : 'Edit Subnet'} onClose={() => setModal(null)}>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {overlapError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{overlapError}</div>
-            )}
-            {modal === 'create' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Network Address</label>
-                  <input
-                    className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                    placeholder="192.168.0.0"
-                    value={form.network_address}
-                    onChange={e => setForm(f => ({ ...f, network_address: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prefix Length</label>
-                  <input
-                    type="number" min="0" max="32"
-                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                    placeholder="24"
-                    value={form.prefix_length}
-                    onChange={e => setForm(f => ({ ...f, prefix_length: e.target.value }))}
-                    required
-                  />
-                </div>
-              </>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gateway (optional)</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={form.gateway}
-                onChange={e => setForm(f => ({ ...f, gateway: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (optional)</label>
-              <select
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={form.location_id}
-                onChange={e => setForm(f => ({ ...f, location_id: e.target.value }))}
-              >
-                <option value="">No location</option>
-                {locations.map(l => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nameserver (optional)</label>
-              <select
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={form.nameserver_id}
-                onChange={e => setForm(f => ({ ...f, nameserver_id: e.target.value }))}
-              >
-                <option value="">No nameserver</option>
-                {nameservers.map(ns => (
-                  <option key={ns.id} value={ns.id}>{ns.name} ({ns.server1})</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">VLAN (optional)</label>
-              <select
-                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                value={form.vlan_id}
-                onChange={e => setForm(f => ({ ...f, vlan_id: e.target.value }))}
-              >
-                <option value="">No VLAN</option>
-                {vlans.map(vlan => (
-                  <option key={vlan.id} value={vlan.id}>VLAN {vlan.vlanId} — {vlan.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.auto_reserve_first}
-                  onChange={e => setForm(f => ({ ...f, auto_reserve_first: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 rounded"
-                />
-                <span className="text-sm text-gray-700">Auto-reserve first IP (network address)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.auto_reserve_last}
-                  onChange={e => setForm(f => ({ ...f, auto_reserve_last: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 rounded"
-                />
-                <span className="text-sm text-gray-700">Auto-reserve last IP (broadcast address)</span>
-              </label>
-            </div>
-            <div className="border-t dark:border-gray-600 pt-4 space-y-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Alert Settings</p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Threshold % (optional)</label>
-                <input
-                  type="number" min="1" max="100"
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  placeholder="e.g. 80"
-                  value={form.alert_threshold_pct}
-                  onChange={e => setForm(f => ({ ...f, alert_threshold_pct: e.target.value }))}
-                />
-                <p className="text-xs text-gray-400 mt-1">Send alert when utilisation exceeds this percentage</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Email Override (optional)</label>
-                <input
-                  type="email"
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  placeholder="alerts@example.com"
-                  value={form.alert_email_override}
-                  onChange={e => setForm(f => ({ ...f, alert_email_override: e.target.value }))}
-                />
-                <p className="text-xs text-gray-400 mt-1">Override the default alert recipient for this subnet</p>
-              </div>
-            </div>
-            {cfDefs.length > 0 && (
-              <div className="border-t dark:border-gray-600 pt-4">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
-                <CustomFieldForm
-                  definitions={cfDefs}
-                  values={form.custom_fields}
-                  onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
-                />
-              </div>
-            )}
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <SubnetFormModal
+          modal={modal}
+          form={form}
+          setForm={setForm}
+          overlapError={overlapError}
+          saving={saving}
+          locations={locations}
+          nameservers={nameservers}
+          vlans={vlans}
+          cfDefs={cfDefs}
+          onSubmit={handleSubmit}
+          onClose={() => setModal(null)}
+        />
       )}
     </div>
   )
