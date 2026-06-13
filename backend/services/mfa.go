@@ -18,7 +18,6 @@ import (
 	"github.com/pquerna/otp/totp"
 	qrcode "github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
-	"padduck/models"
 	"padduck/repository"
 )
 
@@ -345,5 +344,3 @@ func (s *MFAService) BackupCodesRemaining(ctx context.Context, userID int64) int
 	return n
 }
 
-// unused import guard
-var _ = models.UserMFASettings{}

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"padduck/internal/export"
@@ -868,25 +866,3 @@ func totalAddressesFromPrefix(prefix int) int {
 	return 1 << uint(bits)
 }
 
-// cidrFromSubnet constructs the CIDR string for a subnet.
-func cidrFromSubnet(s *models.Subnet) string {
-	return fmt.Sprintf("%s/%d", s.NetworkAddress, s.PrefixLength)
-}
-
-// parseIPNet is a helper to parse a CIDR string.
-func parseIPNet(cidr string) (*net.IPNet, error) {
-	_, ipNet, err := net.ParseCIDR(cidr)
-	return ipNet, err
-}
-
-// subnetNetworkName returns the section name by extracting it from a join. Placeholder.
-func subnetNetworkName(s *models.Subnet) string {
-	_ = s
-	return ""
-}
-
-// Ensure unused imports are used.
-var _ = strings.TrimSpace
-var _ = cidrFromSubnet
-var _ = parseIPNet
-var _ = subnetNetworkName
