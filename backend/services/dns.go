@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"strings"
 	"time"
@@ -90,12 +90,12 @@ func (d *DNSService) CheckDNS(ctx context.Context, ipID int64) error {
 func (d *DNSService) CheckAllDNS(ctx context.Context) {
 	ips, err := d.svc.repository.ListIPAddressesWithDNSName(ctx)
 	if err != nil {
-		log.Printf("[dns] ListIPAddressesWithDNSName: %v", err)
+		slog.Error("ListIPAddressesWithDNSName failed", "error", err)
 		return
 	}
 	for _, ip := range ips {
 		if err := d.CheckDNS(ctx, ip.ID); err != nil {
-			log.Printf("[dns] CheckDNS ip=%d: %v", ip.ID, err)
+			slog.Error("CheckDNS failed", "ip_id", ip.ID, "error", err)
 		}
 	}
 }
@@ -113,7 +113,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 
 	defaultZone, _ := d.svc.Config.GetCtx(ctx, "pdns_default_zone")
 	if defaultZone == "" {
-		log.Printf("[pdns] SyncIPToPDNS: pdns_default_zone not configured")
+		slog.Warn("SyncIPToPDNS: pdns_default_zone not configured")
 		return
 	}
 
@@ -129,7 +129,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 	}
 
 	if err := client.CreateRecord(ctx, defaultZone, fqdn, rtype, ip.Address, 300); err != nil {
-		log.Printf("[pdns] SyncIPToPDNS CreateRecord A/AAAA ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+		slog.Error("SyncIPToPDNS CreateRecord A/AAAA failed", "ip", ip.Address, "dns", *ip.DNSName, "error", err)
 	}
 
 	// PTR record
@@ -138,7 +138,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
 			prefixLen = subnet.PrefixLength
 		} else {
-			log.Printf("[pdns] SyncIPToPDNS: subnet lookup for PTR ip=%s: %v", ip.Address, err)
+			slog.Error("SyncIPToPDNS: subnet lookup for PTR failed", "ip", ip.Address, "error", err)
 		}
 	}
 	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
@@ -146,7 +146,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 		ptrZones, _ := d.svc.Config.GetCtx(ctx, "pdns_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.CreateRecord(ctx, ptrZone, ptrName, "PTR", fqdn, 300); err != nil {
-				log.Printf("[pdns] SyncIPToPDNS CreateRecord PTR ip=%s: %v", ip.Address, err)
+				slog.Error("SyncIPToPDNS CreateRecord PTR failed", "ip", ip.Address, "error", err)
 			}
 		}
 	}
@@ -179,7 +179,7 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 	}
 
 	if err := client.DeleteRecord(ctx, defaultZone, fqdn, rtype); err != nil {
-		log.Printf("[pdns] RemoveIPFromPDNS DeleteRecord A/AAAA ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+		slog.Error("RemoveIPFromPDNS DeleteRecord A/AAAA failed", "ip", ip.Address, "dns", *ip.DNSName, "error", err)
 	}
 
 	prefixLen := 0
@@ -187,7 +187,7 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
 			prefixLen = subnet.PrefixLength
 		} else {
-			log.Printf("[pdns] RemoveIPFromPDNS: subnet lookup for PTR ip=%s: %v", ip.Address, err)
+			slog.Error("RemoveIPFromPDNS: subnet lookup for PTR failed", "ip", ip.Address, "error", err)
 		}
 	}
 	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
@@ -195,7 +195,7 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 		ptrZones, _ := d.svc.Config.GetCtx(ctx, "pdns_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.DeleteRecord(ctx, ptrZone, ptrName, "PTR"); err != nil {
-				log.Printf("[pdns] RemoveIPFromPDNS DeleteRecord PTR ip=%s: %v", ip.Address, err)
+				slog.Error("RemoveIPFromPDNS DeleteRecord PTR failed", "ip", ip.Address, "error", err)
 			}
 		}
 	}
@@ -361,7 +361,7 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 	}
 	zone, _ := d.svc.Config.GetCtx(ctx, "technitium_default_zone")
 	if zone == "" {
-		log.Printf("[technitium] SyncIPToTechnitium: technitium_default_zone not configured")
+		slog.Warn("SyncIPToTechnitium: technitium_default_zone not configured")
 		return
 	}
 	fqdn := *ip.DNSName
@@ -369,7 +369,7 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 		fqdn += "."
 	}
 	if err := client.AddRecord(ctx, zone, fqdn, ip.Address); err != nil {
-		log.Printf("[technitium] SyncIPToTechnitium AddRecord ip=%s dns=%s: %v", ip.Address, fqdn, err)
+		slog.Error("SyncIPToTechnitium AddRecord failed", "ip", ip.Address, "dns", fqdn, "error", err)
 	}
 	// PTR record — reuse buildPTR helper with subnet prefix for IPv6
 	prefixLen := 0
@@ -383,7 +383,7 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.AddPTRRecord(ctx, ptrZone, ptrName, fqdn); err != nil {
-				log.Printf("[technitium] SyncIPToTechnitium AddPTRRecord ip=%s: %v", ip.Address, err)
+				slog.Error("SyncIPToTechnitium AddPTRRecord failed", "ip", ip.Address, "error", err)
 			}
 		}
 	}
@@ -404,7 +404,7 @@ func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAd
 		return
 	}
 	if err := client.DeleteRecord(ctx, zone, *ip.DNSName, ip.Address); err != nil {
-		log.Printf("[technitium] RemoveIPFromTechnitium DeleteRecord ip=%s dns=%s: %v", ip.Address, *ip.DNSName, err)
+		slog.Error("RemoveIPFromTechnitium DeleteRecord failed", "ip", ip.Address, "dns", *ip.DNSName, "error", err)
 	}
 	// PTR record
 	prefixLen := 0
@@ -418,7 +418,7 @@ func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAd
 		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.DeletePTRRecord(ctx, ptrZone, ptrName); err != nil {
-				log.Printf("[technitium] RemoveIPFromTechnitium DeletePTRRecord ip=%s: %v", ip.Address, err)
+				slog.Error("RemoveIPFromTechnitium DeletePTRRecord failed", "ip", ip.Address, "error", err)
 			}
 		}
 	}
@@ -468,7 +468,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 	for _, zone := range zones {
 		records, recErr := d.GetDNSZoneRecords(ctx, zone.Name, "")
 		if recErr != nil {
-			log.Printf("[dns-sync] list records for zone %s: %v", zone.Name, recErr)
+			slog.Error("dns-sync: list records failed", "zone", zone.Name, "error", recErr)
 			continue
 		}
 		for _, rec := range records {
@@ -538,9 +538,9 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 			hn := dnsName
 			_, createErr := d.svc.repository.CreateIPAddress(ctx, subnetID, ipStr, hn, "active", nil, nil, nil, nil)
 			if createErr != nil {
-				log.Printf("[dns-sync] create IP %s in subnet %d: %v", ipStr, subnetID, createErr)
+				slog.Error("dns-sync: create IP failed", "ip", ipStr, "subnet_id", subnetID, "error", createErr)
 			} else {
-				log.Printf("[dns-sync] added IP %s (dns=%s) to subnet %d", ipStr, dnsName, subnetID)
+				slog.Info("dns-sync: added IP to subnet", "ip", ipStr, "dns", dnsName, "subnet_id", subnetID)
 			}
 		}
 	}
@@ -550,7 +550,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 		for _, s := range subnets {
 			ips, listErr := d.svc.repository.ListIPAddressesBySubnet(ctx, s.ID)
 			if listErr != nil {
-				log.Printf("[dns-sync] list IPs for subnet %d: %v", s.ID, listErr)
+				slog.Error("dns-sync: list IPs for subnet failed", "subnet_id", s.ID, "error", listErr)
 				continue
 			}
 			for _, ip := range ips {
@@ -559,9 +559,9 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 				}
 				if _, stillInDNS := dnsIPs[ip.Address]; !stillInDNS {
 					if delErr := d.svc.repository.DeleteIPAddress(ctx, ip.ID); delErr != nil {
-						log.Printf("[dns-sync] remove IP %s (id=%d): %v", ip.Address, ip.ID, delErr)
+						slog.Error("dns-sync: remove IP failed", "ip", ip.Address, "ip_id", ip.ID, "error", delErr)
 					} else {
-						log.Printf("[dns-sync] removed IP %s (no longer in DNS)", ip.Address)
+						slog.Info("dns-sync: removed IP no longer in DNS", "ip", ip.Address)
 					}
 				}
 			}
@@ -575,7 +575,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 // but does not propagate them. Intended to be called from a background scheduler.
 func (d *DNSService) AutoSyncDNSZoneIPs(ctx context.Context) {
 	if err := d.SyncDNSZoneIPs(ctx); err != nil {
-		log.Printf("[dns-sync] AutoSyncDNSZoneIPs: %v", err)
+		slog.Error("AutoSyncDNSZoneIPs failed", "error", err)
 	}
 }
 

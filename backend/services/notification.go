@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"text/template"
 	"time"
 
@@ -408,7 +408,7 @@ func (n *NotificationService) Queue(ctx context.Context, userID int64, tmplName 
 			return fmt.Errorf("notification queue: count recent notifications for user %d: %w", userID, err)
 		}
 		if count >= 10 {
-			log.Printf("[notification] rate limit reached for user %d (%s), skipping %s", userID, user.Username, tmplName)
+			slog.Warn("notification rate limit reached, skipping", "user_id", userID, "username", user.Username, "template", tmplName)
 			return nil
 		}
 	}
@@ -449,7 +449,7 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 	}
 	items, err := n.repo.GetPendingNotifications(ctx, 50)
 	if err != nil {
-		log.Printf("[notification] get pending notifications: %v", err)
+		slog.Error("notification: get pending notifications failed", "error", err)
 		return
 	}
 
@@ -458,7 +458,7 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 		var data map[string]interface{}
 		if item.Data != "" {
 			if jsonErr := json.Unmarshal([]byte(item.Data), &data); jsonErr != nil {
-				log.Printf("[notification] unmarshal data for item %d: %v", item.ID, jsonErr)
+				slog.Error("notification: unmarshal data failed", "item_id", item.ID, "error", jsonErr)
 				data = map[string]interface{}{}
 			}
 		} else {
@@ -467,11 +467,11 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 
 		subject, body, renderErr := n.renderTemplate(item.Template, data)
 		if renderErr != nil {
-			log.Printf("[notification] render template for item %d (%s): %v", item.ID, item.Template, renderErr)
+			slog.Error("notification: render template failed", "item_id", item.ID, "template", item.Template, "error", renderErr)
 			// Treat template errors as permanent failures.
 			errMsg := renderErr.Error()
 			if markErr := n.repo.MarkNotificationFailed(ctx, item.ID, errMsg, item.RetryCount, nil); markErr != nil {
-				log.Printf("[notification] mark failed for item %d: %v", item.ID, markErr)
+				slog.Error("notification: mark failed error", "item_id", item.ID, "error", markErr)
 			}
 			continue
 		}
@@ -479,12 +479,12 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 		sendErr := n.email.Send(item.Email, subject, body)
 		if sendErr == nil {
 			if markErr := n.repo.MarkNotificationSent(ctx, item.ID); markErr != nil {
-				log.Printf("[notification] mark sent for item %d: %v", item.ID, markErr)
+				slog.Error("notification: mark sent error", "item_id", item.ID, "error", markErr)
 			}
 			continue
 		}
 
-		log.Printf("[notification] send failed for item %d (%s → %s): %v", item.ID, item.Template, item.Email, sendErr)
+		slog.Error("notification send failed", "item_id", item.ID, "template", item.Template, "email", item.Email, "error", sendErr)
 		newRetryCount := item.RetryCount + 1
 		delay := retryDelay(newRetryCount)
 		var nextRetryAt *time.Time
@@ -494,13 +494,13 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 		}
 		errMsg := sendErr.Error()
 		if markErr := n.repo.MarkNotificationFailed(ctx, item.ID, errMsg, newRetryCount, nextRetryAt); markErr != nil {
-			log.Printf("[notification] mark failed for item %d: %v", item.ID, markErr)
+			slog.Error("notification: mark failed error", "item_id", item.ID, "error", markErr)
 		}
 	}
 
 	// Clean up old processed notifications; ignore errors.
 	if err := n.repo.CleanupOldNotifications(ctx); err != nil {
-		log.Printf("[notification] cleanup old notifications: %v", err)
+		slog.Error("notification: cleanup old notifications failed", "error", err)
 	}
 }
 
@@ -508,7 +508,7 @@ func (n *NotificationService) ProcessQueue(ctx context.Context) {
 // seconds until ctx is cancelled.
 func (n *NotificationService) StartWorker(ctx context.Context) {
 	if !n.email.IsSMTPConfigured() {
-		log.Printf("[notification] SMTP not configured — email delivery disabled")
+		slog.Warn("notification: SMTP not configured, email delivery disabled")
 	}
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)

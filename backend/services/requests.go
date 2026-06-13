@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 
 	"padduck/models"
@@ -427,7 +427,7 @@ func (e *IPAlreadyTakenError) Error() string {
 func (s *Service) notifyAdminsSubnetRequest(ctx context.Context, sr *models.SubnetRequest, requesterID int64) {
 	admins, err := s.repository.GetUsersByRole(ctx, "admin")
 	if err != nil {
-		log.Printf("[requests] failed to get admins for notification: %v", err)
+		slog.Error("requests: failed to get admins for notification", "error", err)
 		return
 	}
 	for _, admin := range admins {
@@ -437,7 +437,7 @@ func (s *Service) notifyAdminsSubnetRequest(ctx context.Context, sr *models.Subn
 			"Purpose":     sr.Purpose,
 			"PrefixLen":   sr.RequestedPrefixLen,
 		}); err != nil {
-			log.Printf("[requests] failed to notify admin %d: %v", admin.ID, err)
+			slog.Error("requests: failed to notify admin", "admin_id", admin.ID, "error", err)
 		}
 	}
 }
@@ -445,7 +445,7 @@ func (s *Service) notifyAdminsSubnetRequest(ctx context.Context, sr *models.Subn
 func (s *Service) notifyAdminsIPRequest(ctx context.Context, ir *models.IPRequest, requesterID int64) {
 	admins, err := s.repository.GetUsersByRole(ctx, "admin")
 	if err != nil {
-		log.Printf("[requests] failed to get admins for notification: %v", err)
+		slog.Error("requests: failed to get admins for notification", "error", err)
 		return
 	}
 	for _, admin := range admins {
@@ -455,7 +455,7 @@ func (s *Service) notifyAdminsIPRequest(ctx context.Context, ir *models.IPReques
 			"Purpose":     ir.Purpose,
 			"SubnetID":    ir.SubnetID,
 		}); err != nil {
-			log.Printf("[requests] failed to notify admin %d: %v", admin.ID, err)
+			slog.Error("requests: failed to notify admin", "admin_id", admin.ID, "error", err)
 		}
 	}
 }
@@ -467,7 +467,7 @@ func (s *Service) notifyRequesterSubnetApproved(ctx context.Context, sr *models.
 		"SubnetCIDR":   cidr,
 		"ReviewerNote": sr.ReviewerNote,
 	}); err != nil {
-		log.Printf("[requests] failed to notify requester %d (subnet approved): %v", sr.RequesterID, err)
+		slog.Error("requests: failed to notify requester (subnet approved)", "requester_id", sr.RequesterID, "error", err)
 	}
 }
 
@@ -477,7 +477,7 @@ func (s *Service) notifyRequesterSubnetRejected(ctx context.Context, sr *models.
 		"RequestID":    sr.ID,
 		"ReviewerNote": sr.ReviewerNote,
 	}); err != nil {
-		log.Printf("[requests] failed to notify requester %d (subnet rejected): %v", sr.RequesterID, err)
+		slog.Error("requests: failed to notify requester (subnet rejected)", "requester_id", sr.RequesterID, "error", err)
 	}
 }
 
@@ -487,7 +487,7 @@ func (s *Service) notifyRequesterIPApproved(ctx context.Context, ir *models.IPRe
 		"AssignedIP":   ipAddr.Address,
 		"ReviewerNote": ir.ReviewerNote,
 	}); err != nil {
-		log.Printf("[requests] failed to notify requester %d (ip approved): %v", ir.RequesterID, err)
+		slog.Error("requests: failed to notify requester (ip approved)", "requester_id", ir.RequesterID, "error", err)
 	}
 }
 
@@ -497,7 +497,7 @@ func (s *Service) notifyRequesterIPRejected(ctx context.Context, ir *models.IPRe
 		"RequestID":    ir.ID,
 		"ReviewerNote": ir.ReviewerNote,
 	}); err != nil {
-		log.Printf("[requests] failed to notify requester %d (ip rejected): %v", ir.RequesterID, err)
+		slog.Error("requests: failed to notify requester (ip rejected)", "requester_id", ir.RequesterID, "error", err)
 	}
 }
 
@@ -547,7 +547,7 @@ func (s *Service) notifyRequestComment(ctx context.Context, requestType string, 
 		"AuthorName":  comment.AuthorUsername,
 		"Body":        comment.Body,
 	}); err != nil {
-		log.Printf("[requests] failed to notify user %d (comment): %v", otherUserID, err)
+		slog.Error("requests: failed to notify user (comment)", "user_id", otherUserID, "error", err)
 	}
 }
 

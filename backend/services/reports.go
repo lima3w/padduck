@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -81,14 +81,14 @@ func NewReportsService(repo reportsRepo, config *ConfigService, email *EmailServ
 func (rs *ReportsService) TakeUtilisationSnapshots(ctx context.Context) {
 	subnets, err := rs.repo.ListAllSubnets(ctx)
 	if err != nil {
-		log.Printf("[reports] list subnets for snapshot: %v", err)
+		slog.Error("reports: list subnets for snapshot failed", "error", err)
 		return
 	}
 
 	for _, subnet := range subnets {
 		ips, err := rs.repo.ListIPAddressesBySubnet(ctx, subnet.ID)
 		if err != nil {
-			log.Printf("[reports] list IPs for subnet %d: %v", subnet.ID, err)
+			slog.Error("reports: list IPs for subnet failed", "subnet_id", subnet.ID, "error", err)
 			continue
 		}
 
@@ -109,7 +109,7 @@ func (rs *ReportsService) TakeUtilisationSnapshots(ctx context.Context) {
 		}
 
 		if err := rs.repo.RecordUtilisationSnapshot(ctx, subnet.ID, used, total, pct); err != nil {
-			log.Printf("[reports] record snapshot for subnet %d: %v", subnet.ID, err)
+			slog.Error("reports: record snapshot failed", "subnet_id", subnet.ID, "error", err)
 		}
 	}
 
@@ -169,7 +169,7 @@ func (rs *ReportsService) StartUtilisationSnapshotJob(ctx context.Context) {
 func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 	subnets, err := rs.repo.ListSubnetsWithThresholds(ctx)
 	if err != nil {
-		log.Printf("[reports] list subnets with thresholds: %v", err)
+		slog.Error("reports: list subnets with thresholds failed", "error", err)
 		return
 	}
 
@@ -220,7 +220,7 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 			// Check cooldown
 			cooldown, err := rs.repo.GetAlertCooldown(ctx, subnet.ID)
 			if err != nil {
-				log.Printf("[reports] get cooldown for subnet %d: %v", subnet.ID, err)
+				slog.Error("reports: get cooldown failed", "subnet_id", subnet.ID, "error", err)
 				continue
 			}
 			if cooldown != nil {
@@ -245,18 +245,18 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 					threshold,
 				)
 				if err := rs.email.Send(alertEmail, subject, body); err != nil {
-					log.Printf("[reports] send alert email for subnet %d: %v", subnet.ID, err)
+					slog.Error("reports: send alert email failed", "subnet_id", subnet.ID, "error", err)
 				}
 			}
 
 			// Set cooldown
 			if err := rs.repo.SetAlertCooldown(ctx, subnet.ID, currentPct); err != nil {
-				log.Printf("[reports] set cooldown for subnet %d: %v", subnet.ID, err)
+				slog.Error("reports: set cooldown failed", "subnet_id", subnet.ID, "error", err)
 			}
 		} else if currentPct < thresholdF-5 {
 			// Clear cooldown to allow future re-alerting
 			if err := rs.repo.ClearAlertCooldown(ctx, subnet.ID); err != nil {
-				log.Printf("[reports] clear cooldown for subnet %d: %v", subnet.ID, err)
+				slog.Error("reports: clear cooldown failed", "subnet_id", subnet.ID, "error", err)
 			}
 		}
 	}
@@ -339,7 +339,7 @@ func (rs *ReportsService) RunScheduledReport(ctx context.Context, report *models
 			report.Name, report.ReportType, report.Format, filename, contentType, string(data),
 		)
 		if err := rs.email.Send(recipient, subject, body); err != nil {
-			log.Printf("[reports] send scheduled report to %s: %v", recipient, err)
+			slog.Error("reports: send scheduled report failed", "recipient", recipient, "error", err)
 		}
 	}
 
@@ -692,7 +692,7 @@ func (rs *ReportsService) StartScheduledReportJob(ctx context.Context) {
 			case now := <-ticker.C:
 				reports, err := rs.ListScheduledReports(ctx)
 				if err != nil {
-					log.Printf("[reports] list scheduled reports: %v", err)
+					slog.Error("reports: list scheduled reports failed", "error", err)
 					continue
 				}
 				for _, rpt := range reports {
@@ -700,7 +700,7 @@ func (rs *ReportsService) StartScheduledReportJob(ctx context.Context) {
 						rptCopy := rpt
 						go func() {
 							if err := rs.RunScheduledReport(ctx, rptCopy); err != nil {
-								log.Printf("[reports] run scheduled report %d: %v", rptCopy.ID, err)
+								slog.Error("reports: run scheduled report failed", "report_id", rptCopy.ID, "error", err)
 							}
 						}()
 					}

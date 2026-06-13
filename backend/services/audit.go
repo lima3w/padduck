@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
@@ -72,7 +72,7 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 	}
 
 	if err := a.svc.repository.CreateAuditLog(ctx, entry); err != nil {
-		log.Printf("audit: failed to write log (action=%s): %v", e.Action, err)
+		slog.Error("audit: failed to write log", "action", e.Action, "error", err)
 	}
 	if a.svc.Webhooks != nil {
 		a.svc.Webhooks.Queue(ctx, WebhookEvent{
