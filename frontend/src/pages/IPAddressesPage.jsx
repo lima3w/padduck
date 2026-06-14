@@ -152,8 +152,9 @@ export default function IPAddressesPage() {
     const newDir = sortCol === col && sortDir === 'asc' ? 'desc' : 'asc'
     setSortCol(col)
     setSortDir(newDir)
+    setFullRange(false)
     setPage(1)
-    load(1, col, newDir)
+    load(1, col, newDir, false)
   }
 
   function handleFullRange(checked) {
@@ -776,15 +777,15 @@ export default function IPAddressesPage() {
                   <input type="checkbox" checked={ips.length > 0 && ips.every(ip => selected.has(ip.id))} onChange={e => e.target.checked ? setSelected(new Set(ips.map(ip => ip.id))) : setSelected(new Set())} />
                 </th>
               )}
-              {col('address') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Address</th> : <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
-              {col('hostname') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th> : <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
-              {col('status') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th> : <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('address') && <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('hostname') && <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('status') && <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
               {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
               {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
-              {col('mac_address') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">MAC Address</th> : <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('mac_address') && <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
               {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
               {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
-              {col('last_seen') && (fullRange ? <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Last Seen</th> : <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />)}
+              {col('last_seen') && <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
               {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Services</th>}
               {searchableFields.map(d => (
                 <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
