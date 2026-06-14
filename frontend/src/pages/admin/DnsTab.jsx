@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { checkAllDns, createNameserver, testDnsConnection, testTechnitiumConnection } from '../../api/dns'
+import { getTechnitiumDHCPScopes, importTechnitiumScope, syncTechnitiumLeases } from '../../api/admin'
+import { getNetworks } from '../../api/ipam'
 
 export default function DnsTab({ config, handleConfigChange, handleSaveConfig, saving, showMessage }) {
   const [dnsTestStatus, setDnsTestStatus] = useState(null) // null | 'testing' | { ok, message }
@@ -7,6 +9,14 @@ export default function DnsTab({ config, handleConfigChange, handleSaveConfig, s
   const [dnsBulkStatus, setDnsBulkStatus] = useState(null) // null | 'running' | { ok, message }
   const [addAsNs, setAddAsNs] = useState(false)
   const [nsName, setNsName] = useState('Technitium DNS')
+
+  // Technitium DHCP state
+  const [dhcpScopes, setDhcpScopes] = useState(null) // null = not loaded
+  const [dhcpScopesLoading, setDhcpScopesLoading] = useState(false)
+  const [dhcpSyncStatus, setDhcpSyncStatus] = useState(null) // null | 'syncing' | { ok, message }
+  const [importingScope, setImportingScope] = useState(null)
+  const [importNetworkID, setImportNetworkID] = useState('')
+  const [networks, setNetworks] = useState(null)
 
   function extractHostname(url) {
     try { return new URL(url).hostname } catch { return url }
@@ -66,6 +76,43 @@ export default function DnsTab({ config, handleConfigChange, handleSaveConfig, s
     } catch (err) {
       const msg = err.response?.data?.error || err.message || 'Failed to start DNS check'
       setDnsBulkStatus({ ok: false, message: msg })
+    }
+  }
+
+  async function loadDHCPScopes() {
+    setDhcpScopesLoading(true)
+    try {
+      const [scopesRes, netsRes] = await Promise.all([getTechnitiumDHCPScopes(), getNetworks()])
+      setDhcpScopes(scopesRes.data?.scopes || [])
+      setNetworks(netsRes.data || [])
+    } catch (err) {
+      setDhcpScopes([])
+      showMessage('Failed to load DHCP scopes: ' + (err.response?.data?.error || err.message), 'error')
+    } finally {
+      setDhcpScopesLoading(false)
+    }
+  }
+
+  async function handleDHCPSync() {
+    setDhcpSyncStatus('syncing')
+    try {
+      const res = await syncTechnitiumLeases()
+      setDhcpSyncStatus({ ok: true, message: `Synced ${res.data?.synced ?? 0} leases` })
+    } catch (err) {
+      setDhcpSyncStatus({ ok: false, message: err.response?.data?.error || 'Sync failed' })
+    }
+  }
+
+  async function handleImportScope(scopeName) {
+    if (!importNetworkID) { showMessage('Select a network to import into', 'error'); return }
+    setImportingScope(scopeName)
+    try {
+      await importTechnitiumScope({ scope_name: scopeName, network_id: Number(importNetworkID) })
+      showMessage(`Scope "${scopeName}" imported as a new subnet`)
+    } catch (err) {
+      showMessage('Import failed: ' + (err.response?.data?.error || err.message), 'error')
+    } finally {
+      setImportingScope(null)
     }
   }
 
@@ -337,6 +384,96 @@ export default function DnsTab({ config, handleConfigChange, handleSaveConfig, s
               {dnsBulkStatus === 'running' ? 'Starting...' : 'Run DNS Bulk Check'}
             </button>
           </div>
+
+          {config?.technitium_url && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+              <h2 className="text-lg font-semibold">Technitium DHCP</h2>
+              <p className="text-sm text-gray-500">
+                Pull leases from all Technitium DHCP scopes into the IPAM, or import a scope as a new subnet.
+              </p>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={handleDHCPSync}
+                  disabled={dhcpSyncStatus === 'syncing'}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium"
+                >
+                  {dhcpSyncStatus === 'syncing' ? 'Syncing…' : 'Sync Leases Now'}
+                </button>
+                <button
+                  onClick={loadDHCPScopes}
+                  disabled={dhcpScopesLoading}
+                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 text-sm"
+                >
+                  {dhcpScopesLoading ? 'Loading…' : 'Load Scopes'}
+                </button>
+              </div>
+
+              {dhcpSyncStatus && dhcpSyncStatus !== 'syncing' && (
+                <div className={`px-3 py-2 rounded text-sm ${dhcpSyncStatus.ok ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                  {dhcpSyncStatus.message}
+                </div>
+              )}
+
+              {dhcpScopes !== null && (
+                <div>
+                  {dhcpScopes.length === 0 ? (
+                    <p className="text-sm text-gray-500">No DHCP scopes found.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600 whitespace-nowrap">Import into network:</label>
+                        <select
+                          value={importNetworkID}
+                          onChange={e => setImportNetworkID(e.target.value)}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select…</option>
+                          {(networks || []).map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="overflow-x-auto rounded border border-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200 text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left font-medium text-gray-600">Scope</th>
+                              <th className="px-4 py-2 text-left font-medium text-gray-600">Range</th>
+                              <th className="px-4 py-2 text-left font-medium text-gray-600">Mask</th>
+                              <th className="px-4 py-2 text-left font-medium text-gray-600">Status</th>
+                              <th className="px-4 py-2" />
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 bg-white">
+                            {dhcpScopes.map(scope => (
+                              <tr key={scope.name}>
+                                <td className="px-4 py-2 font-medium">{scope.name}</td>
+                                <td className="px-4 py-2 font-mono text-xs text-gray-600">{scope.startingAddress} – {scope.endingAddress}</td>
+                                <td className="px-4 py-2 font-mono text-xs text-gray-600">{scope.subnetMask}</td>
+                                <td className="px-4 py-2">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${scope.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                    {scope.enabled ? 'Enabled' : 'Disabled'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <button
+                                    onClick={() => handleImportScope(scope.name)}
+                                    disabled={importingScope === scope.name}
+                                    className="text-blue-600 hover:underline text-xs disabled:opacity-50"
+                                  >
+                                    {importingScope === scope.name ? 'Importing…' : 'Import as subnet'}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             onClick={handleSave}

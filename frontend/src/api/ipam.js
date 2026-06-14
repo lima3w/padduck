@@ -75,6 +75,9 @@ export const quickCreateIPAddress = (address) =>
 export const globalSearch = (q) =>
   api.get('/search', { params: { q } })
 
+export const pushDHCPReservation = (id) => api.post(`/ip-addresses/${id}/dhcp-reservation`)
+export const removeDHCPReservation = (id) => api.delete(`/ip-addresses/${id}/dhcp-reservation`)
+
 export const getTags = () => api.get('/tags')
 
 export const createTag = (data) => api.post('/tags', data)

@@ -23,14 +23,15 @@ type CreateSubnetRequest struct {
 }
 
 type UpdateSubnetRequest struct {
-	Description      string             `json:"description"`
-	Gateway          *string            `json:"gateway"`
-	AutoReserveFirst bool               `json:"auto_reserve_first"`
-	AutoReserveLast  bool               `json:"auto_reserve_last"`
-	LocationID       *int64             `json:"location_id"`
-	NameserverID     *int64             `json:"nameserver_id"`
-	VLANID           *int64             `json:"vlan_id"`
-	CustomFields     map[string]*string `json:"custom_fields"`
+	Description         string             `json:"description"`
+	Gateway             *string            `json:"gateway"`
+	AutoReserveFirst    bool               `json:"auto_reserve_first"`
+	AutoReserveLast     bool               `json:"auto_reserve_last"`
+	LocationID          *int64             `json:"location_id"`
+	NameserverID        *int64             `json:"nameserver_id"`
+	VLANID              *int64             `json:"vlan_id"`
+	CustomFields        map[string]*string `json:"custom_fields"`
+	TechnitiumScopeName string             `json:"technitium_scope_name"`
 }
 
 // CreateSubnet handles POST /api/v1/networks/:networkID/subnets
@@ -146,7 +147,7 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
+	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields, req.TechnitiumScopeName)
 	if err != nil {
 		reqLogger(c).Error("error updating subnet", "id", id, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())

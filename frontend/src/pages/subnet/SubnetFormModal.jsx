@@ -110,6 +110,19 @@ export default function SubnetFormModal({ modal, form, setForm, overlapError, sa
           </label>
         </div>
         <div className="border-t dark:border-gray-600 pt-4 space-y-4">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Technitium DHCP</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Scope name (optional)</label>
+            <input
+              className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              placeholder="e.g. Office LAN"
+              value={form.technitium_scope_name || ''}
+              onChange={e => setForm(f => ({ ...f, technitium_scope_name: e.target.value }))}
+            />
+            <p className="text-xs text-gray-400 mt-1">Links this subnet to a Technitium DHCP scope for lease sync and reservation push.</p>
+          </div>
+        </div>
+        <div className="border-t dark:border-gray-600 pt-4 space-y-4">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Alert Settings</p>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Threshold % (optional)</label>

@@ -23,7 +23,7 @@ const DEFAULT_LIMIT = 25
 const FILTER_KEY = STORAGE_KEYS.subnetFilters
 const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.subnetFilters
 
-const EMPTY_FORM = { network_address: '', prefix_length: '24', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '' }
+const EMPTY_FORM = { network_address: '', prefix_length: '24', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '', technitium_scope_name: '' }
 
 export default function SubnetsPage() {
   const { networkID } = useParams()
@@ -252,6 +252,7 @@ export default function SubnetsPage() {
         custom_fields: full.customFields || {},
         alert_threshold_pct: full.alertThresholdPct != null ? String(full.alertThresholdPct) : '',
         alert_email_override: full.alertEmailOverride || '',
+        technitium_scope_name: full.technitiumScopeName || '',
       })
       setOverlapError(null)
       setModal({ edit: full })
@@ -291,6 +292,7 @@ export default function SubnetsPage() {
           custom_fields: form.custom_fields || {},
           alert_threshold_pct: form.alert_threshold_pct ? parseInt(form.alert_threshold_pct) : null,
           alert_email_override: form.alert_email_override || null,
+          technitium_scope_name: form.technitium_scope_name || '',
         })
       }
       setModal(null)

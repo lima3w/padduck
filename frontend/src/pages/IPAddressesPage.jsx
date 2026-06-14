@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api } from '../api/client'
-import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs } from '../api/ipam'
+import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs, pushDHCPReservation, removeDHCPReservation } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
 import { submitIPRequest } from '../api/requests'
 import { getDevices, associateDeviceIP, disassociateDeviceIP } from '../api/devices'
@@ -372,6 +372,24 @@ export default function IPAddressesPage() {
       setError(err.response?.data?.error || 'Failed to update IP')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handlePushReservation(id) {
+    try {
+      await pushDHCPReservation(id)
+      load()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to push DHCP reservation')
+    }
+  }
+
+  async function handleRemoveReservation(id) {
+    try {
+      await removeDHCPReservation(id)
+      load()
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to remove DHCP reservation')
     }
   }
 
@@ -868,6 +886,12 @@ export default function IPAddressesPage() {
                             <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
                           )}
                         </>
+                      )}
+                      {subnet?.technitiumScopeName && ip.macAddress && (
+                        <button onClick={() => handlePushReservation(ip.id)} className="text-gray-400 hover:text-purple-600 text-xs">Reserve</button>
+                      )}
+                      {subnet?.technitiumScopeName && (
+                        <button onClick={() => handleRemoveReservation(ip.id)} className="text-gray-400 hover:text-orange-600 text-xs">Unreserve</button>
                       )}
                       {deleteConfirm === ip.id ? (
                         <>

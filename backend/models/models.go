@@ -227,7 +227,8 @@ type Subnet struct {
 	CreatedAt          time.Time          `json:"created_at"`
 	UpdatedAt          time.Time          `json:"updated_at"`
 	CustomFields       map[string]*string `json:"custom_fields,omitempty"`
-	ScanProfileID      *int64             `json:"scan_profile_id,omitempty"`
+	ScanProfileID        *int64             `json:"scan_profile_id,omitempty"`
+	TechnitiumScopeName  string             `json:"technitium_scope_name"`
 }
 
 // IPv6Delegation represents a delegated IPv6 prefix assigned to a device or description

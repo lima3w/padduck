@@ -356,6 +356,65 @@ func (r *Repository) DeleteDHCPLease(ctx context.Context, id int64) error {
 	return deleteByID(ctx, r, "dhcp_leases", id)
 }
 
+// UpsertDHCPLease inserts or updates a DHCP lease by (server_id, ip_address).
+// Returns the row ID and whether it was newly inserted.
+func (r *Repository) UpsertDHCPLease(ctx context.Context, p *DHCPLeaseParams) (int64, error) {
+	var id int64
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, starts_at, ends_at, state)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		ON CONFLICT (server_id, ip_address) DO UPDATE SET
+			mac_address  = EXCLUDED.mac_address,
+			hostname     = EXCLUDED.hostname,
+			subnet_id    = EXCLUDED.subnet_id,
+			ip_id        = EXCLUDED.ip_id,
+			starts_at    = EXCLUDED.starts_at,
+			ends_at      = EXCLUDED.ends_at,
+			state        = EXCLUDED.state,
+			updated_at   = CURRENT_TIMESTAMP
+		RETURNING id`,
+		p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID,
+		p.StartsAt, p.EndsAt, p.State,
+	).Scan(&id)
+	return id, err
+}
+
+// GetOrCreateTechnitiumDHCPServer returns the singleton DHCPServer record for Technitium,
+// creating it with vendor="technitium" if one does not already exist.
+func (r *Repository) GetOrCreateTechnitiumDHCPServer(ctx context.Context, address string) (*models.DHCPServer, error) {
+	var id int64
+	err := r.db.QueryRow(ctx, `SELECT id FROM dhcp_servers WHERE vendor='technitium' ORDER BY id LIMIT 1`).Scan(&id)
+	if err == nil {
+		return r.GetDHCPServerByID(ctx, id)
+	}
+	// Not found — create it.
+	if err2 := r.db.QueryRow(ctx,
+		`INSERT INTO dhcp_servers (name, address, vendor, version, description, status) VALUES ('Technitium', $1, 'technitium', '', 'Managed by Technitium DHCP integration', 'active') RETURNING id`,
+		address).Scan(&id); err2 != nil {
+		return nil, err2
+	}
+	return r.GetDHCPServerByID(ctx, id)
+}
+
+// FindIPByAddress returns the IP address record matching the given bare IP string within any subnet.
+func (r *Repository) FindIPByAddress(ctx context.Context, address string) (*models.IPAddress, error) {
+	ip := &models.IPAddress{}
+	err := r.db.QueryRow(ctx, `
+		SELECT id, subnet_id, host(address), hostname, status, created_at, updated_at, mac_address
+		FROM ip_addresses WHERE host(address) = $1 LIMIT 1`, address).
+		Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.CreatedAt, &ip.UpdatedAt, &ip.MACAddress)
+	return ip, err
+}
+
+// FindSubnetContaining returns the deepest subnet that contains the given IP address.
+func (r *Repository) FindSubnetContaining(ctx context.Context, ipAddress string) (*models.Subnet, error) {
+	row := r.db.QueryRow(ctx, `
+		SELECT `+subnetSelectCols+` `+subnetFromJoin+`
+		WHERE ($1::inet >= s.network_address AND $1::inet < s.network_address + (1 << (32 - s.prefix_length))::bigint::inet)
+		ORDER BY s.prefix_length DESC LIMIT 1`, ipAddress)
+	return scanSubnet(row)
+}
+
 func deleteByID(ctx context.Context, r *Repository, table string, id int64) error {
 	tag, err := r.db.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE id=$1", table), id)
 	if err != nil {

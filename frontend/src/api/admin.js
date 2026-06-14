@@ -205,3 +205,7 @@ export const getIdentityPolicies = () => api.get('/admin/identity-policies')
 export const updateIdentityPolicies = (data) => api.put('/admin/identity-policies', data)
 
 export const getSessionRisk = () => api.get('/admin/session-risk')
+
+export const getTechnitiumDHCPScopes = () => api.get('/admin/dhcp/technitium/scopes')
+export const syncTechnitiumLeases = () => api.post('/admin/dhcp/technitium/sync')
+export const importTechnitiumScope = (data) => api.post('/admin/dhcp/technitium/import-scope', data)

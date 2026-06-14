@@ -14,6 +14,30 @@ import (
 	"time"
 )
 
+// DHCPScope represents a Technitium DHCP scope.
+type DHCPScope struct {
+	Name             string `json:"name"`
+	StartingAddress  string `json:"startingAddress"`
+	EndingAddress    string `json:"endingAddress"`
+	SubnetMask       string `json:"subnetMask"`
+	RouterAddress    string `json:"routerAddress"`
+	Enabled          bool   `json:"enabled"`
+	LeaseTimeDays    int    `json:"leaseTimeDays"`
+	LeaseTimeHours   int    `json:"leaseTimeHours"`
+	LeaseTimeMinutes int    `json:"leaseTimeMinutes"`
+}
+
+// DHCPLease represents a single DHCP lease returned by Technitium.
+type DHCPLease struct {
+	ClientIdentifier string    `json:"clientIdentifier"`
+	IPAddress        string    `json:"address"`
+	HardwareAddress  string    `json:"hardwareAddress"`
+	HostName         string    `json:"hostName"`
+	LeaseType        string    `json:"type"`
+	LeaseObtained    time.Time `json:"leaseObtained"`
+	LeaseExpires     time.Time `json:"leaseExpires"`
+}
+
 // Zone represents a Technitium DNS zone.
 type Zone struct {
 	Name     string `json:"name"`
@@ -270,6 +294,66 @@ func (c *Client) DeletePTRRecord(ctx context.Context, zone, ptrName string) erro
 	params.Set("domain", ptrName)
 	params.Set("type", "PTR")
 	resp, err := c.get(ctx, "/api/zones/records/delete", params)
+	if err != nil {
+		return err
+	}
+	return checkResponse(resp)
+}
+
+// ListDHCPScopes returns all DHCP scopes configured on the server.
+func (c *Client) ListDHCPScopes(ctx context.Context) ([]DHCPScope, error) {
+	resp, err := c.get(ctx, "/api/dhcp/scopes/list", nil)
+	if err != nil {
+		return nil, err
+	}
+	var payload struct {
+		Scopes []DHCPScope `json:"scopes"`
+	}
+	if err := checkResponseDecode(resp, &payload); err != nil {
+		return nil, err
+	}
+	return payload.Scopes, nil
+}
+
+// ListDHCPLeases returns all leases for a given scope. Pass an empty scopeName to list all.
+func (c *Client) ListDHCPLeases(ctx context.Context, scopeName string) ([]DHCPLease, error) {
+	params := url.Values{}
+	if scopeName != "" {
+		params.Set("scopeName", scopeName)
+	}
+	resp, err := c.get(ctx, "/api/dhcp/leases/list", params)
+	if err != nil {
+		return nil, err
+	}
+	var payload struct {
+		Leases []DHCPLease `json:"leases"`
+	}
+	if err := checkResponseDecode(resp, &payload); err != nil {
+		return nil, err
+	}
+	return payload.Leases, nil
+}
+
+// AddDHCPReservation creates a static DHCP reservation in the given scope.
+func (c *Client) AddDHCPReservation(ctx context.Context, scopeName, ipAddress, macAddress, hostname string) error {
+	params := url.Values{}
+	params.Set("name", scopeName)
+	params.Set("ipAddress", ipAddress)
+	params.Set("hardwareAddress", macAddress)
+	params.Set("hostName", hostname)
+	resp, err := c.get(ctx, "/api/dhcp/scopes/addReservation", params)
+	if err != nil {
+		return err
+	}
+	return checkResponse(resp)
+}
+
+// RemoveDHCPReservation removes a static DHCP reservation from the given scope.
+func (c *Client) RemoveDHCPReservation(ctx context.Context, scopeName, ipAddress string) error {
+	params := url.Values{}
+	params.Set("name", scopeName)
+	params.Set("ipAddress", ipAddress)
+	resp, err := c.get(ctx, "/api/dhcp/scopes/removeReservation", params)
 	if err != nil {
 		return err
 	}

@@ -193,6 +193,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	ipAddress.Post("/:id/assign-with-lease", h.AssignIPAddressWithLease)
 	ipAddress.Get("/:id/lease-status", h.IsIPLeaseExpired)
 	ipAddress.Post("/:id/release-expired", h.ReleaseExpiredLease)
+	ipAddress.Post("/:id/dhcp-reservation", h.PushDHCPReservation)
+	ipAddress.Delete("/:id/dhcp-reservation", h.RemoveDHCPReservation)
 	ipAddress.Delete("/:id", h.DeleteIPAddress)
 
 	// VRFs routes
@@ -453,6 +455,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/dns/check-all", h.CheckAllDNS)
 	admin.Post("/dns/test", h.TestPowerDNSConnection)
 	admin.Post("/dns/technitium/test", h.TestTechnitiumConnection)
+	admin.Get("/dhcp/technitium/scopes", h.ListTechnitiumDHCPScopes)
+	admin.Post("/dhcp/technitium/sync", h.SyncTechnitiumLeases)
+	admin.Post("/dhcp/technitium/import-scope", h.ImportTechnitiumScope)
 
 	// Inbound automation endpoints (v1.23.0)
 	automation := protected.Group("/automation")
