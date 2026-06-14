@@ -234,6 +234,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Admin routes (protected + admin role required)
 	admin := protected.Group("/admin")
 	admin.Get("/config", h.GetConfig)
+	admin.Get("/config/reveal", h.RevealConfig)
 	admin.Put("/config", h.UpdateConfig)
 	admin.Post("/config/test-email", h.TestSMTP)
 	admin.Get("/updates/check", h.CheckForUpdates)

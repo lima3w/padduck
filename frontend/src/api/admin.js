@@ -3,6 +3,8 @@ import { api } from './client'
 
 export const getAdminConfig = () => api.get('/admin/config')
 
+export const revealAdminConfigValue = (key) => api.get('/admin/config/reveal', { params: { key } })
+
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
