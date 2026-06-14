@@ -4,7 +4,7 @@ import { api } from '../api/client'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
 import { submitIPRequest } from '../api/requests'
-import { getDevices } from '../api/devices'
+import { getDevices, associateDeviceIP, disassociateDeviceIP } from '../api/devices'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
@@ -95,6 +95,7 @@ export default function IPAddressesPage() {
   const [sortCol, setSortCol] = useState('')
   const [sortDir, setSortDir] = useState('asc')
   const [fullRange, setFullRange] = useState(false)
+  const [metaDeviceSearch, setMetaDeviceSearch] = useState('')
 
   useEffect(() => {
     setPage(1)
@@ -282,7 +283,9 @@ export default function IPAddressesPage() {
       ptr_record: ip.ptrRecord || '',
       dns_name: ip.dnsName || '',
       custom_fields: ip.customFields || {},
+      device_id: ip.deviceId ? String(ip.deviceId) : '',
     })
+    setMetaDeviceSearch('')
     setModal({ meta: ip })
   }
 
@@ -346,6 +349,15 @@ export default function IPAddressesPage() {
     e.preventDefault()
     setSaving(true)
     try {
+      const oldDeviceId = modal.meta.deviceId || null
+      const newDeviceId = form.device_id ? parseInt(form.device_id) : null
+      if (newDeviceId !== oldDeviceId) {
+        if (newDeviceId) {
+          await associateDeviceIP(newDeviceId, modal.meta.id, {})
+        } else if (oldDeviceId) {
+          await disassociateDeviceIP(oldDeviceId, modal.meta.id)
+        }
+      }
       await updateIPMeta(modal.meta.id, {
         hostname: form.hostname || '',
         tag_id: form.tag_id ? parseInt(form.tag_id) : null,
@@ -1086,6 +1098,47 @@ export default function IPAddressesPage() {
       {modal?.meta && (
         <Modal title={`Edit ${modal.meta.Address}`} onClose={() => setModal(null)}>
           <form onSubmit={handleUpdateMeta} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Device</label>
+              {form.device_id ? (
+                <div className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                  <span className="text-sm text-gray-700 dark:text-gray-200 flex-1">
+                    {devices.find(d => d.id === parseInt(form.device_id))?.hostname || `Device #${form.device_id}`}
+                  </span>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, device_id: '' }))} className="text-gray-400 hover:text-red-500 text-xs">✕ Clear</button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search devices..."
+                    value={metaDeviceSearch}
+                    onChange={e => setMetaDeviceSearch(e.target.value)}
+                    className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  />
+                  {metaDeviceSearch && (
+                    <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded shadow-lg z-20 max-h-40 overflow-y-auto">
+                      {devices
+                        .filter(d => d.hostname?.toLowerCase().includes(metaDeviceSearch.toLowerCase()))
+                        .slice(0, 10)
+                        .map(d => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            onClick={() => { setForm(f => ({ ...f, device_id: String(d.id) })); setMetaDeviceSearch('') }}
+                          >
+                            {d.hostname}
+                          </button>
+                        ))}
+                      {devices.filter(d => d.hostname?.toLowerCase().includes(metaDeviceSearch.toLowerCase())).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-gray-400">No devices found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
               <select

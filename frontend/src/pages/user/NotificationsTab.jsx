@@ -21,7 +21,19 @@ export default function NotificationsTab() {
 
   useEffect(() => {
     client.getNotificationPreferences()
-      .then((res) => setPrefs(res.data))
+      .then((res) => {
+        const d = res.data
+        setPrefs({
+          loginSuccess:    d.login_success,
+          loginFailed:     d.login_failed,
+          accountLocked:   d.account_locked,
+          passwordChanged: d.password_changed,
+          mfaChanges:      d.mfa_changes,
+          apiTokenChanges: d.api_token_changes,
+          roleChanges:     d.role_changes,
+          sessionRevoked:  d.session_revoked,
+        })
+      })
       .catch(() => setError('Failed to load preferences.'))
       .finally(() => setLoading(false))
   }, [])

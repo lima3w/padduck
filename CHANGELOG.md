@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.31.31
+## v1.31.33
 
 ### Bug Fixes
 - **Show all IPs displayed a /32 suffix after every address in full range view**: the generate_series SELECT expression cast the computed inet address to text (`::text`), which includes the host prefix length. Changed to `host()` to return the bare IP address, matching the existing behaviour of the regular IP list query.

@@ -389,6 +389,9 @@ func (n *NotificationService) Queue(ctx context.Context, userID int64, tmplName 
 	if _, ok := data["AppURL"]; !ok {
 		data["AppURL"] = n.email.AppURL()
 	}
+	if _, ok := data["Timestamp"]; !ok {
+		data["Timestamp"] = time.Now().UTC().Format("2006-01-02 15:04:05 UTC")
+	}
 
 	critical := criticalNotifications[tmplName]
 
