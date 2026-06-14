@@ -1,1 +1,2 @@
+-- +migrate Up
 ALTER TABLE subnets ADD COLUMN IF NOT EXISTS technitium_scope_name TEXT NOT NULL DEFAULT '';
