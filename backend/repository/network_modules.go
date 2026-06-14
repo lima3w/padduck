@@ -302,7 +302,7 @@ func (r *Repository) DeleteDHCPServer(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) ListDHCPLeases(ctx context.Context, serverID int64) ([]*models.DHCPLease, error) {
-	query := `SELECT l.id, l.server_id, l.ip_address::text, l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id`
+	query := `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id`
 	args := []any{}
 	if serverID > 0 {
 		query += ` WHERE l.server_id=$1`
@@ -327,7 +327,7 @@ func (r *Repository) ListDHCPLeases(ctx context.Context, serverID int64) ([]*mod
 
 func (r *Repository) GetDHCPLeaseByID(ctx context.Context, id int64) (*models.DHCPLease, error) {
 	item := &models.DHCPLease{}
-	err := r.db.QueryRow(ctx, `SELECT l.id, l.server_id, l.ip_address::text, l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id WHERE l.id=$1`, id).Scan(&item.ID, &item.ServerID, &item.IPAddress, &item.MACAddress, &item.Hostname, &item.SubnetID, &item.IPID, &item.CustomerID, &item.StartsAt, &item.EndsAt, &item.State, &item.ServerName, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt)
+	err := r.db.QueryRow(ctx, `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id WHERE l.id=$1`, id).Scan(&item.ID, &item.ServerID, &item.IPAddress, &item.MACAddress, &item.Hostname, &item.SubnetID, &item.IPID, &item.CustomerID, &item.StartsAt, &item.EndsAt, &item.State, &item.ServerName, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt)
 	return item, err
 }
 

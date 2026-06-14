@@ -551,7 +551,7 @@ export default function IPAddressesPage() {
             </button>
           )}
           {canAssignIP && (
-            <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+            <button onClick={() => openCreate()} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
               + New IP
             </button>
           )}
