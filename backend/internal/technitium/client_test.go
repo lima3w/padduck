@@ -220,3 +220,109 @@ func TestRecordContent(t *testing.T) {
 		})
 	}
 }
+
+// ---------------------------------------------------------------------------
+// ListDHCPScopes
+// ---------------------------------------------------------------------------
+
+func TestListDHCPScopes_ReturnsScopes(t *testing.T) {
+	body := okEnvelope(t, map[string]any{
+		"scopes": []map[string]any{
+			{"name": "Office LAN", "startingAddress": "192.168.1.1", "endingAddress": "192.168.1.254", "subnetMask": "255.255.255.0", "routerAddress": "192.168.1.1", "enabled": true},
+			{"name": "Guest", "startingAddress": "10.0.0.1", "endingAddress": "10.0.0.254", "subnetMask": "255.255.255.0", "enabled": false},
+		},
+	})
+	_, c, cap := fakeServer(t, "/api/dhcp/scopes/list", body)
+	scopes, err := c.ListDHCPScopes(context.Background())
+	require.NoError(t, err)
+	require.Len(t, scopes, 2)
+	assert.Equal(t, "Office LAN", scopes[0].Name)
+	assert.Equal(t, "192.168.1.1", scopes[0].StartingAddress)
+	assert.Equal(t, "255.255.255.0", scopes[0].SubnetMask)
+	assert.True(t, scopes[0].Enabled)
+	assert.False(t, scopes[1].Enabled)
+	assert.Equal(t, "Bearer test-token", cap.auth)
+}
+
+func TestListDHCPScopes_Empty(t *testing.T) {
+	body := okEnvelope(t, map[string]any{"scopes": []any{}})
+	_, c, _ := fakeServer(t, "/api/dhcp/scopes/list", body)
+	scopes, err := c.ListDHCPScopes(context.Background())
+	assert.NoError(t, err)
+	assert.Empty(t, scopes)
+}
+
+func TestListDHCPScopes_APIError(t *testing.T) {
+	_, c, _ := fakeServer(t, "/api/dhcp/scopes/list", errEnvelope(t, "access denied"))
+	_, err := c.ListDHCPScopes(context.Background())
+	assert.ErrorContains(t, err, "access denied")
+}
+
+// ---------------------------------------------------------------------------
+// ListDHCPLeases
+// ---------------------------------------------------------------------------
+
+func TestListDHCPLeases_SendsScopeParam(t *testing.T) {
+	body := okEnvelope(t, map[string]any{
+		"leases": []map[string]any{
+			{"address": "192.168.1.50", "hardwareAddress": "aa:bb:cc:dd:ee:ff", "hostName": "mypc", "type": "Dynamic"},
+			{"address": "192.168.1.51", "hardwareAddress": "11:22:33:44:55:66", "hostName": "printer", "type": "Reserved"},
+		},
+	})
+	_, c, cap := fakeServer(t, "/api/dhcp/leases/list", body)
+	leases, err := c.ListDHCPLeases(context.Background(), "Office LAN")
+	require.NoError(t, err)
+	require.Len(t, leases, 2)
+	assert.Equal(t, "Office LAN", cap.params.Get("scopeName"))
+	assert.Equal(t, "192.168.1.50", leases[0].IPAddress)
+	assert.Equal(t, "aa:bb:cc:dd:ee:ff", leases[0].HardwareAddress)
+	assert.Equal(t, "mypc", leases[0].HostName)
+	assert.Equal(t, "Dynamic", leases[0].LeaseType)
+	assert.Equal(t, "Reserved", leases[1].LeaseType)
+}
+
+func TestListDHCPLeases_NoScopeParam(t *testing.T) {
+	body := okEnvelope(t, map[string]any{"leases": []any{}})
+	_, c, cap := fakeServer(t, "/api/dhcp/leases/list", body)
+	_, err := c.ListDHCPLeases(context.Background(), "")
+	require.NoError(t, err)
+	assert.Empty(t, cap.params.Get("scopeName"), "empty scopeName must not be sent as a query param")
+}
+
+// ---------------------------------------------------------------------------
+// AddDHCPReservation
+// ---------------------------------------------------------------------------
+
+func TestAddDHCPReservation_SendsCorrectParams(t *testing.T) {
+	_, c, cap := fakeServer(t, "/api/dhcp/scopes/addReservation", okBare(t))
+	err := c.AddDHCPReservation(context.Background(), "Office LAN", "192.168.1.100", "aa:bb:cc:dd:ee:ff", "mypc")
+	require.NoError(t, err)
+	assert.Equal(t, "Office LAN", cap.params.Get("name"))
+	assert.Equal(t, "192.168.1.100", cap.params.Get("ipAddress"))
+	assert.Equal(t, "aa:bb:cc:dd:ee:ff", cap.params.Get("hardwareAddress"))
+	assert.Equal(t, "mypc", cap.params.Get("hostName"))
+}
+
+func TestAddDHCPReservation_APIError(t *testing.T) {
+	_, c, _ := fakeServer(t, "/api/dhcp/scopes/addReservation", errEnvelope(t, "ip address is out of range"))
+	err := c.AddDHCPReservation(context.Background(), "Office LAN", "10.99.0.1", "aa:bb:cc:dd:ee:ff", "mypc")
+	assert.ErrorContains(t, err, "ip address is out of range")
+}
+
+// ---------------------------------------------------------------------------
+// RemoveDHCPReservation
+// ---------------------------------------------------------------------------
+
+func TestRemoveDHCPReservation_SendsCorrectParams(t *testing.T) {
+	_, c, cap := fakeServer(t, "/api/dhcp/scopes/removeReservation", okBare(t))
+	err := c.RemoveDHCPReservation(context.Background(), "Office LAN", "192.168.1.100")
+	require.NoError(t, err)
+	assert.Equal(t, "Office LAN", cap.params.Get("name"))
+	assert.Equal(t, "192.168.1.100", cap.params.Get("ipAddress"))
+}
+
+func TestRemoveDHCPReservation_APIError(t *testing.T) {
+	_, c, _ := fakeServer(t, "/api/dhcp/scopes/removeReservation", errEnvelope(t, "reservation not found"))
+	err := c.RemoveDHCPReservation(context.Background(), "Office LAN", "192.168.1.100")
+	assert.ErrorContains(t, err, "reservation not found")
+}
