@@ -274,7 +274,8 @@ func (r *Repository) ListIPAddressesFullRange(
 			ON ip.address = ($1::inet + ($2::bigint + s))
 			AND ip.subnet_id = $4
 		LEFT JOIN ip_tags t ON ip.tag_id = t.id
-		LEFT JOIN devices dv ON ip.device_id = dv.id`
+		LEFT JOIN devices dv ON ip.device_id = dv.id
+		ORDER BY s`
 
 	rows, err := r.db.Query(ctx, query, networkAddr, int64(offset), int64(limit), subnetID)
 	if err != nil {
