@@ -149,7 +149,7 @@ func (r *Repository) DeleteLogicalCircuit(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) ListCustomerAssociations(ctx context.Context, customerID int64) ([]*models.CustomerAssociation, error) {
-	query := `SELECT ca.id, ca.customer_id, ca.object_type, ca.object_id, ca.relationship, ca.notes, c.name, ca.created_at, ca.updated_at FROM customer_associations ca JOIN customers c ON c.id=ca.customer_id`
+	query := `SELECT ca.id, ca.customer_id, ca.object_type, ca.object_id, ca.object_name, ca.relationship, ca.notes, c.name, ca.created_at, ca.updated_at FROM customer_associations ca JOIN customers c ON c.id=ca.customer_id`
 	args := []any{}
 	if customerID > 0 {
 		query += ` WHERE ca.customer_id=$1`
@@ -164,7 +164,7 @@ func (r *Repository) ListCustomerAssociations(ctx context.Context, customerID in
 	var out []*models.CustomerAssociation
 	for rows.Next() {
 		item := &models.CustomerAssociation{}
-		if err := rows.Scan(&item.ID, &item.CustomerID, &item.ObjectType, &item.ObjectID, &item.Relationship, &item.Notes, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.CustomerID, &item.ObjectType, &item.ObjectID, &item.ObjectName, &item.Relationship, &item.Notes, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -174,12 +174,12 @@ func (r *Repository) ListCustomerAssociations(ctx context.Context, customerID in
 
 func (r *Repository) CreateCustomerAssociation(ctx context.Context, p *CustomerAssociationParams) (*models.CustomerAssociation, error) {
 	var id int64
-	err := r.db.QueryRow(ctx, `INSERT INTO customer_associations (customer_id, object_type, object_id, relationship, notes) VALUES ($1,$2,$3,$4,$5) RETURNING id`, p.CustomerID, p.ObjectType, p.ObjectID, p.Relationship, p.Notes).Scan(&id)
+	err := r.db.QueryRow(ctx, `INSERT INTO customer_associations (customer_id, object_type, object_id, object_name, relationship, notes) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`, p.CustomerID, p.ObjectType, p.ObjectID, p.ObjectName, p.Relationship, p.Notes).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
 	item := &models.CustomerAssociation{}
-	err = r.db.QueryRow(ctx, `SELECT ca.id, ca.customer_id, ca.object_type, ca.object_id, ca.relationship, ca.notes, c.name, ca.created_at, ca.updated_at FROM customer_associations ca JOIN customers c ON c.id=ca.customer_id WHERE ca.id=$1`, id).Scan(&item.ID, &item.CustomerID, &item.ObjectType, &item.ObjectID, &item.Relationship, &item.Notes, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt)
+	err = r.db.QueryRow(ctx, `SELECT ca.id, ca.customer_id, ca.object_type, ca.object_id, ca.object_name, ca.relationship, ca.notes, c.name, ca.created_at, ca.updated_at FROM customer_associations ca JOIN customers c ON c.id=ca.customer_id WHERE ca.id=$1`, id).Scan(&item.ID, &item.CustomerID, &item.ObjectType, &item.ObjectID, &item.ObjectName, &item.Relationship, &item.Notes, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt)
 	return item, err
 }
 

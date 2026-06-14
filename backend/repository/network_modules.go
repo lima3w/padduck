@@ -85,6 +85,7 @@ type CustomerAssociationParams struct {
 	CustomerID   int64  `json:"customer_id"`
 	ObjectType   string `json:"object_type"`
 	ObjectID     int64  `json:"object_id"`
+	ObjectName   string `json:"object_name"`
 	Relationship string `json:"relationship"`
 	Notes        string `json:"notes"`
 }
