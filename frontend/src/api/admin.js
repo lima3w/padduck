@@ -3,6 +3,8 @@ import { api } from './client'
 
 export const getAdminConfig = () => api.get('/admin/config')
 
+export const revealAdminConfigValue = (key) => api.get('/admin/config/reveal', { params: { key } })
+
 export const updateAdminConfig = (updates) => api.put('/admin/config', updates)
 
 export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
@@ -203,3 +205,7 @@ export const getIdentityPolicies = () => api.get('/admin/identity-policies')
 export const updateIdentityPolicies = (data) => api.put('/admin/identity-policies', data)
 
 export const getSessionRisk = () => api.get('/admin/session-risk')
+
+export const getTechnitiumDHCPScopes = () => api.get('/admin/dhcp/technitium/scopes')
+export const syncTechnitiumLeases = () => api.post('/admin/dhcp/technitium/sync')
+export const importTechnitiumScope = (data) => api.post('/admin/dhcp/technitium/import-scope', data)

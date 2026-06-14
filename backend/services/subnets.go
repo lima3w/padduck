@@ -301,8 +301,8 @@ func (s *Service) ListSubnets(ctx context.Context, networkID int64) ([]*models.S
 	return s.repository.ListSubnetsBySection(ctx, networkID)
 }
 
-// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, location, nameserver, and VLAN.
-func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error) {
+// UpdateSubnet updates a subnet's description, gateway, auto-reserve settings, location, nameserver, VLAN, and Technitium scope.
+func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields map[string]*string, technitiumScopeName ...string) (*models.Subnet, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid subnet ID")
 	}
@@ -326,13 +326,17 @@ func (s *Service) UpdateSubnet(ctx context.Context, id int64, description string
 		}
 	}
 
-	subnet, err := s.repository.UpdateSubnetWithVLAN(ctx, id, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID)
+	scopeName := ""
+	if len(technitiumScopeName) > 0 {
+		scopeName = technitiumScopeName[0]
+	}
+	subnet, err := s.repository.UpdateSubnetWithVLAN(ctx, id, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID, scopeName)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(customFields) > 0 && customFields[0] != nil {
-		_ = s.SetCustomFieldValues(ctx, "subnet", subnet.ID, customFields[0])
+	if customFields != nil {
+		_ = s.SetCustomFieldValues(ctx, "subnet", subnet.ID, customFields)
 	}
 	subnet.CustomFields, _ = s.repository.GetCustomFieldValues(ctx, "subnet", subnet.ID)
 	return subnet, nil

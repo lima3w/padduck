@@ -77,7 +77,7 @@ func (r *Repository) GetDuplicates(ctx context.Context) (*models.DuplicatesRepor
 	// Conflicting IPs — same address assigned to more than one ip_addresses row.
 	cipRows, err := r.db.Query(ctx, `
 		SELECT
-			ip.address::text,
+			host(ip.address),
 			host(s.network_address) || '/' || s.prefix_length AS cidr,
 			COUNT(DISTINCT ip.id) AS cnt
 		FROM ip_addresses ip

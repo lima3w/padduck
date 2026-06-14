@@ -152,6 +152,33 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "config updated"})
 }
 
+// RevealConfig handles GET /api/v1/admin/config/reveal?key=<key>
+// Returns the unmasked value for a single sensitive config key.
+func (h *Handler) RevealConfig(c *fiber.Ctx) error {
+	if err := requireAdmin(c); err != nil {
+		return nil
+	}
+
+	revealableKeys := map[string]bool{
+		"smtp_password":          true,
+		"pdns_api_key":           true,
+		"technitium_token":       true,
+		"scanner_snmp_community": true,
+	}
+
+	key := c.Query("key")
+	if !revealableKeys[key] {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "key is not revealable")
+	}
+
+	value, err := h.service.Config.Get(key)
+	if err != nil {
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to read config")
+	}
+
+	return c.JSON(fiber.Map{"value": value})
+}
+
 // TestSMTP handles POST /api/v1/admin/config/test-email
 func (h *Handler) TestSMTP(c *fiber.Ctx) error {
 	if err := requireAdmin(c); err != nil {

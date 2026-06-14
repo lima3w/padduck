@@ -228,7 +228,7 @@ func TestUpdateSubnet_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateSubnet(ctx, tt.id, "new description", nil, false, false, nil, nil, nil)
+			_, err := svc.UpdateSubnet(ctx, tt.id, "new description", nil, false, false, nil, nil, nil, nil)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})

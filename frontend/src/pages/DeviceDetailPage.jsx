@@ -289,6 +289,11 @@ export default function DeviceDetailPage() {
     }
   }
 
+  async function handleCreateInterfaceFromAssoc(name) {
+    const res = await createDeviceInterface(id, { name })
+    setInterfaces(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)))
+  }
+
   async function handleDeleteInterface(ifId) {
     try {
       await deleteDeviceInterface(id, ifId)
@@ -474,6 +479,8 @@ export default function DeviceDetailPage() {
           ipCreating={ipCreating}
           selectedIpLabel={selectedIpLabel}
           saving={saving}
+          interfaces={interfaces}
+          onCreateInterface={handleCreateInterfaceFromAssoc}
           onSearchChange={handleIpSearchChange}
           onSelectResult={selectIpResult}
           onQuickCreate={handleQuickCreate}

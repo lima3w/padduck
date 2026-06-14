@@ -1,7 +1,36 @@
 import { useState } from 'react'
+import { revealAdminConfigValue } from '../../api/admin'
 
 export default function ScannerTab({ config, handleConfigChange, handleSaveConfig, saving }) {
   const [showSnmpCommunity, setShowSnmpCommunity] = useState(false)
+  const [revealedCommunity, setRevealedCommunity] = useState(null)
+
+  async function toggleReveal() {
+    if (showSnmpCommunity) {
+      setShowSnmpCommunity(false)
+      return
+    }
+    if (revealedCommunity === null) {
+      try {
+        const res = await revealAdminConfigValue('scanner_snmp_community')
+        setRevealedCommunity(res.data.value ?? '')
+      } catch {
+        setRevealedCommunity('')
+      }
+    }
+    setShowSnmpCommunity(true)
+  }
+
+  // When the user edits the field, keep the form value but clear the cached reveal
+  // so that the next reveal re-fetches (or we can just update revealedCommunity too).
+  function handleCommunityChange(v) {
+    handleConfigChange('scanner_snmp_community', v)
+    setRevealedCommunity(v)
+  }
+
+  const displayValue = showSnmpCommunity
+    ? (revealedCommunity ?? '')
+    : (config.scanner_snmp_community ?? '')
 
   return (
         <div className="space-y-4">
@@ -37,14 +66,14 @@ export default function ScannerTab({ config, handleConfigChange, handleSaveConfi
                 <div className="relative">
                   <input
                     type={showSnmpCommunity ? 'text' : 'password'}
-                    value={config.scanner_snmp_community ?? ''}
-                    onChange={(e) => handleConfigChange('scanner_snmp_community', e.target.value)}
+                    value={displayValue}
+                    onChange={(e) => handleCommunityChange(e.target.value)}
                     placeholder="public"
                     className="w-full px-3 py-2 pr-10 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowSnmpCommunity(v => !v)}
+                    onClick={toggleReveal}
                     className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
                     aria-label={showSnmpCommunity ? 'Hide community string' : 'Show community string'}
                   >
@@ -70,51 +99,6 @@ export default function ScannerTab({ config, handleConfigChange, handleSaveConfi
                 <p className="text-xs text-gray-500 mt-1">Global default version. Per-device credentials override this.</p>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-base font-semibold mb-4">Port Scanning</h3>
-            <div className="space-y-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.scanner_port_scan_enabled === 'true'}
-                  onChange={(e) =>
-                    handleConfigChange('scanner_port_scan_enabled', e.target.checked ? 'true' : 'false')
-                  }
-                  className="w-4 h-4 text-blue-600"
-                />
-                <div>
-                  <span className="font-medium text-gray-900">Enable TCP port scanning</span>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    After a successful ping, probe the ports listed below on each alive host. Default: disabled.
-                  </p>
-                </div>
-              </label>
-              {config.scanner_port_scan_enabled === 'true' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Port list</label>
-                  <input
-                    type="text"
-                    value={config.scanner_port_list ?? ''}
-                    onChange={(e) => handleConfigChange('scanner_port_list', e.target.value)}
-                    placeholder="22,80,443,3306,5432,8080,8443"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Comma-separated port numbers. Default: 22,80,443,3306,5432,8080,8443.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-3 items-center">
-            <button
-              onClick={handleSaveConfig}
-              disabled={saving}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
           </div>
         </div>
   )

@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.31.34
+
+### Features
+- **Technitium DHCP integration — lease sync, scope import, and reservation push**: when a Technitium DNS/DHCP server is configured in Admin Settings, a new DHCP section on the DNS settings tab exposes three capabilities. "Sync Leases Now" pulls all leases from every configured DHCP scope and upserts them into the DHCP Leases table, creating a sentinel DHCP Server record (vendor: technitium) on first sync and linking each lease to the matching subnet and IP address where possible. "Load Scopes" lists all Technitium DHCP scopes; individual scopes can be imported as new subnets in a chosen network. Subnets can be linked to a Technitium scope name (via the subnet edit modal) to enable per-IP reservation push: assigned IP addresses on linked subnets show "Reserve" and "Unreserve" buttons that create or delete static DHCP reservations in Technitium, provided the IP has a MAC address configured.
+- **Customer association picker rework**: the "Add Association" form (Customers page) is now a modal dialog instead of a cramped inline row. Object Type labels are human-readable ("IP Address", "DHCP Server", etc.). The raw Object ID number input is replaced by a context-sensitive combobox: selecting a type loads the appropriate list (devices, VLANs, racks, locations, circuits, etc.) and filters as you type; subnets and IP addresses use a search-as-you-type approach via the global search endpoint. The associations table now shows the resolved object name (e.g. "10.10.0.0/24 — Office LAN") instead of the raw database ID.
+- **Interface name combobox when associating an IP with a device**: the interface name field on the "Associate IP" modal now searches the device's existing interfaces as you type. Matching interfaces appear in a dropdown for quick selection. If no match is found, a "Create interface" option is shown that creates the interface immediately and selects it, eliminating the need to navigate away to the device interfaces tab first.
+
+### Bug Fixes
+- **SNMP community string could not be revealed after saving**: the global SNMP community string field on the Admin Scanner settings tab always showed a masked placeholder after page load. The reveal button (eye icon) now fetches the real value from the server on first click and caches it locally, so the field can be revealed at any time, including immediately after saving. The existing `GET /admin/config/reveal` endpoint used for other sensitive fields (SMTP password, PowerDNS key) has been extended to cover the SNMP community string.
+- **IP addresses displayed with a /32 CIDR suffix on the device detail page**: querying IP addresses associated with a device cast the `address` column to text using `::text`, which includes the host prefix (e.g. `192.168.1.5/32`). Changed to `host()` which returns only the bare IP address. The same fix was applied to the inactive IPs report, conflict export, DHCP lease list, login history, and the device interface list — all of which could show spurious `/32` or `/128` suffixes.
+- **New IP Address dialog showed "[object Object]" as the pre-filled network prefix**: the "New IP" button in a subnet's IP address list called `onClick={openCreate}`, passing the browser click event as the `prefillAddress` argument. Changed to `onClick={() => openCreate()}` so no argument is passed and the function correctly derives the network prefix from the subnet.
+
 ## v1.31.33
 
 ### Bug Fixes

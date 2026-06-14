@@ -1,6 +1,44 @@
+import { useState, useEffect } from 'react'
 import Modal from '../../components/Modal'
 
-export default function AssociateIPModal({ assocForm, setAssocForm, ipSearch, ipSearchResults, ipSearching, ipCreating, selectedIpLabel, saving, onSearchChange, onSelectResult, onQuickCreate, onSubmit, onClose }) {
+export default function AssociateIPModal({
+  assocForm, setAssocForm,
+  ipSearch, ipSearchResults, ipSearching, ipCreating, selectedIpLabel,
+  saving, interfaces, onCreateInterface,
+  onSearchChange, onSelectResult, onQuickCreate, onSubmit, onClose,
+}) {
+  const [ifaceQuery, setIfaceQuery] = useState(assocForm.interface_name || '')
+  const [showIfaceDrop, setShowIfaceDrop] = useState(false)
+  const [creatingIface, setCreatingIface] = useState(false)
+
+  useEffect(() => {
+    setIfaceQuery(assocForm.interface_name || '')
+  }, [assocForm.interface_name])
+
+  const filtered = (interfaces || []).filter(i =>
+    i.name.toLowerCase().includes(ifaceQuery.toLowerCase())
+  )
+  const exactMatch = (interfaces || []).some(
+    i => i.name.toLowerCase() === ifaceQuery.trim().toLowerCase()
+  )
+  const showDrop = showIfaceDrop && ifaceQuery.trim().length > 0 && (filtered.length > 0 || !exactMatch)
+
+  function selectIface(name) {
+    setAssocForm(f => ({ ...f, interface_name: name }))
+    setIfaceQuery(name)
+    setShowIfaceDrop(false)
+  }
+
+  async function handleCreateIface() {
+    setCreatingIface(true)
+    try {
+      await onCreateInterface(ifaceQuery.trim())
+      selectIface(ifaceQuery.trim())
+    } finally {
+      setCreatingIface(false)
+    }
+  }
+
   return (
     <Modal title="Associate IP Address" onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-4">
@@ -66,15 +104,50 @@ export default function AssociateIPModal({ assocForm, setAssocForm, ipSearch, ip
             </div>
           )}
         </div>
-        <div>
+
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Interface Name</label>
           <input
             className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             placeholder="e.g. eth0"
-            value={assocForm.interface_name}
-            onChange={e => setAssocForm(f => ({ ...f, interface_name: e.target.value }))}
+            value={ifaceQuery}
+            autoComplete="off"
+            onChange={e => {
+              const v = e.target.value
+              setIfaceQuery(v)
+              setAssocForm(f => ({ ...f, interface_name: v }))
+              setShowIfaceDrop(true)
+            }}
+            onFocus={() => setShowIfaceDrop(true)}
+            onBlur={() => setTimeout(() => setShowIfaceDrop(false), 150)}
           />
+          {showDrop && (
+            <div className="absolute z-10 w-full mt-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 shadow-lg max-h-40 overflow-y-auto">
+              {filtered.map(i => (
+                <button
+                  key={i.id}
+                  type="button"
+                  onMouseDown={() => selectIface(i.name)}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {i.name}
+                  {i.description && <span className="ml-2 text-xs text-gray-400">{i.description}</span>}
+                </button>
+              ))}
+              {ifaceQuery.trim() && !exactMatch && (
+                <button
+                  type="button"
+                  onMouseDown={handleCreateIface}
+                  disabled={creatingIface}
+                  className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {creatingIface ? 'Creating…' : `+ Create interface "${ifaceQuery.trim()}"`}
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"

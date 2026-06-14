@@ -16,7 +16,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 	query := `
 		SELECT
 			ip.id,
-			ip.address::text,
+			host(ip.address),
 			ip.hostname,
 			host(s.network_address) || '/' || s.prefix_length AS subnet_cidr,
 			sec.name AS section_name,
@@ -32,7 +32,7 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 		WHERE ip.status = 'assigned'
 		  AND ip.device_id IS NOT NULL
 		  AND (ip.last_seen IS NULL OR ip.last_seen < now() - ($1 * INTERVAL '1 day'))
-		  AND ip.address::text != s.gateway
+		  AND host(ip.address) != s.gateway
 		  AND ($2::bigint IS NULL OR sec.id = $2)
 		ORDER BY ip.last_seen ASC NULLS FIRST
 	`

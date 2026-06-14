@@ -10,7 +10,7 @@ import (
 // Subnet operations
 
 // subnetSelectCols is the base column list for subnets (no JOIN).
-const subnetSelectCols = `s.id, s.network_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.parent_subnet_id, s.is_container, s.alert_threshold_pct, s.alert_email_override, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at, s.scan_profile_id`
+const subnetSelectCols = `s.id, s.network_id, host(s.network_address), s.prefix_length, s.description, s.gateway, s.auto_reserve_first, s.auto_reserve_last, s.location_id, s.nameserver_id, s.vlan_id, s.parent_subnet_id, s.is_container, s.alert_threshold_pct, s.alert_email_override, s.created_at, s.updated_at, ns.id, ns.name, ns.server1, ns.server2, ns.server3, ns.description, ns.created_at, ns.updated_at, s.scan_profile_id, s.technitium_scope_name`
 
 const subnetFromJoin = `FROM subnets s LEFT JOIN nameservers ns ON s.nameserver_id = ns.id`
 
@@ -29,7 +29,7 @@ func scanSubnet(row interface {
 		&subnet.AlertThresholdPct, &subnet.AlertEmailOverride,
 		&subnet.CreatedAt, &subnet.UpdatedAt,
 		&nsID, &nsName, &nsServer1, &nsServer2, &nsServer3, &nsDesc, &nsCreatedAt, &nsUpdatedAt,
-		&subnet.ScanProfileID,
+		&subnet.ScanProfileID, &subnet.TechnitiumScopeName,
 	)
 	if err != nil {
 		return nil, err
@@ -169,14 +169,24 @@ func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, des
 	return r.GetSubnetByID(ctx, id)
 }
 
-// UpdateSubnetWithVLAN updates a subnet including vlan_id assignment.
-func (r *Repository) UpdateSubnetWithVLAN(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+// UpdateSubnetWithVLAN updates a subnet including vlan_id and technitium_scope_name.
+func (r *Repository) UpdateSubnetWithVLAN(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, technitiumScopeName ...string) (*models.Subnet, error) {
+	scope := ""
+	if len(technitiumScopeName) > 0 {
+		scope = technitiumScopeName[0]
+	}
 	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
-	          location_id=$5, nameserver_id=$6, vlan_id=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8`
-	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID, id); err != nil {
+	          location_id=$5, nameserver_id=$6, vlan_id=$7, technitium_scope_name=$8, updated_at=CURRENT_TIMESTAMP WHERE id=$9`
+	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID, scope, id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
+}
+
+// SetSubnetTechnitiumScope updates only the Technitium DHCP scope name for a subnet.
+func (r *Repository) SetSubnetTechnitiumScope(ctx context.Context, subnetID int64, scopeName string) error {
+	_, err := r.db.Exec(ctx, `UPDATE subnets SET technitium_scope_name=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`, scopeName, subnetID)
+	return err
 }
 
 // AssignSubnetToVLAN updates only the VLAN association for a subnet.

@@ -10,7 +10,7 @@ import (
 // ListIPAddressesByDevice returns all IP addresses linked to a device.
 func (r *Repository) ListIPAddressesByDevice(ctx context.Context, deviceID int64) ([]*models.IPAddress, error) {
 	query := `
-		SELECT id, subnet_id, address::text, hostname, status, created_at, updated_at,
+		SELECT id, subnet_id, host(address), hostname, status, created_at, updated_at,
 		       device_id, interface_name, is_primary
 		FROM ip_addresses
 		WHERE device_id=$1

@@ -39,7 +39,7 @@ func (r *Repository) CountRecentFailedAttemptsByIPOnly(ctx context.Context, ipAd
 }
 
 func (r *Repository) GetLoginHistory(ctx context.Context, username string, limit int) ([]*models.LoginAttempt, error) {
-	query := `SELECT id, username, COALESCE(ip_address::text, ''), COALESCE(user_agent, ''), success, COALESCE(failure_reason, ''), created_at
+	query := `SELECT id, username, COALESCE(host(ip_address), ''), COALESCE(user_agent, ''), success, COALESCE(failure_reason, ''), created_at
 	          FROM login_attempts WHERE username = $1 ORDER BY created_at DESC LIMIT $2`
 	rows, err := r.db.Query(ctx, query, username, limit)
 	if err != nil {
