@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.41
+
+### Bug Fixes
+- **Frontend CI failed on ESLint warnings after v1.31.40 merge**: patched `form-data` past 4.0.5 to resolve GHSA-hmw2-7cc7-3qxx (CRLF injection), and cleared all 36 pre-existing ESLint warnings across 31 frontend files — `react-hooks/exhaustive-deps` violations (functions missing from `useEffect` dependency arrays), `no-unused-vars` (dead state variables and unused imports), and one unused `eslint-disable` directive. No functional changes.
+
 ## v1.31.40
 
 ### Security
