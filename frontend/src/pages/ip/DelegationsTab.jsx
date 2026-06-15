@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../api/client'
 import Modal from '../../components/Modal'
 import PageSpinner from '../../components/PageSpinner'
@@ -14,9 +14,7 @@ export default function DelegationsTab({ subnetId }) {
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
-  useEffect(() => { loadDelegations() }, [subnetId])
-
-  async function loadDelegations() {
+  const loadDelegations = useCallback(async () => {
     try {
       setLoading(true)
       const { data } = await api.get(`/subnets/${subnetId}/delegations`)
@@ -26,7 +24,9 @@ export default function DelegationsTab({ subnetId }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [subnetId])
+
+  useEffect(() => { loadDelegations() }, [loadDelegations])
 
   function openCreate() {
     setForm({ delegatedPrefix: '', delegatedToDescription: '', delegatedToDeviceId: '', validLifetimeSec: '', preferredLifetimeSec: '' })

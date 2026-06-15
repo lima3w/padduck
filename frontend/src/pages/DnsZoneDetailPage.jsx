@@ -13,7 +13,7 @@ export default function DnsZoneDetailPage() {
 
   useEffect(() => {
     load(typeFilter)
-  }, [zone])
+  }, [zone]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load(type) {
     try {

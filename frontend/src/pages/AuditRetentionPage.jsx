@@ -4,7 +4,6 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function AuditRetentionPage() {
-  const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pruning, setPruning] = useState(false)
@@ -20,7 +19,6 @@ export default function AuditRetentionPage() {
   useEffect(() => {
     getAuditRetention()
       .then(res => {
-        setSettings(res.data)
         setForm({
           retentionDays: res.data.retention_days ?? 365,
           archiveEnabled: res.data.archive_enabled ?? false,
@@ -38,11 +36,10 @@ export default function AuditRetentionPage() {
     }
     setSaving(true)
     try {
-      const res = await updateAuditRetention({
+      await updateAuditRetention({
         retention_days: form.retentionDays,
         archive_enabled: form.archiveEnabled,
       })
-      setSettings(res.data)
       showMsg('Retention settings saved')
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save settings')

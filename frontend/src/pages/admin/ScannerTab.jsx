@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { revealAdminConfigValue } from '../../api/admin'
 
-export default function ScannerTab({ config, handleConfigChange, handleSaveConfig, saving }) {
+export default function ScannerTab({ config, handleConfigChange }) {
   const [showSnmpCommunity, setShowSnmpCommunity] = useState(false)
   const [revealedCommunity, setRevealedCommunity] = useState(null)
 

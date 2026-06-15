@@ -16,7 +16,7 @@ export default function Sidebar({ open, onClose }) {
 
   useEffect(() => {
     onClose?.()
-  }, [location.pathname])
+  }, [location.pathname, onClose])
 
   const [pendingCount, setPendingCount] = useState(0)
   const [dnsConfigured, setDnsConfigured] = useState(true)

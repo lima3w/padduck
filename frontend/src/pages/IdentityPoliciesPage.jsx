@@ -11,7 +11,6 @@ function formatDatetime(str) {
 
 export default function IdentityPoliciesPage() {
   // Policy form state
-  const [policies, setPolicies] = useState(null)
   const [form, setForm] = useState({
     enforce_mfa: false,
     session_max_age_hours: 24,
@@ -39,7 +38,6 @@ export default function IdentityPoliciesPage() {
           api_token_max_age_days: d.apiTokenMaxAgeDays ?? 0,
           inactive_user_days: d.inactiveUserDays ?? 0,
         }
-        setPolicies(loaded)
         setForm(loaded)
       })
       .catch(() => setPolicyError('Failed to load identity policies'))
@@ -79,7 +77,6 @@ export default function IdentityPoliciesPage() {
         api_token_max_age_days: form.api_token_max_age_days,
         inactive_user_days: form.inactive_user_days,
       })
-      setPolicies({ ...form })
       setPolicySuccess(true)
       setTimeout(() => setPolicySuccess(false), 3000)
     } catch (err) {

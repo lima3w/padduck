@@ -1,6 +1,5 @@
 // Minimal MD5 implementation for Gravatar URL generation.
 // Based on the RSA Data Security, Inc. MD5 Message-Digest Algorithm.
-/* eslint-disable no-bitwise */
 
 function safeAdd(x, y) {
   const lsw = (x & 0xffff) + (y & 0xffff)

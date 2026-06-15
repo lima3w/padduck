@@ -1,6 +1,6 @@
 // Shows a compact data completeness indicator.
 // fields: array of { label: string, ok: boolean }
-export default function DataQualityBadge({ fields, entityLabel = 'record' }) {
+export default function DataQualityBadge({ fields, _entityLabel = 'record' }) {
   const filled = fields.filter(f => f.ok).length
   const total = fields.length
   const pct = total === 0 ? 0 : Math.round((filled / total) * 100)

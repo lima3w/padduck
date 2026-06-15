@@ -71,7 +71,7 @@ async function fetchObjectList(type) {
   }
 }
 
-function ObjectPicker({ type, value, label, onChange }) {
+function ObjectPicker({ type, _value, label, onChange }) {
   const [items, setItems] = useState(null)
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState(label || '')
@@ -83,7 +83,7 @@ function ObjectPicker({ type, value, label, onChange }) {
   const isSearchType = type === 'subnet' || type === 'ip_address'
 
   useEffect(() => {
-    setQuery(label || '')
+    setQuery('')
     setItems(null)
     setSearchResults([])
   }, [type])

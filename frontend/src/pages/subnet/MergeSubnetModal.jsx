@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Modal from '../../components/Modal'
 
 export default function MergeSubnetModal({ mergeModal, mergeSelected, setMergeSelected, merging, mergeError, onMerge, onClose }) {

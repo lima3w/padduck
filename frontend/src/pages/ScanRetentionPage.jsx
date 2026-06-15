@@ -4,7 +4,6 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function ScanRetentionPage() {
-  const [settings, setSettings] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pruning, setPruning] = useState(false)
@@ -20,7 +19,6 @@ export default function ScanRetentionPage() {
   useEffect(() => {
     getScanRetention()
       .then(res => {
-        setSettings(res.data)
         setForm({
           rawHistoryDays: res.data.rawHistoryDays,
           rollupEnabled: res.data.rollupEnabled,
@@ -35,12 +33,11 @@ export default function ScanRetentionPage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await updateScanRetention({
+      await updateScanRetention({
         raw_history_days: form.rawHistoryDays,
         rollup_enabled: form.rollupEnabled,
         rollup_after_days: form.rollupAfterDays,
       })
-      setSettings(res.data)
       showMsg('Settings saved')
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save')

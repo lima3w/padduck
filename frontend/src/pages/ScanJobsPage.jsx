@@ -60,7 +60,6 @@ export default function ScanJobsPage() {
   const [selectedJob, setSelectedJob] = useState(null)
   const [results, setResults] = useState([])
   const [history, setHistory] = useState([])
-  const [selectedRun, setSelectedRun] = useState(null)
   const [runDetail, setRunDetail] = useState(null)
   const [activeTab, setActiveTab] = useState('results')
   const [loading, setLoading] = useState(true)
@@ -180,7 +179,6 @@ export default function ScanJobsPage() {
     setSelectedJob(job)
     setResults([])
     setHistory([])
-    setSelectedRun(null)
     setRunDetail(null)
     setSettingsForm(jobToSettingsForm(job))
     setSettingsDirty(false)
@@ -196,7 +194,6 @@ export default function ScanJobsPage() {
   }
 
   function selectRun(run) {
-    setSelectedRun(run.id)
     loadRunDetail(selectedJob.id, run.id)
   }
 
@@ -491,7 +488,7 @@ export default function ScanJobsPage() {
                   ) : (
                     <div>
                       <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
-                        <button onClick={() => { setRunDetail(null); setSelectedRun(null) }} className="text-xs text-blue-600 hover:underline">
+                        <button onClick={() => setRunDetail(null)} className="text-xs text-blue-600 hover:underline">
                           ← Back to history
                         </button>
                         <span className="text-xs text-gray-500">Run {formatDate(runDetail.startedAt)}</span>

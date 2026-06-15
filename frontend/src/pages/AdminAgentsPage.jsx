@@ -142,10 +142,6 @@ export default function AdminAgentsPage() {
     document.body.removeChild(el)
   }
 
-  function fallbackCopyInstall() {
-    if (newToken) fallbackCopy(buildInstallCmd(newToken))
-  }
-
   if (loading) return <div className="p-6 text-gray-500">Loading…</div>
 
   return (

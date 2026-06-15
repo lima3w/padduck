@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
 import { downloadFile } from '../utils/download'
@@ -39,7 +39,6 @@ export default function InactiveIPsPage() {
   const [downloading, setDownloading] = useState(false)
 
   useEffect(() => { loadSections() }, [])
-  useEffect(() => { load() }, [days, sectionId])
 
   async function loadSections() {
     try {
@@ -48,7 +47,7 @@ export default function InactiveIPsPage() {
     } catch {}
   }
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
     setSelected([])
@@ -62,7 +61,9 @@ export default function InactiveIPsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [days, sectionId])
+
+  useEffect(() => { load() }, [load])
 
   function toggleSort(key) {
     if (sortKey === key) {
