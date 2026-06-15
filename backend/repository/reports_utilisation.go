@@ -228,3 +228,34 @@ func (r *Repository) GetSubnetsByUtilisationThreshold(ctx context.Context, thres
 	}
 	return out, rows.Err()
 }
+
+// SubnetUtil holds the per-subnet utilisation counts returned by BulkSubnetUtilisation.
+type SubnetUtil struct {
+	SubnetID     int64
+	PrefixLength int
+	Used         int
+}
+
+// BulkSubnetUtilisation returns used-IP counts and prefix lengths for every subnet in one query.
+func (r *Repository) BulkSubnetUtilisation(ctx context.Context) ([]SubnetUtil, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT s.id, s.prefix_length,
+		       COUNT(ip.id) FILTER (WHERE ip.status IN ('assigned', 'reserved')) AS used
+		FROM subnets s
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		GROUP BY s.id, s.prefix_length`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []SubnetUtil
+	for rows.Next() {
+		var u SubnetUtil
+		if err := rows.Scan(&u.SubnetID, &u.PrefixLength, &u.Used); err != nil {
+			return nil, err
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}

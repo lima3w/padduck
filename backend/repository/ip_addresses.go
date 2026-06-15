@@ -111,6 +111,25 @@ func (r *Repository) ListIPAddressesBySubnet(ctx context.Context, subnetID int64
 	return ips, rows.Err()
 }
 
+func (r *Repository) ListAllIPAddresses(ctx context.Context) ([]*models.IPAddress, error) {
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` ORDER BY ip.subnet_id, ip.address`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ips := make([]*models.IPAddress, 0)
+	for rows.Next() {
+		ip, err := scanIP(rows)
+		if err != nil {
+			return nil, err
+		}
+		ips = append(ips, ip)
+	}
+	return ips, rows.Err()
+}
+
 func (r *Repository) UpdateIPAddressStatus(ctx context.Context, id int64, status string, deviceID *int64) (*models.IPAddress, error) {
 	query := `WITH upd AS (
 		UPDATE ip_addresses SET status = $2, device_id = $3, updated_at = CURRENT_TIMESTAMP

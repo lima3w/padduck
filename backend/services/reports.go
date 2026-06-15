@@ -18,6 +18,7 @@ type reportsRepo interface {
 	ListAllSubnets(ctx context.Context) ([]*models.Subnet, error)
 	ListSubnetsBySection(ctx context.Context, networkID int64) ([]*models.Subnet, error)
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
+	BulkSubnetUtilisation(ctx context.Context) ([]repository.SubnetUtil, error)
 	RecordUtilisationSnapshot(ctx context.Context, subnetID int64, used, total int, pct float64) error
 	GetUtilisationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilisationPoint, error)
 	GetUtilisationTrends(ctx context.Context) ([]*models.SubnetUtilisationTrend, error)
@@ -77,39 +78,22 @@ func NewReportsService(repo reportsRepo, config *ConfigService, email *EmailServ
 // Utilisation snapshots (#220)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TakeUtilisationSnapshots iterates all subnets and records a utilisation snapshot for each.
+// TakeUtilisationSnapshots records a utilisation snapshot for every subnet in two queries.
 func (rs *ReportsService) TakeUtilisationSnapshots(ctx context.Context) {
-	subnets, err := rs.repo.ListAllSubnets(ctx)
+	utils, err := rs.repo.BulkSubnetUtilisation(ctx)
 	if err != nil {
-		slog.Error("reports: list subnets for snapshot failed", "error", err)
+		slog.Error("reports: bulk subnet utilisation failed", "error", err)
 		return
 	}
 
-	for _, subnet := range subnets {
-		ips, err := rs.repo.ListIPAddressesBySubnet(ctx, subnet.ID)
-		if err != nil {
-			slog.Error("reports: list IPs for subnet failed", "subnet_id", subnet.ID, "error", err)
-			continue
-		}
-
-		// Count used IPs (assigned or reserved)
-		used := 0
-		for _, ip := range ips {
-			if ip.Status == "assigned" || ip.Status == "reserved" {
-				used++
-			}
-		}
-
-		// Total addresses in the CIDR
-		total := totalAddressesFromPrefix(subnet.PrefixLength)
-
+	for _, u := range utils {
+		total := totalAddressesFromPrefix(u.PrefixLength)
 		var pct float64
 		if total > 0 {
-			pct = float64(used) / float64(total) * 100
+			pct = float64(u.Used) / float64(total) * 100
 		}
-
-		if err := rs.repo.RecordUtilisationSnapshot(ctx, subnet.ID, used, total, pct); err != nil {
-			slog.Error("reports: record snapshot failed", "subnet_id", subnet.ID, "error", err)
+		if err := rs.repo.RecordUtilisationSnapshot(ctx, u.SubnetID, u.Used, total, pct); err != nil {
+			slog.Error("reports: record snapshot failed", "subnet_id", u.SubnetID, "error", err)
 		}
 	}
 
