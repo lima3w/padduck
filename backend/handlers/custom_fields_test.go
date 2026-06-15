@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"padduck/models"
+	"padduck/repository"
 )
 
 // ---------------------------------------------------------------------------
@@ -181,4 +182,48 @@ func TestReorderCustomFieldDefinitions_NoPermission_Returns403(t *testing.T) {
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// validateCustomFieldParams — unit tests
+// ---------------------------------------------------------------------------
+
+func TestValidateCustomFieldParams_ValidParams(t *testing.T) {
+	p := &repository.CustomFieldDefinitionParams{EntityType: "subnet", FieldType: "text"}
+	assert.Empty(t, validateCustomFieldParams(p))
+}
+
+func TestValidateCustomFieldParams_AllValidCombinations(t *testing.T) {
+	for _, et := range []string{"subnet", "ip_address", "device"} {
+		for _, ft := range []string{"text", "number", "textarea", "dropdown", "checkbox", "date", "url", "email"} {
+			p := &repository.CustomFieldDefinitionParams{EntityType: et, FieldType: ft}
+			assert.Emptyf(t, validateCustomFieldParams(p), "expected no errors for entity_type=%s field_type=%s", et, ft)
+		}
+	}
+}
+
+func TestValidateCustomFieldParams_InvalidEntityType(t *testing.T) {
+	p := &repository.CustomFieldDefinitionParams{EntityType: "network", FieldType: "text"}
+	fields := validateCustomFieldParams(p)
+	assert.Len(t, fields, 1)
+	assert.Equal(t, "entity_type", fields[0].Field)
+}
+
+func TestValidateCustomFieldParams_InvalidFieldType(t *testing.T) {
+	p := &repository.CustomFieldDefinitionParams{EntityType: "subnet", FieldType: "image"}
+	fields := validateCustomFieldParams(p)
+	assert.Len(t, fields, 1)
+	assert.Equal(t, "field_type", fields[0].Field)
+}
+
+func TestValidateCustomFieldParams_BothInvalid(t *testing.T) {
+	p := &repository.CustomFieldDefinitionParams{EntityType: "rack", FieldType: "image"}
+	fields := validateCustomFieldParams(p)
+	assert.Len(t, fields, 2)
+}
+
+func TestValidateCustomFieldParams_EmptyStrings(t *testing.T) {
+	p := &repository.CustomFieldDefinitionParams{}
+	fields := validateCustomFieldParams(p)
+	assert.Len(t, fields, 2)
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.31.42
+
+### Tests
+- **Expanded handler test coverage for issues #153, #154, #155**: added 19 new unit tests across three handler test files. `audit_test.go` gains 10 `buildAuditFilter` tests covering default limit, custom limit, invalid/negative limit (ignored), offset, all string filter params, resource_id, and since/until date parsing. `custom_fields_test.go` gains 6 `validateCustomFieldParams` tests covering valid params, all entity_type/field_type combinations, invalid entity_type, invalid field_type, both invalid, and empty strings. `search_test.go` gains 3 auth tests (no-user → 401) for `GlobalSearch`, `SearchNetworks`, and `SearchIPAddressesGlobal`.
+
 ## v1.31.41
 
 ### Bug Fixes

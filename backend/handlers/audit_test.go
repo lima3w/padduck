@@ -10,6 +10,22 @@ import (
 	"padduck/models"
 )
 
+// captureAuditFilter sends a GET to a minimal route and returns the parsed filter.
+func captureAuditFilter(queryString string) *models.AuditLogFilter {
+	var captured *models.AuditLogFilter
+	app := fiber.New()
+	app.Get("/test", func(c *fiber.Ctx) error {
+		captured = buildAuditFilter(c)
+		return c.SendStatus(fiber.StatusOK)
+	})
+	url := "/test"
+	if queryString != "" {
+		url += "?" + queryString
+	}
+	_, _ = app.Test(httptest.NewRequest("GET", url, nil))
+	return captured
+}
+
 // All three audit handlers use a direct user.Role == "admin" check.
 
 // ---------------------------------------------------------------------------
@@ -88,6 +104,67 @@ func TestPurgeAuditLogs_NonAdmin_Returns403(t *testing.T) {
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/audit-logs/purge", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+// ---------------------------------------------------------------------------
+// buildAuditFilter — query parameter parsing
+// ---------------------------------------------------------------------------
+
+func TestBuildAuditFilter_DefaultLimit(t *testing.T) {
+	f := captureAuditFilter("")
+	assert.Equal(t, 50, f.Limit)
+	assert.Equal(t, 0, f.Offset)
+}
+
+func TestBuildAuditFilter_CustomLimit(t *testing.T) {
+	f := captureAuditFilter("limit=25")
+	assert.Equal(t, 25, f.Limit)
+}
+
+func TestBuildAuditFilter_InvalidLimitKeepsDefault(t *testing.T) {
+	f := captureAuditFilter("limit=notanumber")
+	assert.Equal(t, 50, f.Limit)
+}
+
+func TestBuildAuditFilter_NegativeLimitKeepsDefault(t *testing.T) {
+	f := captureAuditFilter("limit=-5")
+	assert.Equal(t, 50, f.Limit)
+}
+
+func TestBuildAuditFilter_Offset(t *testing.T) {
+	f := captureAuditFilter("offset=100")
+	assert.Equal(t, 100, f.Offset)
+}
+
+func TestBuildAuditFilter_StringFilters(t *testing.T) {
+	f := captureAuditFilter("action=deleted&resource_type=subnet&username=alice&ip=192.168.1.1&status=success")
+	assert.Equal(t, "deleted", f.Action)
+	assert.Equal(t, "subnet", f.ResourceType)
+	assert.Equal(t, "alice", f.Username)
+	assert.Equal(t, "192.168.1.1", f.IPAddress)
+	assert.Equal(t, "success", f.Status)
+}
+
+func TestBuildAuditFilter_ResourceID(t *testing.T) {
+	f := captureAuditFilter("resource_id=42")
+	assert.NotNil(t, f.ResourceID)
+	assert.Equal(t, int64(42), *f.ResourceID)
+}
+
+func TestBuildAuditFilter_InvalidResourceIDIgnored(t *testing.T) {
+	f := captureAuditFilter("resource_id=notanumber")
+	assert.Nil(t, f.ResourceID)
+}
+
+func TestBuildAuditFilter_SinceParsed(t *testing.T) {
+	f := captureAuditFilter("since=2026-01-01T00%3A00%3A00Z")
+	assert.NotNil(t, f.Since)
+	assert.Equal(t, 2026, f.Since.Year())
+}
+
+func TestBuildAuditFilter_InvalidSinceIgnored(t *testing.T) {
+	f := captureAuditFilter("since=notadate")
+	assert.Nil(t, f.Since)
 }
 
 func TestFormatAuditLogsRedactsSensitiveValues(t *testing.T) {
