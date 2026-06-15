@@ -20,6 +20,7 @@ import SortTh from './ip/SortTh'
 import UtilisationHistorySection from './ip/UtilisationHistorySection'
 
 const DEFAULT_LIMIT = 25
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 const STATUS_COLORS = {
   available: 'bg-green-100 text-green-700',
@@ -95,6 +96,7 @@ export default function IPAddressesPage() {
   const [sortCol, setSortCol] = useState('')
   const [sortDir, setSortDir] = useState('asc')
   const [fullRange, setFullRange] = useState(false)
+  const [pageSize, setPageSize] = useState(DEFAULT_LIMIT)
   const [metaDeviceSearch, setMetaDeviceSearch] = useState('')
 
   useEffect(() => {
@@ -119,7 +121,7 @@ export default function IPAddressesPage() {
     } catch {}
   }
 
-  async function load(p = page, col = sortCol, dir = sortDir, full = fullRange) {
+  async function load(p = page, col = sortCol, dir = sortDir, full = fullRange, limit = pageSize) {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -128,7 +130,7 @@ export default function IPAddressesPage() {
       setIsSearchActive(false)
       const [subRes, ipRes, tagRes] = await Promise.all([
         getSubnet(subnetID),
-        getIPAddressesPaginated(subnetID, p, DEFAULT_LIMIT, col, dir, true, full),
+        getIPAddressesPaginated(subnetID, p, limit, col, dir, true, full),
         getTags(),
       ])
       setSubnet(subRes.data)
@@ -145,7 +147,7 @@ export default function IPAddressesPage() {
 
   function handlePageChange(newPage) {
     setPage(newPage)
-    load(newPage)
+    load(newPage, sortCol, sortDir, fullRange, pageSize)
   }
 
   function handleSort(col) {
@@ -154,13 +156,19 @@ export default function IPAddressesPage() {
     setSortDir(newDir)
     setFullRange(false)
     setPage(1)
-    load(1, col, newDir, false)
+    load(1, col, newDir, false, pageSize)
   }
 
   function handleFullRange(checked) {
     setFullRange(checked)
     setPage(1)
-    load(1, sortCol, sortDir, checked)
+    load(1, sortCol, sortDir, checked, pageSize)
+  }
+
+  function handlePageSize(size) {
+    setPageSize(size)
+    setPage(1)
+    load(1, sortCol, sortDir, fullRange, size)
   }
 
   function toggleColumn(col) {
@@ -750,6 +758,16 @@ export default function IPAddressesPage() {
             )}
           </p>
           <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>Per page</span>
+              <select
+                value={pageSize}
+                onChange={e => handlePageSize(Number(e.target.value))}
+                className="border rounded px-2 py-0.5 text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
             {subnet && !subnet.networkAddress?.includes(':') && (
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <span>Show all IPs</span>
@@ -913,10 +931,10 @@ export default function IPAddressesPage() {
         </div>
       </div>
 
-      {!isSearchActive && total > DEFAULT_LIMIT && (
+      {!isSearchActive && total > pageSize && (
         <Pagination
           page={page}
-          limit={DEFAULT_LIMIT}
+          limit={pageSize}
           total={total}
           onChange={handlePageChange}
         />

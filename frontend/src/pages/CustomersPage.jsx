@@ -192,6 +192,7 @@ export default function CustomersPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [associations, setAssociations] = useState([])
   const [assocForm, setAssocForm] = useState(EMPTY_ASSOC)
+  const [activeTab, setActiveTab] = useState('customers')
 
   useEffect(() => { load() }, [])
 
@@ -291,14 +292,34 @@ export default function CustomersPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-        >
-          + New Customer
-        </button>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Customers</h1>
+        {activeTab === 'customers' && (
+          <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+            + New Customer
+          </button>
+        )}
+        {activeTab === 'associations' && (
+          <button onClick={openAssoc} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
+            + Add Association
+          </button>
+        )}
+      </div>
+
+      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-5">
+        {['customers', 'associations'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === tab
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
       </div>
 
       {message && (
@@ -312,71 +333,64 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="text-gray-500 text-sm">Loading…</div>
-      ) : customers.length === 0 ? (
-        <div className="text-gray-500 text-sm">No customers yet.</div>
-      ) : (
-        <div className="overflow-x-auto rounded border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Phone</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Description</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {customers.map(c => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.email || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.phone || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{c.description || '—'}</td>
-                  <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    <button onClick={() => openEdit(c)} className="text-blue-600 hover:underline text-xs">Edit</button>
-                    <button onClick={() => setDeleteConfirm(c)} className="text-red-600 hover:underline text-xs">Delete</button>
-                  </td>
+      {activeTab === 'customers' && (
+        loading ? (
+          <div className="text-gray-500 text-sm">Loading…</div>
+        ) : customers.length === 0 ? (
+          <div className="text-gray-500 text-sm">No customers yet.</div>
+        ) : (
+          <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Name</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Email</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Phone</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Description</th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                {customers.map(c => (
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{c.name}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{c.email || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{c.phone || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 max-w-xs truncate">{c.description || '—'}</td>
+                    <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                      <button onClick={() => openEdit(c)} className="text-blue-600 hover:underline text-xs">Edit</button>
+                      <button onClick={() => setDeleteConfirm(c)} className="text-red-600 hover:underline text-xs">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
 
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Associations</h2>
-          <button
-            onClick={openAssoc}
-            className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-          >
-            + Add Association
-          </button>
-        </div>
-        <div className="overflow-x-auto rounded border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+      {activeTab === 'associations' && (
+        <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-700">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Customer</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Type</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Object</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Relationship</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Customer</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Type</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Object</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Relationship</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {associations.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">No associations yet.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No associations yet.</td></tr>
               )}
               {associations.map(a => (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{a.customerName || `#${a.customerId}`}</td>
-                  <td className="px-4 py-3 text-gray-600">{OBJECT_TYPE_LABEL[a.objectType] || a.objectType}</td>
-                  <td className="px-4 py-3 text-gray-700">{a.objectName || `#${a.objectId}`}</td>
-                  <td className="px-4 py-3 text-gray-600 capitalize">{a.relationship}</td>
+                <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{a.customerName || `#${a.customerId}`}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{OBJECT_TYPE_LABEL[a.objectType] || a.objectType}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{a.objectName || `#${a.objectId}`}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 capitalize">{a.relationship}</td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={async () => { await deleteCustomerAssociation(a.id); load() }}
@@ -390,7 +404,7 @@ export default function CustomersPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      )}
 
       {modal === 'assoc' && (
         <Modal onClose={closeModal}>

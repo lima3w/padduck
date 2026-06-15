@@ -7,6 +7,8 @@ import (
 	"padduck/repository"
 )
 
+const maxLimit = 1000
+
 func parseListOptions(c *fiber.Ctx) (page int, limit int, opts repository.ListOptions) {
 	page = c.QueryInt("page", 0)
 	limit = c.QueryInt("limit", 0)
@@ -15,6 +17,9 @@ func parseListOptions(c *fiber.Ctx) (page int, limit int, opts repository.ListOp
 	}
 	if limit < 1 {
 		limit = 25
+	}
+	if limit > maxLimit {
+		limit = maxLimit
 	}
 	opts.Sort = strings.TrimSpace(c.Query("sort"))
 	opts.Order = strings.TrimSpace(c.Query("order", c.Query("dir", "asc")))

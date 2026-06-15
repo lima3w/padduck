@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +12,33 @@ import (
 	"padduck/models"
 	"padduck/services"
 )
+
+var webhookPrivateRanges []*net.IPNet
+
+func init() {
+	for _, cidr := range []string{
+		"127.0.0.0/8",
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+		"169.254.0.0/16",
+		"::1/128",
+		"fc00::/7",
+		"fe80::/10",
+	} {
+		_, network, _ := net.ParseCIDR(cidr)
+		webhookPrivateRanges = append(webhookPrivateRanges, network)
+	}
+}
+
+func isPrivateIP(ip net.IP) bool {
+	for _, network := range webhookPrivateRanges {
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
 
 type webhookEndpointRequest struct {
 	Name             string            `json:"name"`
@@ -151,11 +180,32 @@ func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
 
 func validateWebhookEndpointRequest(req *webhookEndpointRequest) []ValidationField {
 	fields := make([]ValidationField, 0)
-	if strings.TrimSpace(req.Name) == "" {
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
 		fields = append(fields, ValidationField{Field: "name", Message: "name is required"})
+	} else if len(name) > 255 {
+		fields = append(fields, ValidationField{Field: "name", Message: "name must be 255 characters or fewer"})
 	}
-	if strings.TrimSpace(req.URL) == "" {
+	rawURL := strings.TrimSpace(req.URL)
+	if rawURL == "" {
 		fields = append(fields, ValidationField{Field: "url", Message: "url is required"})
+		return fields
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		fields = append(fields, ValidationField{Field: "url", Message: "url must use http or https"})
+		return fields
+	}
+	addrs, err := net.LookupHost(parsed.Hostname())
+	if err != nil {
+		fields = append(fields, ValidationField{Field: "url", Message: "url hostname could not be resolved"})
+		return fields
+	}
+	for _, addr := range addrs {
+		if ip := net.ParseIP(addr); ip != nil && isPrivateIP(ip) {
+			fields = append(fields, ValidationField{Field: "url", Message: "url must not resolve to a private or loopback address"})
+			return fields
+		}
 	}
 	return fields
 }

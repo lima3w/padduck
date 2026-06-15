@@ -80,6 +80,9 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	if req.Name == "" {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name is required")
 	}
+	if len(req.Name) > 255 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name must be 255 characters or fewer")
+	}
 	loc, err := h.service.CreateLocation(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating location", "error", err)
@@ -124,6 +127,9 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name is required")
+	}
+	if len(req.Name) > 255 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name must be 255 characters or fewer")
 	}
 	loc, err := h.service.UpdateLocation(c.Context(), int64(id), req)
 	if err != nil {

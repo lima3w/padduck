@@ -8,6 +8,20 @@ import (
 	"padduck/services"
 )
 
+var allowedEntityTypes = map[string]bool{"subnet": true, "ip_address": true, "device": true}
+var allowedFieldTypes = map[string]bool{"text": true, "number": true, "textarea": true, "dropdown": true, "checkbox": true, "date": true, "url": true, "email": true}
+
+func validateCustomFieldParams(p *repository.CustomFieldDefinitionParams) []ValidationField {
+	var fields []ValidationField
+	if !allowedEntityTypes[p.EntityType] {
+		fields = append(fields, ValidationField{Field: "entity_type", Message: "entity_type must be one of: subnet, ip_address, device"})
+	}
+	if !allowedFieldTypes[p.FieldType] {
+		fields = append(fields, ValidationField{Field: "field_type", Message: "field_type must be one of: text, number, textarea, dropdown, checkbox, date, url, email"})
+	}
+	return fields
+}
+
 // ListCustomFieldDefinitions handles GET /api/v1/admin/custom-fields
 func (h *Handler) ListCustomFieldDefinitions(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
@@ -29,6 +43,9 @@ func (h *Handler) CreateCustomFieldDefinition(c *fiber.Ctx) error {
 	p := new(repository.CustomFieldDefinitionParams)
 	if err := c.BodyParser(p); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if vf := validateCustomFieldParams(p); len(vf) > 0 {
+		return RespondValidationError(c, "validation failed", vf)
 	}
 
 	def, err := h.service.CreateCustomFieldDefinition(c.Context(), p)
@@ -72,6 +89,9 @@ func (h *Handler) UpdateCustomFieldDefinition(c *fiber.Ctx) error {
 	p := new(repository.CustomFieldDefinitionParams)
 	if err := c.BodyParser(p); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if vf := validateCustomFieldParams(p); len(vf) > 0 {
+		return RespondValidationError(c, "validation failed", vf)
 	}
 
 	def, err := h.service.UpdateCustomFieldDefinition(c.Context(), int64(id), p)

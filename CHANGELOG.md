@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.31.35
+
+### Security
+- **Webhook URLs are now validated against SSRF attacks**: the create/update webhook endpoint previously accepted any string as a URL. It now rejects non-`http`/`https` schemes and destinations that resolve to loopback or RFC-1918 addresses (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, link-local). Invalid URLs return a 400 with a clear field-level error.
+
+### Features
+- **Per-page size selector on the IP Addresses page**: a dropdown in the pagination bar lets users choose between 10, 25, 50, and 100 rows per page.
+- **Customers page now shows Associations tab**: the Customers detail view gains an Associations tab listing all objects linked to a customer. The `network` object type is also now accepted when adding or editing an association.
+
+### Bug Fixes
+- **Unbounded `?limit` parameter could cause excessive memory use**: `parseListOptions` now silently caps the `limit` query parameter at 1000 rows.
+- **Oversized string inputs reached the database without a clear error**: length limits (255 characters, matching the DB column size) are now enforced at the handler level for username, hostname, location name, and webhook name. Violations return a 400 instead of a cryptic Postgres error.
+- **Invalid MAC addresses were not rejected at the API boundary**: `CreateIPAddress` and `UpdateIPMeta` now validate and normalize MAC addresses using the existing `NormalizeMAC` helper. Invalid formats return a 400; valid addresses are stored in lowercase colon-separated form.
+- **Custom field `entity_type` and `field_type` produced opaque DB errors when invalid**: the create and update custom field handlers now validate both fields against their allowed value sets before hitting the database.
+
 ## v1.31.34
 
 ### Features
