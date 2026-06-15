@@ -28,6 +28,7 @@ type Service struct {
 	SAML          *SAMLService
 	Topology      *TopologyService
 	Jobs          *JobService
+	Telemetry     *TelemetryService
 
 	dashboardSummaryCache  *ttlCache[*models.DashboardSummary]
 	dashboardActivityCache *ttlCache[[]*models.DashboardActivity]
@@ -66,6 +67,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	svc.Webhooks = NewWebhookService(repo)
 	svc.Automation = NewAutomationService(svc)
 	svc.Topology = NewTopologyService(repo)
+	svc.Telemetry = newTelemetryService(svc)
 	return svc
 }
 

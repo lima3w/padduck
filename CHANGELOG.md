@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.0
+
+### Features
+- **Telemetry foundation (silent, nothing sent yet)**: adds the data collection layer for the opt-in analytics feature planned for v1.50.0. A stable `install_id` UUID is generated on first boot and persisted in the config table — never derived from hostname, IP, or any identifying property. A new `TelemetryService.CollectSnapshot()` method assembles a `TelemetrySnapshot` struct from a single-round-trip batched COUNT query (users, customers, locations, VLANs, subnets with IPv4/IPv6 split and five prefix-length bucket counts) plus feature flag reads (LDAP, OIDC, SAML, SNMP community, anonymous API). Field names match the `padduck_analytics` PocketBase schema exactly. No data is transmitted and no UI changes ship in this increment; the opt-in toggle and sender follow in a future patch.
+
 ## v1.31.42
 
 ### Tests
