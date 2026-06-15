@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import * as client from '../api/admin'
 
 const defaultConfig = {
@@ -29,11 +29,7 @@ export default function AdminLdapPage() {
   const [newMapping, setNewMapping] = useState({ ldap_group_dn: '', role_id: '' })
   const [addingMapping, setAddingMapping] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const [cfgRes, mappingsRes, rolesRes] = await Promise.all([
@@ -65,7 +61,11 @@ export default function AdminLdapPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type })

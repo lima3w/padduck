@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { approveUser, getAdminConfig, listPendingApprovals, rejectUser, updateAdminConfig } from '../../api/admin'
 import { CONFIG_KEYS_BY_TAB } from './settingsShared'
@@ -27,11 +27,7 @@ export default function AdminSettingsPage() {
   const initialTab = new URLSearchParams(location.search).get('tab') || 'registration'
   const [activeTab, setActiveTab] = useState(initialTab)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const [configRes, approvalsRes] = await Promise.all([
@@ -52,7 +48,11 @@ export default function AdminSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type })

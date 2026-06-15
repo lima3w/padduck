@@ -24,7 +24,7 @@ export default function VerifyEmailPage() {
         setStatus('error')
         setMessage(err.response?.data?.error || 'Verification failed.')
       })
-  }, [])
+  }, [searchParams])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">

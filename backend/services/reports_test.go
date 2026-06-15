@@ -63,6 +63,19 @@ func (r *stubReportsRepo) ListSubnetsBySection(_ context.Context, networkID int6
 func (r *stubReportsRepo) ListIPAddressesBySubnet(_ context.Context, subnetID int64) ([]*models.IPAddress, error) {
 	return r.ips[subnetID], nil
 }
+func (r *stubReportsRepo) BulkSubnetUtilisation(_ context.Context) ([]repository.SubnetUtil, error) {
+	var out []repository.SubnetUtil
+	for _, s := range r.subnets {
+		used := 0
+		for _, ip := range r.ips[s.ID] {
+			if ip.Status == "assigned" || ip.Status == "reserved" {
+				used++
+			}
+		}
+		out = append(out, repository.SubnetUtil{SubnetID: s.ID, PrefixLength: s.PrefixLength, Used: used})
+	}
+	return out, nil
+}
 func (r *stubReportsRepo) RecordUtilisationSnapshot(_ context.Context, subnetID int64, used, total int, pct float64) error {
 	r.snapshots = append(r.snapshots, snapshotCall{subnetID: subnetID, used: used, total: total, pct: pct})
 	return nil

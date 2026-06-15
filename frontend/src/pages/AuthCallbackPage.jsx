@@ -27,7 +27,7 @@ export default function AuthCallbackPage() {
       .catch(() => {
         setError('Sign in failed. Please try again.')
       })
-  }, [])
+  }, [login, navigate])
 
   if (error) {
     return (

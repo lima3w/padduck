@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ChangeHistory from '../components/ChangeHistory'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
@@ -49,9 +49,7 @@ export default function VlanDetailPage() {
   const [assigning, setAssigning] = useState(false)
   const [loadingAssignSubnets, setLoadingAssignSubnets] = useState(false)
 
-  useEffect(() => { load() }, [id])
-
-  async function load() {
+  const load = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -86,7 +84,9 @@ export default function VlanDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => { load() }, [load])
 
   function showMsg(text, type = 'success') {
     setMessage({ text, type })

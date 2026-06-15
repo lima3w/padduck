@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getLocation } from '../api/locations'
 import { getRacks, createRack, updateRack, deleteRack } from '../api/racks'
@@ -22,11 +22,7 @@ export default function LocationDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    loadAll()
-  }, [id])
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -56,7 +52,9 @@ export default function LocationDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { loadAll() }, [loadAll])
 
   async function loadSubnets() {
     try {

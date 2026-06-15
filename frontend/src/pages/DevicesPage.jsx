@@ -95,7 +95,7 @@ export default function DevicesPage() {
       setLocationsEnabled(f.locations !== false)
       if (f.locations !== false) loadLocations()
     }).catch(() => loadLocations())
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     savePrefs(FILTER_KEY, { filterHostname, filterTypeId, filterOnline, filterLocationId }, LEGACY_FILTER_KEY)

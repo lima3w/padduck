@@ -61,8 +61,6 @@ export default function SubnetsPage() {
   const [splitting, setSplitting] = useState(false)
   const [splitError, setSplitError] = useState('')
   const [splitBlockingIPs, setSplitBlockingIPs] = useState([])
-  const [splitSuccess, setSplitSuccess] = useState(false)
-
   // Merge modal state
   const [mergeModal, setMergeModal] = useState(null) // null | { subnet, siblings: [] }
   const [mergeSelected, setMergeSelected] = useState([])
@@ -88,7 +86,7 @@ export default function SubnetsPage() {
     loadLocations()
     loadNameservers()
     loadVlans()
-  }, [networkID])
+  }, [networkID]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     savePrefs(FILTER_KEY, { filterLocationId }, LEGACY_FILTER_KEY)
@@ -331,7 +329,6 @@ export default function SubnetsPage() {
     setSplitPrefix(String(subnet.prefixLength + 1))
     setSplitError('')
     setSplitBlockingIPs([])
-    setSplitSuccess(false)
   }
 
   async function handleSplit() {
@@ -341,7 +338,6 @@ export default function SubnetsPage() {
     setSplitBlockingIPs([])
     try {
       await api.post(`/admin/subnets/${splitModal.subnet.id}/split`, { new_prefix_len: parseInt(splitPrefix) })
-      setSplitSuccess(true)
       setSplitModal(null)
       showToast('Subnet split successfully')
       load(page)

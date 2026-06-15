@@ -2,7 +2,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getDashboardSummary, getDashboardRecentActivity } from '../api/app'
-import { getInactiveIPs } from '../api/admin'
 import { getCachedUser } from '../utils/storageKeys'
 
 function formatRelativeTime(isoString) {

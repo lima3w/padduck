@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { api } from '../api/client'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs, pushDHCPReservation, removeDHCPReservation } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
 import { submitIPRequest } from '../api/requests'
@@ -105,7 +104,7 @@ export default function IPAddressesPage() {
     load(1)
     loadCfDefs()
     loadDevices()
-  }, [subnetID])
+  }, [subnetID]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadCfDefs() {
     try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Avatar from './Avatar'
 import { getRequestComments, addRequestComment } from '../api/requests'
 
@@ -26,11 +26,7 @@ export default function RequestComments({ type, id }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
 
-  useEffect(() => {
-    if (id) loadComments()
-  }, [type, id])
-
-  async function loadComments() {
+  const loadComments = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -41,7 +37,11 @@ export default function RequestComments({ type, id }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [type, id])
+
+  useEffect(() => {
+    if (id) loadComments()
+  }, [id, loadComments])
 
   async function handleSubmit(e) {
     e.preventDefault()

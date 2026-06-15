@@ -39,7 +39,7 @@ export default function PrivacyConsentBanner() {
       getCurrentUser()
         .then((res) => setCachedUser(res.data))
         .catch(() => {})
-    } catch (err) {
+    } catch {
       setError('Failed to record consent. Please try again.')
     } finally {
       setAccepting(false)

@@ -78,6 +78,7 @@ type ImportRepo interface {
 	CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error)
 	// IPs
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
+	ListAllIPAddresses(ctx context.Context) ([]*models.IPAddress, error)
 	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
 	// VLANs / VRFs
 	ListAllVLANs(ctx context.Context) ([]*models.VLAN, error)
@@ -782,15 +783,20 @@ func (s *ImportService) exportFullCSV(ctx context.Context, subnets []*models.Sub
 		return nil, "", "", fmt.Errorf("generate subnet CSV: %w", err)
 	}
 
+	allIPs, err := s.repo.ListAllIPAddresses(ctx)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("fetch IP addresses: %w", err)
+	}
+	ipsBySubnet := make(map[int64][]*models.IPAddress, len(subnets))
+	for _, ip := range allIPs {
+		ipsBySubnet[ip.SubnetID] = append(ipsBySubnet[ip.SubnetID], ip)
+	}
+
 	ipHeaders := []string{"address", "hostname", "status", "subnet_cidr", "mac_address"}
 	ipRows := make([]map[string]string, 0)
 	for _, sub := range subnets {
-		ips, err := s.repo.ListIPAddressesBySubnet(ctx, sub.ID)
-		if err != nil {
-			continue
-		}
 		cidr := fmt.Sprintf("%s/%d", sub.NetworkAddress, sub.PrefixLength)
-		for _, ip := range ips {
+		for _, ip := range ipsBySubnet[sub.ID] {
 			ipRows = append(ipRows, map[string]string{
 				"address":     ip.Address,
 				"hostname":    ip.Hostname,
@@ -832,14 +838,19 @@ func (s *ImportService) exportFullJSON(ctx context.Context, subnets []*models.Su
 		IPAddresses []ipRow          `json:"ip_addresses"`
 	}
 
-	ips := make([]ipRow, 0)
+	allIPs, err := s.repo.ListAllIPAddresses(ctx)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("fetch IP addresses: %w", err)
+	}
+	ipsBySubnet := make(map[int64][]*models.IPAddress, len(subnets))
+	for _, ip := range allIPs {
+		ipsBySubnet[ip.SubnetID] = append(ipsBySubnet[ip.SubnetID], ip)
+	}
+
+	ips := make([]ipRow, 0, len(allIPs))
 	for _, sub := range subnets {
-		subIPs, err := s.repo.ListIPAddressesBySubnet(ctx, sub.ID)
-		if err != nil {
-			continue
-		}
 		cidr := fmt.Sprintf("%s/%d", sub.NetworkAddress, sub.PrefixLength)
-		for _, ip := range subIPs {
+		for _, ip := range ipsBySubnet[sub.ID] {
 			ips = append(ips, ipRow{
 				Address:    ip.Address,
 				Hostname:   ip.Hostname,

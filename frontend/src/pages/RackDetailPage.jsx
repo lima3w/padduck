@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getRack, getRackDevices } from '../api/racks'
 import { getLocation } from '../api/locations'
@@ -21,11 +21,7 @@ export default function RackDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    loadAll()
-  }, [id])
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -56,7 +52,9 @@ export default function RackDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => { loadAll() }, [loadAll])
 
   if (loading) return <p className="text-gray-500">Loading rack...</p>
   if (error && !rack) return <p className="text-red-600">{error}</p>

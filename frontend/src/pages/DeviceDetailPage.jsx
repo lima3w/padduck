@@ -56,7 +56,7 @@ export default function DeviceDetailPage() {
     loadCfDefs()
     loadLocationsList()
     loadVlanList()
-  }, [id])
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadVlanList() {
     try {

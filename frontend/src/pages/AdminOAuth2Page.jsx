@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import * as client from '../api/admin'
 
 const defaultConfig = {
@@ -20,11 +20,7 @@ export default function AdminOAuth2Page() {
   const [message, setMessage] = useState({ text: '', type: '' })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const res = await client.getOAuth2Config().catch(() => null)
@@ -38,7 +34,11 @@ export default function AdminOAuth2Page() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type })

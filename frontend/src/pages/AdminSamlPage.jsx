@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import * as client from '../api/admin'
 
 const defaultConfig = {
@@ -16,11 +16,7 @@ export default function AdminSamlPage() {
   const [loading, setLoading] = useState(true)
   const [showXmlPaste, setShowXmlPaste] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const res = await client.getSamlConfig().catch(() => null)
@@ -32,7 +28,11 @@ export default function AdminSamlPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type })

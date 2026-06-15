@@ -73,6 +73,13 @@ func (r *stubImportRepo) CreateSubnetWithVLAN(_ context.Context, networkID int64
 func (r *stubImportRepo) ListIPAddressesBySubnet(_ context.Context, subnetID int64) ([]*models.IPAddress, error) {
 	return r.ips[subnetID], nil
 }
+func (r *stubImportRepo) ListAllIPAddresses(_ context.Context) ([]*models.IPAddress, error) {
+	var all []*models.IPAddress
+	for _, ips := range r.ips {
+		all = append(all, ips...)
+	}
+	return all, nil
+}
 func (r *stubImportRepo) CreateIPAddress(_ context.Context, subnetID int64, address, hostname, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
 	ip := &models.IPAddress{
 		ID:         r.nextIPID,
