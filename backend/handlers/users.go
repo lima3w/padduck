@@ -142,6 +142,9 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	if req.Username == "" || req.Email == "" || req.Password == "" {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username, email, and password required")
 	}
+	if len(req.Username) > 255 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username must be 255 characters or fewer")
+	}
 
 	role := req.Role
 	if role == "" {

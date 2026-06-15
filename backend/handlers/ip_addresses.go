@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"padduck/models"
 	"padduck/services"
+	"padduck/utils"
 )
 
 type CreateIPAddressRequest struct {
@@ -48,6 +49,16 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 	req := new(CreateIPAddressRequest)
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if len(req.Hostname) > 255 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "hostname must be 255 characters or fewer")
+	}
+	if req.MACAddress != nil && *req.MACAddress != "" {
+		normalized, err := utils.NormalizeMAC(*req.MACAddress)
+		if err != nil {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid MAC address format")
+		}
+		req.MACAddress = &normalized
 	}
 
 	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
@@ -238,6 +249,16 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 	req := new(UpdateIPMetaRequest)
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if len(req.Hostname) > 255 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "hostname must be 255 characters or fewer")
+	}
+	if req.MACAddress != nil && *req.MACAddress != "" {
+		normalized, err := utils.NormalizeMAC(*req.MACAddress)
+		if err != nil {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid MAC address format")
+		}
+		req.MACAddress = &normalized
 	}
 
 	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)

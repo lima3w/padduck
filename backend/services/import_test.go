@@ -617,3 +617,27 @@ func TestMaskToPrefixLen(t *testing.T) {
 		})
 	}
 }
+
+func TestPhpIpamStateToStatus(t *testing.T) {
+	tests := []struct {
+		state string
+		want  string
+	}{
+		{"1", "assigned"},
+		{"used", "assigned"},
+		{"active", "assigned"},
+		{"3", "assigned"},
+		{"dhcp", "assigned"},
+		{"2", "reserved"},
+		{"reserved", "reserved"},
+		{"0", "available"},
+		{"4", "available"},
+		{"offline", "available"},
+		{"", "available"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.state, func(t *testing.T) {
+			assert.Equal(t, tt.want, phpIpamStateToStatus(tt.state))
+		})
+	}
+}
