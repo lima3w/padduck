@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.31.35
+## v1.31.36
 
 ### Security
 - **Webhook URLs are now validated against SSRF attacks**: the create/update webhook endpoint previously accepted any string as a URL. It now rejects non-`http`/`https` schemes and destinations that resolve to loopback or RFC-1918 addresses (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, link-local). Invalid URLs return a 400 with a clear field-level error.
