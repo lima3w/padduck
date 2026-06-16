@@ -12,7 +12,7 @@ This guide walks you from zero to your first allocated IP address. It covers the
 | [Docker Compose](https://docs.docker.com/compose/install/) | v2.20 | Ships with Docker Desktop; standalone install on Linux |
 | Outbound internet access | — | Required to download the Compose file and pull images |
 
-> **Local development only** — if you want to run the backend or frontend outside Docker, you also need Go 1.22+ and Node.js 20+. Those paths are not covered here.
+> **Local development only** — if you want to run the backend or frontend outside Docker, you also need Go 1.26+ and Node.js 20+. Those paths are not covered here.
 
 ---
 
@@ -66,9 +66,13 @@ see the backend print the admin password (if you left `ADMIN_PASSWORD` blank):
 ========================================
 ```
 
-> **Tip:** The generated password is also written to `/run/ipam/admin-password` inside the backend container (mode `0600`). You can read it with:
+> **Tip:** The generated password is also written to `/app/data/admin-password` inside the backend container (mode `0600`), which is bind-mounted from `./data/backend` on the host. You can read it directly from the host:
 > ```bash
-> docker compose exec backend cat /run/ipam/admin-password
+> cat ./data/backend/admin-password
+> ```
+> or from inside the container:
+> ```bash
+> docker compose exec backend cat /app/data/admin-password
 > ```
 
 ---

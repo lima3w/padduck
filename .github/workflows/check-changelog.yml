@@ -4,6 +4,23 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      # Documentation and reference
+      - 'docs/**'
+      - 'wiki/**'
+      - '**/*.md'
+      - '.github/wiki/**'
+      - 'backend/docs/**'
+      # Repo and CI config
+      - '.github/**'
+      - '.gitignore'
+      - '.env.example'
+      - 'LICENSE'
+      # Dev tooling and scripts
+      - 'tools/**'
+      - '.claude/**'
+      # Test-only infrastructure
+      - 'docker-compose.e2e.yml'
 
 jobs:
   check-changelog:

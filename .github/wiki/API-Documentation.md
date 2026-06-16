@@ -7,9 +7,9 @@
 Padduck provides a **stable REST API** under `/api/v1/`. The API is the foundation for all UI interactions and external automation.
 
 - **Base URL**: `https://your-padduck-instance/api/v1`
-- **OpenAPI Spec**: `GET /api/openapi.yaml` (OpenAPI 3.0.3, version 1.26.0)
+- **OpenAPI Spec**: `GET /api/openapi.yaml` (OpenAPI 3.0.3, version 1.31.32)
 - **Contract stability**: v1 is frozen — no breaking changes without a new version
-- **Total endpoints**: 438 registered routes (194 public API paths)
+- **Total endpoints**: 199 documented paths (275 operations) in the OpenAPI spec, plus internal/admin routes not yet covered there
 
 ---
 
@@ -120,14 +120,14 @@ The API includes a token-bucket rate limiter. When throttled, you receive `429 T
 | `POST` | `/auth/password-reset` | Request password reset |
 | `GET` | `/auth/me` | Current user info |
 
-### Sections
+### Networks
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/v1/sections` | List sections |
-| `POST` | `/api/v1/sections` | Create section |
-| `GET` | `/api/v1/sections/:id` | Get section |
-| `PUT` | `/api/v1/sections/:id` | Update section |
-| `DELETE` | `/api/v1/sections/:id` | Delete section |
+| `GET` | `/api/v1/networks` | List networks |
+| `POST` | `/api/v1/networks` | Create network |
+| `GET` | `/api/v1/networks/:id` | Get network |
+| `PUT` | `/api/v1/networks/:id` | Update network |
+| `DELETE` | `/api/v1/networks/:id` | Delete network |
 
 ### Subnets
 | Method | Path | Description |
@@ -137,17 +137,18 @@ The API includes a token-bucket rate limiter. When throttled, you receive `429 T
 | `GET` | `/api/v1/subnets/:id` | Get subnet |
 | `PUT` | `/api/v1/subnets/:id` | Update subnet |
 | `DELETE` | `/api/v1/subnets/:id` | Delete subnet |
-| `GET` | `/api/v1/sections/:id/subnets` | List subnets in section |
+| `GET` | `/api/v1/networks/:id/subnets` | List subnets in a network |
 
 ### IP Addresses
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/v1/ip-addresses` | List IPs |
-| `POST` | `/api/v1/ip-addresses` | Create IP record |
+| `GET` | `/api/v1/subnets/:subnetID/ip-addresses` | List IPs in subnet |
+| `POST` | `/api/v1/subnets/:subnetID/ip-addresses` | Create IP record in subnet |
+| `POST` | `/api/v1/ip-addresses/quick-create` | Create IP record by address (subnet inferred) |
 | `GET` | `/api/v1/ip-addresses/:id` | Get IP |
 | `PUT` | `/api/v1/ip-addresses/:id` | Update IP |
 | `DELETE` | `/api/v1/ip-addresses/:id` | Delete IP |
-| `GET` | `/api/v1/subnets/:id/ip-addresses` | List IPs in subnet |
+| `GET` | `/api/v1/ip-addresses/search` | Search IPs globally |
 
 ### Automation (Idempotent)
 | Method | Path | Description |

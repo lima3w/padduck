@@ -20,7 +20,7 @@ tags:
   - name: Auth
   - name: Security
   - name: Users
-  - name: Sections
+  - name: Networks
   - name: Subnets
   - name: IP Addresses
   - name: VRFs
@@ -72,8 +72,8 @@ components:
       required: true
       schema:
         type: integer
-    sectionID:
-      name: sectionID
+    networkID:
+      name: networkID
       in: path
       required: true
       schema:
@@ -844,44 +844,44 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
-  /api/v1/sections:
+  /api/v1/networks:
     get:
-      tags: [Sections]
-      summary: List sections
+      tags: [Networks]
+      summary: List networks
       responses:
         "200":
           $ref: "#/components/responses/OKArray"
     post:
-      tags: [Sections]
-      summary: Create section
+      tags: [Networks]
+      summary: Create network
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
           $ref: "#/components/responses/Created"
 
-  /api/v1/sections/search:
+  /api/v1/networks/search:
     post:
-      tags: [Sections]
-      summary: Search sections
+      tags: [Networks]
+      summary: Search networks
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "200":
           $ref: "#/components/responses/OKArray"
 
-  /api/v1/sections/{id}:
+  /api/v1/networks/{id}:
     get:
-      tags: [Sections]
-      summary: Get section
+      tags: [Networks]
+      summary: Get network
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
         "200":
           $ref: "#/components/responses/OK"
     put:
-      tags: [Sections]
-      summary: Update section
+      tags: [Networks]
+      summary: Update network
       parameters:
         - $ref: "#/components/parameters/id"
       requestBody:
@@ -890,40 +890,40 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
     delete:
-      tags: [Sections]
-      summary: Delete section
+      tags: [Networks]
+      summary: Delete network
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
         "204":
           $ref: "#/components/responses/NoContent"
 
-  /api/v1/sections/{id}/subnets/tree:
+  /api/v1/networks/{id}/subnets/tree:
     get:
-      tags: [Sections, Subnets]
-      summary: Get subnet tree for a section
+      tags: [Networks, Subnets]
+      summary: Get subnet tree for a network
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
         "200":
           $ref: "#/components/responses/OKArray"
 
-  /api/v1/sections/{id}/topology:
+  /api/v1/networks/{id}/topology:
     get:
-      tags: [Sections]
-      summary: Get section topology
+      tags: [Networks]
+      summary: Get network topology
       parameters:
         - $ref: "#/components/parameters/id"
       responses:
         "200":
           $ref: "#/components/responses/OK"
 
-  /api/v1/sections/{sectionID}/subnets:
+  /api/v1/networks/{networkID}/subnets:
     get:
       tags: [Subnets]
-      summary: List section subnets
+      summary: List network subnets
       parameters:
-        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/networkID"
       responses:
         "200":
           $ref: "#/components/responses/OKArray"
@@ -931,19 +931,19 @@ paths:
       tags: [Subnets]
       summary: Create subnet
       parameters:
-        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/networkID"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
         "201":
           $ref: "#/components/responses/Created"
 
-  /api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses:
+  /api/v1/networks/{networkID}/subnets/{subnetID}/ip-addresses:
     get:
       tags: [IP Addresses]
       summary: List IP addresses using legacy nested route
       parameters:
-        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/networkID"
         - $ref: "#/components/parameters/subnetID"
       responses:
         "200":
@@ -952,7 +952,7 @@ paths:
       tags: [IP Addresses]
       summary: Create IP address using legacy nested route
       parameters:
-        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/networkID"
         - $ref: "#/components/parameters/subnetID"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
@@ -960,12 +960,12 @@ paths:
         "201":
           $ref: "#/components/responses/Created"
 
-  /api/v1/sections/{sectionID}/subnets/{subnetID}/ip-addresses/allocate:
+  /api/v1/networks/{networkID}/subnets/{subnetID}/ip-addresses/allocate:
     post:
       tags: [IP Addresses]
       summary: Allocate IP address using legacy nested route
       parameters:
-        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/networkID"
         - $ref: "#/components/parameters/subnetID"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
@@ -1011,12 +1011,12 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
-  /api/v1/subnets/search/{sectionID}:
+  /api/v1/subnets/search/{networkID}:
     post:
       tags: [Subnets]
-      summary: Search subnets in a section
+      summary: Search subnets in a network
       parameters:
-        - $ref: "#/components/parameters/sectionID"
+        - $ref: "#/components/parameters/networkID"
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
@@ -1086,10 +1086,10 @@ paths:
         "201":
           $ref: "#/components/responses/Created"
 
-  /api/v1/subnets/{id}/utilisation/history:
+  /api/v1/subnets/{id}/utilization/history:
     get:
       tags: [Subnets, Reports]
-      summary: Get subnet utilisation history
+      summary: Get subnet utilization history
       parameters:
         - $ref: "#/components/parameters/id"
       responses:

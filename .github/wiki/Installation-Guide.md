@@ -36,7 +36,9 @@ cd padduck
 # 2. Create environment file
 cp .env.example .env
 
-# 3. Generate MFA encryption key (required for production)
+# 3. Generate MFA encryption key (recommended for production; if you skip
+#    this, the backend auto-generates one and persists it to a file, but
+#    setting it explicitly lets you back it up and reuse it across reinstalls)
 openssl rand -hex 32
 # Paste the output as MFA_ENCRYPTION_KEY in .env
 
@@ -70,7 +72,7 @@ Open **http://localhost:3000** and log in as `admin`.
 | `DATABASE_URL` | *(derived)* | Full connection string; overrides the three variables above |
 | `SERVER_PORT` | `8080` | Backend port inside container |
 | `ENVIRONMENT` | `production` | `production` (JSON logs) or `development` (text logs) |
-| `MFA_ENCRYPTION_KEY` | *(empty)* | **Required for production** — 64 hex characters |
+| `MFA_ENCRYPTION_KEY` | *(empty)* | **Recommended for production** — 64 hex characters. If unset, the backend auto-generates one and persists it to a file, so it survives restarts but not a full data wipe |
 | `ADMIN_PASSWORD` | *(auto-generated)* | Leave empty to auto-generate on first boot |
 | `RESET_ADMIN_PASSWORD` | `false` | Set `true` to force-reset admin password on next boot |
 | `TRUSTED_PROXIES` | *(none)* | Comma-separated IPs/CIDRs for X-Real-IP forwarding |
