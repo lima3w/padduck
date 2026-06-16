@@ -41,6 +41,7 @@ data/
 
 # Working documents and drafts
 docs/full_sprint_plan.md
+refactor_notes.md
 dev/
 
 # Automation scripts (may contain sensitive tokens)
