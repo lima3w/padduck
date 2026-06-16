@@ -106,8 +106,6 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"api_token_rotation_grace_period_hours": true,
 		"privacy_policy_version":               true,
 		"telemetry_enabled":                    true,
-		"telemetry_pocketbase_url":             true,
-		"telemetry_pocketbase_token":           true,
 		"telemetry_snapshot_period":            true,
 		"telemetry_deployment_type":            true,
 		"telemetry_deployment_mode":            true,
@@ -118,11 +116,10 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 	}
 
 	sensitiveConfigKeys := map[string]bool{
-		"smtp_password":              true,
-		"pdns_api_key":               true,
-		"technitium_token":           true,
-		"scanner_snmp_community":     true,
-		"telemetry_pocketbase_token": true,
+		"smtp_password":          true,
+		"pdns_api_key":           true,
+		"technitium_token":       true,
+		"scanner_snmp_community": true,
 	}
 
 	// Validate all keys first (before writing anything) to ensure atomicity.
@@ -171,11 +168,10 @@ func (h *Handler) RevealConfig(c *fiber.Ctx) error {
 	}
 
 	revealableKeys := map[string]bool{
-		"smtp_password":              true,
-		"pdns_api_key":               true,
-		"technitium_token":           true,
-		"scanner_snmp_community":     true,
-		"telemetry_pocketbase_token": true,
+		"smtp_password":          true,
+		"pdns_api_key":           true,
+		"technitium_token":       true,
+		"scanner_snmp_community": true,
 	}
 
 	key := c.Query("key")

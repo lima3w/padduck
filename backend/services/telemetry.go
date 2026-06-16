@@ -11,7 +11,6 @@ import (
 	"math"
 	"net/http"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,10 +36,18 @@ var featureConfigKeys = []string{
 	"feature_firewall_enabled",
 }
 
+const (
+	telemetryEndpointKey    = "padduck_pub_analytics_v1_6d8c7f2c9b4f4e20b75f2a1b8c9d4e31"
+	telemetryAnalyticsKeyVer = "v1"
+)
+
 // TelemetrySnapshot is a privacy-safe aggregate payload that describes one
 // install at a point in time. Field names match the padduck_analytics
 // PocketBase collection schema exactly.
 type TelemetrySnapshot struct {
+	// analytics_key_version is checked by the PocketBase create rule and
+	// ignored for storage — it is not a schema field.
+	AnalyticsKeyVersion    string    `json:"analytics_key_version"`
 	InstallID              string    `json:"install_id"`
 	SnapshotAt             time.Time `json:"snapshot_at"`
 	SnapshotPeriod         string    `json:"snapshot_period"`
@@ -78,8 +85,8 @@ type TelemetrySnapshot struct {
 	IPv4Subnets16to23 int64 `json:"ipv4_subnets_16_to_23"`
 	IPv4Subnets8to15  int64 `json:"ipv4_subnets_8_to_15"`
 
-	// IPv4 subnet utilization metrics (nil when no IPv4 subnets exist)
-	SubnetUtilizationAvgPct    *float64 `json:"subnet_utilization_avg_pct,omitempty"`
+	// IPv4 subnet utilization metrics (avg is always present; others nil when no IPv4 subnets)
+	SubnetUtilizationAvgPct    float64  `json:"subnet_utilization_avg_pct"`
 	SubnetUtilizationMedianPct *float64 `json:"subnet_utilization_median_pct,omitempty"`
 	SubnetUtilizationP75Pct    *float64 `json:"subnet_utilization_p75_pct,omitempty"`
 	SubnetUtilizationP90Pct    *float64 `json:"subnet_utilization_p90_pct,omitempty"`
@@ -152,6 +159,7 @@ func (t *TelemetryService) CollectSnapshot(ctx context.Context, period string) (
 	apiEnabled := t.apiEnabled(ctx)
 
 	return &TelemetrySnapshot{
+		AnalyticsKeyVersion:    telemetryAnalyticsKeyVer,
 		InstallID:              installID,
 		SnapshotAt:             time.Now().UTC(),
 		SnapshotPeriod:         period,
@@ -185,7 +193,7 @@ func (t *TelemetryService) CollectSnapshot(ctx context.Context, period string) (
 		IPv4Subnets16to23: counts.IPv4Subnets16to23,
 		IPv4Subnets8to15:  counts.IPv4Subnets8to15,
 
-		SubnetUtilizationAvgPct:    roundPct(util.AvgPct),
+		SubnetUtilizationAvgPct:    roundPctVal(util.AvgPct),
 		SubnetUtilizationMedianPct: roundPct(util.MedianPct),
 		SubnetUtilizationP75Pct:    roundPct(util.P75Pct),
 		SubnetUtilizationP90Pct:    roundPct(util.P90Pct),
@@ -224,14 +232,10 @@ func (t *TelemetryService) SendSnapshot(ctx context.Context, period string) erro
 	return t.doSend(ctx, period)
 }
 
-// doSend collects the snapshot and POSTs it to PocketBase.
-func (t *TelemetryService) doSend(ctx context.Context, period string) error {
-	pbURL, _ := t.svc.Config.GetCtx(ctx, "telemetry_pocketbase_url")
-	pbToken, _ := t.svc.Config.GetCtx(ctx, "telemetry_pocketbase_token")
-	if pbURL == "" || pbToken == "" {
-		return fmt.Errorf("telemetry_pocketbase_url and telemetry_pocketbase_token must be configured")
-	}
+const telemetryEndpoint = "https://base.lima3.dev/api/collections/padduck_analytics/records"
 
+// doSend collects the snapshot and POSTs it to the telemetry endpoint.
+func (t *TelemetryService) doSend(ctx context.Context, period string) error {
 	snapshot, err := t.CollectSnapshot(ctx, period)
 	if err != nil {
 		return fmt.Errorf("collect snapshot: %w", err)
@@ -242,13 +246,12 @@ func (t *TelemetryService) doSend(ctx context.Context, period string) error {
 		return fmt.Errorf("marshal snapshot: %w", err)
 	}
 
-	endpoint := strings.TrimRight(pbURL, "/") + "/api/collections/padduck_analytics/records"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, telemetryEndpoint, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+pbToken)
+	req.Header.Set("X-Padduck-Analytics-Key", telemetryEndpointKey)
 
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
@@ -342,6 +345,13 @@ func roundPct(p *float64) *float64 {
 	}
 	v := math.Round(*p*100) / 100
 	return &v
+}
+
+func roundPctVal(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return math.Round(*p*100) / 100
 }
 
 func serverOSFamily(goos string) string {

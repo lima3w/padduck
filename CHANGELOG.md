@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.9
+
+### Improvements
+- **Telemetry destination is now hardcoded**: snapshots always go to `base.lima3.dev` — the PocketBase URL and token fields have been removed from the admin UI and config. Authentication uses a public write-only key sent as `X-Padduck-Analytics-Key`; access is further gated by the PocketBase collection create rule. The body now includes `analytics_key_version: "v1"` for future rule versioning. `subnet_utilization_avg_pct` is always sent as a number (0 when no IPv4 subnets exist) to satisfy the collection's `>= 0` rule check. The Telemetry settings tab now shows the destination hostname as a read-only note.
+
 ## v1.32.8
 
 ### Improvements
