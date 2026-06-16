@@ -10,11 +10,11 @@ import (
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utilisation history (#220)
+// Utilization history (#220)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// GetSubnetUtilisationHistory handles GET /api/v1/subnets/:id/utilisation/history
-func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
+// GetSubnetUtilizationHistory handles GET /api/v1/subnets/:id/utilization/history
+func (h *Handler) GetSubnetUtilizationHistory(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
 		return nil
 	}
@@ -31,14 +31,14 @@ func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
 		}
 	}
 
-	points, err := h.service.Reports.GetUtilisationHistory(c.Context(), int64(id), days)
+	points, err := h.service.Reports.GetUtilizationHistory(c.Context(), int64(id), days)
 	if err != nil {
-		reqLogger(c).Error("get utilisation history failed", "subnet_id", id, "error", err)
+		reqLogger(c).Error("get utilization history failed", "subnet_id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if points == nil {
-		points = make([]*models.SubnetUtilisationPoint, 0)
+		points = make([]*models.SubnetUtilizationPoint, 0)
 	}
 
 	return c.JSON(fiber.Map{
@@ -48,20 +48,20 @@ func (h *Handler) GetSubnetUtilisationHistory(c *fiber.Ctx) error {
 	})
 }
 
-// GetUtilisationTrends handles GET /api/v1/admin/reports/utilisation-trends
-func (h *Handler) GetUtilisationTrends(c *fiber.Ctx) error {
+// GetUtilizationTrends handles GET /api/v1/admin/reports/utilization-trends
+func (h *Handler) GetUtilizationTrends(c *fiber.Ctx) error {
 	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
 		return nil
 	}
 
-	trends, err := h.service.Reports.GetUtilisationTrends(c.Context())
+	trends, err := h.service.Reports.GetUtilizationTrends(c.Context())
 	if err != nil {
-		reqLogger(c).Error("get utilisation trends failed", "error", err)
+		reqLogger(c).Error("get utilization trends failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
 	if trends == nil {
-		trends = make([]*models.SubnetUtilisationTrend, 0)
+		trends = make([]*models.SubnetUtilizationTrend, 0)
 	}
 
 	return c.JSON(fiber.Map{"trends": trends})
@@ -91,7 +91,7 @@ func (h *Handler) GetSubnetsNearCapacity(c *fiber.Ctx) error {
 	}
 
 	if subnets == nil {
-		subnets = make([]*models.SubnetUtilisationTrend, 0)
+		subnets = make([]*models.SubnetUtilizationTrend, 0)
 	}
 
 	return c.JSON(fiber.Map{

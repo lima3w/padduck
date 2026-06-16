@@ -133,7 +133,7 @@ export default function SubnetFormModal({ modal, form, setForm, overlapError, sa
               value={form.alert_threshold_pct}
               onChange={e => setForm(f => ({ ...f, alert_threshold_pct: e.target.value }))}
             />
-            <p className="text-xs text-gray-400 mt-1">Send alert when utilisation exceeds this percentage</p>
+            <p className="text-xs text-gray-400 mt-1">Send alert when utilization exceeds this percentage</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alert Email Override (optional)</label>

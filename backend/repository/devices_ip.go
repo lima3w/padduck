@@ -88,7 +88,7 @@ func (r *Repository) GetSubnetTreeBySection(ctx context.Context, networkID int64
 			return nil, err
 		}
 		if n.Total > 0 {
-			n.UtilisationPct = float64(n.Used) / float64(n.Total) * 100
+			n.UtilizationPct = float64(n.Used) / float64(n.Total) * 100
 		}
 		nodes = append(nodes, n)
 	}

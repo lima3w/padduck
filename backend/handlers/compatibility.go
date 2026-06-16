@@ -67,18 +67,6 @@ func v2CompatibilityWarnings() []compatibilityWarning {
 			},
 		},
 		{
-			ID:              "api-british-utilisation-spelling",
-			Area:            "api",
-			Severity:        "info",
-			Summary:         "Utilisation history uses British spelling in v1.",
-			Detail:          "The v1 route is retained, but v2 API naming will use utilization consistently.",
-			V1Surface:       "/api/v1/subnets/{id}/utilisation/history",
-			V2Change:        "v2 will expose utilization history with American spelling and compatibility aliases may be time-limited.",
-			RecommendedWork: "Prefer generated clients or route constants so spelling aliases can be migrated centrally.",
-			DocsURL:         "/docs/api-contract.md",
-			APIs:            []string{"GET /api/v1/subnets/{id}/utilisation/history"},
-		},
-		{
 			ID:              "workflow-automation-idempotency",
 			Area:            "workflow",
 			Severity:        "warning",

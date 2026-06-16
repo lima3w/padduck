@@ -281,7 +281,7 @@ ORDER BY v.vlan_id ASC
 	entries := make([]*models.VLANUsageEntry, 0)
 	for rows.Next() {
 		e := &models.VLANUsageEntry{}
-		if err := rows.Scan(&e.VLANID, &e.VLANName, &e.VLANTag, &e.SubnetCount, &e.IPCount, &e.TotalIPs, &e.UtilisationPct); err != nil {
+		if err := rows.Scan(&e.VLANID, &e.VLANName, &e.VLANTag, &e.SubnetCount, &e.IPCount, &e.TotalIPs, &e.UtilizationPct); err != nil {
 			return nil, err
 		}
 		entries = append(entries, e)

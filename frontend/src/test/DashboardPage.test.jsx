@@ -29,7 +29,7 @@ const summary = {
   totalSubnets: 12,
   totalIPs: 500,
   assignedIPs: 250,
-  utilisationPct: 50,
+  utilizationPct: 50,
 }
 
 const activity = [

@@ -22,17 +22,17 @@ type stubReportsRepo struct {
 	subnets          []*models.Subnet
 	thresholdSubnets []*models.Subnet
 	ips              map[int64][]*models.IPAddress
-	history          map[int64][]*models.SubnetUtilisationPoint
+	history          map[int64][]*models.SubnetUtilizationPoint
 	cooldowns        map[int64]*models.AlertCooldown
 	scheduledReports map[int64]*models.ScheduledReport
 	nextID           int64
 	snapshots        []snapshotCall
 	inactiveIPs      []*models.InactiveIPReport
 	sections         []*models.Network
-	trends           []*models.SubnetUtilisationTrend
+	trends           []*models.SubnetUtilizationTrend
 	duplicates       *models.DuplicatesReport
 
-	utilisationTrendCalls int
+	utilizationTrendCalls int
 	inactiveIPCalls       int
 	duplicateCalls        int
 	listScheduledCalls    int
@@ -48,7 +48,7 @@ type snapshotCall struct {
 func newStubRepo() *stubReportsRepo {
 	return &stubReportsRepo{
 		ips:              make(map[int64][]*models.IPAddress),
-		history:          make(map[int64][]*models.SubnetUtilisationPoint),
+		history:          make(map[int64][]*models.SubnetUtilizationPoint),
 		cooldowns:        make(map[int64]*models.AlertCooldown),
 		scheduledReports: make(map[int64]*models.ScheduledReport),
 	}
@@ -63,7 +63,7 @@ func (r *stubReportsRepo) ListSubnetsBySection(_ context.Context, networkID int6
 func (r *stubReportsRepo) ListIPAddressesBySubnet(_ context.Context, subnetID int64) ([]*models.IPAddress, error) {
 	return r.ips[subnetID], nil
 }
-func (r *stubReportsRepo) BulkSubnetUtilisation(_ context.Context) ([]repository.SubnetUtil, error) {
+func (r *stubReportsRepo) BulkSubnetUtilization(_ context.Context) ([]repository.SubnetUtil, error) {
 	var out []repository.SubnetUtil
 	for _, s := range r.subnets {
 		used := 0
@@ -76,25 +76,25 @@ func (r *stubReportsRepo) BulkSubnetUtilisation(_ context.Context) ([]repository
 	}
 	return out, nil
 }
-func (r *stubReportsRepo) RecordUtilisationSnapshot(_ context.Context, subnetID int64, used, total int, pct float64) error {
+func (r *stubReportsRepo) RecordUtilizationSnapshot(_ context.Context, subnetID int64, used, total int, pct float64) error {
 	r.snapshots = append(r.snapshots, snapshotCall{subnetID: subnetID, used: used, total: total, pct: pct})
 	return nil
 }
-func (r *stubReportsRepo) GetUtilisationHistory(_ context.Context, subnetID int64, days int) ([]*models.SubnetUtilisationPoint, error) {
+func (r *stubReportsRepo) GetUtilizationHistory(_ context.Context, subnetID int64, days int) ([]*models.SubnetUtilizationPoint, error) {
 	return r.history[subnetID], nil
 }
-func (r *stubReportsRepo) GetUtilisationTrends(_ context.Context) ([]*models.SubnetUtilisationTrend, error) {
-	r.utilisationTrendCalls++
+func (r *stubReportsRepo) GetUtilizationTrends(_ context.Context) ([]*models.SubnetUtilizationTrend, error) {
+	r.utilizationTrendCalls++
 	return r.trends, nil
 }
-func (r *stubReportsRepo) GetLatestUtilisationForSubnet(_ context.Context, subnetID int64) (*models.SubnetUtilisationPoint, error) {
+func (r *stubReportsRepo) GetLatestUtilizationForSubnet(_ context.Context, subnetID int64) (*models.SubnetUtilizationPoint, error) {
 	pts := r.history[subnetID]
 	if len(pts) == 0 {
 		return nil, nil
 	}
 	return pts[len(pts)-1], nil
 }
-func (r *stubReportsRepo) GetSubnetsByUtilisationThreshold(_ context.Context, _ float64) ([]*models.SubnetUtilisationTrend, error) {
+func (r *stubReportsRepo) GetSubnetsByUtilizationThreshold(_ context.Context, _ float64) ([]*models.SubnetUtilizationTrend, error) {
 	return nil, nil
 }
 func (r *stubReportsRepo) ListSubnetsWithThresholds(_ context.Context) ([]*models.Subnet, error) {
@@ -214,10 +214,10 @@ func newTestReportsService(repo *stubReportsRepo) *ReportsService {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TakeUtilisationSnapshots
+// TakeUtilizationSnapshots
 // ─────────────────────────────────────────────────────────────────────────────
 
-func TestTakeUtilisationSnapshots_RecordsSnapshot(t *testing.T) {
+func TestTakeUtilizationSnapshots_RecordsSnapshot(t *testing.T) {
 	repo := newStubRepo()
 	subnet := &models.Subnet{ID: 1, NetworkAddress: "10.0.0.0", PrefixLength: 24}
 	repo.subnets = []*models.Subnet{subnet}
@@ -228,7 +228,7 @@ func TestTakeUtilisationSnapshots_RecordsSnapshot(t *testing.T) {
 	}
 
 	svc := newTestReportsService(repo)
-	svc.TakeUtilisationSnapshots(context.Background())
+	svc.TakeUtilizationSnapshots(context.Background())
 
 	require.Len(t, repo.snapshots, 1)
 	snap := repo.snapshots[0]
@@ -238,7 +238,7 @@ func TestTakeUtilisationSnapshots_RecordsSnapshot(t *testing.T) {
 	assert.InDelta(t, 0.78, snap.pct, 0.01)
 }
 
-func TestTakeUtilisationSnapshots_EmptySubnet(t *testing.T) {
+func TestTakeUtilizationSnapshots_EmptySubnet(t *testing.T) {
 	repo := newStubRepo()
 	repo.subnets = []*models.Subnet{
 		{ID: 1, NetworkAddress: "192.168.0.0", PrefixLength: 24},
@@ -246,7 +246,7 @@ func TestTakeUtilisationSnapshots_EmptySubnet(t *testing.T) {
 	// No IPs
 
 	svc := newTestReportsService(repo)
-	svc.TakeUtilisationSnapshots(context.Background())
+	svc.TakeUtilizationSnapshots(context.Background())
 
 	require.Len(t, repo.snapshots, 1)
 	assert.Equal(t, 0, repo.snapshots[0].used)
@@ -269,8 +269,8 @@ func TestCheckThresholdAlerts_AboveThreshold_SetsCooldown(t *testing.T) {
 	}
 	repo.thresholdSubnets = []*models.Subnet{subnet}
 	pct := 85.0
-	repo.history[1] = []*models.SubnetUtilisationPoint{
-		{UtilisationPct: pct, UsedCount: 217, TotalCount: 256, RecordedAt: time.Now()},
+	repo.history[1] = []*models.SubnetUtilizationPoint{
+		{UtilizationPct: pct, UsedCount: 217, TotalCount: 256, RecordedAt: time.Now()},
 	}
 
 	svc := newTestReportsService(repo)
@@ -291,8 +291,8 @@ func TestCheckThresholdAlerts_AlreadyCooledDown_NoSecondAlert(t *testing.T) {
 		AlertThresholdPct: &threshold,
 	}
 	repo.thresholdSubnets = []*models.Subnet{subnet}
-	repo.history[1] = []*models.SubnetUtilisationPoint{
-		{UtilisationPct: 85.0, UsedCount: 217, TotalCount: 256, RecordedAt: time.Now()},
+	repo.history[1] = []*models.SubnetUtilizationPoint{
+		{UtilizationPct: 85.0, UsedCount: 217, TotalCount: 256, RecordedAt: time.Now()},
 	}
 	// Cooldown already set
 	repo.cooldowns[1] = &models.AlertCooldown{SubnetID: 1, AlertedPct: 85.0, AlertedAt: time.Now()}
@@ -315,9 +315,9 @@ func TestCheckThresholdAlerts_BelowThresholdMinus5_ClearsCooldown(t *testing.T) 
 		AlertThresholdPct: &threshold,
 	}
 	repo.thresholdSubnets = []*models.Subnet{subnet}
-	// Utilisation is now 70%, which is < 80 - 5 = 75
-	repo.history[1] = []*models.SubnetUtilisationPoint{
-		{UtilisationPct: 70.0, UsedCount: 179, TotalCount: 256, RecordedAt: time.Now()},
+	// Utilization is now 70%, which is < 80 - 5 = 75
+	repo.history[1] = []*models.SubnetUtilizationPoint{
+		{UtilizationPct: 70.0, UsedCount: 179, TotalCount: 256, RecordedAt: time.Now()},
 	}
 	// Existing cooldown
 	repo.cooldowns[1] = &models.AlertCooldown{SubnetID: 1, AlertedPct: 85.0, AlertedAt: time.Now()}
@@ -428,21 +428,21 @@ func TestScheduledReport_Delete(t *testing.T) {
 // Performance budgets
 // ─────────────────────────────────────────────────────────────────────────────
 
-func TestPerformanceBudget_UtilisationTrendWorkflowUsesCachedRead(t *testing.T) {
+func TestPerformanceBudget_UtilizationTrendWorkflowUsesCachedRead(t *testing.T) {
 	repo := newStubRepo()
-	repo.trends = []*models.SubnetUtilisationTrend{
+	repo.trends = []*models.SubnetUtilizationTrend{
 		{SubnetID: 1, CIDR: "10.0.0.0/24", CurrentPct: 50},
 	}
 	svc := newTestReportsService(repo)
 	ctx := context.Background()
 
 	for i := 0; i < 3; i++ {
-		trends, err := svc.GetUtilisationTrends(ctx)
+		trends, err := svc.GetUtilizationTrends(ctx)
 		require.NoError(t, err)
 		require.Len(t, trends, 1)
 	}
 
-	assert.LessOrEqual(t, repo.utilisationTrendCalls, 1, "utilisation trends should stay within the repository-call budget")
+	assert.LessOrEqual(t, repo.utilizationTrendCalls, 1, "utilization trends should stay within the repository-call budget")
 }
 
 func TestPerformanceBudget_InactiveIPWorkflowUsesParameterizedCachedRead(t *testing.T) {

@@ -30,7 +30,7 @@ function actionLabel(action) {
   return action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-function UtilisationBar({ pct }) {
+function UtilizationBar({ pct }) {
   const colour =
     pct > 90 ? 'bg-red-500' :
     pct > 70 ? 'bg-yellow-500' :
@@ -129,7 +129,7 @@ export default function DashboardPage() {
     )
   }
 
-  const utilPct = summary?.utilisationPct ?? 0
+  const utilPct = summary?.utilizationPct ?? 0
 
   return (
     <div className="space-y-6">
@@ -182,7 +182,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
               Subnets Near Capacity
             </h2>
-            <Link to="/reports/utilisation-trends" className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
+            <Link to="/reports/utilization-trends" className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
               View trends →
             </Link>
           </div>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
             Top Utilised Subnets
           </h2>
           {summary?.topSubnets?.length === 0 ? (
-            <p className="text-sm text-gray-400">No subnet utilisation data yet</p>
+            <p className="text-sm text-gray-400">No subnet utilization data yet</p>
           ) : (
             <div className="space-y-3">
               {summary?.topSubnets?.map((s) => (
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                   {s.description && (
                     <p className="text-xs text-gray-400 mb-1">{s.description}</p>
                   )}
-                  <UtilisationBar pct={s.utilisationPct} />
+                  <UtilizationBar pct={s.utilizationPct} />
                 </div>
               ))}
             </div>

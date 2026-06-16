@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.32.3
+
+### Bug Fixes
+- **Dashboard utilization calculation was wrong**: the overview "assigned/total IPs" stat and utilization percentage were calculated using the count of IP records in the database, not the theoretical address capacity of subnets. Total IPs now equals the sum of `GREATEST((2^(32-prefix_length)-2), 1)` across all IPv4 subnets, so utilization reflects real subnet capacity.
+- **"Add IP" error shown below modal instead of inside it**: validation errors (invalid address, API rejection) from the "New IP Address" modal were surfacing on the subnet page underneath the open modal where users could not see them. Errors now display inline inside the modal above the submit button.
+- **MAC address input allowed consecutive separators**: the MAC address field now prevents consecutive separator characters (`:`, `-`, `.`, space) and caps total input length at 17 characters.
+
+### Improvements
+- **American spelling throughout**: all user-visible text, JSON field names, Go symbol names, API routes, and in-code identifiers now use American spelling (`utilization`, not `utilisation`). The database table `subnet_utilisation_history`, column `utilisation_pct`, config key `utilisation_snapshot_interval_hours`, and stored report type value `utilisation_summary` are preserved unchanged. The API route `/api/v1/subnets/:id/utilisation/history` is renamed to `/api/v1/subnets/:id/utilization/history`.
+
 ## v1.32.1
 
 ### Bug Fixes

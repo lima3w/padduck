@@ -6,8 +6,8 @@ import (
 	"padduck/repository"
 )
 
-func (s *Service) GrafanaSubnetUtilisation(ctx context.Context) ([]repository.GrafanaSubnetRow, error) {
-	return s.repository.GrafanaGetSubnetUtilisation(ctx)
+func (s *Service) GrafanaSubnetUtilization(ctx context.Context) ([]repository.GrafanaSubnetRow, error) {
+	return s.repository.GrafanaGetSubnetUtilization(ctx)
 }
 
 func (s *Service) GrafanaIPCountsByStatus(ctx context.Context) ([]repository.GrafanaIPStatusRow, error) {

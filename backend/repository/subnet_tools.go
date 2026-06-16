@@ -234,9 +234,9 @@ func (r *Repository) GetNetworkTopology(ctx context.Context, networkID int64) (*
 			return nil, err
 		}
 
-		utilisation := 0.0
+		utilization := 0.0
 		if totalCount > 0 {
-			utilisation = float64(usedCount) / float64(totalCount) * 100.0
+			utilization = float64(usedCount) / float64(totalCount) * 100.0
 		}
 
 		cidr := fmt.Sprintf("%s/%d", networkAddr, prefixLen)
@@ -248,7 +248,7 @@ func (r *Repository) GetNetworkTopology(ctx context.Context, networkID int64) (*
 			IsContainer: isContainer,
 			ParentID:    parentSubnetID,
 			VLANID:      vlanID,
-			Utilisation: utilisation,
+			Utilization: utilization,
 		}
 		topology.Nodes = append(topology.Nodes, node)
 

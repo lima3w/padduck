@@ -21,14 +21,17 @@ func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets`).Scan(&summary.TotalSubnets); err != nil {
 		return nil, fmt.Errorf("count subnets: %w", err)
 	}
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses`).Scan(&summary.TotalIPs); err != nil {
-		return nil, fmt.Errorf("count ips: %w", err)
+	// TotalIPs = theoretical IPv4 capacity across all subnets
+	if err := r.db.QueryRow(ctx, `
+		SELECT COALESCE(SUM(GREATEST((POWER(2, 32 - prefix_length) - 2)::bigint, 1)), 0)
+		FROM subnets WHERE family(network_address) = 4`).Scan(&summary.TotalIPs); err != nil {
+		return nil, fmt.Errorf("count total ips: %w", err)
 	}
 	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses WHERE status = 'assigned'`).Scan(&summary.UsedIPs); err != nil {
 		return nil, fmt.Errorf("count used ips: %w", err)
 	}
 	if summary.TotalIPs > 0 {
-		summary.UtilisationPct = float64(summary.UsedIPs) / float64(summary.TotalIPs) * 100
+		summary.UtilizationPct = float64(summary.UsedIPs) / float64(summary.TotalIPs) * 100
 	}
 
 	topQuery := `
@@ -53,14 +56,14 @@ func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.Dashboard
 	}
 	defer topRows.Close()
 
-	summary.TopSubnets = make([]models.SubnetUtilisation, 0)
+	summary.TopSubnets = make([]models.SubnetUtilization, 0)
 	for topRows.Next() {
-		su := models.SubnetUtilisation{}
+		su := models.SubnetUtilization{}
 		if err := topRows.Scan(&su.ID, &su.CIDR, &su.Description, &su.Used, &su.Total); err != nil {
 			return nil, err
 		}
 		if su.Total > 0 {
-			su.UtilisationPct = float64(su.Used) / float64(su.Total) * 100
+			su.UtilizationPct = float64(su.Used) / float64(su.Total) * 100
 		}
 		summary.TopSubnets = append(summary.TopSubnets, su)
 	}

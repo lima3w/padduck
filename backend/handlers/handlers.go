@@ -516,9 +516,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	sections.Get("/:id/topology", h.GetNetworkTopology)
 
 	// Reporting & Analytics (v1.11.0 #220 #221 #222 #223 #224)
-	// Utilisation history
-	subnet.Get("/:id/utilisation/history", h.GetSubnetUtilisationHistory)
-	admin.Get("/reports/utilization-trends", h.GetUtilisationTrends)
+	// Utilization history
+	subnet.Get("/:id/utilization/history", h.GetSubnetUtilizationHistory)
+	admin.Get("/reports/utilization-trends", h.GetUtilizationTrends)
 	// Threshold alerts
 	admin.Get("/reports/subnets-near-capacity", h.GetSubnetsNearCapacity)
 	// Scheduled reports

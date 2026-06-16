@@ -4,14 +4,14 @@ import (
 	"context"
 )
 
-// GrafanaSubnetRow holds per-subnet utilisation data for the Grafana datasource.
+// GrafanaSubnetRow holds per-subnet utilization data for the Grafana datasource.
 type GrafanaSubnetRow struct {
 	CIDR           string
 	NetworkName    string
 	Description    string
 	Used           int64
 	Total          int64
-	UtilisationPct float64
+	UtilizationPct float64
 }
 
 // GrafanaIPStatusRow holds an IP count for a single status value.
@@ -28,7 +28,7 @@ type GrafanaSectionRow struct {
 	UsedIPs     int64
 }
 
-func (r *Repository) GrafanaGetSubnetUtilisation(ctx context.Context) ([]GrafanaSubnetRow, error) {
+func (r *Repository) GrafanaGetSubnetUtilization(ctx context.Context) ([]GrafanaSubnetRow, error) {
 	query := `
 		SELECT
 			host(s.network_address) || '/' || s.prefix_length AS cidr,
@@ -55,7 +55,7 @@ func (r *Repository) GrafanaGetSubnetUtilisation(ctx context.Context) ([]Grafana
 			return nil, err
 		}
 		if row.Total > 0 {
-			row.UtilisationPct = float64(row.Used) / float64(row.Total) * 100
+			row.UtilizationPct = float64(row.Used) / float64(row.Total) * 100
 		}
 		result = append(result, row)
 	}

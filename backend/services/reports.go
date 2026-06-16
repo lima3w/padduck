@@ -14,16 +14,16 @@ import (
 
 // reportsRepo lists the repository methods used by ReportsService.
 type reportsRepo interface {
-	// utilisation
+	// utilization
 	ListAllSubnets(ctx context.Context) ([]*models.Subnet, error)
 	ListSubnetsBySection(ctx context.Context, networkID int64) ([]*models.Subnet, error)
 	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
-	BulkSubnetUtilisation(ctx context.Context) ([]repository.SubnetUtil, error)
-	RecordUtilisationSnapshot(ctx context.Context, subnetID int64, used, total int, pct float64) error
-	GetUtilisationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilisationPoint, error)
-	GetUtilisationTrends(ctx context.Context) ([]*models.SubnetUtilisationTrend, error)
-	GetLatestUtilisationForSubnet(ctx context.Context, subnetID int64) (*models.SubnetUtilisationPoint, error)
-	GetSubnetsByUtilisationThreshold(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilisationTrend, error)
+	BulkSubnetUtilization(ctx context.Context) ([]repository.SubnetUtil, error)
+	RecordUtilizationSnapshot(ctx context.Context, subnetID int64, used, total int, pct float64) error
+	GetUtilizationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilizationPoint, error)
+	GetUtilizationTrends(ctx context.Context) ([]*models.SubnetUtilizationTrend, error)
+	GetLatestUtilizationForSubnet(ctx context.Context, subnetID int64) (*models.SubnetUtilizationPoint, error)
+	GetSubnetsByUtilizationThreshold(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilizationTrend, error)
 	// alert cooldowns
 	ListSubnetsWithThresholds(ctx context.Context) ([]*models.Subnet, error)
 	GetAlertCooldown(ctx context.Context, subnetID int64) (*models.AlertCooldown, error)
@@ -75,14 +75,14 @@ func NewReportsService(repo reportsRepo, config *ConfigService, email *EmailServ
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utilisation snapshots (#220)
+// Utilization snapshots (#220)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TakeUtilisationSnapshots records a utilisation snapshot for every subnet in two queries.
-func (rs *ReportsService) TakeUtilisationSnapshots(ctx context.Context) {
-	utils, err := rs.repo.BulkSubnetUtilisation(ctx)
+// TakeUtilizationSnapshots records a utilization snapshot for every subnet in two queries.
+func (rs *ReportsService) TakeUtilizationSnapshots(ctx context.Context) {
+	utils, err := rs.repo.BulkSubnetUtilization(ctx)
 	if err != nil {
-		slog.Error("reports: bulk subnet utilisation failed", "error", err)
+		slog.Error("reports: bulk subnet utilization failed", "error", err)
 		return
 	}
 
@@ -92,7 +92,7 @@ func (rs *ReportsService) TakeUtilisationSnapshots(ctx context.Context) {
 		if total > 0 {
 			pct = float64(u.Used) / float64(total) * 100
 		}
-		if err := rs.repo.RecordUtilisationSnapshot(ctx, u.SubnetID, u.Used, total, pct); err != nil {
+		if err := rs.repo.RecordUtilizationSnapshot(ctx, u.SubnetID, u.Used, total, pct); err != nil {
 			slog.Error("reports: record snapshot failed", "subnet_id", u.SubnetID, "error", err)
 		}
 	}
@@ -101,26 +101,26 @@ func (rs *ReportsService) TakeUtilisationSnapshots(ctx context.Context) {
 	rs.CheckThresholdAlerts(ctx)
 }
 
-// GetUtilisationHistory returns utilisation history for a subnet.
-func (rs *ReportsService) GetUtilisationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilisationPoint, error) {
-	return rs.repo.GetUtilisationHistory(ctx, subnetID, days)
+// GetUtilizationHistory returns utilization history for a subnet.
+func (rs *ReportsService) GetUtilizationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilizationPoint, error) {
+	return rs.repo.GetUtilizationHistory(ctx, subnetID, days)
 }
 
-// GetUtilisationTrends returns trend data for all subnets.
-func (rs *ReportsService) GetUtilisationTrends(ctx context.Context) ([]*models.SubnetUtilisationTrend, error) {
-	if value, ok := rs.reportCache().get("utilisation_trends"); ok {
-		return cloneUtilisationTrends(value.([]*models.SubnetUtilisationTrend)), nil
+// GetUtilizationTrends returns trend data for all subnets.
+func (rs *ReportsService) GetUtilizationTrends(ctx context.Context) ([]*models.SubnetUtilizationTrend, error) {
+	if value, ok := rs.reportCache().get("utilization_trends"); ok {
+		return cloneUtilizationTrends(value.([]*models.SubnetUtilizationTrend)), nil
 	}
-	trends, err := rs.repo.GetUtilisationTrends(ctx)
+	trends, err := rs.repo.GetUtilizationTrends(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rs.reportCache().set("utilisation_trends", cloneUtilisationTrends(trends))
-	return cloneUtilisationTrends(trends), nil
+	rs.reportCache().set("utilization_trends", cloneUtilizationTrends(trends))
+	return cloneUtilizationTrends(trends), nil
 }
 
-// StartUtilisationSnapshotJob launches a background goroutine that periodically takes snapshots.
-func (rs *ReportsService) StartUtilisationSnapshotJob(ctx context.Context) {
+// StartUtilizationSnapshotJob launches a background goroutine that periodically takes snapshots.
+func (rs *ReportsService) StartUtilizationSnapshotJob(ctx context.Context) {
 	go func() {
 		intervalHours := 1
 		if rs.config != nil && rs.config.repository != nil {
@@ -139,7 +139,7 @@ func (rs *ReportsService) StartUtilisationSnapshotJob(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				rs.TakeUtilisationSnapshots(ctx)
+				rs.TakeUtilizationSnapshots(ctx)
 			}
 		}
 	}()
@@ -190,12 +190,12 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 	for _, subnet := range toCheck {
 		threshold := *subnet.AlertThresholdPct
 
-		latest, err := rs.repo.GetLatestUtilisationForSubnet(ctx, subnet.ID)
+		latest, err := rs.repo.GetLatestUtilizationForSubnet(ctx, subnet.ID)
 		if err != nil || latest == nil {
 			continue
 		}
 
-		currentPct := latest.UtilisationPct
+		currentPct := latest.UtilizationPct
 		thresholdF := float64(threshold)
 
 		cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
@@ -246,18 +246,18 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 	}
 }
 
-// GetSubnetsNearCapacity returns subnets whose latest utilisation exceeds the threshold.
-func (rs *ReportsService) GetSubnetsNearCapacity(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilisationTrend, error) {
+// GetSubnetsNearCapacity returns subnets whose latest utilization exceeds the threshold.
+func (rs *ReportsService) GetSubnetsNearCapacity(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilizationTrend, error) {
 	key := fmt.Sprintf("subnets_near_capacity:%.2f", thresholdPct)
 	if value, ok := rs.reportCache().get(key); ok {
-		return cloneUtilisationTrends(value.([]*models.SubnetUtilisationTrend)), nil
+		return cloneUtilizationTrends(value.([]*models.SubnetUtilizationTrend)), nil
 	}
-	trends, err := rs.repo.GetSubnetsByUtilisationThreshold(ctx, thresholdPct)
+	trends, err := rs.repo.GetSubnetsByUtilizationThreshold(ctx, thresholdPct)
 	if err != nil {
 		return nil, err
 	}
-	rs.reportCache().set(key, cloneUtilisationTrends(trends))
-	return cloneUtilisationTrends(trends), nil
+	rs.reportCache().set(key, cloneUtilizationTrends(trends))
+	return cloneUtilizationTrends(trends), nil
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -338,7 +338,7 @@ func (rs *ReportsService) RunScheduledReport(ctx context.Context, report *models
 func (rs *ReportsService) generateReportData(ctx context.Context, report *models.ScheduledReport) ([]byte, string, string, error) {
 	switch report.ReportType {
 	case "utilisation_summary":
-		trends, err := rs.GetUtilisationTrends(ctx)
+		trends, err := rs.GetUtilizationTrends(ctx)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -586,8 +586,8 @@ func sectionCacheKey(networkID *int64) string {
 	return strconv.FormatInt(*networkID, 10)
 }
 
-func cloneUtilisationTrends(trends []*models.SubnetUtilisationTrend) []*models.SubnetUtilisationTrend {
-	out := make([]*models.SubnetUtilisationTrend, 0, len(trends))
+func cloneUtilizationTrends(trends []*models.SubnetUtilizationTrend) []*models.SubnetUtilizationTrend {
+	out := make([]*models.SubnetUtilizationTrend, 0, len(trends))
 	for _, trend := range trends {
 		if trend == nil {
 			out = append(out, nil)
@@ -764,9 +764,9 @@ func (rs *ReportsService) GetDuplicates(ctx context.Context) (*models.Duplicates
 // Export helpers (#223)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ExportSubnets builds a CSV/PDF of all subnets with utilisation data.
+// ExportSubnets builds a CSV/PDF of all subnets with utilization data.
 func (rs *ReportsService) ExportSubnets(ctx context.Context, format string) ([]byte, string, string, error) {
-	trends, err := rs.GetUtilisationTrends(ctx)
+	trends, err := rs.GetUtilizationTrends(ctx)
 	if err != nil {
 		return nil, "", "", err
 	}
