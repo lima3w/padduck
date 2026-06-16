@@ -6,7 +6,7 @@
 
 **Your IP data is yours. Always.**
 
-Padduck is self-hosted, open-source software. There is no cloud service, no telemetry, no license server, no mandatory external connectivity. Your network topology, IP allocations, device inventory, and audit logs live entirely on your infrastructure, under your control.
+Padduck is self-hosted, open-source software. There is no cloud service, no license server, no mandatory external connectivity. Your network topology, IP allocations, device inventory, and audit logs live entirely on your infrastructure, under your control. The only data that ever leaves your install is the anonymous, opt-in usage snapshot described below — and that's off until an admin turns it on.
 
 ---
 
@@ -20,6 +20,7 @@ Padduck does not send any data to external services by default. The only optiona
 - **SMTP** — for sending email notifications. You configure your own SMTP server.
 - **Webhooks** — you configure the endpoints; Padduck delivers events to them.
 - **External auth** — LDAP/OAuth2/SAML: connections to your identity providers.
+- **Anonymous telemetry** — an opt-in usage snapshot, off by default. An admin must explicitly enable it under Admin Settings > Telemetry (you're prompted once, on first login, with a plain-English explanation). When enabled, the Go backend periodically sends a snapshot of aggregate counts and percentages — things like total subnets, utilization percentiles, and which optional features (SSO, SNMP discovery, etc.) are turned on — to a fixed Padduck-operated endpoint. It never includes IP addresses, subnet CIDRs, MAC addresses, hostnames, usernames, emails, or any other identifying or customer-specific names. Nothing is collected in the browser; the backend is the only thing that sends it. You can turn it off again at any time from the same settings page.
 
 All of these are **operator-configured** and **optional**.
 
