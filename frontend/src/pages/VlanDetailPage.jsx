@@ -195,7 +195,7 @@ export default function VlanDetailPage() {
   const isAdmin = getCachedUser()?.role === 'admin'
   const domain = getDomain(vlan.domainId)
   const group = getGroup(vlan.groupId)
-  const sectionIds = new Set(subnets.map(s => s.sectionId).filter(Boolean))
+  const sectionIds = new Set(subnets.map(s => s.networkId).filter(Boolean))
   const relationshipItems = [
     domain && {
       label: 'Domain',
@@ -323,7 +323,7 @@ export default function VlanDetailPage() {
               const cidr = subnet.networkAddress || ''
               const prefix = subnet.prefixLength ?? ''
               const desc = subnet.description || ''
-              const secId = subnet.sectionId
+              const secId = subnet.networkId
               const subnetId = subnet.id
               return (
                 <tr key={subnetId} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
