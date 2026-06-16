@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.6
+
+### Improvements
+- **Telemetry snapshot now collects all schema fields**: the `CollectSnapshot` method previously omitted active-user counts, subnet utilization statistics, locale metadata, and JSON extension fields. All fields defined in the `padduck_analytics` schema are now populated. Active users (7-day and 30-day) are derived from `audit_logs` so both UI sessions and API token activity are counted. IPv4 subnet utilization percentiles (mean, median, p75, p90, p95) and threshold bucket counts are computed live from the IP address table using the same theoretical-capacity formula as the dashboard. Feature flag states are collected into `feature_flags_json`; `extra_metrics_json` includes `devices_total`. Locale fields (`ui_locale`, `timezone_region`, `country_code`, `region_code`) are read from admin config keys that will be exposed in the opt-in settings UI in the next increment. Nothing is transmitted — the opt-in toggle and sender follow in subsequent increments.
+
 ## v1.32.5
 
 ### Security
