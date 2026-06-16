@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.11
+
+### Bug Fixes
+- **Subnet resize conflict modal**: conflicting IPs and subnets now display as readable strings (e.g. `192.168.1.5 (hostname)`, `10.0.0.0/24`) instead of `[object Object]`.
+
 ## v1.32.10
 
 ### Features
