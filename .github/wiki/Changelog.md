@@ -4,6 +4,29 @@ This page summarizes major releases. The full `CHANGELOG.md` is in the [reposito
 
 ---
 
+## v1.32.x — Opt-In Telemetry
+
+- Anonymous, opt-in usage telemetry: off by default, admin-enabled under Admin Settings → Telemetry, with a one-time setup page nudging new admins to make an explicit choice on first login
+- Snapshot contains only aggregate counts and percentages (e.g. total subnets, utilization percentiles, which optional features are enabled) — never IPs, hostnames, MAC addresses, usernames, or other identifying data
+- Telemetry destination and auth are hardcoded to a Padduck-operated endpoint with a public write-only key, so there is no URL/token to configure or leak
+- American spelling consistency pass across the API, database, and code (`/utilisation/history` renamed to `/utilization/history`)
+- Dashboard utilization now calculated from real subnet address capacity instead of raw IP record counts
+
+---
+
+## v1.31.x — Security Hardening, Testing Investment, and DHCP Integration
+
+- Major security pass: timing-safe login, fixed an account-lockout enumeration bug, validated avatar uploads, fixed a stored-XSS hole in custom fields, added a CSP header, SSRF regression tests, and a hardened scan agent (runs as non-root, caps server-supplied CIDR size, requires opt-in for plain-HTTP servers)
+- Fixed a privilege-escalation bug where scoped API tokens (e.g. read-only) could reach admin-only endpoints despite their non-admin scope
+- "Sections" renamed to "Networks" throughout the application — UI labels, API routes, the database table, and all code references
+- Technitium DHCP integration: lease sync, scope import, and per-IP reservation push from the subnet and IP address pages
+- IP address management UX overhaul: full CIDR range view (including unrecorded addresses), sortable columns, MAC address validation/normalization, and subnet-boundary validation on IP creation
+- Hardened Docker Compose deployment: dropped capabilities, read-only root filesystems, required secrets (no more default database password), pinned image tags
+- Large investment in automated testing: DB-backed integration tests, full migration up/down/up verification in CI, expanded MFA/auth/discovery service coverage, and a new Playwright end-to-end suite
+- Numerous UTC time-handling bugs fixed across sessions, MFA challenges, and token expiry that broke functionality on non-UTC hosts
+
+---
+
 ## v1.30.x — Optional Tools
 
 - Added optional tools framework controlled by admin feature flags
