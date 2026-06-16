@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/ipam'
@@ -9,9 +9,24 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 import { downloadFile } from '../utils/download'
-import { getCachedUser } from '../utils/storageKeys'
+import { getCachedUser, STORAGE_KEYS } from '../utils/storageKeys'
+import { loadPrefs, savePrefs } from '../utils/listPrefs'
 
 const DEFAULT_LIMIT = 25
+const SORT_KEY = STORAGE_KEYS.networkSort
+
+function SortTh({ label, col, sortCol, sortDir, onSort, className = '' }) {
+  const active = sortCol === col
+  return (
+    <th
+      className={`text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 ${className}`}
+      onClick={() => onSort(col)}
+    >
+      {label}
+      <span className="ml-1 text-xs">{active ? (sortDir === 'asc' ? '↑' : '↓') : <span className="opacity-30">↕</span>}</span>
+    </th>
+  )
+}
 
 const SUBNET_REQUEST_EMPTY = { network_id: '', prefix_length: '24', purpose: '', parent_subnet_id: '' }
 
@@ -22,6 +37,8 @@ export default function NetworksPage() {
 
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
+  const [sortCol, setSortCol] = useState(() => loadPrefs(SORT_KEY, { col: 'name', dir: 'asc' }).col)
+  const [sortDir, setSortDir] = useState(() => loadPrefs(SORT_KEY, { col: 'name', dir: 'asc' }).dir)
   const [searchQuery, setSearchQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [searchResults, setSearchResults] = useState(null) // null = not searching
@@ -41,11 +58,27 @@ export default function NetworksPage() {
     placeholderData: keepPreviousData,
   })
 
+  useEffect(() => { savePrefs(SORT_KEY, { col: sortCol, dir: sortDir }) }, [sortCol, sortDir])
+
+  function handleSort(col) {
+    if (col === sortCol) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortCol(col)
+      setSortDir('asc')
+    }
+  }
+
   const isSearchActive = searchResults !== null
   const listData = listQuery.data
-  const networks = isSearchActive
+  const rawNetworks = isSearchActive
     ? searchResults.items
     : (listData?.data ?? (Array.isArray(listData) ? listData : []))
+  const networks = [...rawNetworks].sort((a, b) => {
+    const av = (a[sortCol] ?? '').toLowerCase()
+    const bv = (b[sortCol] ?? '').toLowerCase()
+    return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+  })
   const total = isSearchActive
     ? searchResults.total
     : (listData?.total ?? (Array.isArray(listData) ? listData.length : 0))
@@ -229,8 +262,8 @@ export default function NetworksPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+              <SortTh label="Name" col="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortTh label="Description" col="description" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <th className="px-4 py-3"></th>
             </tr>
           </thead>

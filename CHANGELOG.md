@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.12
+
+### Improvements
+- **Sortable Networks and Subnets lists**: click any column header to sort ascending or descending. Networks sort by Name or Description. Subnets sort by Network address (IP-numeric order), Prefix length, or Description. Sort preference is persisted per-browser across page reloads.
+
 ## v1.32.11
 
 ### Bug Fixes

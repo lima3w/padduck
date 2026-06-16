@@ -14,6 +14,23 @@ import { getLocations } from '../api/locations'
 import { downloadFile } from '../utils/download'
 import { loadPrefs, savePrefs } from '../utils/listPrefs'
 import { getCachedUser, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '../utils/storageKeys'
+
+function ipToNum(addr) {
+  return (addr || '').split('.').reduce((acc, p) => (acc * 256) + (Number(p) || 0), 0)
+}
+
+function SortTh({ label, col, sortCol, sortDir, onSort, className = '' }) {
+  const active = sortCol === col
+  return (
+    <th
+      className={`text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 ${className}`}
+      onClick={() => onSort(col)}
+    >
+      {label}
+      <span className="ml-1 text-xs">{active ? (sortDir === 'asc' ? '↑' : '↓') : <span className="opacity-30">↕</span>}</span>
+    </th>
+  )
+}
 import SplitSubnetModal from './subnet/SplitSubnetModal'
 import MergeSubnetModal from './subnet/MergeSubnetModal'
 import ResizeSubnetModal from './subnet/ResizeSubnetModal'
@@ -22,6 +39,7 @@ import SubnetFormModal from './subnet/SubnetFormModal'
 const DEFAULT_LIMIT = 25
 const FILTER_KEY = STORAGE_KEYS.subnetFilters
 const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.subnetFilters
+const SORT_KEY = STORAGE_KEYS.subnetSort
 
 const EMPTY_FORM = { network_address: '', prefix_length: '24', description: '', gateway: '', auto_reserve_first: false, auto_reserve_last: false, location_id: '', nameserver_id: '', vlan_id: '', custom_fields: {}, alert_threshold_pct: '', alert_email_override: '', technitium_scope_name: '' }
 
@@ -50,6 +68,8 @@ export default function SubnetsPage() {
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [locations, setLocations] = useState([])
   const [filterLocationId, setFilterLocationId] = useState(() => loadPrefs(FILTER_KEY, { filterLocationId: '' }, LEGACY_FILTER_KEY).filterLocationId)
+  const [sortCol, setSortCol] = useState(() => loadPrefs(SORT_KEY, { col: 'network', dir: 'asc' }).col)
+  const [sortDir, setSortDir] = useState(() => loadPrefs(SORT_KEY, { col: 'network', dir: 'asc' }).dir)
   const [nameservers, setNameservers] = useState([])
   const [vlans, setVlans] = useState([])
 
@@ -92,6 +112,36 @@ export default function SubnetsPage() {
   useEffect(() => {
     savePrefs(FILTER_KEY, { filterLocationId }, LEGACY_FILTER_KEY)
   }, [filterLocationId])
+
+  useEffect(() => { savePrefs(SORT_KEY, { col: sortCol, dir: sortDir }) }, [sortCol, sortDir])
+
+  function handleSort(col) {
+    if (col === sortCol) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortCol(col)
+      setSortDir('asc')
+    }
+  }
+
+  function sortedSubnets(list) {
+    return [...list].sort((a, b) => {
+      let av, bv
+      if (sortCol === 'network') {
+        av = ipToNum(a.networkAddress)
+        bv = ipToNum(b.networkAddress)
+        return sortDir === 'asc' ? av - bv : bv - av
+      }
+      if (sortCol === 'prefix') {
+        av = a.prefixLength ?? 0
+        bv = b.prefixLength ?? 0
+        return sortDir === 'asc' ? av - bv : bv - av
+      }
+      av = (a.description ?? '').toLowerCase()
+      bv = (b.description ?? '').toLowerCase()
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+    })
+  }
 
   async function loadLocations() {
     try {
@@ -578,11 +628,11 @@ export default function SubnetsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Network</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Prefix</th>
+                  <SortTh label="Network" col="network" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                  <SortTh label="Prefix" col="prefix" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>
                   <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">VLAN</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+                  <SortTh label="Description" col="description" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                   {searchableFields.map(d => (
                     <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
                   ))}
@@ -593,7 +643,7 @@ export default function SubnetsPage() {
                 {subnets.length === 0 && (
                   <EmptyRow colSpan={6 + searchableFields.length} message="No subnets yet." />
                 )}
-                {subnets.map(s => (
+                {sortedSubnets(subnets).map(s => (
                   <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <td
                       className="px-4 py-3 font-mono font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
