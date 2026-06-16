@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.7
+
+### Features
+- **Telemetry opt-in UI and sender**: adds the Admin Settings > Telemetry tab, the scheduled background sender, and an admin "Send test snapshot now" action — completing the opt-in analytics feature. The Telemetry tab lets admins enable or disable telemetry, configure the destination PocketBase URL and service token, choose a daily or weekly snapshot period, and set optional locale fields (UI locale, timezone region, country/region codes). A collapsible "What is collected?" section explains exactly what the snapshot contains with plain-English disclosure. Clicking "Send Test Snapshot Now" posts a snapshot immediately and reports success or failure inline. The background job starts with the server and fires on the configured period (24 h or 168 h); it is a no-op when telemetry is disabled. The PocketBase token is masked on read and stored encrypted via the existing sensitive-key pattern.
+
 ## v1.32.6
 
 ### Improvements

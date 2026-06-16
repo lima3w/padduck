@@ -555,6 +555,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/topology/hints/:id", h.GetTopologyHint)
 	admin.Put("/topology/hints/:id/status", h.UpdateTopologyHintStatus)
 
+	// Telemetry
+	admin.Post("/telemetry/send", h.SendTelemetryNow)
+
 	// Import & Export (v1.12.0 #225 #226 #227 #228)
 	admin.Post("/import/subnets", h.ImportSubnetsCSV)
 	admin.Post("/import/ips", h.ImportIPsCSV)

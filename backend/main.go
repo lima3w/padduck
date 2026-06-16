@@ -203,6 +203,9 @@ func main() {
 	svc.Reports.StartUtilizationSnapshotJob(ctx)
 	svc.Reports.StartScheduledReportJob(ctx)
 
+	// Start telemetry job (no-op unless opt-in is enabled in admin settings)
+	svc.Telemetry.StartTelemetryJob(ctx)
+
 	// Setup HTTP server with centralized error handler
 	trustedProxies := parseTrustedProxies(os.Getenv("TRUSTED_PROXIES"))
 	app := fiber.New(fiber.Config{
