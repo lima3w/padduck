@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.5
+
+### Security
+- **Patch libssl3 and libcrypto3 to 3.5.7-r0 in Alpine runtime images**: explicitly pins `libssl3=3.5.7-r0` and `libcrypto3=3.5.7-r0` in the `backend` and `agent` Dockerfiles (both use `alpine:3.22` as the runtime base). The frontend image is unaffected — it uses a Debian base and already runs `apt-get upgrade` at build time.
+
 ## v1.32.4
 
 ### Bug Fixes
