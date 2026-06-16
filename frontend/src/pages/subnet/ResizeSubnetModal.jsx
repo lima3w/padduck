@@ -21,13 +21,17 @@ export default function ResizeSubnetModal({ resizeModal, resizePrefix, setResize
                 {resizeError.conflictingIps?.length > 0 && (
                   <div className="mt-2">
                     <p className="text-xs font-semibold">Conflicting IPs:</p>
-                    <p className="font-mono text-xs">{resizeError.conflictingIps.join(', ')}</p>
+                    <p className="font-mono text-xs">
+                      {resizeError.conflictingIps.map(ip => ip.hostname ? `${ip.address} (${ip.hostname})` : ip.address).join(', ')}
+                    </p>
                   </div>
                 )}
                 {resizeError.conflictingSubnets?.length > 0 && (
                   <div className="mt-2">
                     <p className="text-xs font-semibold">Conflicting Subnets:</p>
-                    <p className="font-mono text-xs">{resizeError.conflictingSubnets.join(', ')}</p>
+                    <p className="font-mono text-xs">
+                      {resizeError.conflictingSubnets.map(s => `${s.network_address}/${s.prefix_length}`).join(', ')}
+                    </p>
                   </div>
                 )}
                 <div className="mt-3">
