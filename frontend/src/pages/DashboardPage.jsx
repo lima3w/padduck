@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getDashboardSummary, getDashboardRecentActivity } from '../api/app'
+import { getAdminConfig } from '../api/admin'
 import { getCachedUser } from '../utils/storageKeys'
 
 function formatRelativeTime(isoString) {
@@ -67,6 +69,20 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
+
+  // Redirect admins to the telemetry setup page on first boot (when the
+  // telemetry_enabled config key has never been set to "true" or "false").
+  useEffect(() => {
+    if (!isAdmin) return
+    getAdminConfig()
+      .then(res => {
+        const val = res.data?.config?.telemetry_enabled
+        if (val !== 'true' && val !== 'false') {
+          navigate('/setup/telemetry', { replace: true })
+        }
+      })
+      .catch(() => {})
+  }, [isAdmin, navigate])
 
   const summaryQuery = useQuery({
     queryKey: ['dashboard', 'summary'],
