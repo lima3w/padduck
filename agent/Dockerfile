@@ -9,7 +9,7 @@ FROM alpine:3.22
 # libcap/setcap: grant ping cap_net_raw explicitly so it works for the
 # non-root user (Docker's default capability bounding set includes NET_RAW,
 # so no extra runtime flags are needed).
-RUN apk add --no-cache iputils libcap \
+RUN apk add --no-cache iputils libcap libssl3=3.5.7-r0 libcrypto3=3.5.7-r0 \
     && setcap cap_net_raw+ep "$(command -v ping)" \
     && addgroup -S padduck && adduser -S -G padduck padduck
 COPY --from=builder /build/padduck-agent /usr/local/bin/padduck-agent

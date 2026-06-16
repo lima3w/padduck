@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM alpine:3.22
 RUN addgroup -S app && adduser -S app -G app && \
-    apk add --no-cache su-exec
+    apk add --no-cache su-exec libssl3=3.5.7-r0 libcrypto3=3.5.7-r0
 WORKDIR /app
 COPY --from=builder /app/app .
 COPY --from=builder /app/migrations ./migrations
