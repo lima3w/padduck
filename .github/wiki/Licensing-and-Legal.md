@@ -75,9 +75,13 @@ Padduck includes built-in GDPR support:
 
 ### Data Ownership
 
-All data stored in your self-hosted Padduck instance is under your control. Padduck does not transmit any user data to external services unless you explicitly configure integrations (webhooks, update checks, etc.).
+All data stored in your self-hosted Padduck instance is under your control. Padduck does not transmit any user data to external services unless you explicitly configure integrations (webhooks, update checks, etc.), or opt in to anonymous telemetry (off by default — see below).
 
-See [Data Ownership Philosophy](Data-Ownership-Philosophy) for the project's philosophy on data ownership.
+### Anonymous Telemetry
+
+Padduck includes an optional, off-by-default telemetry feature. If an admin opts in via Admin Settings > Telemetry, the backend periodically sends an anonymous snapshot of aggregate counts and percentages (e.g. total subnets, utilization percentiles, which optional features are enabled) to a Padduck-operated endpoint. It never includes IP addresses, subnet CIDRs, MAC addresses, hostnames, usernames, emails, or other identifying data. If you enable telemetry, consider whether your own privacy policy to your users needs to mention it — Padduck doesn't collect anything about your end users specifically, only aggregate counts about your deployment.
+
+See [Data Ownership Philosophy](Data-Ownership-Philosophy) for the project's philosophy on data ownership and full detail on what telemetry sends.
 
 ---
 

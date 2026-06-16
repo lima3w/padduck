@@ -68,7 +68,7 @@ Every allocation, reservation, release, user change, and configuration update is
 
 ### Data stays yours
 
-No cloud dependencies. No telemetry. No license server. No "phone home." Your IP data is yours, on your infrastructure, under your control.
+No cloud dependencies. No license server. No mandatory "phone home." Your IP data is yours, on your infrastructure, under your control. The one exception is a fully optional, off-by-default telemetry snapshot an admin can turn on — see [Data Ownership Philosophy](Data-Ownership-Philosophy) for exactly what it sends.
 
 ---
 
