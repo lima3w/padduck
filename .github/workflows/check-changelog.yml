@@ -25,10 +25,9 @@ jobs:
             git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1
           }
 
-          next_patch() {
-            local tag="${1#v}"
-            IFS=. read -r major minor patch <<< "${tag}"
-            printf 'v%s.%s.%s\n' "${major}" "${minor}" "$((patch + 1))"
+          # Returns 0 (true) if $1 > $2 under semver ordering.
+          semver_gt() {
+            [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n1)" = "$1" ] && [ "$1" != "$2" ]
           }
 
           latest="$(latest_semver_tag)"
@@ -37,18 +36,17 @@ jobs:
             exit 0
           fi
 
-          expected="$(next_patch "${latest}")"
           actual="$(awk '/^## v[0-9]+\.[0-9]+\.[0-9]+$/{print $2; exit}' CHANGELOG.md)"
 
           if [ -z "${actual}" ]; then
-            echo "ERROR: CHANGELOG.md has no version section (expected ## ${expected} at the top)."
+            echo "ERROR: CHANGELOG.md has no version section. Add a '## vX.Y.Z' section (greater than ${latest}) at the top."
             exit 1
           fi
 
-          if [ "${actual}" != "${expected}" ]; then
-            echo "ERROR: CHANGELOG.md top version is ${actual}, but the next release must be ${expected}."
-            echo "Latest release tag is ${latest}. Add a '## ${expected}' section to CHANGELOG.md before merging."
+          if ! semver_gt "${actual}" "${latest}"; then
+            echo "ERROR: CHANGELOG.md top version is ${actual}, which is not greater than the latest release tag ${latest}."
+            echo "Add a new '## vX.Y.Z' section at the top of CHANGELOG.md with a version higher than ${latest}."
             exit 1
           fi
 
-          echo "CHANGELOG.md top version is ${actual} — OK."
+          echo "CHANGELOG.md top version is ${actual} (latest tag: ${latest}) — OK."

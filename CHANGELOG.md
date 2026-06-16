@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.1
+
+### Bug Fixes
+- **Check-changelog CI failed on minor/major version bumps**: the `check-changelog` workflow previously required the CHANGELOG top version to be exactly `next_patch(latest_tag)`, which rejected valid minor or major bumps (e.g. v1.31.42 → v1.32.0). The check now accepts any semver version strictly greater than the latest tag.
+
 ## v1.32.0
 
 ### Features
