@@ -13,6 +13,7 @@ import FeaturesTab from './FeaturesTab'
 import UpdatesTab from './UpdatesTab'
 import NotificationsTab from './NotificationsTab'
 import ToolsTab from './ToolsTab'
+import TelemetryTab from './TelemetryTab'
 
 // Shell: owns the config object, save/messaging, and tab navigation. Each
 // tab is its own component under src/pages/admin/ and keeps tab-specific
@@ -127,6 +128,7 @@ export default function AdminSettingsPage() {
     { id: 'updates', label: 'Updates' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'tools', label: 'Tools' },
+    { id: 'telemetry', label: 'Telemetry' },
   ]
 
   const configProps = { config, handleConfigChange, handleSaveConfig, saving }
@@ -174,6 +176,7 @@ export default function AdminSettingsPage() {
       {activeTab === 'updates' && config && <UpdatesTab {...configProps} />}
       {activeTab === 'notifications' && <NotificationsTab />}
       {activeTab === 'tools' && <ToolsTab config={config} />}
+      {activeTab === 'telemetry' && config && <TelemetryTab {...configProps} showMessage={showMessage} />}
     </div>
   )
 }

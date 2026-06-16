@@ -11,6 +11,8 @@ export const testSMTP = (to) => api.post('/admin/config/test-email', { to })
 
 export const checkForUpdates = () => api.get('/admin/updates/check')
 
+export const sendTelemetryNow = () => api.post('/admin/telemetry/send')
+
 export const getNotificationStats = () => api.get('/admin/notification-stats')
 
 export const listPendingApprovals = () => api.get('/admin/approvals')

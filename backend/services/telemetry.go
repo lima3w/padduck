@@ -1,10 +1,17 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"log/slog"
 	"math"
+	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -95,8 +102,7 @@ type TelemetrySnapshot struct {
 	ExtraMetricsJSON map[string]any  `json:"extra_metrics_json,omitempty"`
 }
 
-// TelemetryService assembles TelemetrySnapshot values from live app state.
-// It does not transmit anything — the sender will be added in a later increment.
+// TelemetryService assembles and sends TelemetrySnapshot values.
 type TelemetryService struct {
 	svc *Service
 }
@@ -125,7 +131,7 @@ func (t *TelemetryService) GetOrCreateInstallID(ctx context.Context) (string, er
 
 // CollectSnapshot gathers all available telemetry fields and returns a
 // populated TelemetrySnapshot. No data is sent anywhere by this method.
-func (t *TelemetryService) CollectSnapshot(ctx context.Context) (*TelemetrySnapshot, error) {
+func (t *TelemetryService) CollectSnapshot(ctx context.Context, period string) (*TelemetrySnapshot, error) {
 	installID, err := t.GetOrCreateInstallID(ctx)
 	if err != nil {
 		return nil, err
@@ -148,7 +154,7 @@ func (t *TelemetryService) CollectSnapshot(ctx context.Context) (*TelemetrySnaps
 	return &TelemetrySnapshot{
 		InstallID:              installID,
 		SnapshotAt:             time.Now().UTC(),
-		SnapshotPeriod:         "manual",
+		SnapshotPeriod:         period,
 		TelemetrySchemaVersion: 1,
 		AppVersion:             version.Version,
 
@@ -203,8 +209,89 @@ func (t *TelemetryService) CollectSnapshot(ctx context.Context) (*TelemetrySnaps
 	}, nil
 }
 
+// SendNow collects and sends a snapshot immediately, bypassing the opt-in
+// check. Used by the admin test endpoint.
+func (t *TelemetryService) SendNow(ctx context.Context) error {
+	return t.doSend(ctx, "manual")
+}
+
+// SendSnapshot sends a scheduled snapshot. Silently skips if the opt-in
+// flag is not set or the connection is not configured.
+func (t *TelemetryService) SendSnapshot(ctx context.Context, period string) error {
+	if enabled, _ := t.svc.Config.GetCtx(ctx, "telemetry_enabled"); enabled != "true" {
+		return nil
+	}
+	return t.doSend(ctx, period)
+}
+
+// doSend collects the snapshot and POSTs it to PocketBase.
+func (t *TelemetryService) doSend(ctx context.Context, period string) error {
+	pbURL, _ := t.svc.Config.GetCtx(ctx, "telemetry_pocketbase_url")
+	pbToken, _ := t.svc.Config.GetCtx(ctx, "telemetry_pocketbase_token")
+	if pbURL == "" || pbToken == "" {
+		return fmt.Errorf("telemetry_pocketbase_url and telemetry_pocketbase_token must be configured")
+	}
+
+	snapshot, err := t.CollectSnapshot(ctx, period)
+	if err != nil {
+		return fmt.Errorf("collect snapshot: %w", err)
+	}
+
+	body, err := json.Marshal(snapshot)
+	if err != nil {
+		return fmt.Errorf("marshal snapshot: %w", err)
+	}
+
+	endpoint := strings.TrimRight(pbURL, "/") + "/api/collections/padduck_analytics/records"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+pbToken)
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("pocketbase returned %d: %s", resp.StatusCode, b)
+	}
+	return nil
+}
+
+// StartTelemetryJob launches a background goroutine that sends scheduled
+// snapshots. The period is read from config at startup (default: daily).
+func (t *TelemetryService) StartTelemetryJob(ctx context.Context) {
+	go func() {
+		period := "daily"
+		interval := 24 * time.Hour
+		if cfg, _ := t.svc.Config.GetCtx(ctx, "telemetry_snapshot_period"); cfg == "weekly" {
+			period = "weekly"
+			interval = 7 * 24 * time.Hour
+		}
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := t.SendSnapshot(ctx, period); err != nil {
+					slog.Warn("telemetry: snapshot send failed", "error", err)
+				}
+			}
+		}
+	}()
+}
+
 // authFlags returns whether LDAP, OIDC, and SAML are each enabled.
-// A missing or unconfigured row is treated as disabled, not an error.
 func (t *TelemetryService) authFlags(ctx context.Context) (ldap, oidc, saml bool) {
 	if cfg, err := t.svc.LDAP.GetConfig(ctx); err == nil && cfg != nil {
 		ldap = cfg.Enabled
@@ -218,26 +305,21 @@ func (t *TelemetryService) authFlags(ctx context.Context) (ldap, oidc, saml bool
 	return
 }
 
-// snmpConfigured returns true if a global SNMP community string is set.
 func (t *TelemetryService) snmpConfigured(ctx context.Context) bool {
 	v, err := t.svc.Config.GetCtx(ctx, "scanner_snmp_community")
 	return err == nil && v != ""
 }
 
-// apiEnabled returns true if anonymous API access is enabled.
 func (t *TelemetryService) apiEnabled(ctx context.Context) bool {
 	v, err := t.svc.Config.GetCtx(ctx, "anonymous_api_enabled")
 	return err == nil && v == "true"
 }
 
-// configStr reads a config key and returns the value, or "" if not set.
 func (t *TelemetryService) configStr(ctx context.Context, key string) string {
 	v, _ := t.svc.Config.GetCtx(ctx, key)
 	return v
 }
 
-// featureFlagsJSON returns a map of feature config keys to their enabled state.
-// Missing keys default to true (features are enabled by default).
 func (t *TelemetryService) featureFlagsJSON(ctx context.Context) map[string]bool {
 	flags := make(map[string]bool, len(featureConfigKeys))
 	for _, k := range featureConfigKeys {
@@ -247,7 +329,6 @@ func (t *TelemetryService) featureFlagsJSON(ctx context.Context) map[string]bool
 	return flags
 }
 
-// roundPct rounds a nullable percentage to two decimal places.
 func roundPct(p *float64) *float64 {
 	if p == nil {
 		return nil
@@ -256,7 +337,6 @@ func roundPct(p *float64) *float64 {
 	return &v
 }
 
-// serverOSFamily maps a runtime.GOOS value to the allowed telemetry values.
 func serverOSFamily(goos string) string {
 	switch goos {
 	case "linux":
