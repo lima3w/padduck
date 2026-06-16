@@ -616,6 +616,41 @@ Non-admin users can submit requests for new subnets or IP allocations that requi
 
 ---
 
+## Telemetry
+
+**Admin → Settings → Telemetry**
+
+Telemetry is **opt-in** and disabled by default. When enabled, Padduck sends a daily or weekly anonymous snapshot to the Padduck project. The snapshot never contains hostnames, IP addresses, usernames, descriptions, or any data you have entered. It contains only aggregate counts (e.g. total subnets, total users) and configuration choices (e.g. deployment type, enabled features).
+
+### Enable or Disable
+
+1. **Admin → Settings → Telemetry**
+2. Toggle **Enable Telemetry** on or off
+3. Click **Save**
+
+On first admin login, if telemetry has never been configured, you are redirected to a setup page that explains what is collected before asking you to choose. You can change your decision at any time from the Telemetry settings tab.
+
+### What Is Collected
+
+| Field | Example |
+|-------|---------|
+| Install ID (random UUID, not linked to hardware) | `a1b2c3d4-…` |
+| Padduck version | `1.32.11` |
+| Deployment type | `Docker Compose` |
+| Deployment mode | `Self-Hosted` |
+| Total subnets, IPs, users, VLANs, customers | counts only |
+| IPv4 utilization percentiles | 50th, 75th, 90th, 95th |
+| Feature flags (LDAP, OIDC, SAML, SNMP enabled) | true/false |
+| Snapshot period | `daily` or `weekly` |
+
+Telemetry data is never used for marketing or sales, never sold, never shared with third parties, and never linked to any identifying property of your deployment.
+
+### Send a Test Snapshot
+
+Click **Send Test Snapshot Now** to post a snapshot immediately and confirm it succeeds before enabling the schedule.
+
+---
+
 ## Grafana Data Source
 
 **Admin → Grafana Data Source** — connect Grafana to IPAM data using the SimpleJSON protocol.

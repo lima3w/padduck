@@ -44,6 +44,7 @@ tags:
   - name: External Auth
   - name: GDPR
   - name: Automation
+  - name: Grafana
 
 components:
   securitySchemes:
@@ -60,6 +61,13 @@ components:
         token scope to be "admin"; a token with any other scope (e.g. "read")
         will receive 403 even if the issuing account has the admin role.
         Browser sessions (session cookie) are not subject to scope restrictions.
+    agentToken:
+      type: http
+      scheme: bearer
+      description: >
+        Agent token issued when creating or rotating a scan agent via
+        POST /api/v1/admin/scan-agents or POST /api/v1/admin/scan-agents/{id}/rotate-token.
+        Not interchangeable with user API tokens.
     csrfToken:
       type: apiKey
       in: header
@@ -1874,7 +1882,7 @@ paths:
       tags: [Scan Agents]
       summary: Get jobs assigned to authenticated scan agent
       security:
-        - bearerToken: []
+        - agentToken: []
       responses:
         "200":
           $ref: "#/components/responses/OKArray"
@@ -1884,7 +1892,7 @@ paths:
       tags: [Scan Agents]
       summary: Submit scan agent results
       security:
-        - bearerToken: []
+        - agentToken: []
       requestBody:
         $ref: "#/components/requestBodies/JSON"
       responses:
@@ -1896,7 +1904,7 @@ paths:
       tags: [Scan Agents]
       summary: Submit scan agent heartbeat
       security:
-        - bearerToken: []
+        - agentToken: []
       responses:
         "200":
           $ref: "#/components/responses/OK"
@@ -3099,3 +3107,197 @@ paths:
       responses:
         "204":
           $ref: "#/components/responses/NoContent"
+
+  /api/v1/auth/me/avatar:
+    get:
+      tags: [Auth]
+      summary: Get current user's avatar
+      responses:
+        "200":
+          description: Avatar image binary
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "204":
+          $ref: "#/components/responses/NoContent"
+    put:
+      tags: [Auth]
+      summary: Upload or update current user's avatar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/grafana/:
+    get:
+      tags: [Grafana]
+      summary: Grafana SimpleJSON health check
+      responses:
+        "200":
+          description: Returns "ok"
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /api/grafana/search:
+    post:
+      tags: [Grafana]
+      summary: List available Grafana SimpleJSON metrics
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/grafana/query:
+    post:
+      tags: [Grafana]
+      summary: Query Grafana SimpleJSON metric data
+      security:
+        - bearerToken: []
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/scan-profiles:
+    get:
+      tags: [Admin]
+      summary: List scan profiles
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin]
+      summary: Create scan profile
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/scan-profiles/{id}:
+    get:
+      tags: [Admin]
+      summary: Get scan profile
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Update scan profile
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Admin]
+      summary: Delete scan profile
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/subnets/{id}/scan-profile:
+    get:
+      tags: [Admin]
+      summary: Get scan profile assigned to a subnet
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Assign scan profile to a subnet
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/scan-retention:
+    get:
+      tags: [Admin]
+      summary: Get scan retention settings
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Update scan retention settings
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/scan-retention/prune:
+    post:
+      tags: [Admin]
+      summary: Run scan retention prune immediately
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/discovery/conflicts:
+    get:
+      tags: [Admin, Discovery]
+      summary: List discovery conflicts
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/discovery/conflicts/{id}:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get a discovery conflict
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/discovery/conflicts/{id}/resolve:
+    post:
+      tags: [Admin, Discovery]
+      summary: Resolve a discovery conflict
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/telemetry/send:
+    post:
+      tags: [Admin]
+      summary: Send telemetry snapshot immediately
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
