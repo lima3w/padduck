@@ -120,14 +120,14 @@ The API includes a token-bucket rate limiter. When throttled, you receive `429 T
 | `POST` | `/auth/password-reset` | Request password reset |
 | `GET` | `/auth/me` | Current user info |
 
-### Sections
+### Networks
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/v1/sections` | List sections |
-| `POST` | `/api/v1/sections` | Create section |
-| `GET` | `/api/v1/sections/:id` | Get section |
-| `PUT` | `/api/v1/sections/:id` | Update section |
-| `DELETE` | `/api/v1/sections/:id` | Delete section |
+| `GET` | `/api/v1/networks` | List networks |
+| `POST` | `/api/v1/networks` | Create network |
+| `GET` | `/api/v1/networks/:id` | Get network |
+| `PUT` | `/api/v1/networks/:id` | Update network |
+| `DELETE` | `/api/v1/networks/:id` | Delete network |
 
 ### Subnets
 | Method | Path | Description |
@@ -137,7 +137,7 @@ The API includes a token-bucket rate limiter. When throttled, you receive `429 T
 | `GET` | `/api/v1/subnets/:id` | Get subnet |
 | `PUT` | `/api/v1/subnets/:id` | Update subnet |
 | `DELETE` | `/api/v1/subnets/:id` | Delete subnet |
-| `GET` | `/api/v1/sections/:id/subnets` | List subnets in section |
+| `GET` | `/api/v1/networks/:id/subnets` | List subnets in a network |
 
 ### IP Addresses
 | Method | Path | Description |
