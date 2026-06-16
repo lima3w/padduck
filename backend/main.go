@@ -199,8 +199,8 @@ func main() {
 	// Start retention pruner (#435)
 	svc.Discovery.StartRetentionPruner(ctx)
 
-	// Start reporting jobs (utilisation snapshots + scheduled reports)
-	svc.Reports.StartUtilisationSnapshotJob(ctx)
+	// Start reporting jobs (utilization snapshots + scheduled reports)
+	svc.Reports.StartUtilizationSnapshotJob(ctx)
 	svc.Reports.StartScheduledReportJob(ctx)
 
 	// Setup HTTP server with centralized error handler

@@ -51,7 +51,7 @@ func cloneDashboardSummary(summary *models.DashboardSummary) *models.DashboardSu
 		return nil
 	}
 	out := *summary
-	out.TopSubnets = append([]models.SubnetUtilisation(nil), summary.TopSubnets...)
+	out.TopSubnets = append([]models.SubnetUtilization(nil), summary.TopSubnets...)
 	return &out
 }
 

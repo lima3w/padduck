@@ -254,7 +254,7 @@ type TopologyNode struct {
 	IsContainer bool    `json:"is_container"`
 	ParentID    *int64  `json:"parent_id,omitempty"`
 	VLANID      *int64  `json:"vlan_id,omitempty"`
-	Utilisation float64 `json:"utilisation"`
+	Utilization float64 `json:"utilization"`
 }
 
 // TopologyEdge represents a directed edge in the network topology graph
@@ -605,20 +605,20 @@ type DashboardSummary struct {
 	TotalSubnets          int64               `json:"total_subnets"`
 	TotalIPs              int64               `json:"total_ips"`
 	UsedIPs               int64               `json:"used_ips"`
-	UtilisationPct        float64             `json:"utilisation_pct"`
-	TopSubnets            []SubnetUtilisation `json:"top_subnets"`
+	UtilizationPct        float64             `json:"utilization_pct"`
+	TopSubnets            []SubnetUtilization `json:"top_subnets"`
 	PendingSubnetRequests int64               `json:"pending_subnet_requests"`
 	PendingIPRequests     int64               `json:"pending_ip_requests"`
 }
 
-// SubnetUtilisation holds utilisation data for a single subnet
-type SubnetUtilisation struct {
+// SubnetUtilization holds utilization data for a single subnet
+type SubnetUtilization struct {
 	ID             int64   `json:"id"`
 	CIDR           string  `json:"cidr"`
 	Description    string  `json:"description"`
 	Used           int64   `json:"used"`
 	Total          int64   `json:"total"`
-	UtilisationPct float64 `json:"utilisation_pct"`
+	UtilizationPct float64 `json:"utilization_pct"`
 }
 
 // DashboardActivity is a single recent activity entry from audit_logs
@@ -640,7 +640,7 @@ type SubnetTreeNode struct {
 	Description    string           `json:"description"`
 	Used           int64            `json:"used"`
 	Total          int64            `json:"total"`
-	UtilisationPct float64          `json:"utilisation_pct"`
+	UtilizationPct float64          `json:"utilization_pct"`
 	Children       []SubnetTreeNode `json:"children"`
 }
 
@@ -882,7 +882,7 @@ type VLANUsageEntry struct {
 	SubnetCount    int64   `json:"subnet_count"`
 	IPCount        int64   `json:"ip_count"`
 	TotalIPs       int64   `json:"total_ips"`
-	UtilisationPct float64 `json:"utilisation_pct"`
+	UtilizationPct float64 `json:"utilization_pct"`
 }
 
 // VLANUsageReport is the top-level report returned by the usage-report endpoint
@@ -907,16 +907,16 @@ type DeviceInterface struct {
 	UpdatedAt              time.Time `json:"updated_at"`
 }
 
-// SubnetUtilisationPoint is a single time-series data point for subnet utilisation history.
-type SubnetUtilisationPoint struct {
+// SubnetUtilizationPoint is a single time-series data point for subnet utilization history.
+type SubnetUtilizationPoint struct {
 	RecordedAt     time.Time `json:"recorded_at"`
 	UsedCount      int       `json:"used_count"`
 	TotalCount     int       `json:"total_count"`
-	UtilisationPct float64   `json:"utilisation_pct"`
+	UtilizationPct float64   `json:"utilization_pct"`
 }
 
-// SubnetUtilisationTrend holds current utilisation and the delta vs 7 days ago for a subnet.
-type SubnetUtilisationTrend struct {
+// SubnetUtilizationTrend holds current utilization and the delta vs 7 days ago for a subnet.
+type SubnetUtilizationTrend struct {
 	SubnetID    int64   `json:"subnet_id"`
 	CIDR        string  `json:"cidr"`
 	Description string  `json:"description"`

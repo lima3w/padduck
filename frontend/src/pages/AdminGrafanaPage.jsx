@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { generateTokenForMe } from '../api/auth'
 
 const METRICS = [
-  { name: 'subnet_utilization', desc: 'All subnets with CIDR, network, used/total IPs, and utilisation %' },
+  { name: 'subnet_utilization', desc: 'All subnets with CIDR, network, used/total IPs, and utilization %' },
   { name: 'ip_by_status', desc: 'IP address counts grouped by status (assigned, available, reserved, …)' },
   { name: 'section_summary', desc: 'Per-network subnet count, total IPs, and used IPs' },
 ]

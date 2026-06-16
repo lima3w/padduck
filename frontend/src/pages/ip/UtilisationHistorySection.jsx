@@ -15,7 +15,7 @@ export default function UtilisationHistorySection({ subnetId }) {
       setHistoryLoading(true)
       setHistoryError('')
       try {
-        const { data } = await api.get(`/subnets/${subnetId}/utilisation/history`, { params: { days: historyDays } })
+        const { data } = await api.get(`/subnets/${subnetId}/utilization/history`, { params: { days: historyDays } })
         setHistoryData(Array.isArray(data) ? data : [])
       } catch {
         setHistoryData([])
@@ -29,7 +29,7 @@ export default function UtilisationHistorySection({ subnetId }) {
 
   const chartData = historyData.map(d => ({
     date: new Date(d.recordedAt).toLocaleDateString(),
-    pct: d.utilisationPct != null ? parseFloat(d.utilisationPct.toFixed(1)) : 0,
+    pct: d.utilizationPct != null ? parseFloat(d.utilizationPct.toFixed(1)) : 0,
   }))
 
   return (

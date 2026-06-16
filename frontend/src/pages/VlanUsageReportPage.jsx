@@ -43,7 +43,7 @@ export default function VlanUsageReportPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">VLAN Usage Report</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Subnet and IP utilisation across all VLANs
+            Subnet and IP utilization across all VLANs
           </p>
         </div>
       </div>
@@ -105,7 +105,7 @@ export default function VlanUsageReportPage() {
                       {row.ipCount ?? 0}
                     </td>
                     <td className="px-4 py-3">
-                      <UtilBar pct={row.utilisationPct ?? 0} />
+                      <UtilBar pct={row.utilizationPct ?? 0} />
                     </td>
                   </tr>
                 )

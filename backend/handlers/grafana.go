@@ -80,7 +80,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 	ctx := c.Context()
 	switch target {
 	case "subnet_utilization":
-		rows, err := h.service.GrafanaSubnetUtilisation(ctx)
+		rows, err := h.service.GrafanaSubnetUtilization(ctx)
 		if err != nil {
 			return grafanaTableResponse{}, err
 		}
@@ -97,7 +97,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 		}
 		for _, r := range rows {
 			resp.Rows = append(resp.Rows, []interface{}{
-				r.CIDR, r.NetworkName, r.Description, r.Used, r.Total, r.UtilisationPct,
+				r.CIDR, r.NetworkName, r.Description, r.Used, r.Total, r.UtilizationPct,
 			})
 		}
 		return resp, nil

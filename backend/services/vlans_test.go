@@ -160,7 +160,7 @@ func TestVLANUsageEntry_Fields(t *testing.T) {
 		SubnetCount:    3,
 		IPCount:        42,
 		TotalIPs:       256,
-		UtilisationPct: 16.41,
+		UtilizationPct: 16.41,
 	}
 	assert.Equal(t, int64(1), entry.VLANID)
 	assert.Equal(t, "Management", entry.VLANName)
@@ -168,7 +168,7 @@ func TestVLANUsageEntry_Fields(t *testing.T) {
 	assert.Equal(t, int64(3), entry.SubnetCount)
 	assert.Equal(t, int64(42), entry.IPCount)
 	assert.Equal(t, int64(256), entry.TotalIPs)
-	assert.InDelta(t, 16.41, entry.UtilisationPct, 0.01)
+	assert.InDelta(t, 16.41, entry.UtilizationPct, 0.01)
 }
 
 func TestVLANUsageReport_Fields(t *testing.T) {

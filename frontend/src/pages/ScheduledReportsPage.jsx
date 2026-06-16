@@ -3,7 +3,7 @@ import { api } from '../api/client'
 import Modal from '../components/Modal'
 
 const REPORT_TYPES = [
-  { value: 'utilisation_summary', label: 'Utilisation Summary' },
+  { value: 'utilisation_summary', label: 'Utilization Summary' },
   { value: 'inactive_ips', label: 'Inactive IPs' },
   { value: 'new_allocations', label: 'New Allocations' },
   { value: 'full_audit', label: 'Full Audit' },

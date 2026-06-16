@@ -84,6 +84,7 @@ export default function IPAddressesPage() {
   const [cfFilterRows, setCfFilterRows] = useState([])
   const [ipReqForm, setIPReqForm] = useState(IP_REQUEST_EMPTY)
   const [ipReqError, setIPReqError] = useState(null)
+  const [createError, setCreateError] = useState(null)
   const [ipReqSuccess, setIPReqSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState('ips') // 'ips' | 'delegations'
   const [downloading, setDownloading] = useState(false)
@@ -247,7 +248,11 @@ export default function IPAddressesPage() {
   }
 
   function filterMACInput(val) {
-    return val.replace(/[^0-9a-fA-F:\-.\s]/g, '')
+    // Strip invalid chars, collapse consecutive separators, cap at 17 chars (aa:bb:cc:dd:ee:ff)
+    return val
+      .replace(/[^0-9a-fA-F:\-.\s]/g, '')
+      .replace(/([:\-.\s]){2,}/g, '$1')
+      .slice(0, 17)
   }
 
   function normalizeMAC(val) {
@@ -275,6 +280,7 @@ export default function IPAddressesPage() {
   function openCreate(prefillAddress) {
     const addr = prefillAddress || networkPrefix(subnet?.networkAddress, subnet?.prefixLength)
     setForm({ address: addr, hostname: '', status: 'available', device_id: '', tag_id: '', mac_address: '', ptr_record: '', dns_name: '', custom_fields: {} })
+    setCreateError(null)
     setModal('create')
   }
 
@@ -300,9 +306,10 @@ export default function IPAddressesPage() {
   async function handleCreate(e) {
     e.preventDefault()
     if (subnet && !form.address.includes(':') && !ipInSubnet(form.address, subnet.networkAddress, subnet.prefixLength)) {
-      setError(`IP address must be within ${subnet.networkAddress}/${subnet.prefixLength}`)
+      setCreateError(`IP address must be within ${subnet.networkAddress}/${subnet.prefixLength}`)
       return
     }
+    setCreateError(null)
     setSaving(true)
     try {
       await createIPAddress(subnetID, {
@@ -318,7 +325,7 @@ export default function IPAddressesPage() {
       setModal(null)
       load(page)
     } catch(err) {
-      setError(err.response?.data?.error || 'Failed to create IP address')
+      setCreateError(err.response?.data?.error || 'Failed to create IP address')
     } finally {
       setSaving(false)
     }
@@ -1023,6 +1030,9 @@ export default function IPAddressesPage() {
                   onChange={(name, value) => setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [name]: value } }))}
                 />
               </div>
+            )}
+            {createError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{createError}</div>
             )}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>

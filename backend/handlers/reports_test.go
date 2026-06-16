@@ -11,29 +11,29 @@ import (
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GetSubnetUtilisationHistory (#220)
+// GetSubnetUtilizationHistory (#220)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func TestGetSubnetUtilisationHistory_NoUser_Returns401(t *testing.T) {
+func TestGetSubnetUtilizationHistory_NoUser_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/subnets/:id/utilisation/history", h.GetSubnetUtilisationHistory)
+	app.Get("/subnets/:id/utilization/history", h.GetSubnetUtilizationHistory)
 
-	req := httptest.NewRequest("GET", "/subnets/1/utilisation/history", nil)
+	req := httptest.NewRequest("GET", "/subnets/1/utilization/history", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
-func TestGetSubnetUtilisationHistory_NonAdmin_Returns403(t *testing.T) {
+func TestGetSubnetUtilizationHistory_NonAdmin_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/subnets/:id/utilisation/history", func(c *fiber.Ctx) error {
+	app.Get("/subnets/:id/utilization/history", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "viewer"})
-		return h.GetSubnetUtilisationHistory(c)
+		return h.GetSubnetUtilizationHistory(c)
 	})
 
-	req := httptest.NewRequest("GET", "/subnets/1/utilisation/history", nil)
+	req := httptest.NewRequest("GET", "/subnets/1/utilization/history", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	// "subnets:read" is denied for viewer (not in their allowed perms), so 403
@@ -41,29 +41,29 @@ func TestGetSubnetUtilisationHistory_NonAdmin_Returns403(t *testing.T) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GetUtilisationTrends (#220)
+// GetUtilizationTrends (#220)
 // ─────────────────────────────────────────────────────────────────────────────
 
-func TestGetUtilisationTrends_NoUser_Returns401(t *testing.T) {
+func TestGetUtilizationTrends_NoUser_Returns401(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/admin/reports/utilisation-trends", h.GetUtilisationTrends)
+	app.Get("/admin/reports/utilization-trends", h.GetUtilizationTrends)
 
-	req := httptest.NewRequest("GET", "/admin/reports/utilisation-trends", nil)
+	req := httptest.NewRequest("GET", "/admin/reports/utilization-trends", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
-func TestGetUtilisationTrends_NonAdmin_Returns403(t *testing.T) {
+func TestGetUtilizationTrends_NonAdmin_Returns403(t *testing.T) {
 	h := &Handler{service: nil}
 	app := fiber.New()
-	app.Get("/admin/reports/utilisation-trends", func(c *fiber.Ctx) error {
+	app.Get("/admin/reports/utilization-trends", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
-		return h.GetUtilisationTrends(c)
+		return h.GetUtilizationTrends(c)
 	})
 
-	req := httptest.NewRequest("GET", "/admin/reports/utilisation-trends", nil)
+	req := httptest.NewRequest("GET", "/admin/reports/utilization-trends", nil)
 	resp, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)

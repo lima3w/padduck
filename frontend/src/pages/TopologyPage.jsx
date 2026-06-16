@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import cytoscape from 'cytoscape'
 import { api } from '../api/client'
 
-function utilisationColor(u) {
+function utilizationColor(u) {
   if (u >= 0.8) return '#ef4444'
   if (u >= 0.5) return '#f59e0b'
   return '#22c55e'
@@ -32,7 +32,7 @@ export default function TopologyPage() {
               cidr: n.cidr,
               prefixLen: n.prefixLen,
               isContainer: n.isContainer,
-              utilisation: n.utilisation ?? 0,
+              utilization: n.utilization ?? 0,
               vlanId: n.vlanId,
             },
           })),
@@ -57,7 +57,7 @@ export default function TopologyPage() {
                 'font-size': 11,
                 'text-valign': 'center',
                 'text-halign': 'center',
-                'background-color': (ele) => utilisationColor(ele.data('utilisation')),
+                'background-color': (ele) => utilizationColor(ele.data('utilization')),
                 'border-width': 1,
                 'border-color': '#6b7280',
                 color: '#fff',
@@ -109,7 +109,7 @@ export default function TopologyPage() {
             label: node.data('label'),
             prefixLen: node.data('prefixLen'),
             isContainer: node.data('isContainer'),
-            utilisation: node.data('utilisation'),
+            utilization: node.data('utilization'),
             vlanId: node.data('vlanId'),
           })
         })
@@ -138,7 +138,7 @@ export default function TopologyPage() {
     a.click()
   }
 
-  const pct = selected ? Math.round((selected.utilisation ?? 0) * 100) : 0
+  const pct = selected ? Math.round((selected.utilization ?? 0) * 100) : 0
 
   return (
     <div className="flex flex-col h-full">
@@ -204,7 +204,7 @@ export default function TopologyPage() {
                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-2 rounded-full transition-all"
-                    style={{ width: `${pct}%`, backgroundColor: utilisationColor(selected.utilisation ?? 0) }}
+                    style={{ width: `${pct}%`, backgroundColor: utilizationColor(selected.utilization ?? 0) }}
                   />
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{pct}%</p>
