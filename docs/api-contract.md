@@ -1,6 +1,11 @@
 # Stable v1 API Contract
 
-The v1 API contract is frozen at OpenAPI version `1.26.0` with `x-api-contract: stable-v1`.
+> **Documentation map**
+> - **This file** — compatibility rules and stability guarantees for the v1 API
+> - **`docs/openapi.yaml`** — machine-readable OpenAPI 3.0.3 spec (current version `1.31.32`); also served live at `GET /api/openapi.yaml`
+> - **[API Documentation wiki](https://github.com/lima3w/padduck/wiki/API-Documentation)** — human-readable quick reference, authentication guide, and example requests
+
+The v1 API contract was established at OpenAPI spec version `1.26.0` (`x-api-contract: stable-v1`). All changes since then have been additive only — no breaking changes without a new API version.
 
 Compatibility rules:
 

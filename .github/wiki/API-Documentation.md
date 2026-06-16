@@ -2,6 +2,11 @@
 
 ---
 
+> **Documentation map**
+> - **This page** — human-readable quick reference, authentication guide, and examples
+> - **`docs/openapi.yaml`** in the repo (or `GET /api/openapi.yaml` at runtime) — full machine-readable spec
+> - **`docs/api-contract.md`** in the repo — v1 stability guarantees and compatibility rules
+
 ## API Overview
 
 Padduck provides a **stable REST API** under `/api/v1/`. The API is the foundation for all UI interactions and external automation.
@@ -9,7 +14,7 @@ Padduck provides a **stable REST API** under `/api/v1/`. The API is the foundati
 - **Base URL**: `https://your-padduck-instance/api/v1`
 - **OpenAPI Spec**: `GET /api/openapi.yaml` (OpenAPI 3.0.3, version 1.31.32)
 - **Contract stability**: v1 is frozen — no breaking changes without a new version
-- **Total endpoints**: 199 documented paths (275 operations) in the OpenAPI spec, plus internal/admin routes not yet covered there
+- **Total endpoints**: 212 documented paths (294 operations) in the OpenAPI spec
 
 ---
 
