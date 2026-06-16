@@ -61,6 +61,8 @@ export const CONFIG_KEYS_BY_TAB = {
     'telemetry_pocketbase_url',
     'telemetry_pocketbase_token',
     'telemetry_snapshot_period',
+    'telemetry_deployment_type',
+    'telemetry_deployment_mode',
     'telemetry_ui_locale',
     'telemetry_timezone_region',
     'telemetry_country_code',

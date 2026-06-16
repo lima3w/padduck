@@ -158,9 +158,9 @@ func (t *TelemetryService) CollectSnapshot(ctx context.Context, period string) (
 		TelemetrySchemaVersion: 1,
 		AppVersion:             version.Version,
 
-		Edition:        "unknown",
-		DeploymentType: "unknown",
-		DeploymentMode: "unknown",
+		Edition:        "community",
+		DeploymentType: configStrDefault(t.configStr(ctx, "telemetry_deployment_type"), "unknown"),
+		DeploymentMode: configStrDefault(t.configStr(ctx, "telemetry_deployment_mode"), "unknown"),
 		ServerOSFamily: serverOSFamily(runtime.GOOS),
 		DatabaseType:   "postgres",
 
@@ -317,6 +317,13 @@ func (t *TelemetryService) apiEnabled(ctx context.Context) bool {
 
 func (t *TelemetryService) configStr(ctx context.Context, key string) string {
 	v, _ := t.svc.Config.GetCtx(ctx, key)
+	return v
+}
+
+func configStrDefault(v, def string) string {
+	if v == "" {
+		return def
+	}
 	return v
 }
 

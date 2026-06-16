@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.8
+
+### Improvements
+- **Telemetry: deployment type and mode selectors**: the Telemetry settings tab now includes "Deployment Type" (Docker, Docker Compose, Kubernetes, Bare Metal) and "Deployment Mode" (Self-Hosted, On-Premises, Development, Test/Staging) dropdowns. Selections are stored in config and included in every snapshot as `deployment_type` and `deployment_mode`. The `edition` field is now sent as `"community"` rather than `"unknown"`.
+
 ## v1.32.7
 
 ### Features

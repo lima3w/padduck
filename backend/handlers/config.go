@@ -109,6 +109,8 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"telemetry_pocketbase_url":             true,
 		"telemetry_pocketbase_token":           true,
 		"telemetry_snapshot_period":            true,
+		"telemetry_deployment_type":            true,
+		"telemetry_deployment_mode":            true,
 		"telemetry_ui_locale":                  true,
 		"telemetry_timezone_region":            true,
 		"telemetry_country_code":               true,

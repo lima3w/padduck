@@ -96,7 +96,7 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
           <p className="text-xs text-gray-500 mt-1">Bearer token used to authenticate with the PocketBase REST API.</p>
         </div>
 
-        <div className="mb-2">
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">Snapshot Period</label>
           <select
             value={config.telemetry_snapshot_period || 'daily'}
@@ -106,6 +106,37 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
           </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Deployment Type</label>
+            <select
+              value={config.telemetry_deployment_type || ''}
+              onChange={(e) => handleConfigChange('telemetry_deployment_type', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="">Unknown</option>
+              <option value="docker">Docker</option>
+              <option value="docker_compose">Docker Compose</option>
+              <option value="kubernetes">Kubernetes</option>
+              <option value="baremetal">Bare Metal</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Deployment Mode</label>
+            <select
+              value={config.telemetry_deployment_mode || ''}
+              onChange={(e) => handleConfigChange('telemetry_deployment_mode', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value="">Unknown</option>
+              <option value="self_hosted">Self-Hosted</option>
+              <option value="on_prem">On-Premises</option>
+              <option value="dev">Development</option>
+              <option value="test">Test / Staging</option>
+            </select>
+          </div>
         </div>
       </div>
 
