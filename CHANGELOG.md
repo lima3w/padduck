@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.10
+
+### Features
+- **Telemetry opt-in setup page**: admins who have never configured telemetry are redirected to `/setup/telemetry` on first login. The page explains in plain English exactly what is collected, gives explicit assurances that data is never used for marketing or sales, is never sold or shared, and is completely anonymous. An expandable section lists every category of collected data. Two buttons — "Enable Telemetry" and "No Thanks" — record the choice and return to the dashboard. The decision can be changed at any time in Admin Settings → Telemetry.
+
 ## v1.32.9
 
 ### Improvements

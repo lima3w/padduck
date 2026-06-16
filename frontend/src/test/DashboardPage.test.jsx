@@ -6,6 +6,7 @@ import DashboardPage from '../pages/DashboardPage'
 
 vi.mock('../api/admin', () => ({
   getInactiveIPs: vi.fn(),
+  getAdminConfig: vi.fn(() => Promise.resolve({ data: { config: { telemetry_enabled: 'false' } } })),
 }))
 
 vi.mock('../api/app', () => ({
