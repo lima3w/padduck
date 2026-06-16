@@ -16,8 +16,14 @@ vi.mock('../api/requests', () => ({
   submitSubnetRequest: vi.fn(),
 }))
 
-vi.mock('../utils/storageKeys', () => ({
-  getCachedUser: vi.fn(),
+vi.mock('../utils/storageKeys', async (importOriginal) => {
+  const actual = await importOriginal()
+  return { ...actual, getCachedUser: vi.fn() }
+})
+
+vi.mock('../utils/listPrefs', () => ({
+  loadPrefs: vi.fn(() => ({ col: 'name', dir: 'asc' })),
+  savePrefs: vi.fn(),
 }))
 
 import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork } from '../api/ipam'

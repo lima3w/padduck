@@ -5,6 +5,8 @@ export const STORAGE_KEYS = {
   deviceFilters: 'padduck_filters_devices',
   deviceColumns: 'padduck_cols_devices',
   subnetFilters: 'padduck_filters_subnets',
+  networkSort: 'padduck_sort_networks',
+  subnetSort: 'padduck_sort_subnets',
 }
 
 export const LEGACY_STORAGE_KEYS = {
