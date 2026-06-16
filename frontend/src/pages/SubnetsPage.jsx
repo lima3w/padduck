@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { getNetwork, getSubnet, getSubnetsPaginated, createSubnet, updateSubnet, deleteSubnet, searchSubnets, getSubnetTree } from '../api/ipam'
 import { getNameservers } from '../api/dns'
@@ -28,6 +28,7 @@ const EMPTY_FORM = { network_address: '', prefix_length: '24', description: '', 
 export default function SubnetsPage() {
   const { networkID } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [network, setSection] = useState(null)
   const [subnets, setSubnets] = useState([])
   const [total, setTotal] = useState(0)
@@ -86,7 +87,7 @@ export default function SubnetsPage() {
     loadLocations()
     loadNameservers()
     loadVlans()
-  }, [networkID]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [networkID, location.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     savePrefs(FILTER_KEY, { filterLocationId }, LEGACY_FILTER_KEY)

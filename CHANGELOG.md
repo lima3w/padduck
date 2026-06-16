@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.32.4
+
+### Bug Fixes
+- **VLAN detail page "Network" column always showed "—"**: the subnets table on the VLAN detail page referenced `subnet.sectionId` (always undefined after the camelCase interceptor) instead of `subnet.networkId`. The Network column link and the "Networks" relationship count in the summary panel both now use the correct field.
+- **Subnet VLAN assignment not visible on return navigation**: after assigning a subnet to a VLAN from the VLAN detail page and navigating back to Networks > Subnets, the subnet's VLAN column appeared blank. The subnets page only re-fetched data when the network ID changed, so returning to the same URL served stale data. The page now also re-fetches whenever the navigation key changes, so any return trip triggers a fresh load.
+
 ## v1.32.3
 
 ### Bug Fixes
