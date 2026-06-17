@@ -11,7 +11,7 @@ func (h *Handler) ListJobs(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
-	return c.JSON(fiber.Map{"jobs": h.service.Jobs.List()})
+	return c.JSON(fiber.Map{"jobs": h.ops.Jobs.List()})
 }
 
 func (h *Handler) GetJob(c *fiber.Ctx) error {
@@ -22,7 +22,7 @@ func (h *Handler) GetJob(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	job, ok := h.service.Jobs.Get(id)
+	job, ok := h.ops.Jobs.Get(id)
 	if !ok {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "job not found")
 	}
@@ -37,7 +37,7 @@ func (h *Handler) CancelJob(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	job, err := h.service.Jobs.Cancel(id)
+	job, err := h.ops.Jobs.Cancel(id)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -52,7 +52,7 @@ func (h *Handler) RetryJob(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	job, err := h.service.Jobs.Retry(id)
+	job, err := h.ops.Jobs.Retry(id)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}

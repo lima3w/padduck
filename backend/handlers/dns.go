@@ -15,7 +15,7 @@ func (h *Handler) CheckAllDNS(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AuditRead) {
 		return nil
 	}
-	job := h.service.Jobs.Enqueue("dns_check", "Check all DNS records", nil, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+	job := h.ops.Jobs.Enqueue("dns_check", "Check all DNS records", nil, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 		reporter.Progress(0, 1, "checking DNS records")
 		h.service.DNS.CheckAllDNS(ctx)
 		reporter.Progress(1, 1, "DNS check complete")

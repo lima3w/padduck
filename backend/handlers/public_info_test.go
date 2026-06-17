@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetPublicInfoIncludesRegistrationEnabled(t *testing.T) {
-	handler := NewHandler(&services.Service{Config: services.NewConfigService(nil)}, false)
+	handler := NewHandler(&services.Service{Config: services.NewConfigService(nil)}, nil, false)
 	app := fiber.New()
 	app.Get("/public-info", handler.GetPublicInfo)
 

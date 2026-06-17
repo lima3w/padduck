@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.14
+
+### Internal
+- **OpsManager extraction** (#192 Step 1): extracted Discovery, Reports, Import, Jobs, Webhooks, and Topology out of the monolithic `Service` struct into a new `OpsManager` struct (`services/ops_manager.go`). `Service.Ops` holds the manager; `Handler.ops` receives it directly. All 17 ops handler files updated to use `h.ops.*`. Sub-services with `*Service` back-references (DNS, Automation, Telemetry) remain on `Service` for now.
+
 ## v1.32.13
 
 ### Internal

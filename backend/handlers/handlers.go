@@ -19,19 +19,21 @@ var errResponseWritten = errors.New("response written")
 
 type Handler struct {
 	service      *services.Service
+	ops          *services.OpsManager
 	tokenLimiter *tokenRateLimiter
 	isProduction bool
 	csrfSecret   []byte // per-process CSRF signing key, generated at startup
 	idempotency  *idempotencyStore
 }
 
-func NewHandler(service *services.Service, isProduction bool) *Handler {
+func NewHandler(service *services.Service, ops *services.OpsManager, isProduction bool) *Handler {
 	secret := make([]byte, 32)
 	if _, err := rand.Read(secret); err != nil {
 		panic("handlers: failed to generate CSRF secret: " + err.Error())
 	}
 	return &Handler{
 		service:      service,
+		ops:          ops,
 		tokenLimiter: newTokenRateLimiter(),
 		isProduction: isProduction,
 		csrfSecret:   secret,

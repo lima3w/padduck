@@ -183,7 +183,7 @@ func main() {
 	// Setup application layers
 	repo := repository.NewRepository(database.Pool())
 	svc := services.NewService(repo, cfg.MFAEncryptionKey)
-	handler := handlers.NewHandler(svc, cfg.Environment == "production")
+	handler := handlers.NewHandler(svc, svc.Ops, cfg.Environment == "production")
 	handler.StartTokenLimiterCleanup(ctx)
 
 	// Initialize admin password on first boot
@@ -193,16 +193,16 @@ func main() {
 
 	// Start notification queue worker
 	svc.Notification.StartWorker(ctx)
-	svc.Webhooks.StartWorker(ctx)
+	svc.Ops.Webhooks.StartWorker(ctx)
 
 	// Start discovery scheduler
-	svc.Discovery.StartScheduler(ctx)
+	svc.Ops.Discovery.StartScheduler(ctx)
 	// Start retention pruner (#435)
-	svc.Discovery.StartRetentionPruner(ctx)
+	svc.Ops.Discovery.StartRetentionPruner(ctx)
 
 	// Start reporting jobs (utilization snapshots + scheduled reports)
-	svc.Reports.StartUtilizationSnapshotJob(ctx)
-	svc.Reports.StartScheduledReportJob(ctx)
+	svc.Ops.Reports.StartUtilizationSnapshotJob(ctx)
+	svc.Ops.Reports.StartScheduledReportJob(ctx)
 
 	// Start telemetry job (no-op unless opt-in is enabled in admin settings)
 	svc.Telemetry.StartTelemetryJob(ctx)

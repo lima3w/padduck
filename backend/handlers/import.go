@@ -37,7 +37,7 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 	defer f.Close()
 
 	if c.QueryBool("dry_run") {
-		result, err := h.service.Import.DryRunSubnetsCSV(c.Context(), f)
+		result, err := h.ops.Import.DryRunSubnetsCSV(c.Context(), f)
 		if err != nil {
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
@@ -49,16 +49,16 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 		if err != nil {
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot read uploaded file")
 		}
-		job := h.service.Jobs.Enqueue("import", "Import subnets CSV", fiber.Map{"source": "subnets_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		job := h.ops.Jobs.Enqueue("import", "Import subnets CSV", fiber.Map{"source": "subnets_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "importing subnets")
-			result, err := h.service.Import.ImportSubnetsCSV(ctx, bytes.NewReader(data))
+			result, err := h.ops.Import.ImportSubnetsCSV(ctx, bytes.NewReader(data))
 			reporter.Progress(1, 1, "import complete")
 			return result, err
 		})
 		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
-	result, err := h.service.Import.ImportSubnetsCSV(c.Context(), f)
+	result, err := h.ops.Import.ImportSubnetsCSV(c.Context(), f)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -88,7 +88,7 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 	defer f.Close()
 
 	if c.QueryBool("dry_run") {
-		result, err := h.service.Import.DryRunIPsCSV(c.Context(), f)
+		result, err := h.ops.Import.DryRunIPsCSV(c.Context(), f)
 		if err != nil {
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
@@ -100,16 +100,16 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 		if err != nil {
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot read uploaded file")
 		}
-		job := h.service.Jobs.Enqueue("import", "Import IPs CSV", fiber.Map{"source": "ips_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		job := h.ops.Jobs.Enqueue("import", "Import IPs CSV", fiber.Map{"source": "ips_csv"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "importing IP addresses")
-			result, err := h.service.Import.ImportIPsCSV(ctx, bytes.NewReader(data))
+			result, err := h.ops.Import.ImportIPsCSV(ctx, bytes.NewReader(data))
 			reporter.Progress(1, 1, "import complete")
 			return result, err
 		})
 		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
-	result, err := h.service.Import.ImportIPsCSV(c.Context(), f)
+	result, err := h.ops.Import.ImportIPsCSV(c.Context(), f)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -149,9 +149,9 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 		var dryErr error
 		switch kind {
 		case "subnets":
-			result, dryErr = h.service.Import.DryRunPHPIpamSubnetsCSV(c.Context(), f)
+			result, dryErr = h.ops.Import.DryRunPHPIpamSubnetsCSV(c.Context(), f)
 		case "ips":
-			result, dryErr = h.service.Import.DryRunPHPIpamIPsCSV(c.Context(), f)
+			result, dryErr = h.ops.Import.DryRunPHPIpamIPsCSV(c.Context(), f)
 		}
 		if dryErr != nil {
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, dryErr.Error())
@@ -164,16 +164,16 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 		if err != nil {
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "cannot read uploaded file")
 		}
-		job := h.service.Jobs.Enqueue("import", "Import phpIPAM "+kind, fiber.Map{"source": "phpipam", "kind": kind}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		job := h.ops.Jobs.Enqueue("import", "Import phpIPAM "+kind, fiber.Map{"source": "phpipam", "kind": kind}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "importing phpIPAM "+kind)
-			result, err := h.service.Import.ImportFromPHPIpam(ctx, bytes.NewReader(data), kind)
+			result, err := h.ops.Import.ImportFromPHPIpam(ctx, bytes.NewReader(data), kind)
 			reporter.Progress(1, 1, "import complete")
 			return result, err
 		})
 		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
-	result, err := h.service.Import.ImportFromPHPIpam(c.Context(), f, kind)
+	result, err := h.ops.Import.ImportFromPHPIpam(c.Context(), f, kind)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -195,16 +195,16 @@ func (h *Handler) ExportFullData(c *fiber.Ctx) error {
 	format := c.Query("format", "csv")
 
 	if c.QueryBool("async") {
-		job := h.service.Jobs.Enqueue("export", "Export full data", fiber.Map{"format": format}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		job := h.ops.Jobs.Enqueue("export", "Export full data", fiber.Map{"format": format}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "building export")
-			data, filename, contentType, err := h.service.Import.ExportFullData(ctx, format)
+			data, filename, contentType, err := h.ops.Import.ExportFullData(ctx, format)
 			reporter.Progress(1, 1, "export complete")
 			return fiber.Map{"filename": filename, "content_type": contentType, "bytes": len(data)}, err
 		})
 		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
-	data, filename, contentType, err := h.service.Import.ExportFullData(c.Context(), format)
+	data, filename, contentType, err := h.ops.Import.ExportFullData(c.Context(), format)
 	if err != nil {
 		reqLogger(c).Error("export full data failed", "format", format, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -222,16 +222,16 @@ func (h *Handler) ExportV2MigrationBundle(c *fiber.Ctx) error {
 	}
 
 	if c.QueryBool("async") {
-		job := h.service.Jobs.Enqueue("export", "Export v2 migration bundle", fiber.Map{"target": "v2.0"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		job := h.ops.Jobs.Enqueue("export", "Export v2 migration bundle", fiber.Map{"target": "v2.0"}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "building v2 migration bundle")
-			data, filename, contentType, err := h.service.Import.ExportV2MigrationBundle(ctx)
+			data, filename, contentType, err := h.ops.Import.ExportV2MigrationBundle(ctx)
 			reporter.Progress(1, 1, "migration bundle export complete")
 			return fiber.Map{"filename": filename, "content_type": contentType, "bytes": len(data)}, err
 		})
 		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
 
-	data, filename, contentType, err := h.service.Import.ExportV2MigrationBundle(c.Context())
+	data, filename, contentType, err := h.ops.Import.ExportV2MigrationBundle(c.Context())
 	if err != nil {
 		reqLogger(c).Error("export v2 migration bundle failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

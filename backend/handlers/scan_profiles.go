@@ -29,7 +29,7 @@ func (h *Handler) ListScanProfiles(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
-	profiles, err := h.service.Discovery.ListScanProfiles(c.Context())
+	profiles, err := h.ops.Discovery.ListScanProfiles(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing scan profiles", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -55,7 +55,7 @@ func (h *Handler) CreateScanProfile(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	profile, err := h.service.Discovery.CreateScanProfile(c.Context(), req.Name, req.ScanType, req.Description, req.PingConcurrency, req.TCPPorts, req.DNSLookup, req.SNMPCommunity, req.SNMPVersion)
+	profile, err := h.ops.Discovery.CreateScanProfile(c.Context(), req.Name, req.ScanType, req.Description, req.PingConcurrency, req.TCPPorts, req.DNSLookup, req.SNMPCommunity, req.SNMPVersion)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -71,7 +71,7 @@ func (h *Handler) GetScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid profile ID")
 	}
-	profile, err := h.service.Discovery.GetScanProfileByID(c.Context(), int64(id))
+	profile, err := h.ops.Discovery.GetScanProfileByID(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan profile not found")
 	}
@@ -100,7 +100,7 @@ func (h *Handler) UpdateScanProfile(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	profile, err := h.service.Discovery.UpdateScanProfile(c.Context(), int64(id), req.Name, req.ScanType, req.Description, req.PingConcurrency, req.TCPPorts, req.DNSLookup, req.SNMPCommunity, req.SNMPVersion)
+	profile, err := h.ops.Discovery.UpdateScanProfile(c.Context(), int64(id), req.Name, req.ScanType, req.Description, req.PingConcurrency, req.TCPPorts, req.DNSLookup, req.SNMPCommunity, req.SNMPVersion)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -116,7 +116,7 @@ func (h *Handler) DeleteScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid profile ID")
 	}
-	if err := h.service.Discovery.DeleteScanProfile(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Discovery.DeleteScanProfile(c.Context(), int64(id)); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete scan profile")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -138,7 +138,7 @@ func (h *Handler) GetSubnetScanProfile(c *fiber.Ctx) error {
 	if subnet.ScanProfileID == nil {
 		return c.JSON(fiber.Map{"profile": nil})
 	}
-	profile, err := h.service.Discovery.GetScanProfileByID(c.Context(), *subnet.ScanProfileID)
+	profile, err := h.ops.Discovery.GetScanProfileByID(c.Context(), *subnet.ScanProfileID)
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan profile not found")
 	}
@@ -160,7 +160,7 @@ func (h *Handler) SetSubnetScanProfile(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.service.Discovery.SetSubnetScanProfile(c.Context(), int64(subnetID), req.ProfileID); err != nil {
+	if err := h.ops.Discovery.SetSubnetScanProfile(c.Context(), int64(subnetID), req.ProfileID); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to update subnet scan profile")
 	}
 	return c.SendStatus(fiber.StatusNoContent)

@@ -17,18 +17,13 @@ type Service struct {
 	MFA           *MFAService
 	Audit         *AuditService
 	Notification  *NotificationService
-	Discovery     *DiscoveryService
 	DNS           *DNSService
-	Reports       *ReportsService
-	Import        *ImportService
-	Webhooks      *WebhookService
 	Automation    *AutomationService
 	LDAP          *LDAPService
 	OAuth2        *OAuth2Service
 	SAML          *SAMLService
-	Topology      *TopologyService
-	Jobs          *JobService
 	Telemetry     *TelemetryService
+	Ops           *OpsManager
 
 	dashboardSummaryCache  *ttlCache[*models.DashboardSummary]
 	dashboardActivityCache *ttlCache[[]*models.DashboardActivity]
@@ -52,22 +47,24 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Registration:           registrationSvc,
 		MFA:                    mfaSvc,
 		Notification:           NewNotificationService(repo, emailSvc),
-		Discovery:              NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		LDAP:                   NewLDAPService(repo, mfaEncryptionKey),
 		OAuth2:                 NewOAuth2Service(repo, mfaEncryptionKey),
 		SAML:                   NewSAMLService(repo, mfaEncryptionKey),
-		Jobs:                   NewJobService(),
 		dashboardSummaryCache:  newTTLCache[*models.DashboardSummary](30 * time.Second),
 		dashboardActivityCache: newTTLCache[[]*models.DashboardActivity](15 * time.Second),
 	}
 	svc.Audit = NewAuditService(svc)
 	svc.DNS = NewDNSService(svc)
-	svc.Reports = NewReportsService(repo, configSvc, emailSvc, svc.Audit)
-	svc.Import = NewImportService(repo)
-	svc.Webhooks = NewWebhookService(repo)
 	svc.Automation = NewAutomationService(svc)
-	svc.Topology = NewTopologyService(repo)
 	svc.Telemetry = newTelemetryService(svc)
+	svc.Ops = &OpsManager{
+		Discovery: NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
+		Reports:   NewReportsService(repo, configSvc, emailSvc, svc.Audit),
+		Import:    NewImportService(repo),
+		Jobs:      NewJobService(),
+		Webhooks:  NewWebhookService(repo),
+		Topology:  NewTopologyService(repo),
+	}
 	return svc
 }
 

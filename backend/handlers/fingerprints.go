@@ -14,7 +14,7 @@ func (h *Handler) GetDeviceFingerprint(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
-	fp, err := h.service.Discovery.GetDeviceFingerprint(c.Context(), int64(id))
+	fp, err := h.ops.Discovery.GetDeviceFingerprint(c.Context(), int64(id))
 	if err != nil {
 		return c.JSON(fiber.Map{"fingerprint": nil})
 	}
@@ -39,7 +39,7 @@ func (h *Handler) BuildDeviceFingerprint(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	fp, err := h.service.Discovery.BuildDeviceFingerprint(c.Context(), int64(id), req.DeviceIP, req.IsAlive, req.PTRRecord, req.OpenPorts)
+	fp, err := h.ops.Discovery.BuildDeviceFingerprint(c.Context(), int64(id), req.DeviceIP, req.IsAlive, req.PTRRecord, req.OpenPorts)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, err.Error())
 	}

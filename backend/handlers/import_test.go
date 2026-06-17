@@ -106,7 +106,9 @@ func makeCSVMultipart(t *testing.T, csvContent string) (*bytes.Buffer, string) {
 // newImportSvc builds a *services.Service with only the Import sub-service populated.
 func newImportSvc() *services.Service {
 	svc := &services.Service{}
-	svc.Import = services.NewImportService(newHandlerImportRepo())
+	svc.Ops = &services.OpsManager{
+		Import: services.NewImportService(newHandlerImportRepo()),
+	}
 	return svc
 }
 
@@ -114,7 +116,7 @@ func newImportSvc() *services.Service {
 // handler logic directly via a closure — used for happy-path tests.
 func buildImportHandlerApp(method, route string, handlerFn func(h *Handler) fiber.Handler) *fiber.App {
 	svc := newImportSvc()
-	h := &Handler{service: svc}
+	h := &Handler{service: svc, ops: svc.Ops}
 	app := fiber.New()
 	app.Add(method, route, handlerFn(h))
 	return app
@@ -158,7 +160,7 @@ func TestImportSubnetsCSV_MissingFile_Returns400(t *testing.T) {
 				}
 				f, _ := fh.Open()
 				defer f.Close()
-				result, err := h.service.Import.ImportSubnetsCSV(c.Context(), f)
+				result, err := h.service.Ops.Import.ImportSubnetsCSV(c.Context(), f)
 				if err != nil {
 					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 				}
@@ -188,7 +190,7 @@ func TestImportSubnetsCSV_ValidFile_Returns200(t *testing.T) {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open file"})
 				}
 				defer f.Close()
-				result, err := h.service.Import.ImportSubnetsCSV(c.Context(), f)
+				result, err := h.service.Ops.Import.ImportSubnetsCSV(c.Context(), f)
 				if err != nil {
 					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 				}
@@ -244,7 +246,7 @@ func TestImportIPsCSV_ValidFile_Returns200(t *testing.T) {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open file"})
 				}
 				defer f.Close()
-				result, err := h.service.Import.ImportIPsCSV(c.Context(), f)
+				result, err := h.service.Ops.Import.ImportIPsCSV(c.Context(), f)
 				if err != nil {
 					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 				}
@@ -319,7 +321,7 @@ func TestImportFromPHPIpam_ValidFile_Returns200(t *testing.T) {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot open file"})
 				}
 				defer f.Close()
-				result, err := h.service.Import.ImportFromPHPIpam(c.Context(), f, kind)
+				result, err := h.service.Ops.Import.ImportFromPHPIpam(c.Context(), f, kind)
 				if err != nil {
 					return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 				}
@@ -364,7 +366,7 @@ func TestExportFullData_CSV_Returns200(t *testing.T) {
 		func(h *Handler) fiber.Handler {
 			return func(c *fiber.Ctx) error {
 				format := c.Query("format", "csv")
-				data, filename, ct, err := h.service.Import.ExportFullData(c.Context(), format)
+				data, filename, ct, err := h.service.Ops.Import.ExportFullData(c.Context(), format)
 				if err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 				}
@@ -386,7 +388,7 @@ func TestExportFullData_JSON_Returns200(t *testing.T) {
 		func(h *Handler) fiber.Handler {
 			return func(c *fiber.Ctx) error {
 				format := c.Query("format", "csv")
-				data, filename, ct, err := h.service.Import.ExportFullData(c.Context(), format)
+				data, filename, ct, err := h.service.Ops.Import.ExportFullData(c.Context(), format)
 				if err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 				}
@@ -428,7 +430,7 @@ func TestExportV2MigrationBundle_ReturnsZip(t *testing.T) {
 	app := buildImportHandlerApp("GET", "/admin/export/v2-migration-bundle",
 		func(h *Handler) fiber.Handler {
 			return func(c *fiber.Ctx) error {
-				data, filename, ct, err := h.service.Import.ExportV2MigrationBundle(c.Context())
+				data, filename, ct, err := h.service.Ops.Import.ExportV2MigrationBundle(c.Context())
 				if err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 				}

@@ -12,7 +12,7 @@ func (h *Handler) ListTopologyHints(c *fiber.Ctx) error {
 		return nil
 	}
 	status := c.Query("status")
-	hints, err := h.service.Topology.ListHints(c.Context(), status)
+	hints, err := h.ops.Topology.ListHints(c.Context(), status)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to list topology hints", err.Error())
 	}
@@ -31,7 +31,7 @@ func (h *Handler) GetTopologyHint(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid hint ID")
 	}
-	hint, err := h.service.Topology.GetHint(c.Context(), int64(id))
+	hint, err := h.ops.Topology.GetHint(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "topology hint not found")
 	}
@@ -54,7 +54,7 @@ func (h *Handler) UpdateTopologyHintStatus(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	hint, err := h.service.Topology.UpdateHintStatus(c.Context(), int64(id), req.Status)
+	hint, err := h.ops.Topology.UpdateHintStatus(c.Context(), int64(id), req.Status)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}

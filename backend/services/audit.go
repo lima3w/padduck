@@ -74,8 +74,8 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 	if err := a.svc.repository.CreateAuditLog(ctx, entry); err != nil {
 		slog.Error("audit: failed to write log", "action", e.Action, "error", err)
 	}
-	if a.svc.Webhooks != nil {
-		a.svc.Webhooks.Queue(ctx, WebhookEvent{
+	if a.svc.Ops != nil && a.svc.Ops.Webhooks != nil {
+		a.svc.Ops.Webhooks.Queue(ctx, WebhookEvent{
 			EventType:    e.ResourceType + "." + e.Action,
 			Action:       e.Action,
 			ResourceType: e.ResourceType,
