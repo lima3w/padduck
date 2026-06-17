@@ -355,7 +355,7 @@ func (h *Handler) compatConfig(ctx context.Context, key string) (string, bool) {
 
 // GetV2CompatibilityWarnings handles GET /api/v1/admin/compatibility/v2-warnings.
 func (h *Handler) GetV2CompatibilityWarnings(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -370,7 +370,7 @@ func (h *Handler) GetV2CompatibilityWarnings(c *fiber.Ctx) error {
 
 // GetV2MigrationReadiness handles GET /api/v1/admin/compatibility/v2-readiness.
 func (h *Handler) GetV2MigrationReadiness(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -385,7 +385,7 @@ func (h *Handler) GetV2MigrationReadiness(c *fiber.Ctx) error {
 
 // GetV2DeprecationReport handles GET /api/v1/admin/compatibility/deprecations.
 func (h *Handler) GetV2DeprecationReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 

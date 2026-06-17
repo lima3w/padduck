@@ -33,7 +33,7 @@ type ReviewRequestBody struct {
 
 // SubmitSubnetRequest handles POST /api/v1/requests/subnets
 func (h *Handler) SubmitSubnetRequest(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestSubmit); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestSubmit) {
 		return nil
 	}
 
@@ -86,7 +86,7 @@ func (h *Handler) ListMySubnetRequests(c *fiber.Ctx) error {
 
 // ListAllSubnetRequests handles GET /api/v1/admin/requests/subnets
 func (h *Handler) ListAllSubnetRequests(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 
@@ -100,7 +100,7 @@ func (h *Handler) ListAllSubnetRequests(c *fiber.Ctx) error {
 
 // ApproveSubnetRequest handles POST /api/v1/admin/requests/subnets/:id/approve
 func (h *Handler) ApproveSubnetRequest(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 
@@ -134,7 +134,7 @@ func (h *Handler) ApproveSubnetRequest(c *fiber.Ctx) error {
 
 // RejectSubnetRequest handles POST /api/v1/admin/requests/subnets/:id/reject
 func (h *Handler) RejectSubnetRequest(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 
@@ -205,7 +205,7 @@ func (h *Handler) CancelSubnetRequest(c *fiber.Ctx) error {
 
 // SubmitIPRequest handles POST /api/v1/requests/ips
 func (h *Handler) SubmitIPRequest(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestSubmit); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestSubmit) {
 		return nil
 	}
 
@@ -255,7 +255,7 @@ func (h *Handler) ListMyIPRequests(c *fiber.Ctx) error {
 
 // ListAllIPRequests handles GET /api/v1/admin/requests/ips
 func (h *Handler) ListAllIPRequests(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 
@@ -269,7 +269,7 @@ func (h *Handler) ListAllIPRequests(c *fiber.Ctx) error {
 
 // ApproveIPRequest handles POST /api/v1/admin/requests/ips/:id/approve
 func (h *Handler) ApproveIPRequest(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 
@@ -307,7 +307,7 @@ func (h *Handler) ApproveIPRequest(c *fiber.Ctx) error {
 
 // RejectIPRequest handles POST /api/v1/admin/requests/ips/:id/reject
 func (h *Handler) RejectIPRequest(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 
@@ -461,7 +461,7 @@ func (h *Handler) AddRequestComment(c *fiber.Ctx) error {
 
 // GetPendingRequestCount handles GET /api/v1/admin/requests/pending-count
 func (h *Handler) GetPendingRequestCount(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRequestReview); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRequestReview) {
 		return nil
 	}
 

@@ -7,7 +7,7 @@ import (
 )
 
 func (h *Handler) ListCircuitProviders(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2CircuitList); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitList) {
 		return nil
 	}
 	items, err := h.service.ListCircuitProviders(c.Context())
@@ -22,7 +22,7 @@ func (h *Handler) CreateCircuitProvider(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
 	item, err := h.service.CreateCircuitProvider(c.Context(), req)
@@ -41,7 +41,7 @@ func (h *Handler) UpdateCircuitProvider(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateCircuitProvider(c.Context(), id, req)
@@ -56,7 +56,7 @@ func (h *Handler) DeleteCircuitProvider(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid circuit provider ID")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitDelete) {
 		return nil
 	}
 	if err := h.service.DeleteCircuitProvider(c.Context(), id); err != nil {
@@ -66,7 +66,7 @@ func (h *Handler) DeleteCircuitProvider(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListPhysicalCircuits(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2CircuitList); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitList) {
 		return nil
 	}
 	items, err := h.service.ListPhysicalCircuits(c.Context())
@@ -81,7 +81,7 @@ func (h *Handler) CreatePhysicalCircuit(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
 	item, err := h.service.CreatePhysicalCircuit(c.Context(), req)
@@ -100,7 +100,7 @@ func (h *Handler) UpdatePhysicalCircuit(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
 	item, err := h.service.UpdatePhysicalCircuit(c.Context(), id, req)
@@ -115,7 +115,7 @@ func (h *Handler) DeletePhysicalCircuit(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid physical circuit ID")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitDelete) {
 		return nil
 	}
 	if err := h.service.DeletePhysicalCircuit(c.Context(), id); err != nil {
@@ -125,7 +125,7 @@ func (h *Handler) DeletePhysicalCircuit(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListLogicalCircuits(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2CircuitList); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitList) {
 		return nil
 	}
 	items, err := h.service.ListLogicalCircuits(c.Context())
@@ -140,7 +140,7 @@ func (h *Handler) CreateLogicalCircuit(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
 	item, err := h.service.CreateLogicalCircuit(c.Context(), req)
@@ -159,7 +159,7 @@ func (h *Handler) UpdateLogicalCircuit(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateLogicalCircuit(c.Context(), id, req)
@@ -174,7 +174,7 @@ func (h *Handler) DeleteLogicalCircuit(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid logical circuit ID")
 	}
-	if err := h.permCheck(c, services.PermV2CircuitDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2CircuitDelete) {
 		return nil
 	}
 	if err := h.service.DeleteLogicalCircuit(c.Context(), id); err != nil {

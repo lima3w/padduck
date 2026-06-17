@@ -7,7 +7,7 @@ import (
 
 // ListDiscoveryConflicts handles GET /api/v1/admin/discovery/conflicts?status=pending
 func (h *Handler) ListDiscoveryConflicts(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	status := c.Query("status")
@@ -24,7 +24,7 @@ func (h *Handler) ListDiscoveryConflicts(c *fiber.Ctx) error {
 
 // GetDiscoveryConflict handles GET /api/v1/admin/discovery/conflicts/:id
 func (h *Handler) GetDiscoveryConflict(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -41,7 +41,7 @@ func (h *Handler) GetDiscoveryConflict(c *fiber.Ctx) error {
 // ResolveDiscoveryConflict handles POST /api/v1/admin/discovery/conflicts/:id/resolve
 // Body: {"action":"accepted"|"rejected"}
 func (h *Handler) ResolveDiscoveryConflict(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

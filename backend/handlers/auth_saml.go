@@ -79,7 +79,7 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 
 // GetSAMLConfig handles GET /api/v1/admin/auth/saml.
 func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -109,7 +109,7 @@ func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
 
 // UpdateSAMLConfig handles PUT /api/v1/admin/auth/saml.
 func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 

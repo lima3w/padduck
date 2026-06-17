@@ -271,7 +271,7 @@ func (h *Handler) RemoveRoleFromUser(c *fiber.Ctx) error {
 
 // ListRolePresets returns the static list of built-in permission presets.
 func (h *Handler) ListRolePresets(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	return c.JSON(builtinPresets())
@@ -279,7 +279,7 @@ func (h *Handler) ListRolePresets(c *fiber.Ctx) error {
 
 // GetRolePresetDiff compares a role's current permissions against a named preset.
 func (h *Handler) GetRolePresetDiff(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

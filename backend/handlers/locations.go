@@ -13,20 +13,12 @@ import (
 // ListLocations handles GET /api/v1/locations
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListLocations(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationList) {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
+	page, limit, _ := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" {
 		locs, total, err := h.service.ListLocationsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing locations", "error", err)
@@ -56,7 +48,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 
 // GetLocationTree handles GET /api/v1/locations/tree
 func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationList) {
 		return nil
 	}
 	tree, err := h.service.GetLocationTree(c.Context())
@@ -69,7 +61,7 @@ func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 
 // CreateLocation handles POST /api/v1/locations
 func (h *Handler) CreateLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationWrite) {
 		return nil
 	}
 	req := new(repository.LocationParams)
@@ -93,7 +85,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 
 // GetLocation handles GET /api/v1/locations/:id
 func (h *Handler) GetLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationRead); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -113,7 +105,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 
 // UpdateLocation handles PUT /api/v1/locations/:id
 func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -144,7 +136,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 
 // DeleteLocation handles DELETE /api/v1/locations/:id
 func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationDelete) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

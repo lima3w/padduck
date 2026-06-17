@@ -67,6 +67,10 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Go modules
+        working-directory: ./backend
+        run: go mod verify
+
       - name: Vet backend
         working-directory: ./backend
         run: go vet -mod=vendor ./...

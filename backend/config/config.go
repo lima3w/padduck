@@ -29,6 +29,7 @@ func Load() *Config {
 
 	if isProd {
 		warnWeakDBCredentials(dbURL)
+		warnInsecureDBSSL(dbURL)
 	}
 
 	return &Config{
@@ -176,6 +177,21 @@ func warnWeakDBCredentials(rawURL string) {
 				user,
 			)
 		}
+	}
+}
+
+// warnInsecureDBSSL fatals when DATABASE_URL explicitly disables SSL in production.
+// sslmode=disable transmits credentials in plaintext.
+func warnInsecureDBSSL(rawURL string) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return
+	}
+	if strings.EqualFold(u.Query().Get("sslmode"), "disable") {
+		log.Fatalf(
+			"FATAL: DATABASE_URL sets sslmode=disable. " +
+				"Remove sslmode=disable or set sslmode=require (or stronger) before running in production.",
+		)
 	}
 }
 

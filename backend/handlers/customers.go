@@ -25,20 +25,12 @@ type UpdateCustomerRequest struct {
 // ListCustomers handles GET /api/v1/customers
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListCustomers(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2CustomerList); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerList) {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
+	page, limit, _ := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" {
 		customers, total, err := h.service.ListCustomersPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing customers", "error", err)
@@ -67,7 +59,7 @@ func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetCustomer(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2CustomerRead); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -87,7 +79,7 @@ func (h *Handler) CreateCustomer(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CustomerWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerWrite) {
 		return nil
 	}
 	customer, err := h.service.CreateCustomer(c.Context(), req.Name, req.Description, req.Email, req.Phone, req.Notes)
@@ -109,7 +101,7 @@ func (h *Handler) UpdateCustomer(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid customer ID")
 	}
-	if err := h.permCheck(c, services.PermV2CustomerWrite, services.ResourceScope{Type: "customer", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerWrite, services.ResourceScope{Type: "customer", ID: int64(id)}) {
 		return nil
 	}
 	req := new(UpdateCustomerRequest)
@@ -135,7 +127,7 @@ func (h *Handler) DeleteCustomer(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid customer ID")
 	}
-	if err := h.permCheck(c, services.PermV2CustomerDelete, services.ResourceScope{Type: "customer", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerDelete, services.ResourceScope{Type: "customer", ID: int64(id)}) {
 		return nil
 	}
 	if err := h.service.DeleteCustomer(c.Context(), int64(id)); err != nil {

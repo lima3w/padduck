@@ -7,7 +7,7 @@ import (
 
 // GetScanJobHistory handles GET /api/v1/admin/scan-jobs/:id/history
 func (h *Handler) GetScanJobHistory(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	jobID, err := c.ParamsInt("id")
@@ -27,7 +27,7 @@ func (h *Handler) GetScanJobHistory(c *fiber.Ctx) error {
 
 // GetScanRunDetail handles GET /api/v1/admin/scan-jobs/:id/history/:run_id
 func (h *Handler) GetScanRunDetail(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	runID, err := c.ParamsInt("run_id")

@@ -12,9 +12,9 @@ import (
 	"padduck/services"
 )
 
-// errResponseWritten is a sentinel returned by permCheck after it has already
-// written the error response. Callers must return nil (not this error) so Fiber
-// does not invoke the default error handler on top of the written response.
+// errResponseWritten is a sentinel for middleware helpers (e.g. requireAdmin)
+// that have already written the error response. Callers must return nil (not
+// this error) so Fiber does not invoke the default error handler on top.
 var errResponseWritten = errors.New("response written")
 
 type Handler struct {
@@ -46,20 +46,20 @@ func (h *Handler) StartTokenLimiterCleanup(ctx context.Context) {
 	h.tokenLimiter.StartCleanup(ctx)
 }
 
-// permCheck verifies the authenticated user has the given permission.
-// On denial it writes the error response and returns errResponseWritten (non-nil).
-// Callers must do: if err := h.permCheck(...); err != nil { return nil }
-func (h *Handler) permCheck(c *fiber.Ctx, permission string, scopes ...services.ResourceScope) error {
+// requirePerm verifies the authenticated user has the given permission.
+// Returns true if granted, false if denied (response already written).
+// Callers must do: if !h.requirePerm(c, perm) { return nil }
+func (h *Handler) requirePerm(c *fiber.Ctx, permission string, scopes ...services.ResourceScope) bool {
 	user, ok := c.Locals("user").(*models.User)
 	if !ok {
 		_ = RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
-		return errResponseWritten
+		return false
 	}
 	if err := h.service.CheckPermission(c.Context(), user.ID, permission, scopes...); err != nil {
 		_ = RespondError(c, fiber.StatusForbidden, ErrForbidden, "permission denied")
-		return errResponseWritten
+		return false
 	}
-	return nil
+	return true
 }
 
 func (h *Handler) RegisterRoutes(app *fiber.App) {

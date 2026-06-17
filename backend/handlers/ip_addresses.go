@@ -42,7 +42,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 
@@ -79,7 +79,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 
 // GetIPAddress handles GET /api/v1/ip-addresses/:id
 func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
+	if !h.requirePerm(c, services.PermV2IPRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -103,7 +103,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 
@@ -119,11 +119,8 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"data": ips, "total": total, "page": page, "limit": limit})
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 || c.Query("sort") != "" || c.Query("q") != "" || c.Query("search") != "" || c.Query("status") != "" || c.Query("hide_available") != "" {
-		page, limit, opts := parseListOptions(c)
+	page, limit, opts := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" || opts.Sort != "" || opts.Query != "" || opts.Status != "" || c.Query("hide_available") != "" {
 		ips, total, err := h.service.ListIPAddressesPaginatedWithOptions(c.Context(), int64(subnetID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
@@ -153,7 +150,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 
 // AssignIPAddress handles POST /api/v1/ip-addresses/:id/assign
 func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -188,7 +185,7 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 
 // ReleaseIPAddress handles POST /api/v1/ip-addresses/:id/release
 func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPRelease); err != nil {
+	if !h.requirePerm(c, services.PermV2IPRelease) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -213,7 +210,7 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 
 // DeleteIPAddress handles DELETE /api/v1/ip-addresses/:id
 func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -238,7 +235,7 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 
 // UpdateIPMeta handles PUT /api/v1/ip-addresses/:id
 func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -273,7 +270,7 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 // QuickCreateIPAddress handles POST /api/v1/ip-addresses/quick-create
 // Finds the most-specific subnet for the given address and creates a new IP record in it.
 func (h *Handler) QuickCreateIPAddress(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 	var req struct {
@@ -298,7 +295,7 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 
@@ -337,7 +334,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2SubnetRead, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRead, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 
@@ -361,7 +358,7 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 
@@ -385,7 +382,7 @@ func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
+	if !h.requirePerm(c, services.PermV2IPRead) {
 		return nil
 	}
 
@@ -404,7 +401,7 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPRelease); err != nil {
+	if !h.requirePerm(c, services.PermV2IPRelease) {
 		return nil
 	}
 
@@ -425,7 +422,7 @@ func (h *Handler) GetNextAvailableIP(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 	ip, err := h.service.FindNextAvailableIP(c.Context(), int64(subnetID))

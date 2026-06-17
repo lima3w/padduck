@@ -8,14 +8,14 @@ import (
 )
 
 func (h *Handler) ListJobs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	return c.JSON(fiber.Map{"jobs": h.service.Jobs.List()})
 }
 
 func (h *Handler) GetJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -30,7 +30,7 @@ func (h *Handler) GetJob(c *fiber.Ctx) error {
 }
 
 func (h *Handler) CancelJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -45,7 +45,7 @@ func (h *Handler) CancelJob(c *fiber.Ctx) error {
 }
 
 func (h *Handler) RetryJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)

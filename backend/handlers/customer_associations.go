@@ -7,7 +7,7 @@ import (
 )
 
 func (h *Handler) ListCustomerAssociations(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2CustomerRead); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerRead) {
 		return nil
 	}
 	customerID := int64(c.QueryInt("customer_id", 0))
@@ -26,7 +26,7 @@ func (h *Handler) CreateCustomerAssociation(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2CustomerWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerWrite) {
 		return nil
 	}
 	item, err := h.service.CreateCustomerAssociation(c.Context(), req)
@@ -41,7 +41,7 @@ func (h *Handler) DeleteCustomerAssociation(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid customer association ID")
 	}
-	if err := h.permCheck(c, services.PermV2CustomerDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2CustomerDelete) {
 		return nil
 	}
 	if err := h.service.DeleteCustomerAssociation(c.Context(), id); err != nil {

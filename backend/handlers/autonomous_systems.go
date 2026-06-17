@@ -27,20 +27,12 @@ type UpdateAutonomousSystemRequest struct {
 // ListAutonomousSystems handles GET /api/v1/autonomous-systems
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2ASList); err != nil {
+	if !h.requirePerm(c, services.PermV2ASList) {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
+	page, limit, _ := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" {
 		items, total, err := h.service.ListAutonomousSystemsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing autonomous systems", "error", err)
@@ -69,7 +61,7 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2ASRead); err != nil {
+	if !h.requirePerm(c, services.PermV2ASRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -89,7 +81,7 @@ func (h *Handler) CreateAutonomousSystem(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2ASWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2ASWrite) {
 		return nil
 	}
 	item, err := h.service.CreateAutonomousSystem(c.Context(), req.ASN, req.Name, req.Description, req.Type, req.RIR)
@@ -111,7 +103,7 @@ func (h *Handler) UpdateAutonomousSystem(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid ID")
 	}
-	if err := h.permCheck(c, services.PermV2ASWrite, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2ASWrite, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}) {
 		return nil
 	}
 	req := new(UpdateAutonomousSystemRequest)
@@ -137,7 +129,7 @@ func (h *Handler) DeleteAutonomousSystem(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid ID")
 	}
-	if err := h.permCheck(c, services.PermV2ASDelete, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2ASDelete, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}) {
 		return nil
 	}
 	if err := h.service.DeleteAutonomousSystem(c.Context(), int64(id)); err != nil {

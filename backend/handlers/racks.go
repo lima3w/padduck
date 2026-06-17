@@ -11,7 +11,7 @@ import (
 
 // ListRacks handles GET /api/v1/racks
 func (h *Handler) ListRacks(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationList); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationList) {
 		return nil
 	}
 
@@ -31,7 +31,7 @@ func (h *Handler) ListRacks(c *fiber.Ctx) error {
 
 // CreateRack handles POST /api/v1/racks
 func (h *Handler) CreateRack(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationWrite) {
 		return nil
 	}
 
@@ -55,7 +55,7 @@ func (h *Handler) CreateRack(c *fiber.Ctx) error {
 
 // GetRack handles GET /api/v1/racks/:id
 func (h *Handler) GetRack(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationRead); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationRead) {
 		return nil
 	}
 
@@ -77,7 +77,7 @@ func (h *Handler) GetRack(c *fiber.Ctx) error {
 
 // UpdateRack handles PUT /api/v1/racks/:id
 func (h *Handler) UpdateRack(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationWrite) {
 		return nil
 	}
 
@@ -109,7 +109,7 @@ func (h *Handler) UpdateRack(c *fiber.Ctx) error {
 
 // DeleteRack handles DELETE /api/v1/racks/:id
 func (h *Handler) DeleteRack(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2LocationDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2LocationDelete) {
 		return nil
 	}
 
@@ -130,7 +130,7 @@ func (h *Handler) DeleteRack(c *fiber.Ctx) error {
 
 // ListDevicesInRack handles GET /api/v1/racks/:id/devices
 func (h *Handler) ListDevicesInRack(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DeviceRead); err != nil {
+	if !h.requirePerm(c, services.PermV2DeviceRead) {
 		return nil
 	}
 

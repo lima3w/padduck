@@ -30,7 +30,7 @@ type updateDelegationRequest struct {
 
 // ListDelegations handles GET /api/v1/subnets/:id/delegations
 func (h *Handler) ListDelegations(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRead) {
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func (h *Handler) ListDelegations(c *fiber.Ctx) error {
 
 // CreateDelegation handles POST /api/v1/subnets/:id/delegations
 func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -97,7 +97,7 @@ func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
 
 // UpdateDelegation handles PUT /api/v1/delegations/:id
 func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
 
 // DeleteDelegation handles DELETE /api/v1/delegations/:id
 func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -167,7 +167,7 @@ func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
 
 // GetNetworkTopology handles GET /api/v1/networks/:id/topology
 func (h *Handler) GetNetworkTopology(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetRead); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetRead) {
 		return nil
 	}
 

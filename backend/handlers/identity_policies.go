@@ -11,7 +11,7 @@ import (
 // GetIdentityPolicies handles GET /api/v1/admin/identity-policies
 // Returns current identity and session policy configuration.
 func (h *Handler) GetIdentityPolicies(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -57,7 +57,7 @@ func (h *Handler) GetIdentityPolicies(c *fiber.Ctx) error {
 // UpdateIdentityPolicies handles PUT /api/v1/admin/identity-policies
 // Validates and saves identity/session policy configuration.
 func (h *Handler) UpdateIdentityPolicies(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -108,7 +108,7 @@ func (h *Handler) UpdateIdentityPolicies(c *fiber.Ctx) error {
 // ListSessionRisk handles GET /api/v1/admin/session-risk
 // Returns all active sessions with risk signals.
 func (h *Handler) ListSessionRisk(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 

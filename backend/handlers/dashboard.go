@@ -7,7 +7,7 @@ import (
 
 // GetDashboardSummary handles GET /api/v1/dashboard/summary
 func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkList) {
 		return nil
 	}
 
@@ -22,7 +22,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 
 // GetDashboardRecentActivity handles GET /api/v1/dashboard/recent-activity
 func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkList) {
 		return nil
 	}
 
@@ -41,7 +41,7 @@ func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
-	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}) {
 		return nil
 	}
 

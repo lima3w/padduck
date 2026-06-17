@@ -22,7 +22,7 @@ func (h *Handler) CreateNetwork(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2NetworkWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkWrite) {
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func (h *Handler) CreateNetwork(c *fiber.Ctx) error {
 
 // GetNetwork handles GET /api/v1/networks/:id
 func (h *Handler) GetNetwork(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NetworkRead); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -72,16 +72,12 @@ func (h *Handler) GetNetwork(c *fiber.Ctx) error {
 // ListNetworks handles GET /api/v1/networks
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListNetworks(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkList) {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	// If pagination params are provided, use paginated version
-	if page > 0 || limit > 0 || c.Query("sort") != "" || c.Query("q") != "" || c.Query("search") != "" {
-		page, limit, opts := parseListOptions(c)
+	page, limit, opts := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" || opts.Sort != "" || opts.Query != "" {
 		sections, total, err := h.service.ListNetworksPaginatedWithOptions(c.Context(), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing sections", "error", err)
@@ -115,7 +111,7 @@ func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
-	if err := h.permCheck(c, services.PermV2NetworkWrite, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkWrite, services.ResourceScope{Type: "section", ID: int64(id)}) {
 		return nil
 	}
 
@@ -146,7 +142,7 @@ func (h *Handler) DeleteNetwork(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
-	if err := h.permCheck(c, services.PermV2NetworkDelete, services.ResourceScope{Type: "section", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkDelete, services.ResourceScope{Type: "section", ID: int64(id)}) {
 		return nil
 	}
 

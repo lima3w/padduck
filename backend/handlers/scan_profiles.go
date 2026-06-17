@@ -26,7 +26,7 @@ func redactScanProfiles(profiles []*models.ScanProfile) []*models.ScanProfile {
 
 // ListScanProfiles handles GET /api/v1/admin/scan-profiles
 func (h *Handler) ListScanProfiles(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	profiles, err := h.service.Discovery.ListScanProfiles(c.Context())
@@ -39,7 +39,7 @@ func (h *Handler) ListScanProfiles(c *fiber.Ctx) error {
 
 // CreateScanProfile handles POST /api/v1/admin/scan-profiles
 func (h *Handler) CreateScanProfile(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	var req struct {
@@ -64,7 +64,7 @@ func (h *Handler) CreateScanProfile(c *fiber.Ctx) error {
 
 // GetScanProfile handles GET /api/v1/admin/scan-profiles/:id
 func (h *Handler) GetScanProfile(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -80,7 +80,7 @@ func (h *Handler) GetScanProfile(c *fiber.Ctx) error {
 
 // UpdateScanProfile handles PUT /api/v1/admin/scan-profiles/:id
 func (h *Handler) UpdateScanProfile(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -109,7 +109,7 @@ func (h *Handler) UpdateScanProfile(c *fiber.Ctx) error {
 
 // DeleteScanProfile handles DELETE /api/v1/admin/scan-profiles/:id
 func (h *Handler) DeleteScanProfile(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -124,7 +124,7 @@ func (h *Handler) DeleteScanProfile(c *fiber.Ctx) error {
 
 // GetSubnetScanProfile handles GET /api/v1/admin/subnets/:id/scan-profile
 func (h *Handler) GetSubnetScanProfile(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	subnetID, err := c.ParamsInt("id")
@@ -147,7 +147,7 @@ func (h *Handler) GetSubnetScanProfile(c *fiber.Ctx) error {
 
 // SetSubnetScanProfile handles PUT /api/v1/admin/subnets/:id/scan-profile
 func (h *Handler) SetSubnetScanProfile(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	subnetID, err := c.ParamsInt("id")

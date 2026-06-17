@@ -14,7 +14,7 @@ import (
 
 // ExportNetworksCSV handles GET /api/v1/admin/reports/export/networks
 func (h *Handler) ExportNetworksCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -49,7 +49,7 @@ func (h *Handler) ExportNetworksCSV(c *fiber.Ctx) error {
 
 // ExportDevicesCSV handles GET /api/v1/admin/reports/export/devices
 func (h *Handler) ExportDevicesCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -105,7 +105,7 @@ func (h *Handler) ExportDevicesCSV(c *fiber.Ctx) error {
 
 // ExportVLANsCSV handles GET /api/v1/admin/reports/export/vlans
 func (h *Handler) ExportVLANsCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func (h *Handler) ExportVLANsCSV(c *fiber.Ctx) error {
 
 // ExportVRFsCSV handles GET /api/v1/admin/reports/export/vrfs
 func (h *Handler) ExportVRFsCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 

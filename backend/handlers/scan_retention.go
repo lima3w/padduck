@@ -7,7 +7,7 @@ import (
 
 // GetScanRetentionSettings handles GET /api/v1/admin/scan-retention
 func (h *Handler) GetScanRetentionSettings(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	settings, err := h.service.Discovery.GetRetentionSettings(c.Context())
@@ -19,7 +19,7 @@ func (h *Handler) GetScanRetentionSettings(c *fiber.Ctx) error {
 
 // UpdateScanRetentionSettings handles PUT /api/v1/admin/scan-retention
 func (h *Handler) UpdateScanRetentionSettings(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	var req struct {
@@ -39,7 +39,7 @@ func (h *Handler) UpdateScanRetentionSettings(c *fiber.Ctx) error {
 
 // RunScanRetentionPrune handles POST /api/v1/admin/scan-retention/prune
 func (h *Handler) RunScanRetentionPrune(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	pruned, err := h.service.Discovery.RunRetentionPrune(c.Context())

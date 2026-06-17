@@ -66,7 +66,7 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 
 // GetOAuth2Config handles GET /api/v1/admin/auth/oauth2.
 func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -97,7 +97,7 @@ func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
 
 // UpdateOAuth2Config handles PUT /api/v1/admin/auth/oauth2.
 func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
