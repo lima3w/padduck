@@ -67,6 +67,9 @@ jobs:
             exit 1
           fi
 
+      - name: Check OpenAPI spec sync
+        run: make check-openapi-sync
+
       - name: Verify Go modules
         working-directory: ./backend
         run: go mod verify

@@ -144,6 +144,8 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
+	oldSubnet, _ := h.service.GetSubnet(c.Context(), int64(id))
+
 	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields, req.TechnitiumScopeName)
 	if err != nil {
 		reqLogger(c).Error("error updating subnet", "id", id, "error", err)
@@ -152,10 +154,25 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 
 	uid, uname := auditUserFromCtx(c)
 	cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
+	var oldVals interface{}
+	if oldSubnet != nil {
+		oldVals = map[string]interface{}{
+			"description": oldSubnet.Description,
+			"gateway":     oldSubnet.Gateway,
+			"location_id": oldSubnet.LocationID,
+			"vlan_id":     oldSubnet.VLANID,
+		}
+	}
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "subnet_updated",
 		ResourceType: "subnet", ResourceID: &subnet.ID, ResourceName: cidr,
-		NewValues: map[string]string{"description": req.Description},
+		OldValues: oldVals,
+		NewValues: map[string]interface{}{
+			"description": req.Description,
+			"gateway":     req.Gateway,
+			"location_id": req.LocationID,
+			"vlan_id":     req.VLANID,
+		},
 	})
 
 	return c.JSON(subnet)

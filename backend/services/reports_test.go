@@ -111,6 +111,37 @@ func (r *stubReportsRepo) ClearAlertCooldown(_ context.Context, subnetID int64) 
 	delete(r.cooldowns, subnetID)
 	return nil
 }
+func (r *stubReportsRepo) BulkGetLatestUtilization(_ context.Context, ids []int64) (map[int64]*models.SubnetUtilizationPoint, error) {
+	out := make(map[int64]*models.SubnetUtilizationPoint)
+	for _, id := range ids {
+		pts := r.history[id]
+		if len(pts) > 0 {
+			out[id] = pts[len(pts)-1]
+		}
+	}
+	return out, nil
+}
+func (r *stubReportsRepo) BulkGetAlertCooldowns(_ context.Context, ids []int64) (map[int64]*models.AlertCooldown, error) {
+	out := make(map[int64]*models.AlertCooldown)
+	for _, id := range ids {
+		if cd, ok := r.cooldowns[id]; ok {
+			out[id] = cd
+		}
+	}
+	return out, nil
+}
+func (r *stubReportsRepo) BulkSetAlertCooldowns(_ context.Context, entries map[int64]float64) error {
+	for id, pct := range entries {
+		r.cooldowns[id] = &models.AlertCooldown{SubnetID: id, AlertedPct: pct, AlertedAt: time.Now()}
+	}
+	return nil
+}
+func (r *stubReportsRepo) BulkClearAlertCooldowns(_ context.Context, ids []int64) error {
+	for _, id := range ids {
+		delete(r.cooldowns, id)
+	}
+	return nil
+}
 func (r *stubReportsRepo) CreateScheduledReport(_ context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
 	r.nextID++
 	rpt := &models.ScheduledReport{

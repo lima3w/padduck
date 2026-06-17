@@ -258,11 +258,33 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 		req.MACAddress = &normalized
 	}
 
+	oldIP, _ := h.service.GetIPAddress(c.Context(), int64(id))
+
 	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error updating IP meta", "id", id, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
+
+	uid, uname := auditUserFromCtx(c)
+	var oldVals interface{}
+	if oldIP != nil {
+		oldVals = map[string]interface{}{
+			"hostname":   oldIP.Hostname,
+			"mac":        oldIP.MACAddress,
+			"ptr_record": oldIP.PTRRecord,
+		}
+	}
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "ip_updated",
+		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
+		OldValues: oldVals,
+		NewValues: map[string]interface{}{
+			"hostname":   req.Hostname,
+			"mac":        req.MACAddress,
+			"ptr_record": req.PTRRecord,
+		},
+	})
 
 	return c.JSON(ip)
 }

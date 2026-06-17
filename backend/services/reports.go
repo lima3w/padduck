@@ -29,6 +29,10 @@ type reportsRepo interface {
 	GetAlertCooldown(ctx context.Context, subnetID int64) (*models.AlertCooldown, error)
 	SetAlertCooldown(ctx context.Context, subnetID int64, pct float64) error
 	ClearAlertCooldown(ctx context.Context, subnetID int64) error
+	BulkGetLatestUtilization(ctx context.Context, subnetIDs []int64) (map[int64]*models.SubnetUtilizationPoint, error)
+	BulkGetAlertCooldowns(ctx context.Context, subnetIDs []int64) (map[int64]*models.AlertCooldown, error)
+	BulkSetAlertCooldowns(ctx context.Context, entries map[int64]float64) error
+	BulkClearAlertCooldowns(ctx context.Context, subnetIDs []int64) error
 	// scheduled reports
 	CreateScheduledReport(ctx context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error)
 	GetScheduledReportByID(ctx context.Context, id int64) (*models.ScheduledReport, error)
@@ -149,7 +153,8 @@ func (rs *ReportsService) StartUtilizationSnapshotJob(ctx context.Context) {
 // Threshold alerts (#221)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// CheckThresholdAlerts checks all subnets with alert thresholds and sends alerts as needed.
+// CheckThresholdAlerts checks all subnets with alert thresholds and sends alerts
+// as needed. Uses 3 bulk queries regardless of subnet count (was 3N queries).
 func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 	subnets, err := rs.repo.ListSubnetsWithThresholds(ctx)
 	if err != nil {
@@ -172,13 +177,11 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 	toCheck := make([]*models.Subnet, 0, len(subnets))
 	toCheck = append(toCheck, subnets...)
 
-	// If global threshold is set, also check subnets without per-subnet threshold
 	if globalThreshold != nil {
 		all, err := rs.repo.ListAllSubnets(ctx)
 		if err == nil {
 			for _, s := range all {
 				if s.AlertThresholdPct == nil {
-					// Apply global threshold by setting it transiently
 					gv := *globalThreshold
 					s.AlertThresholdPct = &gv
 					toCheck = append(toCheck, s)
@@ -187,37 +190,54 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 		}
 	}
 
-	for _, subnet := range toCheck {
-		threshold := *subnet.AlertThresholdPct
+	if len(toCheck) == 0 {
+		return
+	}
 
-		latest, err := rs.repo.GetLatestUtilizationForSubnet(ctx, subnet.ID)
-		if err != nil || latest == nil {
+	// Bulk fetch latest utilization and cooldowns — 2 queries instead of 2N.
+	ids := make([]int64, len(toCheck))
+	for i, s := range toCheck {
+		ids[i] = s.ID
+	}
+
+	utilMap, err := rs.repo.BulkGetLatestUtilization(ctx, ids)
+	if err != nil {
+		slog.Error("reports: bulk get utilization failed", "error", err)
+		return
+	}
+	cooldownMap, err := rs.repo.BulkGetAlertCooldowns(ctx, ids)
+	if err != nil {
+		slog.Error("reports: bulk get cooldowns failed", "error", err)
+		return
+	}
+
+	// Resolve the default alert email once.
+	defaultAlertEmail := ""
+	if rs.config != nil && rs.config.repository != nil {
+		defaultAlertEmail, _ = rs.config.Get("alert_email")
+	}
+
+	newCooldowns := make(map[int64]float64)
+	var clearCooldowns []int64
+
+	for _, subnet := range toCheck {
+		latest, ok := utilMap[subnet.ID]
+		if !ok || latest == nil {
 			continue
 		}
 
 		currentPct := latest.UtilizationPct
-		thresholdF := float64(threshold)
-
+		thresholdF := float64(*subnet.AlertThresholdPct)
 		cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
 
 		if currentPct >= thresholdF {
-			// Check cooldown
-			cooldown, err := rs.repo.GetAlertCooldown(ctx, subnet.ID)
-			if err != nil {
-				slog.Error("reports: get cooldown failed", "subnet_id", subnet.ID, "error", err)
-				continue
-			}
-			if cooldown != nil {
-				// Already alerted, skip
+			if _, onCooldown := cooldownMap[subnet.ID]; onCooldown {
 				continue
 			}
 
-			// Send alert
-			alertEmail := ""
+			alertEmail := defaultAlertEmail
 			if subnet.AlertEmailOverride != nil && *subnet.AlertEmailOverride != "" {
 				alertEmail = *subnet.AlertEmailOverride
-			} else if rs.config != nil && rs.config.repository != nil {
-				alertEmail, _ = rs.config.Get("alert_email")
 			}
 
 			if alertEmail != "" {
@@ -226,23 +246,27 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 					"Subnet capacity alert\n\nCIDR: %s\nDescription: %s\nUsed: %d / %d (%.2f%%)\nThreshold: %d%%\n\nPlease review and take action.",
 					cidr, subnet.Description,
 					latest.UsedCount, latest.TotalCount, currentPct,
-					threshold,
+					*subnet.AlertThresholdPct,
 				)
 				if err := rs.email.Send(alertEmail, subject, body); err != nil {
 					slog.Error("reports: send alert email failed", "subnet_id", subnet.ID, "error", err)
 				}
 			}
 
-			// Set cooldown
-			if err := rs.repo.SetAlertCooldown(ctx, subnet.ID, currentPct); err != nil {
-				slog.Error("reports: set cooldown failed", "subnet_id", subnet.ID, "error", err)
-			}
+			newCooldowns[subnet.ID] = currentPct
 		} else if currentPct < thresholdF-5 {
-			// Clear cooldown to allow future re-alerting
-			if err := rs.repo.ClearAlertCooldown(ctx, subnet.ID); err != nil {
-				slog.Error("reports: clear cooldown failed", "subnet_id", subnet.ID, "error", err)
+			if _, onCooldown := cooldownMap[subnet.ID]; onCooldown {
+				clearCooldowns = append(clearCooldowns, subnet.ID)
 			}
 		}
+	}
+
+	// Bulk upsert / clear cooldowns — 2 queries instead of O+P queries.
+	if err := rs.repo.BulkSetAlertCooldowns(ctx, newCooldowns); err != nil {
+		slog.Error("reports: bulk set cooldowns failed", "error", err)
+	}
+	if err := rs.repo.BulkClearAlertCooldowns(ctx, clearCooldowns); err != nil {
+		slog.Error("reports: bulk clear cooldowns failed", "error", err)
 	}
 }
 

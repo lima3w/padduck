@@ -125,6 +125,15 @@ func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
 		req.TLSMode = "none"
 	}
 
+	if req.Enabled {
+		if req.Host == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "host is required when LDAP is enabled")
+		}
+		if req.BaseDN == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "base_dn is required when LDAP is enabled")
+		}
+	}
+
 	cfg := &models.LDAPConfig{
 		Enabled:       req.Enabled,
 		Host:          req.Host,

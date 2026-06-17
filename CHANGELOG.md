@@ -4,6 +4,13 @@
 
 ### Internal
 - **Backend refactor** (#187, #188, #194, #191, #203): rename `permCheck` → `requirePerm` (returns `bool`), stop leaking internal error details in 500-level backup responses, remove redundant pagination pre-reads in 10 list handlers, add production `sslmode=disable` startup check, and add `go mod verify` to CI and `make ci-local`.
+- **Frontend refactor** (#195–#202): extract shared `SortTh` component; introduce `ToastContext` and global Axios error interceptor; decompose `SubnetsPage` into `useSubnetModals`, `useSubnetSearch`, and `SubnetTable`; fix suppressed `useEffect` dependency arrays in `DevicesPage`, `IPAddressesPage`, `LocationDetailPage`, and `SubnetsPage`; lift feature-flag fetching into a single `FeaturesProvider`; add `VITE_API_URL` env var support; add 15 s Axios request timeout and Fiber `ReadTimeout`/`WriteTimeout`.
+- **Auth provider validation** (#191): `UpdateLDAPConfig`, `UpdateOAuth2Config`, and `UpdateSAMLConfig` now reject `enabled: true` when required credentials (host/baseDN, clientID/URLs, IDP metadata/entityID/ACS) are missing, returning a 400 with a clear message instead of failing at login time.
+- **Auth session consolidation** (#190): extract `issueSessionCookie` helper to `auth_shared.go`; OAuth2 and SAML redirect flows now call it instead of duplicating session creation, cookie writing, and audit logging inline.
+- **N+1 threshold alert fix** (#189): `CheckThresholdAlerts` now uses `BulkGetLatestUtilization` and `BulkGetAlertCooldowns` to reduce 3N queries to 3 queries regardless of subnet count; cooldown upserts and clears are batched similarly.
+- **Audit old/new values** (#204): `UpdateSubnet`, `UpdateNetwork`, and `UpdateIPMeta` now fetch the record before mutating and populate `OldValues` in the audit log entry alongside the existing `NewValues`. `UpdateIPMeta` was also missing its audit log entirely — that is now added.
+- **OpenAPI sync enforcement** (#193): `make check-openapi-sync` diffs `docs/openapi.yaml` against `backend/docs/openapi.yaml` and fails loudly if they diverge; CI runs this step before every backend build.
+- **Env var documentation** (#205): `.env.example` documents the missing `SESSION_COOKIE_SECURE` variable with accepted values and behavior. New `make validate-env` target checks required variables are set before `docker compose up`.
 
 ## v1.32.12
 
