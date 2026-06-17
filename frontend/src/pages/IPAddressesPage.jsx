@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs, pushDHCPReservation, removeDHCPReservation } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
@@ -99,29 +99,21 @@ export default function IPAddressesPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_LIMIT)
   const [metaDeviceSearch, setMetaDeviceSearch] = useState('')
 
-  useEffect(() => {
-    setPage(1)
-    setIsSearchActive(false)
-    load(1)
-    loadCfDefs()
-    loadDevices()
-  }, [subnetID]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function loadCfDefs() {
+  const loadCfDefs = useCallback(async () => {
     try {
       const res = await getCustomFields('ip_address')
       setCfDefs(Array.isArray(res.data) ? res.data : [])
     } catch {}
-  }
+  }, [])
 
-  async function loadDevices() {
+  const loadDevices = useCallback(async () => {
     try {
       const res = await getDevices({ limit: 1000 })
       setDevices(res.data?.data ?? res.data ?? [])
     } catch {}
-  }
+  }, [])
 
-  async function load(p = page, col = sortCol, dir = sortDir, full = fullRange, limit = pageSize) {
+  const load = useCallback(async (p, col, dir, full, limit) => {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -143,7 +135,15 @@ export default function IPAddressesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [subnetID])
+
+  useEffect(() => {
+    setPage(1)
+    setIsSearchActive(false)
+    load(1, sortCol, sortDir, fullRange, pageSize)
+    loadCfDefs()
+    loadDevices()
+  }, [subnetID, load, loadCfDefs, loadDevices]) // sortCol/dir/fullRange/pageSize are init-time values
 
   function handlePageChange(newPage) {
     setPage(newPage)

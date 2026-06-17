@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
@@ -87,17 +87,6 @@ export default function DevicesPage() {
   const [filterLocationId, setFilterLocationId] = useState(savedFilters.filterLocationId)
 
   useEffect(() => {
-    loadDeviceTypes()
-    load(1)
-    loadCfDefs()
-    getFeatures().then(res => {
-      const f = normalizeFeatures(res.data)
-      setLocationsEnabled(f.locations !== false)
-      if (f.locations !== false) loadLocations()
-    }).catch(() => loadLocations())
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
     savePrefs(FILTER_KEY, { filterHostname, filterTypeId, filterOnline, filterLocationId }, LEGACY_FILTER_KEY)
   }, [filterHostname, filterTypeId, filterOnline, filterLocationId])
 
@@ -105,12 +94,12 @@ export default function DevicesPage() {
     saveColPrefs(COL_KEY, cols, LEGACY_COL_KEY)
   }, [cols])
 
-  async function loadLocations() {
+  const loadLocations = useCallback(async () => {
     try {
       const data = await getLocations()
       setLocations(Array.isArray(data) ? data : (data?.locations ?? []))
     } catch {}
-  }
+  }, [])
 
   async function loadRacksForLocation(locationId) {
     if (!locationId) { setRacks([]); return }
@@ -120,19 +109,19 @@ export default function DevicesPage() {
     } catch { setRacks([]) }
   }
 
-  async function loadCfDefs() {
+  const loadCfDefs = useCallback(async () => {
     try {
       const res = await api.get('/admin/custom-fields', { params: { entity_type: 'device' } })
       setCfDefs(normalizeCustomFieldDefs(res.data || []))
     } catch {}
-  }
+  }, [])
 
-  async function loadDeviceTypes() {
+  const loadDeviceTypes = useCallback(async () => {
     try {
       const res = await api.get('/device-types')
       setDeviceTypes(Array.isArray(res.data) ? res.data : [])
     } catch {}
-  }
+  }, [])
 
   const vendorSuggestions = useMemo(() => {
     const typeName = (deviceTypes.find(t => String(t.id) === String(form.type_id))?.name || '').toLowerCase()
@@ -149,7 +138,7 @@ export default function DevicesPage() {
     return models
   }, [form.type_id, form.vendor, deviceTypes])
 
-  async function load(p = page) {
+  const load = useCallback(async (p) => {
     try {
       setLoading(true)
       const res = await api.get('/devices', { params: { page: p, limit: DEFAULT_LIMIT } })
@@ -162,7 +151,18 @@ export default function DevicesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadDeviceTypes()
+    load(1)
+    loadCfDefs()
+    getFeatures().then(res => {
+      const f = normalizeFeatures(res.data)
+      setLocationsEnabled(f.locations !== false)
+      if (f.locations !== false) loadLocations()
+    }).catch(() => loadLocations())
+  }, [loadDeviceTypes, load, loadCfDefs, loadLocations])
 
   const searchableFields = cfDefs.filter(d => d.is_searchable)
 
