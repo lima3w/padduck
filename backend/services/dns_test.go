@@ -72,8 +72,7 @@ func TestContainsZone_EmptyList(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNewDNSService_NotNil(t *testing.T) {
-	svc := &Service{}
-	dns := NewDNSService(svc)
+	dns := NewDNSService(NewConfigService(nil), nil)
 	assert.NotNil(t, dns)
 }
 
@@ -100,7 +99,7 @@ var errTestSentinel = &testError{msg: "boom"}
 // ---------------------------------------------------------------------------
 
 func TestListDNSZones_NoneConfigured_ReturnsNotConfigured(t *testing.T) {
-	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dns := NewDNSService(NewConfigService(nil), nil)
 	zones, configured, err := dns.ListDNSZones(context.Background())
 	assert.NoError(t, err)
 	assert.False(t, configured)
@@ -108,7 +107,7 @@ func TestListDNSZones_NoneConfigured_ReturnsNotConfigured(t *testing.T) {
 }
 
 func TestGetDNSZoneRecords_NoneConfigured_ReturnsError(t *testing.T) {
-	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dns := NewDNSService(NewConfigService(nil), nil)
 	_, err := dns.GetDNSZoneRecords(context.Background(), "example.com", "")
 	assert.Error(t, err)
 }
@@ -118,7 +117,7 @@ func TestGetDNSZoneRecords_NoneConfigured_ReturnsError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSyncIPToDNS_NoneConfigured_NoOp(t *testing.T) {
-	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dns := NewDNSService(NewConfigService(nil), nil)
 	dnsName := "host.example.com"
 	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: &dnsName}
 	assert.NotPanics(t, func() {
@@ -127,7 +126,7 @@ func TestSyncIPToDNS_NoneConfigured_NoOp(t *testing.T) {
 }
 
 func TestRemoveIPFromDNS_NoneConfigured_NoOp(t *testing.T) {
-	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dns := NewDNSService(NewConfigService(nil), nil)
 	dnsName := "host.example.com"
 	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: &dnsName}
 	assert.NotPanics(t, func() {
@@ -136,7 +135,7 @@ func TestRemoveIPFromDNS_NoneConfigured_NoOp(t *testing.T) {
 }
 
 func TestSyncIPToTechnitium_NilDNSName_NoOp(t *testing.T) {
-	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dns := NewDNSService(NewConfigService(nil), nil)
 	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: nil}
 	assert.NotPanics(t, func() {
 		dns.SyncIPToTechnitium(context.Background(), ip)
@@ -144,7 +143,7 @@ func TestSyncIPToTechnitium_NilDNSName_NoOp(t *testing.T) {
 }
 
 func TestRemoveIPFromTechnitium_NilDNSName_NoOp(t *testing.T) {
-	dns := NewDNSService(&Service{Config: NewConfigService(nil)})
+	dns := NewDNSService(NewConfigService(nil), nil)
 	ip := &models.IPAddress{ID: 1, Address: "192.168.1.1", DNSName: nil}
 	assert.NotPanics(t, func() {
 		dns.RemoveIPFromTechnitium(context.Background(), ip)

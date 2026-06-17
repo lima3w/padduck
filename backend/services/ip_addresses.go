@@ -146,7 +146,7 @@ func (s *Service) ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAdd
 	}
 	result, err := s.repository.UpdateIPAddressStatus(ctx, id, "available", nil)
 	if err == nil {
-		go s.DNS.RemoveIPFromDNS(ctx, ip)
+		go s.Ops.DNS.RemoveIPFromDNS(ctx, ip)
 	}
 	return result, err
 }
@@ -163,7 +163,7 @@ func (s *Service) DeleteIPAddress(ctx context.Context, id int64) error {
 	if err := s.repository.DeleteIPAddress(ctx, id); err != nil {
 		return err
 	}
-	go s.DNS.RemoveIPFromDNS(ctx, ip)
+	go s.Ops.DNS.RemoveIPFromDNS(ctx, ip)
 	return nil
 }
 
@@ -182,7 +182,7 @@ func (s *Service) BulkDeleteIPAddresses(ctx context.Context, ids []int64) (int, 
 
 	deleted, err := s.repository.BulkDeleteIPAddresses(ctx, ids)
 	for _, ip := range ips {
-		go s.DNS.RemoveIPFromDNS(ctx, ip)
+		go s.Ops.DNS.RemoveIPFromDNS(ctx, ip)
 	}
 	return len(deleted), err
 }

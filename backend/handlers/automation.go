@@ -25,7 +25,7 @@ func (h *Handler) ListAutomationPolicies(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
-	policies, err := h.service.Automation.ListPolicies(c.Context())
+	policies, err := h.ops.Automation.ListPolicies(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load automation policies")
 	}
@@ -59,7 +59,7 @@ func (h *Handler) saveAutomationPolicy(c *fiber.Ctx, id int64) error {
 	if req.Enabled != nil {
 		enabled = *req.Enabled
 	}
-	policy, err := h.service.Automation.SavePolicy(c.Context(), &models.AutomationPolicy{
+	policy, err := h.ops.Automation.SavePolicy(c.Context(), &models.AutomationPolicy{
 		ID: id, Name: req.Name, Workflow: req.Workflow, Action: req.Action,
 		Effect: req.Effect, Enabled: enabled, Conditions: req.Conditions, Message: req.Message,
 	})
@@ -77,7 +77,7 @@ func (h *Handler) DeleteAutomationPolicy(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid automation policy ID")
 	}
-	if err := h.service.Automation.DeletePolicy(c.Context(), id); err != nil {
+	if err := h.ops.Automation.DeletePolicy(c.Context(), id); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete automation policy")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -96,7 +96,7 @@ func (h *Handler) EvaluateAutomationPolicy(c *fiber.Ctx) error {
 	if fields := requiredFields(map[string]string{"workflow": req.Workflow, "action": req.Action}); len(fields) > 0 {
 		return RespondValidationError(c, "validation failed", fields)
 	}
-	decision, err := h.service.Automation.Evaluate(c.Context(), services.AutomationRequest{
+	decision, err := h.ops.Automation.Evaluate(c.Context(), services.AutomationRequest{
 		Workflow: req.Workflow, Action: req.Action, Values: req.Values, DryRun: req.DryRun,
 	})
 	if err != nil {
@@ -128,7 +128,7 @@ func (h *Handler) AutomationAllocateIPAddress(c *fiber.Ctx) error {
 	if len(fields) > 0 {
 		return RespondValidationError(c, "validation failed", fields)
 	}
-	ip, decision, err := h.service.Automation.AllocateIPAddress(c.Context(), req.SubnetID, req.DeviceID, req.DryRun)
+	ip, decision, err := h.ops.Automation.AllocateIPAddress(c.Context(), req.SubnetID, req.DeviceID, req.DryRun)
 	return automationWriteResponse(c, ip, decision, err)
 }
 
@@ -150,7 +150,7 @@ func (h *Handler) AutomationReserveIPAddress(c *fiber.Ctx) error {
 	if len(fields) > 0 {
 		return RespondValidationError(c, "validation failed", fields)
 	}
-	ip, decision, err := h.service.Automation.ReserveIPAddress(c.Context(), req.SubnetID, req.Address, req.Hostname, req.DryRun)
+	ip, decision, err := h.ops.Automation.ReserveIPAddress(c.Context(), req.SubnetID, req.Address, req.Hostname, req.DryRun)
 	return automationWriteResponse(c, ip, decision, err)
 }
 
@@ -163,7 +163,7 @@ func (h *Handler) AutomationReleaseIPAddress(c *fiber.Ctx) error {
 		DryRun bool `json:"dry_run"`
 	}
 	_ = c.BodyParser(&req)
-	ip, decision, err := h.service.Automation.ReleaseIPAddress(c.Context(), id, req.DryRun)
+	ip, decision, err := h.ops.Automation.ReleaseIPAddress(c.Context(), id, req.DryRun)
 	return automationWriteResponse(c, ip, decision, err)
 }
 
@@ -180,7 +180,7 @@ func (h *Handler) AutomationRegisterDevice(c *fiber.Ctx) error {
 	if req.Hostname == "" {
 		return RespondValidationError(c, "validation failed", []ValidationField{{Field: "hostname", Message: "hostname is required"}})
 	}
-	device, decision, err := h.service.Automation.RegisterDevice(c.Context(), req, body.DryRun)
+	device, decision, err := h.ops.Automation.RegisterDevice(c.Context(), req, body.DryRun)
 	return automationWriteResponse(c, device, decision, err)
 }
 
@@ -198,7 +198,7 @@ func (h *Handler) AutomationDNSUpdate(c *fiber.Ctx) error {
 	if fields := requiredFields(map[string]string{"zone": req.Zone, "name": req.Name, "type": req.Type, "value": req.Value}); len(fields) > 0 {
 		return RespondValidationError(c, "validation failed", fields)
 	}
-	decision, err := h.service.Automation.Evaluate(c.Context(), services.AutomationRequest{
+	decision, err := h.ops.Automation.Evaluate(c.Context(), services.AutomationRequest{
 		Workflow: "dns",
 		Action:   "update",
 		Values:   map[string]string{"zone": req.Zone, "name": req.Name, "type": req.Type, "value": req.Value},

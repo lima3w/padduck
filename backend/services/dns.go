@@ -29,24 +29,37 @@ type RecordInfo struct {
 	Content string `json:"content"`
 }
 
+type dnsRepo interface {
+	GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error)
+	UpdateIPDNSFields(ctx context.Context, ipID int64, ptrRecord string, dnsRecords json.RawMessage, lastChecked time.Time) error
+	ListIPAddressesWithDNSName(ctx context.Context) ([]*models.IPAddress, error)
+	GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error)
+	ListAllSubnets(ctx context.Context) ([]*models.Subnet, error)
+	GetIPAddressBySubnetAndAddress(ctx context.Context, subnetID int64, address string) (*models.IPAddress, error)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error)
+	ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error)
+	DeleteIPAddress(ctx context.Context, id int64) error
+}
+
 // DNSService handles DNS lookups, record tracking, and PowerDNS sync.
 type DNSService struct {
-	svc *Service
+	config *ConfigService
+	repo   dnsRepo
 }
 
 // NewDNSService creates a new DNSService.
-func NewDNSService(svc *Service) *DNSService {
-	return &DNSService{svc: svc}
+func NewDNSService(config *ConfigService, repo dnsRepo) *DNSService {
+	return &DNSService{config: config, repo: repo}
 }
 
 // pdnsClient builds a PowerDNS client from config, or returns nil if not configured.
 func (d *DNSService) pdnsClient(ctx context.Context) *pdns.Client {
-	enabled, _ := d.svc.Config.GetCtx(ctx, "pdns_enabled")
+	enabled, _ := d.config.GetCtx(ctx, "pdns_enabled")
 	if enabled != "true" {
 		return nil
 	}
-	apiURL, _ := d.svc.Config.GetCtx(ctx, "pdns_api_url")
-	apiKey, _ := d.svc.Config.GetCtx(ctx, "pdns_api_key")
+	apiURL, _ := d.config.GetCtx(ctx, "pdns_api_url")
+	apiKey, _ := d.config.GetCtx(ctx, "pdns_api_key")
 	if apiURL == "" || apiKey == "" {
 		return nil
 	}
@@ -56,7 +69,7 @@ func (d *DNSService) pdnsClient(ctx context.Context) *pdns.Client {
 // CheckDNS performs a forward DNS lookup for an IP that has a dns_name set, stores
 // the resolved addresses and PTR name in the database, and updates dns_last_checked.
 func (d *DNSService) CheckDNS(ctx context.Context, ipID int64) error {
-	ip, err := d.svc.repository.GetIPAddressByID(ctx, ipID)
+	ip, err := d.repo.GetIPAddressByID(ctx, ipID)
 	if err != nil {
 		return fmt.Errorf("get ip %d: %w", ipID, err)
 	}
@@ -83,12 +96,12 @@ func (d *DNSService) CheckDNS(ctx context.Context, ipID int64) error {
 		ptrRecord = strings.TrimSuffix(ptrs[0], ".")
 	}
 
-	return d.svc.repository.UpdateIPDNSFields(ctx, ipID, ptrRecord, json.RawMessage(records), time.Now().UTC())
+	return d.repo.UpdateIPDNSFields(ctx, ipID, ptrRecord, json.RawMessage(records), time.Now().UTC())
 }
 
 // CheckAllDNS iterates every IP address with a dns_name set and runs CheckDNS on each.
 func (d *DNSService) CheckAllDNS(ctx context.Context) {
-	ips, err := d.svc.repository.ListIPAddressesWithDNSName(ctx)
+	ips, err := d.repo.ListIPAddressesWithDNSName(ctx)
 	if err != nil {
 		slog.Error("ListIPAddressesWithDNSName failed", "error", err)
 		return
@@ -111,7 +124,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 		return
 	}
 
-	defaultZone, _ := d.svc.Config.GetCtx(ctx, "pdns_default_zone")
+	defaultZone, _ := d.config.GetCtx(ctx, "pdns_default_zone")
 	if defaultZone == "" {
 		slog.Warn("SyncIPToPDNS: pdns_default_zone not configured")
 		return
@@ -135,7 +148,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 	// PTR record
 	prefixLen := 0
 	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
-		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+		if subnet, err := d.repo.GetSubnetByID(ctx, ip.SubnetID); err == nil {
 			prefixLen = subnet.PrefixLength
 		} else {
 			slog.Error("SyncIPToPDNS: subnet lookup for PTR failed", "ip", ip.Address, "error", err)
@@ -143,7 +156,7 @@ func (d *DNSService) SyncIPToPDNS(ctx context.Context, ip *models.IPAddress) {
 	}
 	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
 	if ptrZone != "" {
-		ptrZones, _ := d.svc.Config.GetCtx(ctx, "pdns_ptr_zones")
+		ptrZones, _ := d.config.GetCtx(ctx, "pdns_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.CreateRecord(ctx, ptrZone, ptrName, "PTR", fqdn, 300); err != nil {
 				slog.Error("SyncIPToPDNS CreateRecord PTR failed", "ip", ip.Address, "error", err)
@@ -163,7 +176,7 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 		return
 	}
 
-	defaultZone, _ := d.svc.Config.GetCtx(ctx, "pdns_default_zone")
+	defaultZone, _ := d.config.GetCtx(ctx, "pdns_default_zone")
 	if defaultZone == "" {
 		return
 	}
@@ -184,7 +197,7 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 
 	prefixLen := 0
 	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
-		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+		if subnet, err := d.repo.GetSubnetByID(ctx, ip.SubnetID); err == nil {
 			prefixLen = subnet.PrefixLength
 		} else {
 			slog.Error("RemoveIPFromPDNS: subnet lookup for PTR failed", "ip", ip.Address, "error", err)
@@ -192,7 +205,7 @@ func (d *DNSService) RemoveIPFromPDNS(ctx context.Context, ip *models.IPAddress)
 	}
 	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
 	if ptrZone != "" {
-		ptrZones, _ := d.svc.Config.GetCtx(ctx, "pdns_ptr_zones")
+		ptrZones, _ := d.config.GetCtx(ctx, "pdns_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.DeleteRecord(ctx, ptrZone, ptrName, "PTR"); err != nil {
 				slog.Error("RemoveIPFromPDNS DeleteRecord PTR failed", "ip", ip.Address, "error", err)
@@ -212,12 +225,12 @@ func (d *DNSService) TestPDNSConnection(ctx context.Context) error {
 
 // technitiumClient builds a Technitium client from config, or returns nil if not configured.
 func (d *DNSService) technitiumClient(ctx context.Context) *technitium.Client {
-	apiURL, _ := d.svc.Config.GetCtx(ctx, "technitium_url")
-	token, _ := d.svc.Config.GetCtx(ctx, "technitium_token")
+	apiURL, _ := d.config.GetCtx(ctx, "technitium_url")
+	token, _ := d.config.GetCtx(ctx, "technitium_token")
 	if apiURL == "" || token == "" {
 		return nil
 	}
-	skipTLS, _ := d.svc.Config.GetCtx(ctx, "technitium_skip_tls")
+	skipTLS, _ := d.config.GetCtx(ctx, "technitium_skip_tls")
 	return technitium.NewClient(apiURL, token, skipTLS == "true")
 }
 
@@ -359,7 +372,7 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 	if ip.DNSName == nil || *ip.DNSName == "" {
 		return
 	}
-	zone, _ := d.svc.Config.GetCtx(ctx, "technitium_default_zone")
+	zone, _ := d.config.GetCtx(ctx, "technitium_default_zone")
 	if zone == "" {
 		slog.Warn("SyncIPToTechnitium: technitium_default_zone not configured")
 		return
@@ -374,13 +387,13 @@ func (d *DNSService) SyncIPToTechnitium(ctx context.Context, ip *models.IPAddres
 	// PTR record — reuse buildPTR helper with subnet prefix for IPv6
 	prefixLen := 0
 	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
-		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+		if subnet, err := d.repo.GetSubnetByID(ctx, ip.SubnetID); err == nil {
 			prefixLen = subnet.PrefixLength
 		}
 	}
 	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
 	if ptrZone != "" {
-		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
+		ptrZones, _ := d.config.GetCtx(ctx, "technitium_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.AddPTRRecord(ctx, ptrZone, ptrName, fqdn); err != nil {
 				slog.Error("SyncIPToTechnitium AddPTRRecord failed", "ip", ip.Address, "error", err)
@@ -399,7 +412,7 @@ func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAd
 	if ip.DNSName == nil || *ip.DNSName == "" {
 		return
 	}
-	zone, _ := d.svc.Config.GetCtx(ctx, "technitium_default_zone")
+	zone, _ := d.config.GetCtx(ctx, "technitium_default_zone")
 	if zone == "" {
 		return
 	}
@@ -409,13 +422,13 @@ func (d *DNSService) RemoveIPFromTechnitium(ctx context.Context, ip *models.IPAd
 	// PTR record
 	prefixLen := 0
 	if strings.Contains(ip.Address, ":") && ip.SubnetID != 0 {
-		if subnet, err := d.svc.repository.GetSubnetByID(ctx, ip.SubnetID); err == nil {
+		if subnet, err := d.repo.GetSubnetByID(ctx, ip.SubnetID); err == nil {
 			prefixLen = subnet.PrefixLength
 		}
 	}
 	ptrZone, ptrName := buildPTR(ip.Address, prefixLen)
 	if ptrZone != "" {
-		ptrZones, _ := d.svc.Config.GetCtx(ctx, "technitium_ptr_zones")
+		ptrZones, _ := d.config.GetCtx(ctx, "technitium_ptr_zones")
 		if containsZone(ptrZones, ptrZone) {
 			if err := client.DeletePTRRecord(ctx, ptrZone, ptrName); err != nil {
 				slog.Error("RemoveIPFromTechnitium DeletePTRRecord failed", "ip", ip.Address, "error", err)
@@ -448,8 +461,8 @@ func (d *DNSService) RemoveIPFromDNS(ctx context.Context, ip *models.IPAddress) 
 // IPs managed by this function use "dns-sync" as the hostname prefix so they
 // can be identified for auto-remove.
 func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
-	autoAdd, _ := d.svc.Config.GetCtx(ctx, "dns_auto_add_ips_enabled")
-	autoRemove, _ := d.svc.Config.GetCtx(ctx, "dns_auto_remove_ips_enabled")
+	autoAdd, _ := d.config.GetCtx(ctx, "dns_auto_add_ips_enabled")
+	autoRemove, _ := d.config.GetCtx(ctx, "dns_auto_remove_ips_enabled")
 	if autoAdd != "true" && autoRemove != "true" {
 		return nil
 	}
@@ -485,7 +498,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 	}
 
 	// Load all subnets so we can find a home for each DNS IP.
-	subnets, err := d.svc.repository.ListAllSubnets(ctx)
+	subnets, err := d.repo.ListAllSubnets(ctx)
 	if err != nil {
 		return fmt.Errorf("SyncDNSZoneIPs: list subnets: %w", err)
 	}
@@ -531,12 +544,12 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 			if subnetID == 0 {
 				continue // no matching subnet
 			}
-			existing, lookupErr := d.svc.repository.GetIPAddressBySubnetAndAddress(ctx, subnetID, ipStr)
+			existing, lookupErr := d.repo.GetIPAddressBySubnetAndAddress(ctx, subnetID, ipStr)
 			if lookupErr == nil && existing != nil {
 				continue // already exists
 			}
 			hn := dnsName
-			_, createErr := d.svc.repository.CreateIPAddress(ctx, subnetID, ipStr, hn, "active", nil, nil, nil, nil)
+			_, createErr := d.repo.CreateIPAddress(ctx, subnetID, ipStr, hn, "active", nil, nil, nil, nil)
 			if createErr != nil {
 				slog.Error("dns-sync: create IP failed", "ip", ipStr, "subnet_id", subnetID, "error", createErr)
 			} else {
@@ -548,7 +561,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 	// Auto-remove: find IPAM IPs with hostname prefix "dns-sync:" that no longer appear in DNS.
 	if autoRemove == "true" {
 		for _, s := range subnets {
-			ips, listErr := d.svc.repository.ListIPAddressesBySubnet(ctx, s.ID)
+			ips, listErr := d.repo.ListIPAddressesBySubnet(ctx, s.ID)
 			if listErr != nil {
 				slog.Error("dns-sync: list IPs for subnet failed", "subnet_id", s.ID, "error", listErr)
 				continue
@@ -558,7 +571,7 @@ func (d *DNSService) SyncDNSZoneIPs(ctx context.Context) error {
 					continue
 				}
 				if _, stillInDNS := dnsIPs[ip.Address]; !stillInDNS {
-					if delErr := d.svc.repository.DeleteIPAddress(ctx, ip.ID); delErr != nil {
+					if delErr := d.repo.DeleteIPAddress(ctx, ip.ID); delErr != nil {
 						slog.Error("dns-sync: remove IP failed", "ip", ip.Address, "ip_id", ip.ID, "error", delErr)
 					} else {
 						slog.Info("dns-sync: removed IP no longer in DNS", "ip", ip.Address)
