@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.13
+
+### Internal
+- **Backend refactor** (#187, #188, #194, #191, #203): rename `permCheck` → `requirePerm` (returns `bool`), stop leaking internal error details in 500-level backup responses, remove redundant pagination pre-reads in 10 list handlers, add production `sslmode=disable` startup check, and add `go mod verify` to CI and `make ci-local`.
+
 ## v1.32.12
 
 ### Improvements
