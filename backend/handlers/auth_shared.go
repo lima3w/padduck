@@ -43,6 +43,30 @@ func (h *Handler) issueSessionResponse(c *fiber.Ctx, user *models.User) error {
 	})
 }
 
+// issueSessionCookie creates a web session, writes the cookie, and logs a login audit entry.
+// Used by redirect-based flows (OAuth2, SAML) where the response is a redirect, not JSON.
+// Returns true on success. On error, an error response has already been written.
+func (h *Handler) issueSessionCookie(c *fiber.Ctx, user *models.User, provider string) bool {
+	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
+		reqLogger(c).Error("error updating last login", "user_id", user.ID, "error", err)
+	}
+
+	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
+	if err != nil {
+		_ = RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
+		return false
+	}
+
+	uid := user.ID
+	h.auditLog(c, services.AuditEntry{
+		UserID: &uid, Username: user.Username, Action: "login",
+		ResourceType: "session", ResourceName: provider, Status: "success",
+	})
+
+	h.setSessionCookie(c, token)
+	return true
+}
+
 // maskSecret returns "****" if set is true, or "" otherwise.
 func maskSecret(set bool) string {
 	if set {

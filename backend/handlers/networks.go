@@ -120,6 +120,8 @@ func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
+	oldSection, _ := h.service.GetNetwork(c.Context(), int64(id))
+
 	section, err := h.service.UpdateNetwork(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating section", "id", id, "error", err)
@@ -127,9 +129,14 @@ func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 	}
 
 	uid, uname := auditUserFromCtx(c)
+	var oldVals interface{}
+	if oldSection != nil {
+		oldVals = map[string]string{"name": oldSection.Name, "description": oldSection.Description}
+	}
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "section_updated",
 		ResourceType: "section", ResourceID: &section.ID, ResourceName: section.Name,
+		OldValues: oldVals,
 		NewValues: map[string]string{"name": req.Name, "description": req.Description},
 	})
 
