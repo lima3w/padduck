@@ -43,7 +43,7 @@ func (h *Handler) ListScanJobs(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
-	jobs, err := h.service.Discovery.ListJobs(c.Context())
+	jobs, err := h.ops.Discovery.ListJobs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing scan jobs", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -84,11 +84,11 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 	if req.DiscoverDNS != nil {
 		discoverDNS = *req.DiscoverDNS
 	}
-	job, err := h.service.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID, autoAddIPs)
+	job, err := h.ops.Discovery.CreateJob(c.Context(), req.Name, req.SubnetIDs, req.ScheduleCron, user.ID, autoAddIPs)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
-	job, err = h.service.Discovery.UpdateJobFull(c.Context(), job.ID, job.Name, job.SubnetIDs, job.ScheduleCron, isActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, nil, autoAddIPs, discoverDNS, req.DNSOverwrite)
+	job, err = h.ops.Discovery.UpdateJobFull(c.Context(), job.ID, job.Name, job.SubnetIDs, job.ScheduleCron, isActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, nil, autoAddIPs, discoverDNS, req.DNSOverwrite)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -104,7 +104,7 @@ func (h *Handler) GetScanJob(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	job, err := h.service.Discovery.GetJob(c.Context(), int64(id))
+	job, err := h.ops.Discovery.GetJob(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan job not found")
 	}
@@ -139,7 +139,7 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 	if req.DiscoverDNS != nil {
 		discoverDNSUpdate = *req.DiscoverDNS
 	}
-	job, err := h.service.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID, autoAddIPsUpdate, discoverDNSUpdate, req.DNSOverwrite)
+	job, err := h.ops.Discovery.UpdateJobFull(c.Context(), int64(id), req.Name, req.SubnetIDs, req.ScheduleCron, req.IsActive, req.PingConcurrency, req.NotifyOnChange, req.ScanType, req.AgentID, autoAddIPsUpdate, discoverDNSUpdate, req.DNSOverwrite)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -155,7 +155,7 @@ func (h *Handler) DeleteScanJob(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	if err := h.service.Discovery.DeleteJob(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Discovery.DeleteJob(c.Context(), int64(id)); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete scan job")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -170,13 +170,13 @@ func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	job, err := h.service.Discovery.GetJob(c.Context(), int64(id))
+	job, err := h.ops.Discovery.GetJob(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan job not found")
 	}
-	bgJob := h.service.Jobs.Enqueue("scan", "Run scan job "+job.Name, fiber.Map{"scan_job_id": job.ID}, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+	bgJob := h.ops.Jobs.Enqueue("scan", "Run scan job "+job.Name, fiber.Map{"scan_job_id": job.ID}, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 		reporter.Progress(0, 1, "running scan")
-		if err := h.service.Discovery.RunJob(ctx, job); err != nil {
+		if err := h.ops.Discovery.RunJob(ctx, job); err != nil {
 			slog.Error("scan job run error", "job_id", id, "error", err)
 			return nil, err
 		}
@@ -195,7 +195,7 @@ func (h *Handler) GetScanJobStatus(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
-	return c.JSON(fiber.Map{"running": h.service.Discovery.IsRunning(int64(id))})
+	return c.JSON(fiber.Map{"running": h.ops.Discovery.IsRunning(int64(id))})
 }
 
 // GetScanJobResults handles GET /api/v1/admin/scan-jobs/:id/results
@@ -208,7 +208,7 @@ func (h *Handler) GetScanJobResults(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid job ID")
 	}
 	limit := c.QueryInt("limit", 100)
-	results, err := h.service.Discovery.ListResults(c.Context(), int64(id), limit)
+	results, err := h.ops.Discovery.ListResults(c.Context(), int64(id), limit)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -225,7 +225,7 @@ func (h *Handler) GetSubnetScanResults(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 	limit := c.QueryInt("limit", 100)
-	results, err := h.service.Discovery.ListSubnetResults(c.Context(), int64(id), limit)
+	results, err := h.ops.Discovery.ListSubnetResults(c.Context(), int64(id), limit)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

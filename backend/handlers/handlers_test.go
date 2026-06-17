@@ -11,7 +11,7 @@ import (
 
 func TestNewHandler(t *testing.T) {
 	var svc *services.Service
-	handler := NewHandler(svc, true)
+	handler := NewHandler(svc, nil, true)
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, svc, handler.service)
@@ -19,7 +19,7 @@ func TestNewHandler(t *testing.T) {
 }
 
 func TestRegisterRoutes_AuthProvidersIsPublic(t *testing.T) {
-	handler := NewHandler(nil, false)
+	handler := NewHandler(nil, nil, false)
 	app := fiber.New()
 	handler.RegisterRoutes(app)
 
@@ -29,7 +29,7 @@ func TestRegisterRoutes_AuthProvidersIsPublic(t *testing.T) {
 }
 
 func TestRegisterRoutes_AuthMeStillRequiresCredentials(t *testing.T) {
-	handler := NewHandler(nil, false)
+	handler := NewHandler(nil, nil, false)
 	app := fiber.New()
 	handler.RegisterRoutes(app)
 

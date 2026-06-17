@@ -87,7 +87,7 @@ func (h *Handler) ListWebhookEndpoints(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
-	endpoints, err := h.service.Webhooks.ListEndpoints(c.Context())
+	endpoints, err := h.ops.Webhooks.ListEndpoints(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load webhook endpoints")
 	}
@@ -114,7 +114,7 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 		active = *req.IsActive
 	}
 	createdBy, username := auditUserFromCtx(c)
-	endpoint, err := h.service.Webhooks.CreateEndpoint(c.Context(), &models.WebhookEndpoint{
+	endpoint, err := h.ops.Webhooks.CreateEndpoint(c.Context(), &models.WebhookEndpoint{
 		Name:             req.Name,
 		URL:              req.URL,
 		Secret:           req.Secret,
@@ -155,7 +155,7 @@ func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
 	if req.IsActive != nil {
 		active = *req.IsActive
 	}
-	endpoint, err := h.service.Webhooks.UpdateEndpoint(c.Context(), &models.WebhookEndpoint{
+	endpoint, err := h.ops.Webhooks.UpdateEndpoint(c.Context(), &models.WebhookEndpoint{
 		ID:               id,
 		Name:             req.Name,
 		URL:              req.URL,
@@ -218,7 +218,7 @@ func (h *Handler) DeleteWebhookEndpoint(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid webhook endpoint ID")
 	}
-	if err := h.service.Webhooks.DeleteEndpoint(c.Context(), id); err != nil {
+	if err := h.ops.Webhooks.DeleteEndpoint(c.Context(), id); err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "webhook endpoint not found")
 	}
 	uid, username := auditUserFromCtx(c)
@@ -234,7 +234,7 @@ func (h *Handler) ListWebhookDeliveries(c *fiber.Ctx) error {
 		return nil
 	}
 	limit := c.QueryInt("limit", 50)
-	deliveries, err := h.service.Webhooks.ListDeliveries(c.Context(), limit)
+	deliveries, err := h.ops.Webhooks.ListDeliveries(c.Context(), limit)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load webhook deliveries")
 	}
@@ -246,7 +246,7 @@ func (h *Handler) ListWebhookFailureGroups(c *fiber.Ctx) error {
 		return nil
 	}
 	limit := c.QueryInt("limit", 50)
-	groups, err := h.service.Webhooks.ListFailureGroups(c.Context(), limit)
+	groups, err := h.ops.Webhooks.ListFailureGroups(c.Context(), limit)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load webhook failure groups")
 	}
@@ -261,7 +261,7 @@ func (h *Handler) GetWebhookDelivery(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid webhook delivery ID")
 	}
-	delivery, err := h.service.Webhooks.GetDelivery(c.Context(), id)
+	delivery, err := h.ops.Webhooks.GetDelivery(c.Context(), id)
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "webhook delivery not found")
 	}
@@ -277,15 +277,15 @@ func (h *Handler) ReplayWebhookDelivery(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid webhook delivery ID")
 	}
 	if c.QueryBool("async") {
-		job := h.service.Jobs.Enqueue("webhook_replay", "Replay webhook delivery", fiber.Map{"delivery_id": id}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
+		job := h.ops.Jobs.Enqueue("webhook_replay", "Replay webhook delivery", fiber.Map{"delivery_id": id}, 2, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 			reporter.Progress(0, 1, "replaying webhook delivery")
-			delivery, err := h.service.Webhooks.ReplayDelivery(ctx, id)
+			delivery, err := h.ops.Webhooks.ReplayDelivery(ctx, id)
 			reporter.Progress(1, 1, "webhook replay complete")
 			return delivery, err
 		})
 		return c.Status(fiber.StatusAccepted).JSON(job)
 	}
-	delivery, err := h.service.Webhooks.ReplayDelivery(c.Context(), id)
+	delivery, err := h.ops.Webhooks.ReplayDelivery(c.Context(), id)
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "webhook delivery not found")
 	}

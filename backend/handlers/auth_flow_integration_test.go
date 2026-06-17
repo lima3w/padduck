@@ -36,7 +36,7 @@ func testFullApp(t *testing.T) (*fiber.App, *services.Service, *repository.Repos
 		"login_attempts", "account_lockouts", "security_notifications", "users")
 	repo := repository.NewRepository(pool)
 	svc := services.NewService(repo, testHandlerMFAKey)
-	h := NewHandler(svc, false)
+	h := NewHandler(svc, svc.Ops, false)
 	app := fiber.New()
 	h.RegisterRoutes(app)
 

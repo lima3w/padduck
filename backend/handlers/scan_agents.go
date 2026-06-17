@@ -15,7 +15,7 @@ func (h *Handler) ListScanAgents(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
-	agents, err := h.service.Discovery.ListAgents(c.Context())
+	agents, err := h.ops.Discovery.ListAgents(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing scan agents", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -38,7 +38,7 @@ func (h *Handler) CreateScanAgent(c *fiber.Ctx) error {
 	if req.TTLDays < 0 {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "ttl_days must be >= 0 (0 = no expiry)")
 	}
-	agent, rawToken, err := h.service.Discovery.CreateAgent(c.Context(), req.Name, req.TTLDays)
+	agent, rawToken, err := h.ops.Discovery.CreateAgent(c.Context(), req.Name, req.TTLDays)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -57,7 +57,7 @@ func (h *Handler) GetScanAgent(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid agent ID")
 	}
-	agent, err := h.service.Discovery.GetAgent(c.Context(), int64(id))
+	agent, err := h.ops.Discovery.GetAgent(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan agent not found")
 	}
@@ -81,7 +81,7 @@ func (h *Handler) RotateScanAgentToken(c *fiber.Ctx) error {
 	if req.TTLDays != nil {
 		ttlDays = *req.TTLDays
 	}
-	agent, rawToken, err := h.service.Discovery.RotateToken(c.Context(), int64(id), ttlDays)
+	agent, rawToken, err := h.ops.Discovery.RotateToken(c.Context(), int64(id), ttlDays)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to rotate token")
 	}
@@ -100,7 +100,7 @@ func (h *Handler) DeleteScanAgent(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid agent ID")
 	}
-	if err := h.service.Discovery.DeleteAgent(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Discovery.DeleteAgent(c.Context(), int64(id)); err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "scan agent not found")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -123,7 +123,7 @@ func (h *Handler) AgentAuthMiddleware(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "missing or invalid authorization")
 	}
 	rawToken := strings.TrimPrefix(auth, "Bearer ")
-	agent, err := h.service.Discovery.AuthenticateAgent(c.Context(), rawToken)
+	agent, err := h.ops.Discovery.AuthenticateAgent(c.Context(), rawToken)
 	if err != nil {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid or inactive agent token")
 	}
@@ -152,7 +152,7 @@ func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 	if !ok {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
-	jobs, err := h.service.Discovery.GetJobsForAgent(c.Context(), agent.ID)
+	jobs, err := h.ops.Discovery.GetJobsForAgent(c.Context(), agent.ID)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -198,7 +198,7 @@ func (h *Handler) AgentPostResults(c *fiber.Ctx) error {
 	if req.JobID == 0 {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "job_id is required")
 	}
-	if err := h.service.Discovery.AcceptAgentResults(c.Context(), agent.ID, req.JobID, req.Results); err != nil {
+	if err := h.ops.Discovery.AcceptAgentResults(c.Context(), agent.ID, req.JobID, req.Results); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(fiber.Map{"message": "results accepted"})
@@ -221,7 +221,7 @@ func (h *Handler) AgentHeartbeat(c *fiber.Ctx) error {
 	if req.Status == "" {
 		req.Status = "healthy"
 	}
-	if err := h.service.Discovery.HeartbeatAgent(c.Context(), agent.ID, req.Version, req.Capabilities, req.Status, req.LastError); err != nil {
+	if err := h.ops.Discovery.HeartbeatAgent(c.Context(), agent.ID, req.Version, req.Capabilities, req.Status, req.LastError); err != nil {
 		reqLogger(c).Error("agent heartbeat error", "agent_id", agent.ID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -234,7 +234,7 @@ func (h *Handler) GetAgentHealthSummary(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
-	agents, err := h.service.Discovery.ListAgents(c.Context())
+	agents, err := h.ops.Discovery.ListAgents(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

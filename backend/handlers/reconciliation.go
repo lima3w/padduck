@@ -14,12 +14,12 @@ func (h *Handler) GetReconciliationReport(c *fiber.Ctx) error {
 	}
 	ctx := c.Context()
 
-	staleIPs, _ := h.service.Reports.GetInactiveIPs(ctx, 30, nil)
+	staleIPs, _ := h.ops.Reports.GetInactiveIPs(ctx, 30, nil)
 	if staleIPs == nil {
 		staleIPs = []*models.InactiveIPReport{}
 	}
 
-	dnsEntries, _ := h.service.Reports.GetDNSAudit(ctx)
+	dnsEntries, _ := h.ops.Reports.GetDNSAudit(ctx)
 	if dnsEntries == nil {
 		dnsEntries = []*repository.DNSAuditRow{}
 	}

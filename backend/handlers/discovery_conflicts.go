@@ -11,7 +11,7 @@ func (h *Handler) ListDiscoveryConflicts(c *fiber.Ctx) error {
 		return nil
 	}
 	status := c.Query("status")
-	conflicts, err := h.service.Discovery.ListDiscoveryConflicts(c.Context(), status)
+	conflicts, err := h.ops.Discovery.ListDiscoveryConflicts(c.Context(), status)
 	if err != nil {
 		reqLogger(c).Error("error listing discovery conflicts", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -31,7 +31,7 @@ func (h *Handler) GetDiscoveryConflict(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid conflict ID")
 	}
-	conflict, err := h.service.Discovery.GetDiscoveryConflict(c.Context(), int64(id))
+	conflict, err := h.ops.Discovery.GetDiscoveryConflict(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "conflict not found")
 	}
@@ -61,7 +61,7 @@ func (h *Handler) ResolveDiscoveryConflict(c *fiber.Ctx) error {
 		reviewedBy = email
 	}
 
-	conflict, err := h.service.Discovery.ResolveDiscoveryConflict(c.Context(), int64(id), req.Action, reviewedBy)
+	conflict, err := h.ops.Discovery.ResolveDiscoveryConflict(c.Context(), int64(id), req.Action, reviewedBy)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}

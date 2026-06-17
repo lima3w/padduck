@@ -32,7 +32,7 @@ func testDiscoveryService(t *testing.T) (*DiscoveryService, *repository.Reposito
 	require.NoError(t, err)
 	s, err := repo.CreateSubnet(ctx, n.ID, "192.0.2.0", 30, "fixture", nil, false, false)
 	require.NoError(t, err)
-	return svc.Discovery, repo, s.ID
+	return svc.Ops.Discovery, repo, s.ID
 }
 
 func TestMatchesCron(t *testing.T) {

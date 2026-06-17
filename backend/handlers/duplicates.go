@@ -10,7 +10,7 @@ func (h *Handler) GetDuplicates(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
-	result, err := h.service.Reports.GetDuplicates(c.Context())
+	result, err := h.ops.Reports.GetDuplicates(c.Context())
 	if err != nil {
 		reqLogger(c).Error("get duplicates report failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
