@@ -36,16 +36,8 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
+	page, limit, _ := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" {
 		users, total, err := h.service.ListUsersPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing users", "error", err)

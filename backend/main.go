@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -213,6 +214,8 @@ func main() {
 		EnableTrustedProxyCheck: true,
 		TrustedProxies:          trustedProxies,
 		ProxyHeader:             "X-Real-IP",
+		ReadTimeout:             30 * time.Second,
+		WriteTimeout:            60 * time.Second,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
 			msg := "internal server error"

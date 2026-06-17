@@ -40,7 +40,7 @@ type UpdateScanJobRequest struct {
 
 // ListScanJobs handles GET /api/v1/admin/scan-jobs
 func (h *Handler) ListScanJobs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	jobs, err := h.service.Discovery.ListJobs(c.Context())
@@ -53,7 +53,7 @@ func (h *Handler) ListScanJobs(c *fiber.Ctx) error {
 
 // CreateScanJob handles POST /api/v1/admin/scan-jobs
 func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	user, _ := c.Locals("user").(*models.User)
@@ -97,7 +97,7 @@ func (h *Handler) CreateScanJob(c *fiber.Ctx) error {
 
 // GetScanJob handles GET /api/v1/admin/scan-jobs/:id
 func (h *Handler) GetScanJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -113,7 +113,7 @@ func (h *Handler) GetScanJob(c *fiber.Ctx) error {
 
 // UpdateScanJob handles PUT /api/v1/admin/scan-jobs/:id
 func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -148,7 +148,7 @@ func (h *Handler) UpdateScanJob(c *fiber.Ctx) error {
 
 // DeleteScanJob handles DELETE /api/v1/admin/scan-jobs/:id
 func (h *Handler) DeleteScanJob(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -163,7 +163,7 @@ func (h *Handler) DeleteScanJob(c *fiber.Ctx) error {
 
 // RunScanJobNow handles POST /api/v1/admin/scan-jobs/:id/run
 func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -188,7 +188,7 @@ func (h *Handler) RunScanJobNow(c *fiber.Ctx) error {
 
 // GetScanJobStatus handles GET /api/v1/admin/scan-jobs/:id/status
 func (h *Handler) GetScanJobStatus(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -200,7 +200,7 @@ func (h *Handler) GetScanJobStatus(c *fiber.Ctx) error {
 
 // GetScanJobResults handles GET /api/v1/admin/scan-jobs/:id/results
 func (h *Handler) GetScanJobResults(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -217,7 +217,7 @@ func (h *Handler) GetScanJobResults(c *fiber.Ctx) error {
 
 // GetSubnetScanResults handles GET /api/v1/subnets/:id/scan-results
 func (h *Handler) GetSubnetScanResults(c *fiber.Ctx) error {
-	if err := h.permCheck(c, "subnets:read"); err != nil {
+	if !h.requirePerm(c, "subnets:read") {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

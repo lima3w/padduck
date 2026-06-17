@@ -229,6 +229,94 @@ func (r *Repository) GetSubnetsByUtilizationThreshold(ctx context.Context, thres
 	return out, rows.Err()
 }
 
+// BulkGetLatestUtilization returns the most recent utilization point for each
+// subnet in subnetIDs, keyed by subnet ID. Subnets with no recorded history are
+// omitted from the result.
+func (r *Repository) BulkGetLatestUtilization(ctx context.Context, subnetIDs []int64) (map[int64]*models.SubnetUtilizationPoint, error) {
+	if len(subnetIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT DISTINCT ON (subnet_id)
+			subnet_id, recorded_at, used_count, total_count, utilisation_pct
+		FROM subnet_utilisation_history
+		WHERE subnet_id = ANY($1)
+		ORDER BY subnet_id, recorded_at DESC
+	`, subnetIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make(map[int64]*models.SubnetUtilizationPoint, len(subnetIDs))
+	for rows.Next() {
+		p := &models.SubnetUtilizationPoint{}
+		var sid int64
+		if err := rows.Scan(&sid, &p.RecordedAt, &p.UsedCount, &p.TotalCount, &p.UtilizationPct); err != nil {
+			return nil, err
+		}
+		out[sid] = p
+	}
+	return out, rows.Err()
+}
+
+// BulkGetAlertCooldowns returns cooldown records for the given subnet IDs,
+// keyed by subnet ID. Subnets without a cooldown are omitted.
+func (r *Repository) BulkGetAlertCooldowns(ctx context.Context, subnetIDs []int64) (map[int64]*models.AlertCooldown, error) {
+	if len(subnetIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.db.Query(ctx,
+		`SELECT id, subnet_id, alerted_at, alerted_pct FROM alert_cooldowns WHERE subnet_id = ANY($1)`,
+		subnetIDs,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make(map[int64]*models.AlertCooldown, len(subnetIDs))
+	for rows.Next() {
+		cd := &models.AlertCooldown{}
+		if err := rows.Scan(&cd.ID, &cd.SubnetID, &cd.AlertedAt, &cd.AlertedPct); err != nil {
+			return nil, err
+		}
+		out[cd.SubnetID] = cd
+	}
+	return out, rows.Err()
+}
+
+// BulkSetAlertCooldowns upserts cooldown records for multiple subnets.
+func (r *Repository) BulkSetAlertCooldowns(ctx context.Context, entries map[int64]float64) error {
+	if len(entries) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(entries))
+	pcts := make([]float64, 0, len(entries))
+	for id, pct := range entries {
+		ids = append(ids, id)
+		pcts = append(pcts, pct)
+	}
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO alert_cooldowns (subnet_id, alerted_at, alerted_pct)
+		SELECT unnest($1::bigint[]), now(), unnest($2::float8[])
+		ON CONFLICT (subnet_id) DO UPDATE SET alerted_at = now(), alerted_pct = EXCLUDED.alerted_pct
+	`, ids, pcts)
+	return err
+}
+
+// BulkClearAlertCooldowns removes cooldown records for the given subnet IDs.
+func (r *Repository) BulkClearAlertCooldowns(ctx context.Context, subnetIDs []int64) error {
+	if len(subnetIDs) == 0 {
+		return nil
+	}
+	_, err := r.db.Exec(ctx,
+		`DELETE FROM alert_cooldowns WHERE subnet_id = ANY($1)`,
+		subnetIDs,
+	)
+	return err
+}
+
 // SubnetUtil holds the per-subnet utilization counts returned by BulkSubnetUtilization.
 type SubnetUtil struct {
 	SubnetID     int64

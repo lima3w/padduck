@@ -1,4 +1,4 @@
-.PHONY: ci-local test test-integration e2e vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations sbom help
+.PHONY: ci-local test test-integration e2e mod-verify vet staticcheck gosec govulncheck go-analysis-tools build frontend-build frontend-install frontend-lint frontend-test frontend-audit check-migrations check-openapi-sync validate-env sbom help
 
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
@@ -14,7 +14,7 @@ GOVULNCHECK_MIN_GO ?= go1.26.4
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
 ## ci-local: run all checks that must pass before pushing (mirrors GitHub CI)
-ci-local: check-migrations vet staticcheck gosec govulncheck test frontend-install frontend-audit frontend-lint frontend-test frontend-build
+ci-local: check-migrations check-openapi-sync mod-verify vet staticcheck gosec govulncheck test frontend-install frontend-audit frontend-lint frontend-test frontend-build
 	@echo "✓ ci-local passed"
 
 ## test: run backend unit tests with race detector
@@ -57,6 +57,21 @@ check-migrations:
 		echo "$$mixed_up $$mixed_down" | tr ' ' '\n' | grep -v '^$$'; \
 		exit 1; \
 	fi
+
+## check-openapi-sync: verify docs/openapi.yaml and backend/docs/openapi.yaml are identical
+check-openapi-sync:
+	@echo "→ openapi sync check"
+	@if ! diff -q docs/openapi.yaml backend/docs/openapi.yaml >/dev/null 2>&1; then \
+		echo "ERROR: docs/openapi.yaml and backend/docs/openapi.yaml have diverged."; \
+		echo "       Copy docs/openapi.yaml to backend/docs/openapi.yaml and commit both."; \
+		diff docs/openapi.yaml backend/docs/openapi.yaml || true; \
+		exit 1; \
+	fi
+
+## mod-verify: verify Go module checksums match go.sum
+mod-verify:
+	@echo "→ go mod verify"
+	cd $(BACKEND_DIR) && go mod verify
 
 ## vet: run go vet on the backend
 vet:
@@ -129,6 +144,21 @@ frontend-audit:
 sbom:
 	@echo "→ dependency SBOM"
 	node tools/generate-sbom.mjs
+
+## validate-env: check all required env vars are set before starting the stack
+validate-env:
+	@echo "→ env var validation"
+	@missing=""; \
+	for var in POSTGRES_PASSWORD; do \
+		if [ -z "$$(printenv $$var 2>/dev/null)" ]; then \
+			missing="$$missing $$var"; \
+		fi; \
+	done; \
+	if [ -n "$$missing" ]; then \
+		echo "ERROR: the following required env vars are not set:$$missing"; \
+		echo "       Copy .env.example to .env and fill in the required values."; \
+		exit 1; \
+	fi
 
 ## help: list available targets
 help:

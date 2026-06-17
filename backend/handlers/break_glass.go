@@ -12,7 +12,7 @@ import (
 // GetBreakGlassStatus handles GET /api/v1/admin/break-glass
 // Returns the current active session (or null) plus full session history.
 func (h *Handler) GetBreakGlassStatus(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -38,7 +38,7 @@ func (h *Handler) GetBreakGlassStatus(c *fiber.Ctx) error {
 // ActivateBreakGlass handles POST /api/v1/admin/break-glass/activate
 // Body: {"justification": "..."}
 func (h *Handler) ActivateBreakGlass(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -87,7 +87,7 @@ func (h *Handler) ActivateBreakGlass(c *fiber.Ctx) error {
 
 // EndBreakGlass handles POST /api/v1/admin/break-glass/end
 func (h *Handler) EndBreakGlass(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 

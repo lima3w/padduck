@@ -1,21 +1,26 @@
 import axios from 'axios'
 import { clearCachedUser } from '../utils/storageKeys'
+import { showToastGlobal } from '../context/ToastContext'
 
 function getCookie(name) {
   const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
   return match ? decodeURIComponent(match[1]) : null
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+
 export const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 15000,
 })
 
 // Non-authenticated endpoints. Responses still need the same key normalization
 // as authenticated responses because login/MFA cache user data in localStorage.
 export const noAuthApi = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 15000,
 })
 
 const MUTATING_METHODS = new Set(['post', 'put', 'patch', 'delete'])
@@ -94,6 +99,11 @@ api.interceptors.response.use(
       if (!onPublicPage) {
         window.location.href = '/login'
       }
+    } else if (!error.config?.skipGlobalErrorHandler) {
+      const msg = error.response?.data?.message
+        || error.response?.data?.error
+        || (error.code === 'ECONNABORTED' ? 'Request timed out' : 'An unexpected error occurred')
+      showToastGlobal(msg, 'error')
     }
     return Promise.reject(error)
   }

@@ -24,7 +24,7 @@ func validateCustomFieldParams(p *repository.CustomFieldDefinitionParams) []Vali
 
 // ListCustomFieldDefinitions handles GET /api/v1/admin/custom-fields
 func (h *Handler) ListCustomFieldDefinitions(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	entityType := c.Query("entity_type")
@@ -37,7 +37,7 @@ func (h *Handler) ListCustomFieldDefinitions(c *fiber.Ctx) error {
 
 // CreateCustomFieldDefinition handles POST /api/v1/admin/custom-fields
 func (h *Handler) CreateCustomFieldDefinition(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	p := new(repository.CustomFieldDefinitionParams)
@@ -61,7 +61,7 @@ func (h *Handler) GetCustomFieldDefinition(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid id")
 	}
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func (h *Handler) UpdateCustomFieldDefinition(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid id")
 	}
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -110,7 +110,7 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid id")
 	}
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -126,7 +126,7 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 
 // ReorderCustomFieldDefinitions handles PUT /api/v1/admin/custom-fields/reorder
 func (h *Handler) ReorderCustomFieldDefinitions(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	var body struct {

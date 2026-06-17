@@ -21,20 +21,12 @@ type UpdateVRFRequest struct {
 // ListVRFs handles GET /api/v1/vrfs
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListVRFs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VRFList); err != nil {
+	if !h.requirePerm(c, services.PermV2VRFList) {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
+	page, limit, _ := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" {
 		vrfs, total, err := h.service.ListVRFsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing VRFs", "error", err)
@@ -65,7 +57,7 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVRF(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VRFRead); err != nil {
+	if !h.requirePerm(c, services.PermV2VRFRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -87,7 +79,7 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2VRFWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2VRFWrite) {
 		return nil
 	}
 
@@ -112,7 +104,7 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
-	if err := h.permCheck(c, services.PermV2VRFWrite, services.ResourceScope{Type: "vrf", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2VRFWrite, services.ResourceScope{Type: "vrf", ID: int64(id)}) {
 		return nil
 	}
 
@@ -142,7 +134,7 @@ func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
-	if err := h.permCheck(c, services.PermV2VRFDelete, services.ResourceScope{Type: "vrf", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2VRFDelete, services.ResourceScope{Type: "vrf", ID: int64(id)}) {
 		return nil
 	}
 

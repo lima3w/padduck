@@ -22,6 +22,27 @@ export default function LocationDetailPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  const loadSubnets = useCallback(async () => {
+    try {
+      const res = await api.get(`/locations/${id}/subnets`)
+      setSubnets(res.data || [])
+    } catch {}
+  }, [id])
+
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await api.get(`/locations/${id}/devices`)
+      setDevices(res.data || [])
+    } catch {}
+  }, [id])
+
+  const loadRacks = useCallback(async () => {
+    try {
+      const data = await getRacks(id)
+      setRacks(Array.isArray(data) ? data : (data?.racks ?? []))
+    } catch {}
+  }, [id])
+
   const loadAll = useCallback(async () => {
     try {
       setLoading(true)
@@ -52,30 +73,9 @@ export default function LocationDetailPage() {
     } finally {
       setLoading(false)
     }
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, loadSubnets, loadDevices, loadRacks])
 
   useEffect(() => { loadAll() }, [loadAll])
-
-  async function loadSubnets() {
-    try {
-      const res = await api.get(`/locations/${id}/subnets`)
-      setSubnets(res.data || [])
-    } catch {}
-  }
-
-  async function loadDevices() {
-    try {
-      const res = await api.get(`/locations/${id}/devices`)
-      setDevices(res.data || [])
-    } catch {}
-  }
-
-  async function loadRacks() {
-    try {
-      const data = await getRacks(id)
-      setRacks(Array.isArray(data) ? data : (data?.racks ?? []))
-    } catch {}
-  }
 
   function openCreateRack() {
     setRackForm(RACK_EMPTY_FORM)

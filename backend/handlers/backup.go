@@ -140,7 +140,7 @@ func (h *Handler) generateSQLBackup(c *fiber.Ctx) ([]byte, error) {
 //   - files/**              — contents of ./data/ directory
 //   - backup-manifest.json  — metadata
 func (h *Handler) DownloadFullBackup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -167,7 +167,8 @@ func (h *Handler) DownloadFullBackup(c *fiber.Ctx) error {
 	sqlBytes, err := h.generateSQLBackup(c)
 	if err != nil {
 		_ = zw.Close()
-		return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "database backup failed: "+err.Error())
+		reqLogger(c).Error("database backup failed", "error", err)
+		return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "database backup failed")
 	}
 	if sf, err := zw.Create("db/padduck-backup.sql"); err == nil {
 		_, _ = sf.Write(sqlBytes)
@@ -196,7 +197,8 @@ func (h *Handler) DownloadFullBackup(c *fiber.Ctx) error {
 	if info, statErr := os.Stat(dataDir); statErr == nil && info.IsDir() {
 		dataRoot, rootErr := os.OpenRoot(dataDir)
 		if rootErr != nil {
-			return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "failed to open data directory: "+rootErr.Error())
+			reqLogger(c).Error("failed to open data directory for backup", "error", rootErr)
+			return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "failed to open data directory")
 		}
 		defer dataRoot.Close()
 		_ = filepath.Walk(dataDir, func(path string, fi os.FileInfo, walkErr error) error {
@@ -221,7 +223,8 @@ func (h *Handler) DownloadFullBackup(c *fiber.Ctx) error {
 	}
 
 	if err := zw.Close(); err != nil {
-		return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "failed to finalize zip: "+err.Error())
+		reqLogger(c).Error("failed to finalize backup zip", "error", err)
+		return RespondError(c, fiber.StatusInternalServerError, "backup_failed", "failed to finalize zip")
 	}
 
 	filename := "padduck-backup-" + now.Format("20060102-150405") + ".zip"
@@ -236,7 +239,7 @@ const maxRestoreFileSize = 500 * 1024 * 1024 // 500 MB
 // Accepts a multipart/form-data upload with a "file" field containing a .zip
 // backup archive produced by DownloadFullBackup.
 func (h *Handler) RestoreFromBackup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -312,7 +315,8 @@ func (h *Handler) RestoreFromBackup(c *fiber.Ctx) error {
 			_, execErr := conn.Exec(ctx, string(content))
 			conn.Release()
 			if execErr != nil {
-				return RespondError(c, fiber.StatusInternalServerError, "restore_failed", "database restore failed: "+execErr.Error())
+				reqLogger(c).Error("database restore failed", "error", execErr)
+				return RespondError(c, fiber.StatusInternalServerError, "restore_failed", "database restore failed")
 			}
 
 		case zf.Name == "config/settings.json":

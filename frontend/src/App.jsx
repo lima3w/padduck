@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
-import { getFeatures } from './api/app'
-import { normalizeFeatures } from './utils/features'
+import { ToastProvider } from './context/ToastContext'
+import { FeaturesProvider, useFeatures } from './context/FeaturesContext'
+import PageSpinner from './components/PageSpinner'
 import { getStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -97,21 +98,9 @@ function PageLoadingFallback() {
 }
 
 function FeatureGate({ feature, children }) {
-  const [features, setFeatures] = useState(null)
+  const features = useFeatures()
 
-  useEffect(() => {
-    let cancelled = false
-    getFeatures()
-      .then((res) => {
-        if (!cancelled) setFeatures(normalizeFeatures(res.data))
-      })
-      .catch(() => {
-        if (!cancelled) setFeatures(normalizeFeatures())
-      })
-    return () => { cancelled = true }
-  }, [])
-
-  if (!features) return <PageLoadingFallback />
+  if (!features) return <PageSpinner />
   if (features[feature] === false) {
     return (
       <div className="p-6 max-w-lg">
@@ -134,6 +123,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ToastProvider>
+      <FeaturesProvider>
       <AuthProvider>
       <DarkModeBootstrap />
       <Suspense fallback={<PageLoadingFallback />}>
@@ -229,6 +220,8 @@ export default function App() {
         </Routes>
       </Suspense>
       </AuthProvider>
+      </FeaturesProvider>
+      </ToastProvider>
     </BrowserRouter>
   )
 }

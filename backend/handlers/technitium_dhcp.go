@@ -64,7 +64,7 @@ func (h *Handler) PushDHCPReservation(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 	if err := h.service.PushDHCPReservation(c.Context(), id); err != nil {
@@ -79,7 +79,7 @@ func (h *Handler) RemoveDHCPReservation(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPAssign); err != nil {
+	if !h.requirePerm(c, services.PermV2IPAssign) {
 		return nil
 	}
 	if err := h.service.RemoveDHCPReservation(c.Context(), id); err != nil {

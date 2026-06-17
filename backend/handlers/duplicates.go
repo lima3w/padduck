@@ -7,7 +7,7 @@ import (
 
 // GetDuplicates handles GET /api/v1/admin/reports/duplicates
 func (h *Handler) GetDuplicates(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	result, err := h.service.Reports.GetDuplicates(c.Context())

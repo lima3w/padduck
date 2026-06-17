@@ -7,7 +7,7 @@ import (
 
 // GrafanaHealth handles GET /api/grafana/ — required by the SimpleJSON datasource.
 func (h *Handler) GrafanaHealth(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetList); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetList) {
 		return nil
 	}
 	return c.SendString("ok")
@@ -20,7 +20,7 @@ type grafanaSearchRequest struct {
 
 // GrafanaSearch handles POST /api/grafana/search — returns available metric names.
 func (h *Handler) GrafanaSearch(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetList); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetList) {
 		return nil
 	}
 	return c.JSON([]string{
@@ -52,7 +52,7 @@ type grafanaColumn struct {
 
 // GrafanaQuery handles POST /api/grafana/query — returns table data for requested metrics.
 func (h *Handler) GrafanaQuery(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2SubnetList); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetList) {
 		return nil
 	}
 

@@ -54,7 +54,7 @@ func (h *Handler) LDAPLogin(c *fiber.Ctx) error {
 
 // GetLDAPConfig handles GET /api/v1/admin/auth/ldap.
 func (h *Handler) GetLDAPConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -88,7 +88,7 @@ func (h *Handler) GetLDAPConfig(c *fiber.Ctx) error {
 
 // UpdateLDAPConfig handles PUT /api/v1/admin/auth/ldap.
 func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -125,6 +125,15 @@ func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
 		req.TLSMode = "none"
 	}
 
+	if req.Enabled {
+		if req.Host == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "host is required when LDAP is enabled")
+		}
+		if req.BaseDN == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "base_dn is required when LDAP is enabled")
+		}
+	}
+
 	cfg := &models.LDAPConfig{
 		Enabled:       req.Enabled,
 		Host:          req.Host,
@@ -157,7 +166,7 @@ func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
 
 // TestLDAPConnection handles POST /api/v1/admin/auth/ldap/test.
 func (h *Handler) TestLDAPConnection(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -170,7 +179,7 @@ func (h *Handler) TestLDAPConnection(c *fiber.Ctx) error {
 
 // ListLDAPGroupMappings handles GET /api/v1/admin/auth/ldap/group-mappings.
 func (h *Handler) ListLDAPGroupMappings(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -186,7 +195,7 @@ func (h *Handler) ListLDAPGroupMappings(c *fiber.Ctx) error {
 
 // CreateLDAPGroupMapping handles POST /api/v1/admin/auth/ldap/group-mappings.
 func (h *Handler) CreateLDAPGroupMapping(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -219,7 +228,7 @@ func (h *Handler) CreateLDAPGroupMapping(c *fiber.Ctx) error {
 
 // DeleteLDAPGroupMapping handles DELETE /api/v1/admin/auth/ldap/group-mappings/:id.
 func (h *Handler) DeleteLDAPGroupMapping(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 

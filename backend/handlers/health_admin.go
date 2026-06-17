@@ -13,7 +13,7 @@ import (
 // GetSystemHealth handles GET /api/v1/admin/system-health
 // Returns a combined health summary: database, migrations, and scan agents.
 func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -89,7 +89,7 @@ func (h *Handler) GetSystemHealth(c *fiber.Ctx) error {
 // can be loaded in alphabetical order without FK violations. Sequences are
 // reset at the end to match the largest primary key observed.
 func (h *Handler) DownloadBackup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 

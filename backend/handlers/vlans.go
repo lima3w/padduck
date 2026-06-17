@@ -53,20 +53,12 @@ type UpdateVLANGroupRequest struct {
 // ListVLANs handles GET /api/v1/vlans
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListVLANs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANList); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANList) {
 		return nil
 	}
 
-	page := c.QueryInt("page", 0)
-	limit := c.QueryInt("limit", 0)
-
-	if page > 0 || limit > 0 {
-		if page < 1 {
-			page = 1
-		}
-		if limit < 1 {
-			limit = 25
-		}
+	page, limit, _ := parseListOptions(c)
+	if c.Query("page") != "" || c.Query("limit") != "" {
 		vlans, total, err := h.service.ListVLANsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing VLANs", "error", err)
@@ -97,7 +89,7 @@ func (h *Handler) ListVLANs(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLAN(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -115,7 +107,7 @@ func (h *Handler) GetVLAN(c *fiber.Ctx) error {
 }
 
 func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANWrite) {
 		return nil
 	}
 	req := new(CreateVLANRequest)
@@ -144,7 +136,7 @@ func (h *Handler) UpdateVLAN(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
-	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}) {
 		return nil
 	}
 
@@ -174,7 +166,7 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
-	if err := h.permCheck(c, services.PermV2VLANDelete, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANDelete, services.ResourceScope{Type: "vlan", ID: int64(id)}) {
 		return nil
 	}
 
@@ -194,7 +186,7 @@ func (h *Handler) DeleteVLAN(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANSubnets(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -220,7 +212,7 @@ func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VLAN ID")
 	}
-	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}) {
 		return nil
 	}
 
@@ -228,7 +220,7 @@ func (h *Handler) AssignSubnetToVLAN(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: req.SubnetID}); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: req.SubnetID}) {
 		return nil
 	}
 
@@ -258,10 +250,10 @@ func (h *Handler) RemoveSubnetFromVLAN(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANWrite, services.ResourceScope{Type: "vlan", ID: int64(id)}) {
 		return nil
 	}
-	if err := h.permCheck(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetWrite, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 
@@ -304,7 +296,7 @@ func (h *Handler) ListVLANsByVRF(c *fiber.Ctx) error {
 // VLAN Domain handlers
 
 func (h *Handler) ListVLANDomains(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANDomainList); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANDomainList) {
 		return nil
 	}
 	domains, err := h.service.ListVLANDomains(c.Context())
@@ -319,7 +311,7 @@ func (h *Handler) ListVLANDomains(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANDomain(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANDomainRead); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANDomainRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -335,7 +327,7 @@ func (h *Handler) GetVLANDomain(c *fiber.Ctx) error {
 }
 
 func (h *Handler) CreateVLANDomain(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANDomainWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANDomainWrite) {
 		return nil
 	}
 	req := new(CreateVLANDomainRequest)
@@ -360,7 +352,7 @@ func (h *Handler) CreateVLANDomain(c *fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateVLANDomain(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANDomainWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANDomainWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -389,7 +381,7 @@ func (h *Handler) UpdateVLANDomain(c *fiber.Ctx) error {
 }
 
 func (h *Handler) DeleteVLANDomain(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANDomainDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANDomainDelete) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -415,7 +407,7 @@ func (h *Handler) DeleteVLANDomain(c *fiber.Ctx) error {
 // VLAN Group handlers
 
 func (h *Handler) ListVLANGroups(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANGroupList); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANGroupList) {
 		return nil
 	}
 	groups, err := h.service.ListVLANGroups(c.Context())
@@ -430,7 +422,7 @@ func (h *Handler) ListVLANGroups(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANGroup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANGroupRead); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANGroupRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -446,7 +438,7 @@ func (h *Handler) GetVLANGroup(c *fiber.Ctx) error {
 }
 
 func (h *Handler) CreateVLANGroup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANGroupWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANGroupWrite) {
 		return nil
 	}
 	req := new(CreateVLANGroupRequest)
@@ -471,7 +463,7 @@ func (h *Handler) CreateVLANGroup(c *fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANGroupWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANGroupWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -500,7 +492,7 @@ func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetVLANUsageReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANRead); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANRead) {
 		return nil
 	}
 
@@ -514,7 +506,7 @@ func (h *Handler) GetVLANUsageReport(c *fiber.Ctx) error {
 }
 
 func (h *Handler) DeleteVLANGroup(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2VLANGroupDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2VLANGroupDelete) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

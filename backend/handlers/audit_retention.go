@@ -13,7 +13,7 @@ import (
 
 // GetAuditRetention handles GET /api/v1/admin/audit/retention
 func (h *Handler) GetAuditRetention(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	s, err := h.service.Audit.GetRetentionSettings(c.Context())
@@ -26,7 +26,7 @@ func (h *Handler) GetAuditRetention(c *fiber.Ctx) error {
 // UpdateAuditRetention handles PUT /api/v1/admin/audit/retention
 // Body: {"retention_days": 365, "archive_enabled": false}
 func (h *Handler) UpdateAuditRetention(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	var body struct {
@@ -57,7 +57,7 @@ func (h *Handler) UpdateAuditRetention(c *fiber.Ctx) error {
 
 // PruneAuditLogs handles POST /api/v1/admin/audit/prune
 func (h *Handler) PruneAuditLogs(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	deleted, err := h.service.Audit.PruneByRetentionSettings(c.Context())
@@ -78,7 +78,7 @@ func (h *Handler) PruneAuditLogs(c *fiber.Ctx) error {
 
 // ExportAuditLog handles GET /api/v1/admin/audit/export?format=json&since=<RFC3339>&until=<RFC3339>
 func (h *Handler) ExportAuditLog(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 

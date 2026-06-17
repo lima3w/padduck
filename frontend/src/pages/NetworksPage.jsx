@@ -11,22 +11,10 @@ import EmptyRow from '../components/EmptyRow'
 import { downloadFile } from '../utils/download'
 import { getCachedUser, STORAGE_KEYS } from '../utils/storageKeys'
 import { loadPrefs, savePrefs } from '../utils/listPrefs'
+import SortTh from '../components/SortTh'
 
 const DEFAULT_LIMIT = 25
 const SORT_KEY = STORAGE_KEYS.networkSort
-
-function SortTh({ label, col, sortCol, sortDir, onSort, className = '' }) {
-  const active = sortCol === col
-  return (
-    <th
-      className={`text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 ${className}`}
-      onClick={() => onSort(col)}
-    >
-      {label}
-      <span className="ml-1 text-xs">{active ? (sortDir === 'asc' ? '↑' : '↓') : <span className="opacity-30">↕</span>}</span>
-    </th>
-  )
-}
 
 const SUBNET_REQUEST_EMPTY = { network_id: '', prefix_length: '24', purpose: '', parent_subnet_id: '' }
 

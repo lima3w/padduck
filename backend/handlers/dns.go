@@ -12,7 +12,7 @@ import (
 // Triggers a background DNS check for all IPs that have a dns_name set.
 func (h *Handler) CheckAllDNS(c *fiber.Ctx) error {
 	// Admin-only via RBAC
-	if err := h.permCheck(c, services.PermV2AuditRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AuditRead) {
 		return nil
 	}
 	job := h.service.Jobs.Enqueue("dns_check", "Check all DNS records", nil, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
@@ -27,7 +27,7 @@ func (h *Handler) CheckAllDNS(c *fiber.Ctx) error {
 // TestPowerDNSConnection handles POST /api/v1/admin/dns/test
 // Tests connectivity to the configured PowerDNS API.
 func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AuditRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AuditRead) {
 		return nil
 	}
 	if err := h.service.DNS.TestPDNSConnection(c.Context()); err != nil {
@@ -41,7 +41,7 @@ func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
 // Accepts optional JSON body {url, token, skip_tls} to test with unsaved values.
 // Falls back to saved config when body fields are empty.
 func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AuditRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AuditRead) {
 		return nil
 	}
 	var body struct {
@@ -68,7 +68,7 @@ func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 // Returns the list of zones from the configured DNS provider, or {"configured": false} if none is set up.
 // Applies the dns_zone_filter_mode / dns_zone_filter_list / dns_zone_filter_auto_allow config settings.
 func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverList); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverList) {
 		return nil
 	}
 	zones, configured, err := h.service.DNS.ListDNSZones(c.Context())
@@ -162,7 +162,7 @@ func (h *Handler) applyDNSZoneFilter(ctx context.Context, zones []services.ZoneI
 // GetDNSZoneRecords handles GET /api/v1/dns/zones/:zone/records
 // Returns normalized records for a zone. Accepts optional ?type=A filter.
 func (h *Handler) GetDNSZoneRecords(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverRead); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverRead) {
 		return nil
 	}
 	zone := c.Params("zone")

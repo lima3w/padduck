@@ -55,21 +55,9 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "SAML authentication failed")
 	}
 
-	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
-	if err != nil {
-		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
+	if !h.issueSessionCookie(c, user, "saml") {
+		return nil
 	}
-
-	uid := user.ID
-	h.auditLog(c, services.AuditEntry{
-		UserID:       &uid,
-		Username:     user.Username,
-		Action:       "login",
-		ResourceType: "session",
-		ResourceName: "saml",
-	})
-
-	h.setSessionCookie(c, token)
 	return c.Redirect("/", fiber.StatusFound)
 }
 
@@ -79,7 +67,7 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 
 // GetSAMLConfig handles GET /api/v1/admin/auth/saml.
 func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -109,7 +97,7 @@ func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
 
 // UpdateSAMLConfig handles PUT /api/v1/admin/auth/saml.
 func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -120,6 +108,19 @@ func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
 
 	if req.NameIDFormat == "" {
 		req.NameIDFormat = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+	}
+
+	if req.Enabled {
+		hasMetadata := req.IDPMetadataURL != "" || req.IDPMetadataXML != ""
+		if !hasMetadata {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "idp_metadata_url or idp_metadata_xml is required when SAML is enabled")
+		}
+		if req.EntityID == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "entity_id is required when SAML is enabled")
+		}
+		if req.ACSURL == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "acs_url is required when SAML is enabled")
+		}
 	}
 
 	if err := h.service.SAML.SaveConfig(c.Context(), &req); err != nil {

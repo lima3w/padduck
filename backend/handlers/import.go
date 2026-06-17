@@ -18,7 +18,7 @@ const maxImportFileSize = 5 * 1024 * 1024 // 5 MB
 // ImportSubnetsCSV handles POST /api/v1/admin/import/subnets
 // Accepts multipart/form-data with a "file" field containing a CSV.
 func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -69,7 +69,7 @@ func (h *Handler) ImportSubnetsCSV(c *fiber.Ctx) error {
 // ImportIPsCSV handles POST /api/v1/admin/import/ips
 // Accepts multipart/form-data with a "file" field containing a CSV.
 func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -121,7 +121,7 @@ func (h *Handler) ImportIPsCSV(c *fiber.Ctx) error {
 // Query param: kind=subnets|ips
 // Accepts multipart/form-data with a "file" field.
 func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -188,7 +188,7 @@ func (h *Handler) ImportFromPHPIpam(c *fiber.Ctx) error {
 // ExportFullData handles GET /api/v1/admin/export/full
 // Query param: format=csv|json (default csv)
 func (h *Handler) ExportFullData(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 
@@ -217,7 +217,7 @@ func (h *Handler) ExportFullData(c *fiber.Ctx) error {
 
 // ExportV2MigrationBundle handles GET /api/v1/admin/export/v2-migration-bundle.
 func (h *Handler) ExportV2MigrationBundle(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 

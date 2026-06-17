@@ -11,7 +11,7 @@ import (
 
 // ListNameservers handles GET /api/v1/nameservers
 func (h *Handler) ListNameservers(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverList); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverList) {
 		return nil
 	}
 	ns, err := h.service.ListNameservers(c.Context())
@@ -24,7 +24,7 @@ func (h *Handler) ListNameservers(c *fiber.Ctx) error {
 
 // GetNameserver handles GET /api/v1/nameservers/:id
 func (h *Handler) GetNameserver(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverRead); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -44,7 +44,7 @@ func (h *Handler) GetNameserver(c *fiber.Ctx) error {
 
 // CreateNameserver handles POST /api/v1/nameservers
 func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverWrite) {
 		return nil
 	}
 	req := new(repository.NameserverParams)
@@ -74,7 +74,7 @@ func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
 
 // UpdateNameserver handles PUT /api/v1/nameservers/:id
 func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -111,7 +111,7 @@ func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
 
 // DeleteNameserver handles DELETE /api/v1/nameservers/:id
 func (h *Handler) DeleteNameserver(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NameserverDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2NameserverDelete) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

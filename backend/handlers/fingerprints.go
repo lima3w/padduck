@@ -7,7 +7,7 @@ import (
 
 // GetDeviceFingerprint handles GET /api/v1/admin/devices/:id/fingerprint
 func (h *Handler) GetDeviceFingerprint(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -23,7 +23,7 @@ func (h *Handler) GetDeviceFingerprint(c *fiber.Ctx) error {
 
 // BuildDeviceFingerprint handles POST /api/v1/admin/devices/:id/fingerprint
 func (h *Handler) BuildDeviceFingerprint(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

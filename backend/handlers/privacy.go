@@ -8,7 +8,7 @@ import (
 
 // ListPrivacyVersions handles GET /api/v1/admin/privacy/versions
 func (h *Handler) ListPrivacyVersions(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	versions, err := h.service.GetRepository().ListPrivacyVersions(c.Context())
@@ -24,7 +24,7 @@ func (h *Handler) ListPrivacyVersions(c *fiber.Ctx) error {
 // CreatePrivacyVersion handles POST /api/v1/admin/privacy/versions
 // Body: {"version":"2.0","effective_date":"2026-06-01","summary":"..."}
 func (h *Handler) CreatePrivacyVersion(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	var req struct {
@@ -50,7 +50,7 @@ func (h *Handler) CreatePrivacyVersion(c *fiber.Ctx) error {
 
 // GetConsentReport handles GET /api/v1/admin/privacy/consent-report
 func (h *Handler) GetConsentReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	statuses, err := h.service.GetRepository().ListUserConsentStatus(c.Context())

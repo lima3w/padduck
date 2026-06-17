@@ -8,7 +8,7 @@ import (
 
 // ListTopologyHints handles GET /api/v1/admin/topology/hints?status=suggested
 func (h *Handler) ListTopologyHints(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	status := c.Query("status")
@@ -24,7 +24,7 @@ func (h *Handler) ListTopologyHints(c *fiber.Ctx) error {
 
 // GetTopologyHint handles GET /api/v1/admin/topology/hints/:id
 func (h *Handler) GetTopologyHint(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")
@@ -41,7 +41,7 @@ func (h *Handler) GetTopologyHint(c *fiber.Ctx) error {
 // UpdateTopologyHintStatus handles PUT /api/v1/admin/topology/hints/:id/status
 // Body: {"status":"confirmed"|"dismissed"}
 func (h *Handler) UpdateTopologyHintStatus(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := c.ParamsInt("id")

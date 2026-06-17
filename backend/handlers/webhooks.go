@@ -66,7 +66,7 @@ type webhookEndpointResponse struct {
 }
 
 func (h *Handler) GetWebhookSamplePayload(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	eventType := c.Query("event_type", "ip_address.assigned")
@@ -84,7 +84,7 @@ func (h *Handler) GetWebhookSamplePayload(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListWebhookEndpoints(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	endpoints, err := h.service.Webhooks.ListEndpoints(c.Context())
@@ -99,7 +99,7 @@ func (h *Handler) ListWebhookEndpoints(c *fiber.Ctx) error {
 }
 
 func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	req := new(webhookEndpointRequest)
@@ -137,7 +137,7 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 }
 
 func (h *Handler) UpdateWebhookEndpoint(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -211,7 +211,7 @@ func validateWebhookEndpointRequest(req *webhookEndpointRequest) []ValidationFie
 }
 
 func (h *Handler) DeleteWebhookEndpoint(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -230,7 +230,7 @@ func (h *Handler) DeleteWebhookEndpoint(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListWebhookDeliveries(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	limit := c.QueryInt("limit", 50)
@@ -242,7 +242,7 @@ func (h *Handler) ListWebhookDeliveries(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListWebhookFailureGroups(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	limit := c.QueryInt("limit", 50)
@@ -254,7 +254,7 @@ func (h *Handler) ListWebhookFailureGroups(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetWebhookDelivery(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -269,7 +269,7 @@ func (h *Handler) GetWebhookDelivery(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ReplayWebhookDelivery(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)

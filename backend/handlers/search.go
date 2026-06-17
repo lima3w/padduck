@@ -32,7 +32,7 @@ type IPSearchRequest struct {
 
 // GlobalSearch handles GET /api/v1/search?q=...
 func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkList) {
 		return nil
 	}
 	q := c.Query("q")
@@ -45,7 +45,7 @@ func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
 
 // SearchNetworks handles POST /api/v1/networks/search
 func (h *Handler) SearchNetworks(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NetworkList); err != nil {
+	if !h.requirePerm(c, services.PermV2NetworkList) {
 		return nil
 	}
 
@@ -73,7 +73,7 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
-	if err := h.permCheck(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2SubnetList, services.ResourceScope{Type: "section", ID: int64(networkID)}) {
 		return nil
 	}
 
@@ -101,7 +101,7 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	if err := h.permCheck(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}); err != nil {
+	if !h.requirePerm(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
 
@@ -136,7 +136,7 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 // SearchIPAddressesGlobal handles GET /api/v1/ip-addresses/search?q=...
 // Returns up to 20 IP addresses matching the query across all subnets.
 func (h *Handler) SearchIPAddressesGlobal(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPList); err != nil {
+	if !h.requirePerm(c, services.PermV2IPList) {
 		return nil
 	}
 	q := c.Query("q")

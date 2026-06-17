@@ -9,7 +9,7 @@ import (
 
 // GetReconciliationReport handles GET /api/v1/admin/reports/reconciliation
 func (h *Handler) GetReconciliationReport(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminRead); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminRead) {
 		return nil
 	}
 	ctx := c.Context()

@@ -22,7 +22,7 @@ type automationPolicyRequest struct {
 }
 
 func (h *Handler) ListAutomationPolicies(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	policies, err := h.service.Automation.ListPolicies(c.Context())
@@ -45,7 +45,7 @@ func (h *Handler) UpdateAutomationPolicy(c *fiber.Ctx) error {
 }
 
 func (h *Handler) saveAutomationPolicy(c *fiber.Ctx, id int64) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	req := new(automationPolicyRequest)
@@ -70,7 +70,7 @@ func (h *Handler) saveAutomationPolicy(c *fiber.Ctx, id int64) error {
 }
 
 func (h *Handler) DeleteAutomationPolicy(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -263,7 +263,7 @@ func (h *Handler) ListIntegrationTemplates(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListAPITokenAnalytics(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 	tokens, err := h.service.GetRepository().ListAPITokenAnalytics(c.Context())

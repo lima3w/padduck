@@ -13,7 +13,7 @@ func parseID(c *fiber.Ctx, name string) (int64, error) {
 }
 
 func (h *Handler) ListNATRules(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NATList); err != nil {
+	if !h.requirePerm(c, services.PermV2NATList) {
 		return nil
 	}
 	items, err := h.service.ListNATRules(c.Context())
@@ -28,7 +28,7 @@ func (h *Handler) ListNATRules(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetNATRule(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2NATRead); err != nil {
+	if !h.requirePerm(c, services.PermV2NATRead) {
 		return nil
 	}
 	id, err := parseID(c, "id")
@@ -47,7 +47,7 @@ func (h *Handler) CreateNATRule(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2NATWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2NATWrite) {
 		return nil
 	}
 	item, err := h.service.CreateNATRule(c.Context(), req)
@@ -66,7 +66,7 @@ func (h *Handler) UpdateNATRule(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2NATWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2NATWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateNATRule(c.Context(), id, req)
@@ -81,7 +81,7 @@ func (h *Handler) DeleteNATRule(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid NAT rule ID")
 	}
-	if err := h.permCheck(c, services.PermV2NATDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2NATDelete) {
 		return nil
 	}
 	if err := h.service.DeleteNATRule(c.Context(), id); err != nil {
@@ -91,7 +91,7 @@ func (h *Handler) DeleteNATRule(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListFirewallZones(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2FirewallList); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallList) {
 		return nil
 	}
 	items, err := h.service.ListFirewallZones(c.Context())
@@ -105,7 +105,7 @@ func (h *Handler) ListFirewallZones(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetFirewallZone(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2FirewallRead); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallRead) {
 		return nil
 	}
 	id, err := parseID(c, "id")
@@ -124,7 +124,7 @@ func (h *Handler) CreateFirewallZone(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
 	item, err := h.service.CreateFirewallZone(c.Context(), req)
@@ -143,7 +143,7 @@ func (h *Handler) UpdateFirewallZone(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateFirewallZone(c.Context(), id, req)
@@ -158,7 +158,7 @@ func (h *Handler) DeleteFirewallZone(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall zone ID")
 	}
-	if err := h.permCheck(c, services.PermV2FirewallDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallDelete) {
 		return nil
 	}
 	if err := h.service.DeleteFirewallZone(c.Context(), id); err != nil {
@@ -168,7 +168,7 @@ func (h *Handler) DeleteFirewallZone(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListFirewallZoneMappings(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2FirewallList); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallList) {
 		return nil
 	}
 	items, err := h.service.ListFirewallZoneMappings(c.Context(), int64(c.QueryInt("zone_id", 0)))
@@ -186,7 +186,7 @@ func (h *Handler) CreateFirewallZoneMapping(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
 	item, err := h.service.CreateFirewallZoneMapping(c.Context(), req)
@@ -205,7 +205,7 @@ func (h *Handler) UpdateFirewallZoneMapping(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2FirewallWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateFirewallZoneMapping(c.Context(), id, req)
@@ -220,7 +220,7 @@ func (h *Handler) DeleteFirewallZoneMapping(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall mapping ID")
 	}
-	if err := h.permCheck(c, services.PermV2FirewallDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2FirewallDelete) {
 		return nil
 	}
 	if err := h.service.DeleteFirewallZoneMapping(c.Context(), id); err != nil {
@@ -230,7 +230,7 @@ func (h *Handler) DeleteFirewallZoneMapping(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListDHCPServers(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DHCPList); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPList) {
 		return nil
 	}
 	items, err := h.service.ListDHCPServers(c.Context())
@@ -248,7 +248,7 @@ func (h *Handler) CreateDHCPServer(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
 	item, err := h.service.CreateDHCPServer(c.Context(), req)
@@ -267,7 +267,7 @@ func (h *Handler) UpdateDHCPServer(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateDHCPServer(c.Context(), id, req)
@@ -282,7 +282,7 @@ func (h *Handler) DeleteDHCPServer(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid DHCP server ID")
 	}
-	if err := h.permCheck(c, services.PermV2DHCPDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPDelete) {
 		return nil
 	}
 	if err := h.service.DeleteDHCPServer(c.Context(), id); err != nil {
@@ -292,7 +292,7 @@ func (h *Handler) DeleteDHCPServer(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListDHCPLeases(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2DHCPList); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPList) {
 		return nil
 	}
 	items, err := h.service.ListDHCPLeases(c.Context(), int64(c.QueryInt("server_id", 0)))
@@ -310,7 +310,7 @@ func (h *Handler) CreateDHCPLease(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
 	item, err := h.service.CreateDHCPLease(c.Context(), req)
@@ -329,7 +329,7 @@ func (h *Handler) UpdateDHCPLease(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.permCheck(c, services.PermV2DHCPWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
 	item, err := h.service.UpdateDHCPLease(c.Context(), id, req)
@@ -344,7 +344,7 @@ func (h *Handler) DeleteDHCPLease(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid DHCP lease ID")
 	}
-	if err := h.permCheck(c, services.PermV2DHCPDelete); err != nil {
+	if !h.requirePerm(c, services.PermV2DHCPDelete) {
 		return nil
 	}
 	if err := h.service.DeleteDHCPLease(c.Context(), id); err != nil {

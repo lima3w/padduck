@@ -37,7 +37,7 @@ type UpdateTagRequest struct {
 
 // ListTags handles GET /api/v1/tags
 func (h *Handler) ListTags(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2IPRead); err != nil {
+	if !h.requirePerm(c, services.PermV2IPRead) {
 		return nil
 	}
 

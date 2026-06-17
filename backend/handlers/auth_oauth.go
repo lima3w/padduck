@@ -42,21 +42,9 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "OAuth2 authentication failed")
 	}
 
-	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
-	if err != nil {
-		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
+	if !h.issueSessionCookie(c, user, "oauth2") {
+		return nil
 	}
-
-	uid := user.ID
-	h.auditLog(c, services.AuditEntry{
-		UserID:       &uid,
-		Username:     user.Username,
-		Action:       "login",
-		ResourceType: "session",
-		ResourceName: "oauth2",
-	})
-
-	h.setSessionCookie(c, token)
 	return c.Redirect("/", fiber.StatusFound)
 }
 
@@ -66,7 +54,7 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 
 // GetOAuth2Config handles GET /api/v1/admin/auth/oauth2.
 func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -97,7 +85,7 @@ func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
 
 // UpdateOAuth2Config handles PUT /api/v1/admin/auth/oauth2.
 func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
-	if err := h.permCheck(c, services.PermV2AdminWrite); err != nil {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
 
@@ -119,6 +107,20 @@ func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
 
 	if req.Scopes == "" {
 		req.Scopes = "openid email profile"
+	}
+
+	if req.Enabled {
+		if req.ClientID == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "client_id is required when OAuth2 is enabled")
+		}
+		hasDiscovery := req.DiscoveryURL != ""
+		hasManual := req.AuthorizationURL != "" && req.TokenURL != "" && req.UserinfoURL != ""
+		if !hasDiscovery && !hasManual {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "either discovery_url or all of authorization_url, token_url, and userinfo_url are required when OAuth2 is enabled")
+		}
+		if req.RedirectURI == "" {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "redirect_uri is required when OAuth2 is enabled")
+		}
 	}
 
 	cfg := &models.OAuth2Config{
