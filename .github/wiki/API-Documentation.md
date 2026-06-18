@@ -5,16 +5,16 @@
 > **Documentation map**
 > - **This page** — human-readable quick reference, authentication guide, and examples
 > - **`docs/openapi.yaml`** in the repo (or `GET /api/openapi.yaml` at runtime) — full machine-readable spec
-> - **`docs/api-contract.md`** in the repo — v1 stability guarantees and compatibility rules
+> - **`docs/api-contract.md`** in the repo — formal v1 stability guarantees (compatibility rules, the things that must never break)
 
 ## API Overview
 
 Padduck provides a **stable REST API** under `/api/v1/`. The API is the foundation for all UI interactions and external automation.
 
 - **Base URL**: `https://your-padduck-instance/api/v1`
-- **OpenAPI Spec**: `GET /api/openapi.yaml` (OpenAPI 3.0.3, version 1.31.32)
+- **OpenAPI Spec**: `GET /api/openapi.yaml` (OpenAPI 3.0.3, version 1.32.17)
 - **Contract stability**: v1 is frozen — no breaking changes without a new version
-- **Total endpoints**: 212 documented paths (294 operations) in the OpenAPI spec
+- **Total endpoints**: 284 documented paths (396 operations) in the OpenAPI spec
 
 ---
 
@@ -44,7 +44,7 @@ Generate tokens under **My Settings → API Tokens** or via admin.
 
 ## API Versioning
 
-- Current stable version: **v1** (frozen at OpenAPI 1.26.0)
+- Current stable version: **v1** (stable-v1 contract established at OpenAPI spec version 1.26.0; additive changes are allowed within v1)
 - Additive changes (new optional fields, new endpoints) are allowed within v1
 - Breaking changes require a new API version
 - Version compatibility: `GET /api/v1/admin/compatibility/v2-warnings`
@@ -247,17 +247,30 @@ print(response.json())
 
 ## V2 Compatibility
 
-Before planning a v2 migration:
+Administrators can check v2 migration readiness and export a migration bundle before a major upgrade.
 
-```bash
-# Check migration readiness
-GET /api/v1/admin/compatibility/v2-readiness
+### Endpoints
 
-# See deprecation warnings
-GET /api/v1/admin/compatibility/deprecations
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/admin/compatibility/v2-warnings` | List known v2 compatibility warnings |
+| `GET` | `/api/v1/admin/compatibility/v2-readiness` | Evaluate migration readiness |
+| `GET` | `/api/v1/admin/compatibility/deprecations` | List active deprecation notices |
+| `GET` | `/api/v1/admin/export/v2-migration-bundle` | Download migration bundle (ZIP) |
 
-# Export migration bundle
-GET /api/v1/admin/export/v2-migration-bundle
-```
+### Warnings and deprecations
 
-See also the repository's `/docs/` directory for API design decisions.
+The warnings and deprecations responses group impacted APIs, fields, and workflows with recommended remediation steps for v1 clients. Clients should prefer top-level IP address endpoints, send idempotency keys for automation writes, and avoid depending solely on legacy role fields.
+
+### Readiness check
+
+The readiness endpoint evaluates migration blockers across schema, runtime configuration, integrations, custom fields, roles, API tokens, and webhook subscriptions. A `fail` status blocks readiness; a `warn` status should be reviewed before creating the migration bundle.
+
+### Migration bundle
+
+`GET /api/v1/admin/export/v2-migration-bundle` returns an `application/zip` archive containing:
+
+- `manifest.json`
+- `data/ipam-v1-export.json` — canonical migration input
+- `data/ipam-v1-export.csv` — included for inspection and fallback workflows
+- A short `README`
