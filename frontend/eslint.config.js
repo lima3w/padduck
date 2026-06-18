@@ -1,12 +1,15 @@
 import js from '@eslint/js'
 import globals from 'globals'
-import reactPlugin from 'eslint-plugin-react'
+import eslintReact from '@eslint-react/eslint-plugin'
 import reactHooks from 'eslint-plugin-react-hooks'
+
+const { configs: reactConfigs } = eslintReact
 
 export default [
   js.configs.recommended,
   {
     files: ['src/**/*.{js,jsx}'],
+    ...reactConfigs.recommended,
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -14,22 +17,20 @@ export default [
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
     plugins: {
-      react: reactPlugin,
+      ...reactConfigs.recommended.plugins,
       'react-hooks': reactHooks,
     },
-    settings: { react: { version: 'detect' } },
     rules: {
-      ...reactPlugin.configs.recommended.rules,
-      'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off',
-      // Core hooks rules
+      ...reactConfigs.recommended.rules,
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      // Disable v7 experimental rules that need larger refactors
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/static-components': 'off',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'no-empty': ['error', { allowEmptyCatch: true }],
+      'preserve-caught-error': 'warn',
+      '@eslint-react/set-state-in-effect': 'off',
+      '@eslint-react/static-components': 'off',
+      '@eslint-react/no-nested-component-definitions': 'off',
+      '@eslint-react/unsupported-syntax': 'off',
     },
   },
   {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
 import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser, adminUnlockUser, suspendUser, unsuspendUser, impersonateUser, sendPasswordResetEmail, updateUserEmail, gdprDeleteUser, bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers, getBreakGlassStatus, activateBreakGlass, endBreakGlass } from '../api/admin'
@@ -644,9 +644,8 @@ export default function AdminUsersPage() {
               <EmptyRow colSpan={7} message="No users found." />
             )}
             {users.map(user => (
-              <>
+              <Fragment key={user.id}>
                 <tr
-                  key={user.id}
                   className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
                   onClick={() => toggleExpand(user.id)}
                 >
@@ -788,7 +787,7 @@ export default function AdminUsersPage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

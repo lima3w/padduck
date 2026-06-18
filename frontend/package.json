@@ -23,6 +23,8 @@
     "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@eslint-react/eslint-plugin": "^5.9.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.0",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-query-devtools": "^5.101.0",
@@ -31,12 +33,12 @@
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.9",
-    "eslint": "^9.39.4",
-    "eslint-plugin-react": "^7.37.5",
+    "eslint": "^10.5.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.1",
+    "typescript": "^6.0.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.9"
   }
