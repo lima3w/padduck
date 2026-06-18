@@ -56,15 +56,16 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		dashboardActivityCache: newTTLCache[[]*models.DashboardActivity](15 * time.Second),
 	}
 	svc.Ops = &OpsManager{
-		Discovery:  NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
-		Reports:    NewReportsService(repo, configSvc, emailSvc, auditSvc),
-		Import:     NewImportService(repo),
-		Jobs:       NewJobService(),
-		Webhooks:   webhookSvc,
-		Topology:   NewTopologyService(repo),
-		DNS:        NewDNSService(configSvc, repo),
-		Automation: NewAutomationService(repo, svc),
-		Telemetry:  newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
+		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
+		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
+		Import:         NewImportService(repo),
+		Jobs:           NewJobService(),
+		Webhooks:       webhookSvc,
+		Topology:       NewTopologyService(repo),
+		DNS:            NewDNSService(configSvc, repo),
+		Automation:     NewAutomationService(repo, svc),
+		Telemetry:      newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
+		NetworkModules: NewNetworkModulesService(repo),
 	}
 	return svc
 }

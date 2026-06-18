@@ -10,7 +10,7 @@ func (h *Handler) ListCircuitProviders(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitList) {
 		return nil
 	}
-	items, err := h.service.ListCircuitProviders(c.Context())
+	items, err := h.ops.NetworkModules.ListCircuitProviders(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -25,7 +25,7 @@ func (h *Handler) CreateCircuitProvider(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
-	item, err := h.service.CreateCircuitProvider(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateCircuitProvider(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "circuit provider")
 	}
@@ -44,7 +44,7 @@ func (h *Handler) UpdateCircuitProvider(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateCircuitProvider(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateCircuitProvider(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "circuit provider")
 	}
@@ -59,7 +59,7 @@ func (h *Handler) DeleteCircuitProvider(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitDelete) {
 		return nil
 	}
-	if err := h.service.DeleteCircuitProvider(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteCircuitProvider(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "circuit provider")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -69,7 +69,7 @@ func (h *Handler) ListPhysicalCircuits(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitList) {
 		return nil
 	}
-	items, err := h.service.ListPhysicalCircuits(c.Context())
+	items, err := h.ops.NetworkModules.ListPhysicalCircuits(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -84,7 +84,7 @@ func (h *Handler) CreatePhysicalCircuit(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
-	item, err := h.service.CreatePhysicalCircuit(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreatePhysicalCircuit(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "physical circuit")
 	}
@@ -103,7 +103,7 @@ func (h *Handler) UpdatePhysicalCircuit(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
-	item, err := h.service.UpdatePhysicalCircuit(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdatePhysicalCircuit(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "physical circuit")
 	}
@@ -118,7 +118,7 @@ func (h *Handler) DeletePhysicalCircuit(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitDelete) {
 		return nil
 	}
-	if err := h.service.DeletePhysicalCircuit(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeletePhysicalCircuit(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "physical circuit")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -128,7 +128,7 @@ func (h *Handler) ListLogicalCircuits(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitList) {
 		return nil
 	}
-	items, err := h.service.ListLogicalCircuits(c.Context())
+	items, err := h.ops.NetworkModules.ListLogicalCircuits(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -143,7 +143,7 @@ func (h *Handler) CreateLogicalCircuit(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
-	item, err := h.service.CreateLogicalCircuit(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateLogicalCircuit(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "logical circuit")
 	}
@@ -162,7 +162,7 @@ func (h *Handler) UpdateLogicalCircuit(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateLogicalCircuit(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateLogicalCircuit(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "logical circuit")
 	}
@@ -177,7 +177,7 @@ func (h *Handler) DeleteLogicalCircuit(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CircuitDelete) {
 		return nil
 	}
-	if err := h.service.DeleteLogicalCircuit(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteLogicalCircuit(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "logical circuit")
 	}
 	return c.SendStatus(fiber.StatusNoContent)

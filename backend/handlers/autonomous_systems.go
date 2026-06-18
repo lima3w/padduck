@@ -33,7 +33,7 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 
 	page, limit, _ := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" {
-		items, total, err := h.service.ListAutonomousSystemsPaginated(c.Context(), page, limit)
+		items, total, err := h.ops.NetworkModules.ListAutonomousSystemsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing autonomous systems", "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -49,7 +49,7 @@ func (h *Handler) ListAutonomousSystems(c *fiber.Ctx) error {
 		})
 	}
 
-	items, err := h.service.ListAutonomousSystems(c.Context())
+	items, err := h.ops.NetworkModules.ListAutonomousSystems(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing autonomous systems", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -68,7 +68,7 @@ func (h *Handler) GetAutonomousSystem(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid ID")
 	}
-	item, err := h.service.GetAutonomousSystem(c.Context(), int64(id))
+	item, err := h.ops.NetworkModules.GetAutonomousSystem(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting autonomous system", "id", id, "error", err)
 		return respondCustomerASError(c, err, "autonomous system")
@@ -84,7 +84,7 @@ func (h *Handler) CreateAutonomousSystem(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2ASWrite) {
 		return nil
 	}
-	item, err := h.service.CreateAutonomousSystem(c.Context(), req.ASN, req.Name, req.Description, req.Type, req.RIR)
+	item, err := h.ops.NetworkModules.CreateAutonomousSystem(c.Context(), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
 		reqLogger(c).Error("error creating autonomous system", "error", err)
 		return respondCustomerASError(c, err, "autonomous system")
@@ -110,7 +110,7 @@ func (h *Handler) UpdateAutonomousSystem(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	item, err := h.service.UpdateAutonomousSystem(c.Context(), int64(id), req.ASN, req.Name, req.Description, req.Type, req.RIR)
+	item, err := h.ops.NetworkModules.UpdateAutonomousSystem(c.Context(), int64(id), req.ASN, req.Name, req.Description, req.Type, req.RIR)
 	if err != nil {
 		reqLogger(c).Error("error updating autonomous system", "id", id, "error", err)
 		return respondCustomerASError(c, err, "autonomous system")
@@ -132,7 +132,7 @@ func (h *Handler) DeleteAutonomousSystem(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2ASDelete, services.ResourceScope{Type: "autonomous_system", ID: int64(id)}) {
 		return nil
 	}
-	if err := h.service.DeleteAutonomousSystem(c.Context(), int64(id)); err != nil {
+	if err := h.ops.NetworkModules.DeleteAutonomousSystem(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting autonomous system", "id", id, "error", err)
 		return respondCustomerASError(c, err, "autonomous system")
 	}

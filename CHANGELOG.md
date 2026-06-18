@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.0
+
+### Internal
+- **Domain module boundaries** (#2): extracted `NetworkModulesService` from the root `Service` struct — NAT rules, firewall zones/mappings, DHCP servers/leases, circuit providers/circuits, and BGP autonomous systems now live in `services.NetworkModulesService`, exposed via `OpsManager.NetworkModules`; handlers updated to `h.ops.NetworkModules.*`. Moved misplaced `CustomerAssociation` methods from `network_modules.go` to `customers.go`. Moved `ListAutonomousSystemsPaginated` from `dashboard.go` to the new service. Integration tests updated to construct `NetworkModulesService` directly. Added `docs/domain-boundaries.md` defining the full planned domain extraction map.
+
 ## v1.32.17
 
 ### Internal

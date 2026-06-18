@@ -16,7 +16,7 @@ func (h *Handler) ListNATRules(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2NATList) {
 		return nil
 	}
-	items, err := h.service.ListNATRules(c.Context())
+	items, err := h.ops.NetworkModules.ListNATRules(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing NAT rules", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -35,7 +35,7 @@ func (h *Handler) GetNATRule(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid NAT rule ID")
 	}
-	item, err := h.service.GetNATRule(c.Context(), id)
+	item, err := h.ops.NetworkModules.GetNATRule(c.Context(), id)
 	if err != nil {
 		return respondCustomerASError(c, err, "NAT rule")
 	}
@@ -50,7 +50,7 @@ func (h *Handler) CreateNATRule(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2NATWrite) {
 		return nil
 	}
-	item, err := h.service.CreateNATRule(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateNATRule(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "NAT rule")
 	}
@@ -69,7 +69,7 @@ func (h *Handler) UpdateNATRule(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2NATWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateNATRule(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateNATRule(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "NAT rule")
 	}
@@ -84,7 +84,7 @@ func (h *Handler) DeleteNATRule(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2NATDelete) {
 		return nil
 	}
-	if err := h.service.DeleteNATRule(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteNATRule(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "NAT rule")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -94,7 +94,7 @@ func (h *Handler) ListFirewallZones(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallList) {
 		return nil
 	}
-	items, err := h.service.ListFirewallZones(c.Context())
+	items, err := h.ops.NetworkModules.ListFirewallZones(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -112,7 +112,7 @@ func (h *Handler) GetFirewallZone(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid firewall zone ID")
 	}
-	item, err := h.service.GetFirewallZone(c.Context(), id)
+	item, err := h.ops.NetworkModules.GetFirewallZone(c.Context(), id)
 	if err != nil {
 		return respondCustomerASError(c, err, "firewall zone")
 	}
@@ -127,7 +127,7 @@ func (h *Handler) CreateFirewallZone(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
-	item, err := h.service.CreateFirewallZone(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateFirewallZone(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "firewall zone")
 	}
@@ -146,7 +146,7 @@ func (h *Handler) UpdateFirewallZone(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateFirewallZone(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateFirewallZone(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "firewall zone")
 	}
@@ -161,7 +161,7 @@ func (h *Handler) DeleteFirewallZone(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallDelete) {
 		return nil
 	}
-	if err := h.service.DeleteFirewallZone(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteFirewallZone(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "firewall zone")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -171,7 +171,7 @@ func (h *Handler) ListFirewallZoneMappings(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallList) {
 		return nil
 	}
-	items, err := h.service.ListFirewallZoneMappings(c.Context(), int64(c.QueryInt("zone_id", 0)))
+	items, err := h.ops.NetworkModules.ListFirewallZoneMappings(c.Context(), int64(c.QueryInt("zone_id", 0)))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -189,7 +189,7 @@ func (h *Handler) CreateFirewallZoneMapping(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
-	item, err := h.service.CreateFirewallZoneMapping(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateFirewallZoneMapping(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "firewall zone mapping")
 	}
@@ -208,7 +208,7 @@ func (h *Handler) UpdateFirewallZoneMapping(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateFirewallZoneMapping(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateFirewallZoneMapping(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "firewall zone mapping")
 	}
@@ -223,7 +223,7 @@ func (h *Handler) DeleteFirewallZoneMapping(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2FirewallDelete) {
 		return nil
 	}
-	if err := h.service.DeleteFirewallZoneMapping(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteFirewallZoneMapping(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "firewall zone mapping")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -233,7 +233,7 @@ func (h *Handler) ListDHCPServers(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPList) {
 		return nil
 	}
-	items, err := h.service.ListDHCPServers(c.Context())
+	items, err := h.ops.NetworkModules.ListDHCPServers(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -251,7 +251,7 @@ func (h *Handler) CreateDHCPServer(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
-	item, err := h.service.CreateDHCPServer(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateDHCPServer(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "DHCP server")
 	}
@@ -270,7 +270,7 @@ func (h *Handler) UpdateDHCPServer(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateDHCPServer(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateDHCPServer(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "DHCP server")
 	}
@@ -285,7 +285,7 @@ func (h *Handler) DeleteDHCPServer(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPDelete) {
 		return nil
 	}
-	if err := h.service.DeleteDHCPServer(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteDHCPServer(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "DHCP server")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -295,7 +295,7 @@ func (h *Handler) ListDHCPLeases(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPList) {
 		return nil
 	}
-	items, err := h.service.ListDHCPLeases(c.Context(), int64(c.QueryInt("server_id", 0)))
+	items, err := h.ops.NetworkModules.ListDHCPLeases(c.Context(), int64(c.QueryInt("server_id", 0)))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -313,7 +313,7 @@ func (h *Handler) CreateDHCPLease(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
-	item, err := h.service.CreateDHCPLease(c.Context(), req)
+	item, err := h.ops.NetworkModules.CreateDHCPLease(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "DHCP lease")
 	}
@@ -332,7 +332,7 @@ func (h *Handler) UpdateDHCPLease(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPWrite) {
 		return nil
 	}
-	item, err := h.service.UpdateDHCPLease(c.Context(), id, req)
+	item, err := h.ops.NetworkModules.UpdateDHCPLease(c.Context(), id, req)
 	if err != nil {
 		return respondCustomerASError(c, err, "DHCP lease")
 	}
@@ -347,7 +347,7 @@ func (h *Handler) DeleteDHCPLease(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPDelete) {
 		return nil
 	}
-	if err := h.service.DeleteDHCPLease(c.Context(), id); err != nil {
+	if err := h.ops.NetworkModules.DeleteDHCPLease(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "DHCP lease")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
