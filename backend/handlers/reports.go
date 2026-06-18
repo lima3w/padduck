@@ -478,7 +478,7 @@ func (h *Handler) BulkDeleteIPs(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "ip_ids must not be empty")
 	}
 
-	deleted, err := h.service.BulkDeleteIPAddresses(c.Context(), req.IPIDs)
+	deleted, err := h.ops.IPAM.BulkDeleteIPAddresses(c.Context(), req.IPIDs)
 	if err != nil {
 		reqLogger(c).Error("bulk delete IPs failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete IP addresses")

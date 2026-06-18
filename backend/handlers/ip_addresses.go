@@ -61,7 +61,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		req.MACAddress = &normalized
 	}
 
-	ip, err := h.service.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
+	ip, err := h.ops.IPAM.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error creating IP address", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -87,7 +87,7 @@ func (h *Handler) GetIPAddress(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
-	ip, err := h.service.GetIPAddress(c.Context(), int64(id))
+	ip, err := h.ops.IPAM.GetIPAddress(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting IP address", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -109,7 +109,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 
 	if c.QueryBool("full_range") {
 		page, limit, _ := parseListOptions(c)
-		ips, total, err := h.service.ListIPAddressesFullRange(c.Context(), int64(subnetID), page, limit)
+		ips, total, err := h.ops.IPAM.ListIPAddressesFullRange(c.Context(), int64(subnetID), page, limit)
 		if err != nil {
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 		}
@@ -121,7 +121,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 
 	page, limit, opts := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" || opts.Sort != "" || opts.Query != "" || opts.Status != "" || c.Query("hide_available") != "" {
-		ips, total, err := h.service.ListIPAddressesPaginatedWithOptions(c.Context(), int64(subnetID), page, limit, opts)
+		ips, total, err := h.ops.IPAM.ListIPAddressesPaginatedWithOptions(c.Context(), int64(subnetID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -137,7 +137,7 @@ func (h *Handler) ListIPAddresses(c *fiber.Ctx) error {
 		})
 	}
 
-	ips, err := h.service.ListIPAddresses(c.Context(), int64(subnetID))
+	ips, err := h.ops.IPAM.ListIPAddresses(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error listing IP addresses", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -163,7 +163,7 @@ func (h *Handler) AssignIPAddress(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	ip, err := h.service.AssignIPAddress(c.Context(), int64(id), req.DeviceID)
+	ip, err := h.ops.IPAM.AssignIPAddress(c.Context(), int64(id), req.DeviceID)
 	if err != nil {
 		reqLogger(c).Error("error assigning IP address", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -193,7 +193,7 @@ func (h *Handler) ReleaseIPAddress(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
-	ip, err := h.service.ReleaseIPAddress(c.Context(), int64(id))
+	ip, err := h.ops.IPAM.ReleaseIPAddress(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error releasing IP address", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -218,7 +218,7 @@ func (h *Handler) DeleteIPAddress(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
-	if err := h.service.DeleteIPAddress(c.Context(), int64(id)); err != nil {
+	if err := h.ops.IPAM.DeleteIPAddress(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting IP address", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -258,9 +258,9 @@ func (h *Handler) UpdateIPMeta(c *fiber.Ctx) error {
 		req.MACAddress = &normalized
 	}
 
-	oldIP, _ := h.service.GetIPAddress(c.Context(), int64(id))
+	oldIP, _ := h.ops.IPAM.GetIPAddress(c.Context(), int64(id))
 
-	ip, err := h.service.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
+	ip, err := h.ops.IPAM.UpdateIPAddressMeta(c.Context(), int64(id), req.Hostname, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error updating IP meta", "id", id, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -304,7 +304,7 @@ func (h *Handler) QuickCreateIPAddress(c *fiber.Ctx) error {
 	if req.Address == "" {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "address is required")
 	}
-	ip, err := h.service.QuickCreateIPAddress(c.Context(), req.Address)
+	ip, err := h.ops.IPAM.QuickCreateIPAddress(c.Context(), req.Address)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -330,7 +330,7 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	ip, err := h.service.AllocateIPAddress(c.Context(), int64(subnetID), req.DeviceID)
+	ip, err := h.ops.IPAM.AllocateIPAddress(c.Context(), int64(subnetID), req.DeviceID)
 	if err != nil {
 		reqLogger(c).Error("error allocating IP address", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -360,7 +360,7 @@ func (h *Handler) GetSubnetUtilization(c *fiber.Ctx) error {
 		return nil
 	}
 
-	utilization, err := h.service.GetSubnetUtilization(c.Context(), int64(subnetID))
+	utilization, err := h.ops.IPAM.GetSubnetUtilization(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error getting subnet utilization", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -389,7 +389,7 @@ func (h *Handler) AssignIPAddressWithLease(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	ip, err := h.service.AssignIPAddressWithLease(c.Context(), int64(id), req.DeviceID, req.LeaseDurationDays)
+	ip, err := h.ops.IPAM.AssignIPAddressWithLease(c.Context(), int64(id), req.DeviceID, req.LeaseDurationDays)
 	if err != nil {
 		reqLogger(c).Error("error assigning IP address with lease", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -408,7 +408,7 @@ func (h *Handler) IsIPLeaseExpired(c *fiber.Ctx) error {
 		return nil
 	}
 
-	expired, err := h.service.IsIPLeaseExpired(c.Context(), int64(id))
+	expired, err := h.ops.IPAM.IsIPLeaseExpired(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error checking IP lease status", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -427,7 +427,7 @@ func (h *Handler) ReleaseExpiredLease(c *fiber.Ctx) error {
 		return nil
 	}
 
-	ip, err := h.service.ReleaseExpiredLease(c.Context(), int64(id))
+	ip, err := h.ops.IPAM.ReleaseExpiredLease(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error releasing expired lease", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -447,7 +447,7 @@ func (h *Handler) GetNextAvailableIP(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2IPList, services.ResourceScope{Type: "subnet", ID: int64(subnetID)}) {
 		return nil
 	}
-	ip, err := h.service.FindNextAvailableIP(c.Context(), int64(subnetID))
+	ip, err := h.ops.IPAM.FindNextAvailableIP(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error finding next available IP", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "no available IP addresses in subnet")

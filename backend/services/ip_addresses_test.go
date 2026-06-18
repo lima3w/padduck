@@ -59,7 +59,7 @@ func TestCreateIPAddress_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateIPAddress(ctx, tt.subnetID, tt.address, "", tt.status, nil, nil, nil, nil)
+			_, err := svc.Ops.IPAM.CreateIPAddress(ctx, tt.subnetID, tt.address, "", tt.status, nil, nil, nil, nil)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})
@@ -96,13 +96,13 @@ func TestAssignIPAddress_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("id zero returns invalid IP address ID", func(t *testing.T) {
-		_, err := svc.AssignIPAddress(ctx, 0, nil)
+		_, err := svc.Ops.IPAM.AssignIPAddress(ctx, 0, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid IP address ID")
 	})
 
 	t.Run("id negative returns invalid IP address ID", func(t *testing.T) {
-		_, err := svc.AssignIPAddress(ctx, -1, nil)
+		_, err := svc.Ops.IPAM.AssignIPAddress(ctx, -1, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid IP address ID")
 	})
@@ -123,7 +123,7 @@ func TestReleaseIPAddress_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.ReleaseIPAddress(ctx, tt.id)
+			_, err := svc.Ops.IPAM.ReleaseIPAddress(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid IP address ID")
 		})
@@ -144,7 +144,7 @@ func TestDeleteIPAddress_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteIPAddress(ctx, tt.id)
+			err := svc.Ops.IPAM.DeleteIPAddress(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid IP address ID")
 		})
@@ -165,7 +165,7 @@ func TestGetIPAddress_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetIPAddress(ctx, tt.id)
+			_, err := svc.Ops.IPAM.GetIPAddress(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid IP address ID")
 		})
@@ -186,7 +186,7 @@ func TestFindNextAvailableIP_InvalidSubnetID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.FindNextAvailableIP(ctx, tt.subnetID)
+			_, err := svc.Ops.IPAM.FindNextAvailableIP(ctx, tt.subnetID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})
@@ -198,13 +198,13 @@ func TestAllocateIPAddress_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("subnetID zero", func(t *testing.T) {
-		_, err := svc.AllocateIPAddress(ctx, 0, nil)
+		_, err := svc.Ops.IPAM.AllocateIPAddress(ctx, 0, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid subnet ID")
 	})
 
 	t.Run("subnetID negative", func(t *testing.T) {
-		_, err := svc.AllocateIPAddress(ctx, -1, nil)
+		_, err := svc.Ops.IPAM.AllocateIPAddress(ctx, -1, nil)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid subnet ID")
 	})
@@ -225,7 +225,7 @@ func TestGetSubnetUtilization_InvalidSubnetID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetSubnetUtilization(ctx, tt.subnetID)
+			_, err := svc.Ops.IPAM.GetSubnetUtilization(ctx, tt.subnetID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})

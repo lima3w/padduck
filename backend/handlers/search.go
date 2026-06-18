@@ -36,7 +36,7 @@ func (h *Handler) GlobalSearch(c *fiber.Ctx) error {
 		return nil
 	}
 	q := c.Query("q")
-	result, err := h.service.GlobalSearch(c.Context(), q, 5)
+	result, err := h.ops.IPAM.GlobalSearch(c.Context(), q, 5)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, err.Error())
 	}
@@ -54,7 +54,7 @@ func (h *Handler) SearchNetworks(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	sections, err := h.service.SearchNetworks(c.Context(), req.Query, req.Limit, req.Offset)
+	sections, err := h.ops.IPAM.SearchNetworks(c.Context(), req.Query, req.Limit, req.Offset)
 	if err != nil {
 		reqLogger(c).Error("error searching sections", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -82,7 +82,7 @@ func (h *Handler) SearchSubnets(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	subnets, err := h.service.SearchSubnets(c.Context(), int64(networkID), req.Query, req.Limit, req.Offset, req.CustomFields)
+	subnets, err := h.ops.IPAM.SearchSubnets(c.Context(), int64(networkID), req.Query, req.Limit, req.Offset, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error searching subnets", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -120,7 +120,7 @@ func (h *Handler) SearchIPAddresses(c *fiber.Ctx) error {
 		CustomFields:   req.CustomFields,
 	}
 
-	ips, err := h.service.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset, opts)
+	ips, err := h.ops.IPAM.SearchIPAddresses(c.Context(), int64(subnetID), req.Query, req.Status, req.Limit, req.Offset, opts)
 	if err != nil {
 		reqLogger(c).Error("error searching IP addresses", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -140,7 +140,7 @@ func (h *Handler) SearchIPAddressesGlobal(c *fiber.Ctx) error {
 		return nil
 	}
 	q := c.Query("q")
-	ips, err := h.service.SearchIPAddressesGlobal(c.Context(), q)
+	ips, err := h.ops.IPAM.SearchIPAddressesGlobal(c.Context(), q)
 	if err != nil {
 		reqLogger(c).Error("error searching IP addresses globally", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "search failed")

@@ -25,7 +25,7 @@ func TestCreateVLAN_InvalidVLANID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateVLAN(ctx, nil, nil, nil, tt.vlanID, "SomeVLAN", "desc")
+			_, err := svc.Ops.IPAM.CreateVLAN(ctx, nil, nil, nil, tt.vlanID, "SomeVLAN", "desc")
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "VLAN ID must be between 0 and 4094")
 		})
@@ -46,7 +46,7 @@ func TestCreateVLAN_EmptyName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateVLAN(ctx, nil, nil, nil, tt.vlanID, "", "desc")
+			_, err := svc.Ops.IPAM.CreateVLAN(ctx, nil, nil, nil, tt.vlanID, "", "desc")
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "VLAN name is required")
 		})
@@ -68,7 +68,7 @@ func TestGetVLAN_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetVLAN(ctx, tt.id)
+			_, err := svc.Ops.IPAM.GetVLAN(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN ID")
 		})
@@ -89,7 +89,7 @@ func TestUpdateVLAN_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateVLAN(ctx, tt.id, nil, nil, "SomeName", "desc")
+			_, err := svc.Ops.IPAM.UpdateVLAN(ctx, tt.id, nil, nil, "SomeName", "desc")
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN ID")
 		})
@@ -101,7 +101,7 @@ func TestUpdateVLAN_EmptyName(t *testing.T) {
 	ctx := context.Background()
 
 	// Valid id but empty name should return name-required error before hitting repo
-	_, err := svc.UpdateVLAN(ctx, 1, nil, nil, "", "desc")
+	_, err := svc.Ops.IPAM.UpdateVLAN(ctx, 1, nil, nil, "", "desc")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "VLAN name is required")
 }
@@ -121,7 +121,7 @@ func TestDeleteVLAN_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteVLAN(ctx, tt.id)
+			err := svc.Ops.IPAM.DeleteVLAN(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN ID")
 		})
@@ -143,7 +143,7 @@ func TestListVLANsByVRF_InvalidVRFID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.ListVLANsByVRF(ctx, tt.vrfID)
+			_, err := svc.Ops.IPAM.ListVLANsByVRF(ctx, tt.vrfID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VRF ID")
 		})
@@ -197,7 +197,7 @@ func TestGetVLANSubnets_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetVLANSubnets(ctx, tt.vlanID)
+			_, err := svc.Ops.IPAM.GetVLANSubnets(ctx, tt.vlanID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN ID")
 		})
@@ -220,7 +220,7 @@ func TestAssignSubnetToVLAN_InvalidIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.AssignSubnetToVLAN(ctx, tt.vlanID, tt.subnetID)
+			_, err := svc.Ops.IPAM.AssignSubnetToVLAN(ctx, tt.vlanID, tt.subnetID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.want)
 		})
@@ -243,7 +243,7 @@ func TestRemoveSubnetFromVLAN_InvalidIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.RemoveSubnetFromVLAN(ctx, tt.vlanID, tt.subnetID)
+			_, err := svc.Ops.IPAM.RemoveSubnetFromVLAN(ctx, tt.vlanID, tt.subnetID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.want)
 		})
@@ -256,7 +256,7 @@ func TestCreateVLANDomain_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	_, err := svc.CreateVLANDomain(ctx, "", nil)
+	_, err := svc.Ops.IPAM.CreateVLANDomain(ctx, "", nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "VLAN domain name is required")
 }
@@ -276,7 +276,7 @@ func TestGetVLANDomain_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetVLANDomain(ctx, tt.id)
+			_, err := svc.Ops.IPAM.GetVLANDomain(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN domain ID")
 		})
@@ -297,7 +297,7 @@ func TestUpdateVLANDomain_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateVLANDomain(ctx, tt.id, "Foo", nil)
+			_, err := svc.Ops.IPAM.UpdateVLANDomain(ctx, tt.id, "Foo", nil)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN domain ID")
 		})
@@ -308,7 +308,7 @@ func TestUpdateVLANDomain_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	_, err := svc.UpdateVLANDomain(ctx, 1, "", nil)
+	_, err := svc.Ops.IPAM.UpdateVLANDomain(ctx, 1, "", nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "VLAN domain name is required")
 }
@@ -319,7 +319,7 @@ func TestCreateVLANGroup_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	_, err := svc.CreateVLANGroup(ctx, "", nil, nil)
+	_, err := svc.Ops.IPAM.CreateVLANGroup(ctx, "", nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "VLAN group name is required")
 }
@@ -339,7 +339,7 @@ func TestGetVLANGroup_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetVLANGroup(ctx, tt.id)
+			_, err := svc.Ops.IPAM.GetVLANGroup(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN group ID")
 		})
@@ -360,7 +360,7 @@ func TestUpdateVLANGroup_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateVLANGroup(ctx, tt.id, "Foo", nil, nil)
+			_, err := svc.Ops.IPAM.UpdateVLANGroup(ctx, tt.id, "Foo", nil, nil)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN group ID")
 		})
@@ -371,7 +371,7 @@ func TestUpdateVLANGroup_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	_, err := svc.UpdateVLANGroup(ctx, 1, "", nil, nil)
+	_, err := svc.Ops.IPAM.UpdateVLANGroup(ctx, 1, "", nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "VLAN group name is required")
 }
@@ -391,7 +391,7 @@ func TestDeleteVLANGroup_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteVLANGroup(ctx, tt.id)
+			err := svc.Ops.IPAM.DeleteVLANGroup(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN group ID")
 		})
@@ -413,7 +413,7 @@ func TestDeleteVLANDomain_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteVLANDomain(ctx, tt.id)
+			err := svc.Ops.IPAM.DeleteVLANDomain(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid VLAN domain ID")
 		})

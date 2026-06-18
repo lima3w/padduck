@@ -49,7 +49,7 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	subnet, err := h.service.CreateSubnet(c.Context(), int64(networkID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
+	subnet, err := h.ops.IPAM.CreateSubnet(c.Context(), int64(networkID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
 	if err != nil {
 		var overlapErr *services.SubnetOverlapError
 		if errors.As(err, &overlapErr) {
@@ -80,7 +80,7 @@ func (h *Handler) GetSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
-	subnet, err := h.service.GetSubnet(c.Context(), int64(id))
+	subnet, err := h.ops.IPAM.GetSubnet(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting subnet", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -102,7 +102,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 
 	page, limit, opts := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" || opts.Sort != "" || opts.Query != "" {
-		subnets, total, err := h.service.ListSubnetsPaginatedWithOptions(c.Context(), int64(networkID), page, limit, opts)
+		subnets, total, err := h.ops.IPAM.ListSubnetsPaginatedWithOptions(c.Context(), int64(networkID), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing subnets", "network_id", networkID, "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -118,7 +118,7 @@ func (h *Handler) ListSubnets(c *fiber.Ctx) error {
 		})
 	}
 
-	subnets, err := h.service.ListSubnets(c.Context(), int64(networkID))
+	subnets, err := h.ops.IPAM.ListSubnets(c.Context(), int64(networkID))
 	if err != nil {
 		reqLogger(c).Error("error listing subnets", "network_id", networkID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -144,9 +144,9 @@ func (h *Handler) UpdateSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	oldSubnet, _ := h.service.GetSubnet(c.Context(), int64(id))
+	oldSubnet, _ := h.ops.IPAM.GetSubnet(c.Context(), int64(id))
 
-	subnet, err := h.service.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields, req.TechnitiumScopeName)
+	subnet, err := h.ops.IPAM.UpdateSubnet(c.Context(), int64(id), req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields, req.TechnitiumScopeName)
 	if err != nil {
 		reqLogger(c).Error("error updating subnet", "id", id, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -184,7 +184,7 @@ func (h *Handler) GetOverlapReport(c *fiber.Ctx) error {
 		return nil
 	}
 
-	pairs, err := h.service.OverlapReport(c.Context())
+	pairs, err := h.ops.IPAM.OverlapReport(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error generating overlap report", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -207,7 +207,7 @@ func (h *Handler) DeleteSubnet(c *fiber.Ctx) error {
 		return nil
 	}
 
-	if err := h.service.DeleteSubnet(c.Context(), int64(id)); err != nil {
+	if err := h.ops.IPAM.DeleteSubnet(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting subnet", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

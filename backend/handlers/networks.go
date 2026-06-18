@@ -34,7 +34,7 @@ func (h *Handler) CreateNetwork(c *fiber.Ctx) error {
 		createdBy = userID
 	}
 
-	section, err := h.service.CreateNetwork(c.Context(), req.Name, req.Description, createdBy)
+	section, err := h.ops.IPAM.CreateNetwork(c.Context(), req.Name, req.Description, createdBy)
 	if err != nil {
 		reqLogger(c).Error("error creating section", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -60,7 +60,7 @@ func (h *Handler) GetNetwork(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid section ID")
 	}
 
-	section, err := h.service.GetNetwork(c.Context(), int64(id))
+	section, err := h.ops.IPAM.GetNetwork(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting section", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -78,7 +78,7 @@ func (h *Handler) ListNetworks(c *fiber.Ctx) error {
 
 	page, limit, opts := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" || opts.Sort != "" || opts.Query != "" {
-		sections, total, err := h.service.ListNetworksPaginatedWithOptions(c.Context(), page, limit, opts)
+		sections, total, err := h.ops.IPAM.ListNetworksPaginatedWithOptions(c.Context(), page, limit, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing sections", "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -94,7 +94,7 @@ func (h *Handler) ListNetworks(c *fiber.Ctx) error {
 		})
 	}
 
-	sections, err := h.service.ListNetworks(c.Context())
+	sections, err := h.ops.IPAM.ListNetworks(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing sections", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -120,9 +120,9 @@ func (h *Handler) UpdateNetwork(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	oldSection, _ := h.service.GetNetwork(c.Context(), int64(id))
+	oldSection, _ := h.ops.IPAM.GetNetwork(c.Context(), int64(id))
 
-	section, err := h.service.UpdateNetwork(c.Context(), int64(id), req.Name, req.Description)
+	section, err := h.ops.IPAM.UpdateNetwork(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating section", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -153,7 +153,7 @@ func (h *Handler) DeleteNetwork(c *fiber.Ctx) error {
 		return nil
 	}
 
-	if err := h.service.DeleteNetwork(c.Context(), int64(id)); err != nil {
+	if err := h.ops.IPAM.DeleteNetwork(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting section", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

@@ -12,7 +12,7 @@ import (
 // Tests for pure validation logic in ipv6_delegation.go that fires before
 // any repository call, so a nil-repository Service is safe to use here.
 
-var nilRepoSvc = &Service{}
+var nilRepoSvc = &IPAMService{}
 
 // ---------------------------------------------------------------------------
 // ListDelegations — validates subnetID > 0
