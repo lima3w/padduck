@@ -301,15 +301,3 @@ func (s *Service) ListCustomersPaginated(ctx context.Context, page, limit int) (
 	offset := (page - 1) * limit
 	return s.repository.ListCustomersPaginated(ctx, limit, offset)
 }
-
-// ListAutonomousSystemsPaginated returns a paginated list of autonomous systems.
-func (s *Service) ListAutonomousSystemsPaginated(ctx context.Context, page, limit int) ([]*models.AutonomousSystem, int64, error) {
-	if page < 1 {
-		page = 1
-	}
-	if limit < 1 || limit > 200 {
-		limit = 25
-	}
-	offset := (page - 1) * limit
-	return s.repository.ListAutonomousSystemsPaginated(ctx, limit, offset)
-}
