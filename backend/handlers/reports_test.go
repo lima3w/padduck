@@ -15,7 +15,7 @@ import (
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestGetSubnetUtilizationHistory_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/utilization/history", h.GetSubnetUtilizationHistory)
 
@@ -26,7 +26,7 @@ func TestGetSubnetUtilizationHistory_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSubnetUtilizationHistory_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/utilization/history", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "viewer"})
@@ -45,7 +45,7 @@ func TestGetSubnetUtilizationHistory_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestGetUtilizationTrends_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/utilization-trends", h.GetUtilizationTrends)
 
@@ -56,7 +56,7 @@ func TestGetUtilizationTrends_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetUtilizationTrends_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/utilization-trends", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -74,7 +74,7 @@ func TestGetUtilizationTrends_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestGetSubnetsNearCapacity_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/subnets-near-capacity", h.GetSubnetsNearCapacity)
 
@@ -85,7 +85,7 @@ func TestGetSubnetsNearCapacity_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSubnetsNearCapacity_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/subnets-near-capacity", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -103,7 +103,7 @@ func TestGetSubnetsNearCapacity_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestListScheduledReports_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/scheduled", h.ListScheduledReports)
 
@@ -114,7 +114,7 @@ func TestListScheduledReports_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListScheduledReports_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/scheduled", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -132,7 +132,7 @@ func TestListScheduledReports_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestCreateScheduledReport_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/reports/scheduled", h.CreateScheduledReport)
 
@@ -144,7 +144,7 @@ func TestCreateScheduledReport_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateScheduledReport_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/reports/scheduled", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -163,7 +163,7 @@ func TestCreateScheduledReport_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestGetScheduledReport_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/scheduled/:id", h.GetScheduledReport)
 
@@ -174,7 +174,7 @@ func TestGetScheduledReport_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetScheduledReport_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/scheduled/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -192,7 +192,7 @@ func TestGetScheduledReport_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestUpdateScheduledReport_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/reports/scheduled/:id", h.UpdateScheduledReport)
 
@@ -204,7 +204,7 @@ func TestUpdateScheduledReport_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateScheduledReport_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/reports/scheduled/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -223,7 +223,7 @@ func TestUpdateScheduledReport_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestDeleteScheduledReport_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/reports/scheduled/:id", h.DeleteScheduledReport)
 
@@ -234,7 +234,7 @@ func TestDeleteScheduledReport_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteScheduledReport_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/reports/scheduled/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -252,7 +252,7 @@ func TestDeleteScheduledReport_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestRunScheduledReportNow_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/reports/scheduled/:id/run", h.RunScheduledReportNow)
 
@@ -263,7 +263,7 @@ func TestRunScheduledReportNow_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRunScheduledReportNow_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/reports/scheduled/:id/run", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -281,7 +281,7 @@ func TestRunScheduledReportNow_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestExportSubnets_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/export/subnets", h.ExportSubnets)
 
@@ -292,7 +292,7 @@ func TestExportSubnets_NoUser_Returns401(t *testing.T) {
 }
 
 func TestExportSubnets_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/export/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -310,7 +310,7 @@ func TestExportSubnets_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestExportIPs_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/export/ips", h.ExportIPs)
 
@@ -321,7 +321,7 @@ func TestExportIPs_NoUser_Returns401(t *testing.T) {
 }
 
 func TestExportIPs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/export/ips", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -339,7 +339,7 @@ func TestExportIPs_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestExportInactiveIPs_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/export/inactive-ips", h.ExportInactiveIPs)
 
@@ -350,7 +350,7 @@ func TestExportInactiveIPs_NoUser_Returns401(t *testing.T) {
 }
 
 func TestExportInactiveIPs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/export/inactive-ips", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -368,7 +368,7 @@ func TestExportInactiveIPs_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestGetInactiveIPs_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/inactive-ips", h.GetInactiveIPs)
 
@@ -379,7 +379,7 @@ func TestGetInactiveIPs_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetInactiveIPs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/reports/inactive-ips", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -397,7 +397,7 @@ func TestGetInactiveIPs_NonAdmin_Returns403(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestBulkReleaseIPs_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/ip-addresses/bulk-release", h.BulkReleaseIPs)
 
@@ -410,7 +410,7 @@ func TestBulkReleaseIPs_NoUser_Returns401(t *testing.T) {
 }
 
 func TestBulkReleaseIPs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/ip-addresses/bulk-release", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})

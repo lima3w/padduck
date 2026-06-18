@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestRequestUnlock_EmptyUsername_Returns200(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/unlock", h.RequestUnlock)
 	req := httptest.NewRequest("POST", "/auth/unlock", strings.NewReader(`{"username":""}`))
@@ -27,7 +27,7 @@ func TestRequestUnlock_EmptyUsername_Returns200(t *testing.T) {
 }
 
 func TestRequestUnlock_InvalidBody_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/unlock", h.RequestUnlock)
 	req := httptest.NewRequest("POST", "/auth/unlock", strings.NewReader(`not json`))
@@ -42,7 +42,7 @@ func TestRequestUnlock_InvalidBody_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestVerifyUnlock_MissingToken_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/auth/unlock", h.VerifyUnlock)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/unlock", nil))
@@ -55,7 +55,7 @@ func TestVerifyUnlock_MissingToken_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetLoginHistory_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/user/login-history", h.GetLoginHistory)
 	resp, err := app.Test(httptest.NewRequest("GET", "/user/login-history", nil))
@@ -68,7 +68,7 @@ func TestGetLoginHistory_NoUserID_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAdminUnlockUser_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/unlock", h.AdminUnlockUser)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/users/1/unlock", nil))
@@ -77,7 +77,7 @@ func TestAdminUnlockUser_NoUserID_Returns401(t *testing.T) {
 }
 
 func TestAdminUnlockUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("userID", int64(1))

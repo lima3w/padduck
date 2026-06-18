@@ -35,6 +35,8 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	webhookSvc := NewWebhookService(repo)
 	auditSvc := NewAuditService(repo, configSvc, webhookSvc)
 
+	notificationSvc := NewNotificationService(repo, emailSvc)
+
 	svc := &Service{
 		repository:    repo,
 		encryptionKey: mfaEncryptionKey,
@@ -44,13 +46,14 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 			Email:        emailSvc,
 			Registration: registrationSvc,
 			MFA:          mfaSvc,
-			Notification: NewNotificationService(repo, emailSvc),
+			Notification: notificationSvc,
 			LDAP:         ldapSvc,
 			OAuth2:       oauth2Svc,
 			SAML:         samlSvc,
 		},
 	}
 	dnsSvc := NewDNSService(configSvc, repo)
+	identitySvc := NewIdentityService(repo, configSvc, emailSvc, mfaSvc, notificationSvc)
 	svc.Ops = &OpsManager{
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
@@ -63,6 +66,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Telemetry:      newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
 		NetworkModules: NewNetworkModulesService(repo),
 		IPAM:           NewIPAMService(repo, configSvc, dnsSvc),
+		Identity:       identitySvc,
 	}
 	return svc
 }
@@ -85,4 +89,14 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 // ReleaseIPAddress forwards to IPAMService to satisfy the automationIPAM interface.
 func (s *Service) ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAddress, error) {
 	return s.Ops.IPAM.ReleaseIPAddress(ctx, id)
+}
+
+// InitAdminPassword forwards to IdentityService (called from main.go startup).
+func (s *Service) InitAdminPassword(ctx context.Context, password string) (bool, error) {
+	return s.Ops.Identity.InitAdminPassword(ctx, password)
+}
+
+// ForceResetAdminPassword forwards to IdentityService (called from main.go startup).
+func (s *Service) ForceResetAdminPassword(ctx context.Context, password string) error {
+	return s.Ops.Identity.ForceResetAdminPassword(ctx, password)
 }

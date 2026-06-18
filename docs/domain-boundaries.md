@@ -33,6 +33,7 @@ As domains are extracted the residual `service` field loses methods. When it is 
 | `Telemetry` | Opt-in usage telemetry |
 | `NetworkModules` | NAT rules, firewall zones/mappings, DHCP servers/leases, circuit providers/circuits (physical and logical), BGP autonomous systems |
 | `IPAM` | Networks, subnets, IP addresses, VRFs, VLANs, VLAN domains/groups, tags, global and scoped search, dashboard summary/activity, IPv6 delegations, subnet split/merge/resize |
+| `Identity` | Users, RBAC roles/permissions, API tokens, web sessions, password management, account security (lockout/unlock), Grafana datasource proxy |
 
 ### Identity & Auth (`h.auth` — `AuthManager`)
 
@@ -52,7 +53,6 @@ These method groups remain on the root `Service` struct and will be extracted do
 
 | Planned domain | Service files | Approx. methods |
 |---|---|---|
-| **Identity** | users, rbac, security, session, auth (tokens/sessions/passwords) | ~73 |
 | **Infrastructure** | devices, racks, locations, nameservers | ~32 |
 | **Customers** | customers, customer\_associations | ~8 |
 | **Workflow** | requests, custom\_fields | ~33 |

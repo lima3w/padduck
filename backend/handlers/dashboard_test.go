@@ -13,7 +13,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestGetDashboardSummary_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/dashboard/summary", h.GetDashboardSummary)
 	resp, err := app.Test(httptest.NewRequest("GET", "/dashboard/summary", nil))
@@ -22,7 +22,7 @@ func TestGetDashboardSummary_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetDashboardSummary_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())
@@ -39,7 +39,7 @@ func TestGetDashboardSummary_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetDashboardRecentActivity_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/dashboard/recent-activity", h.GetDashboardRecentActivity)
 	resp, err := app.Test(httptest.NewRequest("GET", "/dashboard/recent-activity", nil))
@@ -48,7 +48,7 @@ func TestGetDashboardRecentActivity_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetDashboardRecentActivity_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())
@@ -66,7 +66,7 @@ func TestGetDashboardRecentActivity_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetSubnetTree_BadSectionID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id/subnets/tree", h.GetSubnetTree)
 	resp, err := app.Test(httptest.NewRequest("GET", "/networks/notanint/subnets/tree", nil))
@@ -75,7 +75,7 @@ func TestGetSubnetTree_BadSectionID_Returns400(t *testing.T) {
 }
 
 func TestGetSubnetTree_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id/subnets/tree", h.GetSubnetTree)
 	resp, err := app.Test(httptest.NewRequest("GET", "/networks/1/subnets/tree", nil))
@@ -84,7 +84,7 @@ func TestGetSubnetTree_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSubnetTree_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())

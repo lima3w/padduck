@@ -10,11 +10,11 @@ import (
 	"padduck/models"
 )
 
-// newTestService returns a zero-value Service sufficient for pure RBAC logic
+// newTestService returns a zero-value IdentityService sufficient for pure RBAC logic
 // (no DB or config fields are accessed by HasPermission, CanAccessResource,
 // RequirePermission, or IsValidRole).
-func newTestService() *Service {
-	return &Service{}
+func newTestService() *IdentityService {
+	return &IdentityService{}
 }
 
 // ---------------------------------------------------------------------------
@@ -416,7 +416,7 @@ func TestPermMatches_ResourceScopedPermissions(t *testing.T) {
 func TestCreateRole_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	_, err := svc.CreateRole(ctx, "", "some description")
+	_, err := svc.Ops.Identity.CreateRole(ctx, "", "some description")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "role name is required")
 }
@@ -428,7 +428,7 @@ func TestCreateRole_InvalidNameChars(t *testing.T) {
 	invalid := []string{"role name", "role.name", "role/name", "role@name"}
 	for _, name := range invalid {
 		t.Run(name, func(t *testing.T) {
-			_, err := svc.CreateRole(ctx, name, "")
+			_, err := svc.Ops.Identity.CreateRole(ctx, name, "")
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "letters, numbers")
 		})
@@ -439,7 +439,7 @@ func TestCreateRole_ValidName_ReachesRepo(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 	assert.Panics(t, func() {
-		_, _ = svc.CreateRole(ctx, "my-role", "description")
+		_, _ = svc.Ops.Identity.CreateRole(ctx, "my-role", "description")
 	})
 }
 
@@ -452,7 +452,7 @@ func TestGetRole_InvalidID(t *testing.T) {
 	ctx := context.Background()
 
 	for _, id := range []int64{0, -1, -99} {
-		_, err := svc.GetRole(ctx, id)
+		_, err := svc.Ops.Identity.GetRole(ctx, id)
 		assert.Error(t, err, "id %d should be rejected", id)
 		assert.Contains(t, err.Error(), "invalid role ID")
 	}
@@ -465,7 +465,7 @@ func TestGetRole_InvalidID(t *testing.T) {
 func TestUpdateRole_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	_, err := svc.UpdateRole(ctx, 0, "valid-name", "desc")
+	_, err := svc.Ops.Identity.UpdateRole(ctx, 0, "valid-name", "desc")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid role ID")
 }
@@ -473,7 +473,7 @@ func TestUpdateRole_InvalidID(t *testing.T) {
 func TestUpdateRole_EmptyName(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	_, err := svc.UpdateRole(ctx, 1, "", "desc")
+	_, err := svc.Ops.Identity.UpdateRole(ctx, 1, "", "desc")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "role name is required")
 }
@@ -487,7 +487,7 @@ func TestDeleteRole_InvalidID(t *testing.T) {
 	ctx := context.Background()
 
 	for _, id := range []int64{0, -1} {
-		err := svc.DeleteRole(ctx, id)
+		err := svc.Ops.Identity.DeleteRole(ctx, id)
 		assert.Error(t, err, "id %d should be rejected", id)
 		assert.Contains(t, err.Error(), "invalid role ID")
 	}
@@ -500,7 +500,7 @@ func TestDeleteRole_InvalidID(t *testing.T) {
 func TestAddPermissionToRole_InvalidRoleID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	_, err := svc.AddPermissionToRole(ctx, 0, PermV2NetworkRead, nil, nil)
+	_, err := svc.Ops.Identity.AddPermissionToRole(ctx, 0, PermV2NetworkRead, nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid role ID")
 }
@@ -508,7 +508,7 @@ func TestAddPermissionToRole_InvalidRoleID(t *testing.T) {
 func TestAddPermissionToRole_UnknownPermission(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	_, err := svc.AddPermissionToRole(ctx, 1, "not:a:real:permission", nil, nil)
+	_, err := svc.Ops.Identity.AddPermissionToRole(ctx, 1, "not:a:real:permission", nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown permission")
 }
@@ -519,7 +519,7 @@ func TestAddPermissionToRole_ResourceTypeRequiresResourceID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 	resourceType := "subnet"
-	_, err := svc.AddPermissionToRole(ctx, 1, PermV2SubnetRead, &resourceType, nil)
+	_, err := svc.Ops.Identity.AddPermissionToRole(ctx, 1, PermV2SubnetRead, &resourceType, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "resource ID is required")
 }
@@ -528,7 +528,7 @@ func TestAddPermissionToRole_ValidArgs_ReachesRepo(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 	assert.Panics(t, func() {
-		_, _ = svc.AddPermissionToRole(ctx, 1, PermV2NetworkRead, nil, nil)
+		_, _ = svc.Ops.Identity.AddPermissionToRole(ctx, 1, PermV2NetworkRead, nil, nil)
 	})
 }
 
@@ -540,7 +540,7 @@ func TestRemovePermissionFromRole_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 	for _, id := range []int64{0, -1} {
-		err := svc.RemovePermissionFromRole(ctx, id)
+		err := svc.Ops.Identity.RemovePermissionFromRole(ctx, id)
 		assert.Error(t, err, "id %d should be rejected", id)
 		assert.Contains(t, err.Error(), "invalid permission ID")
 	}
@@ -553,7 +553,7 @@ func TestRemovePermissionFromRole_InvalidID(t *testing.T) {
 func TestAssignRoleToUser_InvalidUserID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	err := svc.AssignRoleToUser(ctx, 0, 1)
+	err := svc.Ops.Identity.AssignRoleToUser(ctx, 0, 1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid user ID")
 }
@@ -561,7 +561,7 @@ func TestAssignRoleToUser_InvalidUserID(t *testing.T) {
 func TestAssignRoleToUser_InvalidRoleID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	err := svc.AssignRoleToUser(ctx, 1, 0)
+	err := svc.Ops.Identity.AssignRoleToUser(ctx, 1, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid role ID")
 }
@@ -569,7 +569,7 @@ func TestAssignRoleToUser_InvalidRoleID(t *testing.T) {
 func TestRemoveRoleFromUser_InvalidUserID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	err := svc.RemoveRoleFromUser(ctx, 0, 1)
+	err := svc.Ops.Identity.RemoveRoleFromUser(ctx, 0, 1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid user ID")
 }
@@ -577,7 +577,7 @@ func TestRemoveRoleFromUser_InvalidUserID(t *testing.T) {
 func TestRemoveRoleFromUser_InvalidRoleID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
-	err := svc.RemoveRoleFromUser(ctx, 1, 0)
+	err := svc.Ops.Identity.RemoveRoleFromUser(ctx, 1, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid role ID")
 }
@@ -586,7 +586,7 @@ func TestGetUserRoles_InvalidUserID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 	for _, id := range []int64{0, -1} {
-		_, err := svc.GetUserRoles(ctx, id)
+		_, err := svc.Ops.Identity.GetUserRoles(ctx, id)
 		assert.Error(t, err, "id %d should be rejected", id)
 		assert.Contains(t, err.Error(), "invalid user ID")
 	}

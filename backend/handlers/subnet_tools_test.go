@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestSplitSubnet_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/split", h.SplitSubnet)
 
@@ -27,7 +27,7 @@ func TestSplitSubnet_NoUser_Returns401(t *testing.T) {
 }
 
 func TestSplitSubnet_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/split", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -43,7 +43,7 @@ func TestSplitSubnet_NonAdmin_Returns403(t *testing.T) {
 
 func TestSplitSubnet_AdminInvalidID_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before ID parsing
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/split", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -62,7 +62,7 @@ func TestSplitSubnet_AdminInvalidID_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMergeSubnets_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/merge", h.MergeSubnets)
 
@@ -74,7 +74,7 @@ func TestMergeSubnets_NoUser_Returns401(t *testing.T) {
 }
 
 func TestMergeSubnets_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/merge", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -90,7 +90,7 @@ func TestMergeSubnets_NonAdmin_Returns403(t *testing.T) {
 
 func TestMergeSubnets_AdminTooFewIDs_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before validation
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/merge", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -109,7 +109,7 @@ func TestMergeSubnets_AdminTooFewIDs_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestResizeSubnet_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/resize", h.ResizeSubnet)
 
@@ -121,7 +121,7 @@ func TestResizeSubnet_NoUser_Returns401(t *testing.T) {
 }
 
 func TestResizeSubnet_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/resize", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -136,7 +136,7 @@ func TestResizeSubnet_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestResizeSubnet_InvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/subnets/:id/resize", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})

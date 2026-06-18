@@ -10,11 +10,24 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"padduck/models"
+	"padduck/services"
 )
 
 // permUser returns a user with ID=0 so CheckPermission returns permission
 // denied without touching the nil service repository, giving a clean 403.
 func permUser() *models.User { return &models.User{ID: 0, Role: "user"} }
+
+// minHandler returns a Handler with a minimal IdentityService wired into ops
+// so that requirePerm can run without panicking on nil pointer dereference.
+// All internal deps (repo, config, email, mfa, notification) remain nil;
+// CheckPermission with userID=0 returns an error before touching any of them.
+func minHandler() *Handler {
+	return &Handler{
+		ops: &services.OpsManager{
+			Identity: services.NewIdentityService(nil, nil, nil, nil, nil),
+		},
+	}
+}
 
 func testApp(method, path string, handler fiber.Handler, u *models.User) *fiber.App {
 	app := fiber.New()

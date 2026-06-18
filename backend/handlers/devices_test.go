@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListDeviceTypes_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "GET", "/device-types", h.ListDeviceTypes)
 	resp, err := app.Test(httptest.NewRequest("GET", "/device-types", nil))
 	assert.NoError(t, err)
@@ -22,7 +22,7 @@ func TestListDeviceTypes_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListDeviceTypes_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "GET", "/device-types", h.ListDeviceTypes, permUser())
 	resp, err := app.Test(httptest.NewRequest("GET", "/device-types", nil))
 	assert.NoError(t, err)
@@ -34,7 +34,7 @@ func TestListDeviceTypes_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListDevices_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "GET", "/devices", h.ListDevices)
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices", nil))
 	assert.NoError(t, err)
@@ -42,7 +42,7 @@ func TestListDevices_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListDevices_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "GET", "/devices", h.ListDevices, permUser())
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices", nil))
 	assert.NoError(t, err)
@@ -54,7 +54,7 @@ func TestListDevices_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateDevice_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "POST", "/devices", h.CreateDevice)
 	req := httptest.NewRequest("POST", "/devices", strings.NewReader(`{"hostname":"router1"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -64,7 +64,7 @@ func TestCreateDevice_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateDevice_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "POST", "/devices", h.CreateDevice, permUser())
 	req := httptest.NewRequest("POST", "/devices", strings.NewReader(`{"hostname":"router1"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -78,7 +78,7 @@ func TestCreateDevice_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetDevice_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "GET", "/devices/:id", h.GetDevice)
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1", nil))
 	assert.NoError(t, err)
@@ -86,7 +86,7 @@ func TestGetDevice_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetDevice_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "GET", "/devices/:id", h.GetDevice, permUser())
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1", nil))
 	assert.NoError(t, err)
@@ -98,7 +98,7 @@ func TestGetDevice_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateDevice_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "PUT", "/devices/:id", h.UpdateDevice)
 	req := httptest.NewRequest("PUT", "/devices/1", strings.NewReader(`{"hostname":"router1"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -108,7 +108,7 @@ func TestUpdateDevice_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateDevice_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "PUT", "/devices/:id", h.UpdateDevice, permUser())
 	req := httptest.NewRequest("PUT", "/devices/1", strings.NewReader(`{"hostname":"router1"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -122,7 +122,7 @@ func TestUpdateDevice_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteDevice_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "DELETE", "/devices/:id", h.DeleteDevice)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1", nil))
 	assert.NoError(t, err)
@@ -130,7 +130,7 @@ func TestDeleteDevice_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteDevice_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "DELETE", "/devices/:id", h.DeleteDevice, permUser())
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1", nil))
 	assert.NoError(t, err)
@@ -142,7 +142,7 @@ func TestDeleteDevice_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetDeviceSNMPCredentials_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "GET", "/devices/:id/snmp-credentials", h.GetDeviceSNMPCredentials)
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1/snmp-credentials", nil))
 	assert.NoError(t, err)
@@ -150,7 +150,7 @@ func TestGetDeviceSNMPCredentials_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetDeviceSNMPCredentials_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "GET", "/devices/:id/snmp-credentials", h.GetDeviceSNMPCredentials, permUser())
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1/snmp-credentials", nil))
 	assert.NoError(t, err)
@@ -162,7 +162,7 @@ func TestGetDeviceSNMPCredentials_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListDeviceIPAddresses_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "GET", "/devices/:id/ip-addresses", h.ListDeviceIPAddresses)
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1/ip-addresses", nil))
 	assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestListDeviceIPAddresses_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListDeviceIPAddresses_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "GET", "/devices/:id/ip-addresses", h.ListDeviceIPAddresses, permUser())
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1/ip-addresses", nil))
 	assert.NoError(t, err)
@@ -182,7 +182,7 @@ func TestListDeviceIPAddresses_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSearchDevices_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "POST", "/devices/search", h.SearchDevices)
 	req := httptest.NewRequest("POST", "/devices/search", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -192,7 +192,7 @@ func TestSearchDevices_NoUser_Returns401(t *testing.T) {
 }
 
 func TestSearchDevices_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "POST", "/devices/search", h.SearchDevices, permUser())
 	req := httptest.NewRequest("POST", "/devices/search", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -206,7 +206,7 @@ func TestSearchDevices_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListDeviceInterfaces_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "GET", "/devices/:id/interfaces", h.ListDeviceInterfaces)
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1/interfaces", nil))
 	assert.NoError(t, err)
@@ -214,7 +214,7 @@ func TestListDeviceInterfaces_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListDeviceInterfaces_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "GET", "/devices/:id/interfaces", h.ListDeviceInterfaces, permUser())
 	resp, err := app.Test(httptest.NewRequest("GET", "/devices/1/interfaces", nil))
 	assert.NoError(t, err)
@@ -226,7 +226,7 @@ func TestListDeviceInterfaces_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateDeviceInterface_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "POST", "/devices/:id/interfaces", h.CreateDeviceInterface)
 	req := httptest.NewRequest("POST", "/devices/1/interfaces", strings.NewReader(`{"name":"eth0"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -236,7 +236,7 @@ func TestCreateDeviceInterface_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateDeviceInterface_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "POST", "/devices/:id/interfaces", h.CreateDeviceInterface, permUser())
 	req := httptest.NewRequest("POST", "/devices/1/interfaces", strings.NewReader(`{"name":"eth0"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -250,7 +250,7 @@ func TestCreateDeviceInterface_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateDeviceInterface_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "PUT", "/devices/:id/interfaces/:if_id", h.UpdateDeviceInterface)
 	req := httptest.NewRequest("PUT", "/devices/1/interfaces/2", strings.NewReader(`{"name":"eth0"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -260,7 +260,7 @@ func TestUpdateDeviceInterface_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateDeviceInterface_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "PUT", "/devices/:id/interfaces/:if_id", h.UpdateDeviceInterface, permUser())
 	req := httptest.NewRequest("PUT", "/devices/1/interfaces/2", strings.NewReader(`{"name":"eth0"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -274,7 +274,7 @@ func TestUpdateDeviceInterface_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteDeviceInterface_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "DELETE", "/devices/:id/interfaces/:if_id", h.DeleteDeviceInterface)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/interfaces/2", nil))
 	assert.NoError(t, err)
@@ -282,7 +282,7 @@ func TestDeleteDeviceInterface_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteDeviceInterface_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "DELETE", "/devices/:id/interfaces/:if_id", h.DeleteDeviceInterface, permUser())
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/interfaces/2", nil))
 	assert.NoError(t, err)
@@ -294,7 +294,7 @@ func TestDeleteDeviceInterface_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAssociateIPToDevice_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "POST", "/devices/:id/ip-addresses/:ip_id/associate", h.AssociateIPToDevice)
 	req := httptest.NewRequest("POST", "/devices/1/ip-addresses/2/associate", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -304,7 +304,7 @@ func TestAssociateIPToDevice_NoUser_Returns401(t *testing.T) {
 }
 
 func TestAssociateIPToDevice_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "POST", "/devices/:id/ip-addresses/:ip_id/associate", h.AssociateIPToDevice, permUser())
 	req := httptest.NewRequest("POST", "/devices/1/ip-addresses/2/associate", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -318,7 +318,7 @@ func TestAssociateIPToDevice_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUnlinkIPFromDevice_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceApp(h, "DELETE", "/devices/:id/ip-addresses/:ip_id", h.UnlinkIPFromDevice)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/ip-addresses/2", nil))
 	assert.NoError(t, err)
@@ -326,7 +326,7 @@ func TestUnlinkIPFromDevice_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUnlinkIPFromDevice_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := deviceAppAs(h, "DELETE", "/devices/:id/ip-addresses/:ip_id", h.UnlinkIPFromDevice, permUser())
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/devices/1/ip-addresses/2", nil))
 	assert.NoError(t, err)

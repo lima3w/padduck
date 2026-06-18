@@ -16,7 +16,7 @@ import (
 
 // locApp builds a Fiber app that optionally injects a user and routes to h.
 func locApp(user *models.User, method, route string, handler fiber.Handler) *fiber.App {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Add(method, route, func(c *fiber.Ctx) error {
 		if user != nil {
@@ -41,7 +41,7 @@ var unprivUser = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestListLocations_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/locations", h.ListLocations)
 
@@ -51,7 +51,7 @@ func TestListLocations_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListLocations_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/locations", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -68,7 +68,7 @@ func TestListLocations_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetLocationTree_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/locations/tree", h.GetLocationTree)
 
@@ -78,7 +78,7 @@ func TestGetLocationTree_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetLocationTree_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/locations/tree", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -95,7 +95,7 @@ func TestGetLocationTree_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetLocation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/locations/:id", h.GetLocation)
 
@@ -105,7 +105,7 @@ func TestGetLocation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetLocation_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/locations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -122,7 +122,7 @@ func TestGetLocation_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateLocation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/locations", h.CreateLocation)
 
@@ -132,7 +132,7 @@ func TestCreateLocation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateLocation_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/locations", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -145,7 +145,7 @@ func TestCreateLocation_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestCreateLocation_EmptyName_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/locations", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -166,7 +166,7 @@ func TestCreateLocation_EmptyName_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateLocation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/locations/:id", h.UpdateLocation)
 
@@ -176,7 +176,7 @@ func TestUpdateLocation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateLocation_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/locations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -193,7 +193,7 @@ func TestUpdateLocation_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteLocation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/locations/:id", h.DeleteLocation)
 
@@ -203,7 +203,7 @@ func TestDeleteLocation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteLocation_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/locations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)

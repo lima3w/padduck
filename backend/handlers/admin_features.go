@@ -38,7 +38,7 @@ func (h *Handler) SuspendUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "reason is required")
 	}
 
-	if err := h.service.SuspendUser(c.Context(), int64(userID), admin.ID, req.Reason); err != nil {
+	if err := h.ops.Identity.SuspendUser(c.Context(), int64(userID), admin.ID, req.Reason); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
@@ -63,7 +63,7 @@ func (h *Handler) UnsuspendUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
-	if err := h.service.UnsuspendUser(c.Context(), int64(userID)); err != nil {
+	if err := h.ops.Identity.UnsuspendUser(c.Context(), int64(userID)); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
@@ -103,7 +103,7 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 		}
 	}
 
-	token, err := h.service.StartImpersonation(c.Context(), int64(targetID), admin.ID, c.IP(), c.Get("User-Agent"))
+	token, err := h.ops.Identity.StartImpersonation(c.Context(), int64(targetID), admin.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -141,7 +141,7 @@ func (h *Handler) BulkSuspendUsers(c *fiber.Ctx) error {
 		req.Reason = "bulk suspension"
 	}
 
-	count, err := h.service.BulkSuspendUsers(c.Context(), req.UserIDs, admin.ID, req.Reason)
+	count, err := h.ops.Identity.BulkSuspendUsers(c.Context(), req.UserIDs, admin.ID, req.Reason)
 	if err != nil {
 		reqLogger(c).Error("bulk suspend error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -162,7 +162,7 @@ func (h *Handler) BulkActivateUsers(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "user_ids required")
 	}
 
-	count, err := h.service.BulkActivateUsers(c.Context(), req.UserIDs)
+	count, err := h.ops.Identity.BulkActivateUsers(c.Context(), req.UserIDs)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -197,7 +197,7 @@ func (h *Handler) BulkDeleteUsers(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "no valid user IDs to delete")
 	}
 
-	count, err := h.service.BulkDeleteUsers(c.Context(), req.UserIDs)
+	count, err := h.ops.Identity.BulkDeleteUsers(c.Context(), req.UserIDs)
 	if err != nil {
 		if err.Error() == "cannot delete all admins" {
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -281,7 +281,7 @@ func (h *Handler) BulkImportUsers(c *fiber.Ctx) error {
 		records = append(records, rec)
 	}
 
-	results, err := h.service.BulkImportUsers(c.Context(), records)
+	results, err := h.ops.Identity.BulkImportUsers(c.Context(), records)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "import failed")
 	}
@@ -303,7 +303,7 @@ func (h *Handler) ExportMyData(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
-	data, err := h.service.ExportUserData(c.Context(), user.ID)
+	data, err := h.ops.Identity.ExportUserData(c.Context(), user.ID)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to export data")
 	}
@@ -322,7 +322,7 @@ func (h *Handler) RequestDeletion(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
-	if err := h.service.RequestAccountDeletion(c.Context(), user.ID); err != nil {
+	if err := h.ops.Identity.RequestAccountDeletion(c.Context(), user.ID); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to submit deletion request")
 	}
 
@@ -348,7 +348,7 @@ func (h *Handler) GDPRDeleteUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
-	if err := h.service.GDPRDeleteUser(c.Context(), int64(userID)); err != nil {
+	if err := h.ops.Identity.GDPRDeleteUser(c.Context(), int64(userID)); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to anonymize user")
 	}
 
@@ -369,7 +369,7 @@ func (h *Handler) AcceptPrivacyPolicy(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
-	if err := h.service.AcceptPrivacyPolicy(c.Context(), user.ID); err != nil {
+	if err := h.ops.Identity.AcceptPrivacyPolicy(c.Context(), user.ID); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to record consent")
 	}
 
@@ -378,6 +378,6 @@ func (h *Handler) AcceptPrivacyPolicy(c *fiber.Ctx) error {
 
 // GetPrivacyPolicyVersion handles GET /api/v1/privacy-policy/version
 func (h *Handler) GetPrivacyPolicyVersion(c *fiber.Ctx) error {
-	version := h.service.GetPrivacyPolicyVersion(c.Context())
+	version := h.ops.Identity.GetPrivacyPolicyVersion(c.Context())
 	return c.JSON(fiber.Map{"version": version})
 }

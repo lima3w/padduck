@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListScanAgents_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-agents", h.ListScanAgents)
 
@@ -25,7 +25,7 @@ func TestListScanAgents_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListScanAgents_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-agents", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -42,7 +42,7 @@ func TestListScanAgents_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateScanAgent_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/scan-agents", h.CreateScanAgent)
 
@@ -53,7 +53,7 @@ func TestCreateScanAgent_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateScanAgent_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/scan-agents", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -70,7 +70,7 @@ func TestCreateScanAgent_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetScanAgent_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-agents/:id", h.GetScanAgent)
 
@@ -81,7 +81,7 @@ func TestGetScanAgent_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetScanAgent_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-agents/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -94,7 +94,7 @@ func TestGetScanAgent_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestGetScanAgent_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-agents/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -112,7 +112,7 @@ func TestGetScanAgent_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRotateScanAgentToken_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/scan-agents/:id/rotate-token", h.RotateScanAgentToken)
 
@@ -123,7 +123,7 @@ func TestRotateScanAgentToken_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRotateScanAgentToken_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/scan-agents/:id/rotate-token", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -140,7 +140,7 @@ func TestRotateScanAgentToken_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteScanAgent_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/scan-agents/:id", h.DeleteScanAgent)
 
@@ -151,7 +151,7 @@ func TestDeleteScanAgent_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteScanAgent_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/scan-agents/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -168,7 +168,7 @@ func TestDeleteScanAgent_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAgentAuthMiddleware_NoToken_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/scan-agent/jobs", h.AgentAuthMiddleware, h.AgentGetJobs)
 
@@ -179,7 +179,7 @@ func TestAgentAuthMiddleware_NoToken_Returns401(t *testing.T) {
 }
 
 func TestAgentHeartbeat_NoAgent_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/scan-agent/heartbeat", h.AgentHeartbeat)
 
@@ -190,7 +190,7 @@ func TestAgentHeartbeat_NoAgent_Returns401(t *testing.T) {
 }
 
 func TestAgentGetJobs_NoAgent_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/scan-agent/jobs", h.AgentGetJobs)
 
@@ -201,7 +201,7 @@ func TestAgentGetJobs_NoAgent_Returns401(t *testing.T) {
 }
 
 func TestAgentPostResults_NoAgent_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/scan-agent/results", h.AgentPostResults)
 

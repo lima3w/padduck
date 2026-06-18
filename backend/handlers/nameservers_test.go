@@ -17,7 +17,7 @@ var unprivNS = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestListNameservers_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/nameservers", h.ListNameservers)
 
@@ -27,7 +27,7 @@ func TestListNameservers_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListNameservers_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/nameservers", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivNS)
@@ -44,7 +44,7 @@ func TestListNameservers_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetNameserver_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/nameservers/:id", h.GetNameserver)
 
@@ -54,7 +54,7 @@ func TestGetNameserver_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetNameserver_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/nameservers/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivNS)
@@ -71,7 +71,7 @@ func TestGetNameserver_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateNameserver_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/nameservers", h.CreateNameserver)
 
@@ -81,7 +81,7 @@ func TestCreateNameserver_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateNameserver_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/nameservers", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivNS)
@@ -98,7 +98,7 @@ func TestCreateNameserver_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateNameserver_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/nameservers/:id", h.UpdateNameserver)
 
@@ -108,7 +108,7 @@ func TestUpdateNameserver_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateNameserver_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/nameservers/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivNS)
@@ -125,7 +125,7 @@ func TestUpdateNameserver_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteNameserver_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/nameservers/:id", h.DeleteNameserver)
 
@@ -135,7 +135,7 @@ func TestDeleteNameserver_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteNameserver_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/nameservers/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivNS)

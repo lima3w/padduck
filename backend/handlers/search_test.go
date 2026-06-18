@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestSearchSubnets_BadSectionID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/search/:networkID", h.SearchSubnets)
 	req := httptest.NewRequest("POST", "/subnets/search/notanumber", strings.NewReader(`{}`))
@@ -29,7 +29,7 @@ func TestSearchSubnets_BadSectionID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSearchIPAddresses_BadSubnetID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/ip-addresses/search/:subnetID", h.SearchIPAddresses)
 	req := httptest.NewRequest("POST", "/ip-addresses/search/notanumber", strings.NewReader(`{}`))
@@ -44,7 +44,7 @@ func TestSearchIPAddresses_BadSubnetID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGlobalSearch_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/search", h.GlobalSearch)
 	resp, err := app.Test(httptest.NewRequest("GET", "/search?q=test", nil))
@@ -57,7 +57,7 @@ func TestGlobalSearch_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSearchNetworks_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks/search", h.SearchNetworks)
 	req := httptest.NewRequest("POST", "/networks/search", strings.NewReader(`{}`))
@@ -72,7 +72,7 @@ func TestSearchNetworks_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSearchIPAddressesGlobal_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/ip-addresses/search", h.SearchIPAddressesGlobal)
 	resp, err := app.Test(httptest.NewRequest("GET", "/ip-addresses/search?q=10.0", nil))

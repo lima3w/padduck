@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListRacks_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/racks", h.ListRacks)
 
@@ -24,7 +24,7 @@ func TestListRacks_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListRacks_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/racks", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -41,7 +41,7 @@ func TestListRacks_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetRack_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/racks/:id", h.GetRack)
 
@@ -51,7 +51,7 @@ func TestGetRack_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetRack_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/racks/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -68,7 +68,7 @@ func TestGetRack_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateRack_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/racks", h.CreateRack)
 
@@ -78,7 +78,7 @@ func TestCreateRack_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateRack_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/racks", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -91,7 +91,7 @@ func TestCreateRack_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestCreateRack_EmptyName_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/racks", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -112,7 +112,7 @@ func TestCreateRack_EmptyName_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateRack_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/racks/:id", h.UpdateRack)
 
@@ -122,7 +122,7 @@ func TestUpdateRack_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateRack_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/racks/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -139,7 +139,7 @@ func TestUpdateRack_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteRack_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/racks/:id", h.DeleteRack)
 
@@ -149,7 +149,7 @@ func TestDeleteRack_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteRack_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/racks/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)
@@ -166,7 +166,7 @@ func TestDeleteRack_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListDevicesInRack_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/racks/:id/devices", h.ListDevicesInRack)
 
@@ -176,7 +176,7 @@ func TestListDevicesInRack_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListDevicesInRack_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/racks/:id/devices", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivUser)

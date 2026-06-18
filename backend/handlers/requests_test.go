@@ -23,7 +23,7 @@ var adminReqUser = &models.User{ID: 0, Role: "admin"}
 // ---------------------------------------------------------------------------
 
 func TestSubmitSubnetRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/requests/subnets", h.SubmitSubnetRequest)
 
@@ -33,7 +33,7 @@ func TestSubmitSubnetRequest_NoUser_Returns401(t *testing.T) {
 }
 
 func TestSubmitSubnetRequest_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/requests/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -46,7 +46,7 @@ func TestSubmitSubnetRequest_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestSubmitSubnetRequest_BadBody_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	// Viewer has no submit perm, but we want to test body validation — use admin with ID=0
 	// which will be denied at permCheck too. Use a user with submit perm via permCheck bypass.
@@ -68,7 +68,7 @@ func TestSubmitSubnetRequest_BadBody_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListMySubnetRequests_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/requests/subnets", h.ListMySubnetRequests)
 
@@ -82,7 +82,7 @@ func TestListMySubnetRequests_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCancelSubnetRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/requests/subnets/:id", h.CancelSubnetRequest)
 
@@ -96,7 +96,7 @@ func TestCancelSubnetRequest_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListAllSubnetRequests_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/requests/subnets", h.ListAllSubnetRequests)
 
@@ -106,7 +106,7 @@ func TestListAllSubnetRequests_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListAllSubnetRequests_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/requests/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -123,7 +123,7 @@ func TestListAllSubnetRequests_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestApproveSubnetRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/subnets/:id/approve", h.ApproveSubnetRequest)
 
@@ -133,7 +133,7 @@ func TestApproveSubnetRequest_NoUser_Returns401(t *testing.T) {
 }
 
 func TestApproveSubnetRequest_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/subnets/:id/approve", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -150,7 +150,7 @@ func TestApproveSubnetRequest_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRejectSubnetRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/subnets/:id/reject", h.RejectSubnetRequest)
 
@@ -160,7 +160,7 @@ func TestRejectSubnetRequest_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRejectSubnetRequest_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/subnets/:id/reject", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -177,7 +177,7 @@ func TestRejectSubnetRequest_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSubmitIPRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/requests/ips", h.SubmitIPRequest)
 
@@ -187,7 +187,7 @@ func TestSubmitIPRequest_NoUser_Returns401(t *testing.T) {
 }
 
 func TestSubmitIPRequest_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/requests/ips", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -204,7 +204,7 @@ func TestSubmitIPRequest_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListMyIPRequests_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/requests/ips", h.ListMyIPRequests)
 
@@ -218,7 +218,7 @@ func TestListMyIPRequests_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCancelIPRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/requests/ips/:id", h.CancelIPRequest)
 
@@ -232,7 +232,7 @@ func TestCancelIPRequest_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListAllIPRequests_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/requests/ips", h.ListAllIPRequests)
 
@@ -242,7 +242,7 @@ func TestListAllIPRequests_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListAllIPRequests_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/requests/ips", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -259,7 +259,7 @@ func TestListAllIPRequests_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestApproveIPRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/ips/:id/approve", h.ApproveIPRequest)
 
@@ -269,7 +269,7 @@ func TestApproveIPRequest_NoUser_Returns401(t *testing.T) {
 }
 
 func TestApproveIPRequest_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/ips/:id/approve", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -286,7 +286,7 @@ func TestApproveIPRequest_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRejectIPRequest_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/ips/:id/reject", h.RejectIPRequest)
 
@@ -296,7 +296,7 @@ func TestRejectIPRequest_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRejectIPRequest_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/requests/ips/:id/reject", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)
@@ -313,7 +313,7 @@ func TestRejectIPRequest_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListRequestComments_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/requests/:type/:id/comments", h.ListRequestComments)
 
@@ -327,7 +327,7 @@ func TestListRequestComments_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddRequestComment_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/requests/:type/:id/comments", h.AddRequestComment)
 
@@ -341,7 +341,7 @@ func TestAddRequestComment_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetPendingRequestCount_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/requests/pending-count", h.GetPendingRequestCount)
 
@@ -351,7 +351,7 @@ func TestGetPendingRequestCount_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetPendingRequestCount_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/requests/pending-count", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivReq)

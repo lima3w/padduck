@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.2
+
+### Internal
+- **Identity domain extraction**: extracted `IdentityService` from the root `Service` struct — users, RBAC roles/permissions, API tokens, web sessions, password management, account security (lockout/unlock), and the Grafana datasource proxy (~76 methods) now live in `services.IdentityService`, exposed via `OpsManager.Identity`. `IdentityService` receives `*ConfigService`, `*EmailService`, `*MFAService`, and `*NotificationService` at construction time (no monolithic back-reference). All handler files updated to `h.ops.Identity.*`; `*Service` forwarding stubs added for `InitAdminPassword`/`ForceResetAdminPassword` (called from `main.go`). Service source files gutted to `package services`. Unit and integration tests updated to call methods via `svc.Ops.Identity.*`. Handler tests updated to use `minHandler()` helper so `requirePerm` can resolve `IdentityService.CheckPermission` without a nil dereference. `docs/domain-boundaries.md` updated; Identity removed from the residual table.
+
 ## v1.33.1
 
 ### Internal

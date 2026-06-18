@@ -51,7 +51,7 @@ func TestCreateUser_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateUser(ctx, tt.username, tt.email)
+			_, err := svc.Ops.Identity.CreateUser(ctx, tt.username, tt.email)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})
@@ -63,19 +63,19 @@ func TestCreateUserWithPassword_RoleValidation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("invalid role superadmin", func(t *testing.T) {
-		_, err := svc.CreateUserWithPassword(ctx, "alice", "alice@example.com", "hash", "superadmin")
+		_, err := svc.Ops.Identity.CreateUserWithPassword(ctx, "alice", "alice@example.com", "hash", "superadmin")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid role")
 	})
 
 	t.Run("invalid role empty string", func(t *testing.T) {
-		_, err := svc.CreateUserWithPassword(ctx, "alice", "alice@example.com", "hash", "")
+		_, err := svc.Ops.Identity.CreateUserWithPassword(ctx, "alice", "alice@example.com", "hash", "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid role")
 	})
 
 	t.Run("invalid role guest", func(t *testing.T) {
-		_, err := svc.CreateUserWithPassword(ctx, "alice", "alice@example.com", "hash", "guest")
+		_, err := svc.Ops.Identity.CreateUserWithPassword(ctx, "alice", "alice@example.com", "hash", "guest")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid role")
 	})
@@ -86,19 +86,19 @@ func TestCreateUserWithPassword_UsernameEmailValidation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("missing username", func(t *testing.T) {
-		_, err := svc.CreateUserWithPassword(ctx, "", "alice@example.com", "hash", "user")
+		_, err := svc.Ops.Identity.CreateUserWithPassword(ctx, "", "alice@example.com", "hash", "user")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "username is required")
 	})
 
 	t.Run("missing email", func(t *testing.T) {
-		_, err := svc.CreateUserWithPassword(ctx, "alice", "", "hash", "user")
+		_, err := svc.Ops.Identity.CreateUserWithPassword(ctx, "alice", "", "hash", "user")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "email is required")
 	})
 
 	t.Run("invalid email format", func(t *testing.T) {
-		_, err := svc.CreateUserWithPassword(ctx, "alice", "not-an-email", "hash", "user")
+		_, err := svc.Ops.Identity.CreateUserWithPassword(ctx, "alice", "not-an-email", "hash", "user")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid email format")
 	})
@@ -109,31 +109,31 @@ func TestUpdateUserRole_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("userID zero", func(t *testing.T) {
-		_, err := svc.UpdateUserRole(ctx, 0, "admin")
+		_, err := svc.Ops.Identity.UpdateUserRole(ctx, 0, "admin")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid user ID")
 	})
 
 	t.Run("userID negative", func(t *testing.T) {
-		_, err := svc.UpdateUserRole(ctx, -1, "admin")
+		_, err := svc.Ops.Identity.UpdateUserRole(ctx, -1, "admin")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid user ID")
 	})
 
 	t.Run("invalid role superadmin", func(t *testing.T) {
-		_, err := svc.UpdateUserRole(ctx, 1, "superadmin")
+		_, err := svc.Ops.Identity.UpdateUserRole(ctx, 1, "superadmin")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid role")
 	})
 
 	t.Run("invalid role empty string", func(t *testing.T) {
-		_, err := svc.UpdateUserRole(ctx, 1, "")
+		_, err := svc.Ops.Identity.UpdateUserRole(ctx, 1, "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid role")
 	})
 
 	t.Run("invalid role guest", func(t *testing.T) {
-		_, err := svc.UpdateUserRole(ctx, 1, "guest")
+		_, err := svc.Ops.Identity.UpdateUserRole(ctx, 1, "guest")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid role")
 	})
@@ -154,7 +154,7 @@ func TestGetUser_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetUser(ctx, tt.id)
+			_, err := svc.Ops.Identity.GetUser(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid user ID")
 		})
@@ -175,7 +175,7 @@ func TestGetUserByID_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetUserByID(ctx, tt.id)
+			_, err := svc.Ops.Identity.GetUserByID(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid user ID")
 		})
@@ -196,7 +196,7 @@ func TestDeleteUser_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteUser(ctx, tt.id)
+			err := svc.Ops.Identity.DeleteUser(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid user ID")
 		})
@@ -208,13 +208,13 @@ func TestUpdateUserEmail_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("invalid user ID", func(t *testing.T) {
-		err := svc.UpdateUserEmail(ctx, 0, "valid@example.com")
+		err := svc.Ops.Identity.UpdateUserEmail(ctx, 0, "valid@example.com")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid user ID")
 	})
 
 	t.Run("invalid email", func(t *testing.T) {
-		err := svc.UpdateUserEmail(ctx, 1, "not-an-email")
+		err := svc.Ops.Identity.UpdateUserEmail(ctx, 1, "not-an-email")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid email")
 	})
@@ -224,11 +224,11 @@ func TestSuspendUser_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	err := svc.SuspendUser(ctx, 0, 1, "test")
+	err := svc.Ops.Identity.SuspendUser(ctx, 0, 1, "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid user ID")
 
-	err = svc.SuspendUser(ctx, -1, 1, "test")
+	err = svc.Ops.Identity.SuspendUser(ctx, -1, 1, "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid user ID")
 }
@@ -237,7 +237,7 @@ func TestUnsuspendUser_InvalidID(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
 
-	err := svc.UnsuspendUser(ctx, 0)
+	err := svc.Ops.Identity.UnsuspendUser(ctx, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid user ID")
 }
@@ -271,7 +271,7 @@ func TestBulkImportUsersValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := svc.BulkImportUsers(ctx, tt.records)
+			results, err := svc.Ops.Identity.BulkImportUsers(ctx, tt.records)
 			assert.NoError(t, err) // function-level error is nil; errors are per-record
 			require.Len(t, results, 1)
 			assert.Contains(t, results[0].Error, tt.wantErr)
@@ -365,6 +365,6 @@ func TestValidateAvatarImage(t *testing.T) {
 func TestUpdateUserAvatar_RejectsNonImage(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	data := "data:image/png;base64," + base64.StdEncoding.EncodeToString([]byte("not an image"))
-	err := svc.UpdateUserAvatar(context.Background(), 1, "custom", &data)
+	err := svc.Ops.Identity.UpdateUserAvatar(context.Background(), 1, "custom", &data)
 	assert.ErrorContains(t, err, "not a recognized image")
 }

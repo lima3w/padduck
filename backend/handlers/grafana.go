@@ -80,7 +80,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 	ctx := c.Context()
 	switch target {
 	case "subnet_utilization":
-		rows, err := h.service.GrafanaSubnetUtilization(ctx)
+		rows, err := h.ops.Identity.GrafanaSubnetUtilization(ctx)
 		if err != nil {
 			return grafanaTableResponse{}, err
 		}
@@ -103,7 +103,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 		return resp, nil
 
 	case "ip_by_status":
-		rows, err := h.service.GrafanaIPCountsByStatus(ctx)
+		rows, err := h.ops.Identity.GrafanaIPCountsByStatus(ctx)
 		if err != nil {
 			return grafanaTableResponse{}, err
 		}
@@ -120,7 +120,7 @@ func (h *Handler) buildGrafanaTable(c *fiber.Ctx, target string) (grafanaTableRe
 		return resp, nil
 
 	case "section_summary":
-		rows, err := h.service.GrafanaNetworkSummary(ctx)
+		rows, err := h.ops.Identity.GrafanaNetworkSummary(ctx)
 		if err != nil {
 			return grafanaTableResponse{}, err
 		}

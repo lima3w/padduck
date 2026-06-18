@@ -19,7 +19,7 @@ import (
 // carrying only a session cookie (no Authorization header) is rejected with 401.
 // This ensures the endpoint cannot be exploited via CSRF.
 func TestGrafanaSearch_CookieOnly_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/api/grafana/search", h.RequireBearerAuth, func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
@@ -38,7 +38,7 @@ func TestGrafanaSearch_CookieOnly_Returns401(t *testing.T) {
 // carrying only a session cookie (no Authorization header) is rejected with 401.
 // This ensures the endpoint cannot be exploited via CSRF.
 func TestGrafanaQuery_CookieOnly_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/api/grafana/query", h.RequireBearerAuth, func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
@@ -56,7 +56,7 @@ func TestGrafanaQuery_CookieOnly_Returns401(t *testing.T) {
 // TestRequireBearerAuth_WithBearerHeader_Passes verifies that a request with a
 // valid Authorization: Bearer header is allowed through the middleware.
 func TestRequireBearerAuth_WithBearerHeader_Passes(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/api/grafana/search", h.RequireBearerAuth, func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)

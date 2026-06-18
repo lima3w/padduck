@@ -39,7 +39,7 @@ func TestGenerateAPIToken_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GenerateAPIToken(ctx, tt.userID, tt.tokenName, "read", 0)
+			_, err := svc.Ops.Identity.GenerateAPIToken(ctx, tt.userID, tt.tokenName, "read", 0)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})
@@ -51,7 +51,7 @@ func TestValidateAPIToken_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("empty token", func(t *testing.T) {
-		_, _, err := svc.ValidateAPIToken(ctx, "", "127.0.0.1")
+		_, _, err := svc.Ops.Identity.ValidateAPIToken(ctx, "", "127.0.0.1")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "token is required")
 	})
@@ -71,7 +71,7 @@ func TestRevokeAPIToken_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.RevokeAPIToken(ctx, tt.tokenID)
+			err := svc.Ops.Identity.RevokeAPIToken(ctx, tt.tokenID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid token ID")
 		})
@@ -92,7 +92,7 @@ func TestListUserTokens_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.ListUserTokens(ctx, tt.userID)
+			_, err := svc.Ops.Identity.ListUserTokens(ctx, tt.userID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid user ID")
 		})
@@ -104,7 +104,7 @@ func TestCreatePasswordResetToken_Validation(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("empty email", func(t *testing.T) {
-		_, err := svc.CreatePasswordResetToken(ctx, "")
+		_, err := svc.Ops.Identity.CreatePasswordResetToken(ctx, "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "email is required")
 	})
@@ -142,7 +142,7 @@ func TestResetPasswordWithToken_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.ResetPasswordWithToken(ctx, tt.token, tt.newPasswordHash)
+			_, err := svc.Ops.Identity.ResetPasswordWithToken(ctx, tt.token, tt.newPasswordHash)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})
@@ -181,7 +181,7 @@ func TestAuthenticateUser_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.AuthenticateUser(ctx, tt.username, tt.password, "127.0.0.1", "test-agent")
+			_, err := svc.Ops.Identity.AuthenticateUser(ctx, tt.username, tt.password, "127.0.0.1", "test-agent")
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errorContains)
 		})

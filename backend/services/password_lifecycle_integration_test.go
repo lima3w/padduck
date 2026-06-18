@@ -43,12 +43,12 @@ func TestChangePassword_Integration(t *testing.T) {
 	ctx := context.Background()
 
 	// Wrong current password: rejected, password unchanged.
-	err := svc.ChangePassword(ctx, userID, "wrong", "new-password-123", "")
+	err := svc.Ops.Identity.ChangePassword(ctx, userID, "wrong", "new-password-123", "")
 	assert.ErrorContains(t, err, "current password is incorrect")
 	assert.True(t, userPasswordVerifies(t, repo, userID, "original-password"))
 
 	// Correct current password: old stops working, new works.
-	require.NoError(t, svc.ChangePassword(ctx, userID, "original-password", "new-password-123", ""))
+	require.NoError(t, svc.Ops.Identity.ChangePassword(ctx, userID, "original-password", "new-password-123", ""))
 	assert.False(t, userPasswordVerifies(t, repo, userID, "original-password"))
 	assert.True(t, userPasswordVerifies(t, repo, userID, "new-password-123"))
 }
@@ -57,21 +57,21 @@ func TestChangePassword_RevokesOtherSessions_Integration(t *testing.T) {
 	svc, _, userID := testAuthService(t)
 	ctx := context.Background()
 
-	current, err := svc.CreateWebSession(ctx, userID, "10.0.0.1", "browser-a")
+	current, err := svc.Ops.Identity.CreateWebSession(ctx, userID, "10.0.0.1", "browser-a")
 	require.NoError(t, err)
-	other, err := svc.CreateWebSession(ctx, userID, "10.0.0.2", "browser-b")
+	other, err := svc.Ops.Identity.CreateWebSession(ctx, userID, "10.0.0.2", "browser-b")
 	require.NoError(t, err)
 
 	// Keeping the current session: it survives, the other is revoked.
-	require.NoError(t, svc.ChangePassword(ctx, userID, "original-password", "new-password-123", current))
-	_, _, err = svc.ValidateSession(ctx, current)
+	require.NoError(t, svc.Ops.Identity.ChangePassword(ctx, userID, "original-password", "new-password-123", current))
+	_, _, err = svc.Ops.Identity.ValidateSession(ctx, current)
 	assert.NoError(t, err, "session making the change must stay valid")
-	_, _, err = svc.ValidateSession(ctx, other)
+	_, _, err = svc.Ops.Identity.ValidateSession(ctx, other)
 	assert.Error(t, err, "other sessions must be revoked on password change")
 
 	// Empty keep token revokes everything.
-	require.NoError(t, svc.ChangePassword(ctx, userID, "new-password-123", "third-password-123", ""))
-	_, _, err = svc.ValidateSession(ctx, current)
+	require.NoError(t, svc.Ops.Identity.ChangePassword(ctx, userID, "new-password-123", "third-password-123", ""))
+	_, _, err = svc.Ops.Identity.ValidateSession(ctx, current)
 	assert.Error(t, err)
 }
 
@@ -80,10 +80,10 @@ func TestPasswordResetFlow_Integration(t *testing.T) {
 	ctx := context.Background()
 
 	// Unknown email.
-	_, err := svc.CreatePasswordResetToken(ctx, "nobody@example.com")
+	_, err := svc.Ops.Identity.CreatePasswordResetToken(ctx, "nobody@example.com")
 	assert.Error(t, err)
 
-	token, err := svc.CreatePasswordResetToken(ctx, "pw@example.com")
+	token, err := svc.Ops.Identity.CreatePasswordResetToken(ctx, "pw@example.com")
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
@@ -93,27 +93,27 @@ func TestPasswordResetFlow_Integration(t *testing.T) {
 	assert.NotEqual(t, token, stored)
 
 	// A session exists before the reset; recovery must kill it.
-	session, err := svc.CreateWebSession(ctx, userID, "10.0.0.9", "intruder")
+	session, err := svc.Ops.Identity.CreateWebSession(ctx, userID, "10.0.0.9", "intruder")
 	require.NoError(t, err)
 
 	// Wrong token.
 	newHash, err := utils.HashPassword("reset-password-123")
 	require.NoError(t, err)
-	_, err = svc.ResetPasswordWithToken(ctx, "bogus-token", newHash)
+	_, err = svc.Ops.Identity.ResetPasswordWithToken(ctx, "bogus-token", newHash)
 	assert.ErrorContains(t, err, "invalid reset token")
 
 	// Valid token resets the password and reports the right user.
-	gotUser, err := svc.ResetPasswordWithToken(ctx, token, newHash)
+	gotUser, err := svc.Ops.Identity.ResetPasswordWithToken(ctx, token, newHash)
 	require.NoError(t, err)
 	assert.Equal(t, userID, gotUser)
 	assert.True(t, userPasswordVerifies(t, repo, userID, "reset-password-123"))
 
 	// All sessions are revoked by the reset.
-	_, _, err = svc.ValidateSession(ctx, session)
+	_, _, err = svc.Ops.Identity.ValidateSession(ctx, session)
 	assert.Error(t, err, "sessions must not survive a password reset")
 
 	// Replaying the consumed token fails.
-	_, err = svc.ResetPasswordWithToken(ctx, token, newHash)
+	_, err = svc.Ops.Identity.ResetPasswordWithToken(ctx, token, newHash)
 	assert.ErrorContains(t, err, "already been used")
 }
 
@@ -121,7 +121,7 @@ func TestPasswordResetToken_Expiry_Integration(t *testing.T) {
 	svc, repo, _ := testAuthService(t)
 	ctx := context.Background()
 
-	token, err := svc.CreatePasswordResetToken(ctx, "pw@example.com")
+	token, err := svc.Ops.Identity.CreatePasswordResetToken(ctx, "pw@example.com")
 	require.NoError(t, err)
 
 	// Force the token past its expiry window.
@@ -130,7 +130,7 @@ func TestPasswordResetToken_Expiry_Integration(t *testing.T) {
 
 	newHash, err := utils.HashPassword("reset-password-123")
 	require.NoError(t, err)
-	_, err = svc.ResetPasswordWithToken(ctx, token, newHash)
+	_, err = svc.Ops.Identity.ResetPasswordWithToken(ctx, token, newHash)
 	assert.ErrorContains(t, err, "expired")
 }
 
@@ -143,19 +143,19 @@ func TestInitAndForceResetAdminPassword_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// First boot: password applied.
-	applied, err := svc.InitAdminPassword(ctx, "first-boot-password")
+	applied, err := svc.Ops.Identity.InitAdminPassword(ctx, "first-boot-password")
 	require.NoError(t, err)
 	assert.True(t, applied)
 	assert.True(t, userPasswordVerifies(t, repo, admin.ID, "first-boot-password"))
 
 	// Second boot: hash already set, init must not overwrite.
-	applied, err = svc.InitAdminPassword(ctx, "second-boot-password")
+	applied, err = svc.Ops.Identity.InitAdminPassword(ctx, "second-boot-password")
 	require.NoError(t, err)
 	assert.False(t, applied)
 	assert.True(t, userPasswordVerifies(t, repo, admin.ID, "first-boot-password"))
 
 	// Force reset overrides unconditionally.
-	require.NoError(t, svc.ForceResetAdminPassword(ctx, "forced-password"))
+	require.NoError(t, svc.Ops.Identity.ForceResetAdminPassword(ctx, "forced-password"))
 	assert.True(t, userPasswordVerifies(t, repo, admin.ID, "forced-password"))
 }
 
@@ -163,18 +163,18 @@ func TestRotateAPIToken_Integration(t *testing.T) {
 	svc, repo, userID := testAuthService(t)
 	ctx := context.Background()
 
-	raw, err := svc.GenerateAPIToken(ctx, userID, "automation", "write", 30)
+	raw, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "automation", "write", 30)
 	require.NoError(t, err)
-	tokens, err := svc.ListUserTokens(ctx, userID)
+	tokens, err := svc.Ops.Identity.ListUserTokens(ctx, userID)
 	require.NoError(t, err)
 	require.Len(t, tokens, 1)
 	oldID := tokens[0].ID
 
 	// Wrong owner.
-	_, _, err = svc.RotateAPIToken(ctx, oldID, userID+999)
+	_, _, err = svc.Ops.Identity.RotateAPIToken(ctx, oldID, userID+999)
 	assert.ErrorContains(t, err, "does not belong")
 
-	newRaw, graceExpiresAt, err := svc.RotateAPIToken(ctx, oldID, userID)
+	newRaw, graceExpiresAt, err := svc.Ops.Identity.RotateAPIToken(ctx, oldID, userID)
 	require.NoError(t, err)
 	assert.NotEqual(t, raw, newRaw)
 	assert.WithinDuration(t, time.Now().Add(24*time.Hour), graceExpiresAt, time.Minute,
@@ -185,7 +185,7 @@ func TestRotateAPIToken_Integration(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, oldTok.RotationGraceExpiresAt)
 
-	tokens, err = svc.ListUserTokens(ctx, userID)
+	tokens, err = svc.Ops.Identity.ListUserTokens(ctx, userID)
 	require.NoError(t, err)
 	require.Len(t, tokens, 2)
 	var replacement *struct {
@@ -205,17 +205,17 @@ func TestExtendAPIToken_Integration(t *testing.T) {
 	svc, _, userID := testAuthService(t)
 	ctx := context.Background()
 
-	_, err := svc.GenerateAPIToken(ctx, userID, "extend-me", "read", 1)
+	_, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "extend-me", "read", 1)
 	require.NoError(t, err)
-	tokens, err := svc.ListUserTokens(ctx, userID)
+	tokens, err := svc.Ops.Identity.ListUserTokens(ctx, userID)
 	require.NoError(t, err)
 	require.Len(t, tokens, 1)
 
 	// Wrong owner.
-	_, err = svc.ExtendAPIToken(ctx, tokens[0].ID, userID+999, 10)
+	_, err = svc.Ops.Identity.ExtendAPIToken(ctx, tokens[0].ID, userID+999, 10)
 	assert.ErrorContains(t, err, "does not belong")
 
-	extended, err := svc.ExtendAPIToken(ctx, tokens[0].ID, userID, 10)
+	extended, err := svc.Ops.Identity.ExtendAPIToken(ctx, tokens[0].ID, userID, 10)
 	require.NoError(t, err)
 	require.NotNil(t, extended.ExpiresAt)
 	assert.WithinDuration(t, time.Now().Add(10*24*time.Hour), *extended.ExpiresAt, time.Minute)
@@ -225,18 +225,18 @@ func TestRevokeSessionToken_Integration(t *testing.T) {
 	svc, _, userID := testAuthService(t)
 	ctx := context.Background()
 
-	raw, err := svc.GenerateAPIToken(ctx, userID, "revoke-me", "read", 0)
+	raw, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "revoke-me", "read", 0)
 	require.NoError(t, err)
 
 	// Empty and unknown tokens.
-	assert.ErrorContains(t, svc.RevokeSessionToken(ctx, userID, ""), "token is required")
-	assert.ErrorContains(t, svc.RevokeSessionToken(ctx, userID, "unknown"), "token not found")
+	assert.ErrorContains(t, svc.Ops.Identity.RevokeSessionToken(ctx, userID, ""), "token is required")
+	assert.ErrorContains(t, svc.Ops.Identity.RevokeSessionToken(ctx, userID, "unknown"), "token not found")
 
 	// Wrong owner cannot revoke.
-	assert.ErrorContains(t, svc.RevokeSessionToken(ctx, userID+999, raw), "does not belong")
+	assert.ErrorContains(t, svc.Ops.Identity.RevokeSessionToken(ctx, userID+999, raw), "does not belong")
 
-	require.NoError(t, svc.RevokeSessionToken(ctx, userID, raw))
-	tokens, err := svc.ListUserTokens(ctx, userID)
+	require.NoError(t, svc.Ops.Identity.RevokeSessionToken(ctx, userID, raw))
+	tokens, err := svc.Ops.Identity.ListUserTokens(ctx, userID)
 	require.NoError(t, err)
 	assert.Empty(t, tokens)
 }

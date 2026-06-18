@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListTags_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/tags", h.ListTags)
 	resp, err := app.Test(httptest.NewRequest("GET", "/tags", nil))
@@ -23,7 +23,7 @@ func TestListTags_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListTags_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())
@@ -40,7 +40,7 @@ func TestListTags_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateTag_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/tags", h.CreateTag)
 	req := httptest.NewRequest("POST", "/tags", strings.NewReader(`{"name":"critical","colour":"#f00"}`))
@@ -51,7 +51,7 @@ func TestCreateTag_NoUser_Returns403(t *testing.T) {
 }
 
 func TestCreateTag_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -66,7 +66,7 @@ func TestCreateTag_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestCreateTag_WriteScope_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -82,7 +82,7 @@ func TestCreateTag_WriteScope_Returns403(t *testing.T) {
 }
 
 func TestCreateTag_MissingName_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -101,7 +101,7 @@ func TestCreateTag_MissingName_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateTag_BadID_NoAuth_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/tags/:id", h.UpdateTag)
 	// requireAdmin runs before ParamsInt, so unauthenticated requests get 403.
@@ -113,7 +113,7 @@ func TestUpdateTag_BadID_NoAuth_Returns403(t *testing.T) {
 }
 
 func TestUpdateTag_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -132,7 +132,7 @@ func TestUpdateTag_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteTag_BadID_NoAuth_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/tags/:id", h.DeleteTag)
 	// requireAdmin runs before ParamsInt, so unauthenticated requests get 403.
@@ -142,7 +142,7 @@ func TestDeleteTag_BadID_NoAuth_Returns403(t *testing.T) {
 }
 
 func TestDeleteTag_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)

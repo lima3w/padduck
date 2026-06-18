@@ -46,14 +46,14 @@ func customFieldAppAs(h *Handler, user *models.User) *fiber.App {
 // ---------------------------------------------------------------------------
 
 func TestListCustomFieldDefinitions_NoUser_Returns401(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/custom-fields", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 func TestListCustomFieldDefinitions_NoPermission_Returns403(t *testing.T) {
-	app := customFieldAppAs(&Handler{}, &models.User{ID: 0, Role: "user"})
+	app := customFieldAppAs(minHandler(), &models.User{ID: 0, Role: "user"})
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/custom-fields", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
@@ -64,7 +64,7 @@ func TestListCustomFieldDefinitions_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateCustomFieldDefinition_NoUser_Returns401(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	req := httptest.NewRequest("POST", "/admin/custom-fields", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
@@ -73,7 +73,7 @@ func TestCreateCustomFieldDefinition_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
-	app := customFieldAppAs(&Handler{}, &models.User{ID: 0, Role: "user"})
+	app := customFieldAppAs(minHandler(), &models.User{ID: 0, Role: "user"})
 	req := httptest.NewRequest("POST", "/admin/custom-fields", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
@@ -86,21 +86,21 @@ func TestCreateCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetCustomFieldDefinition_BadID_Returns400(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/custom-fields/notanumber", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
 
 func TestGetCustomFieldDefinition_NoUser_Returns401(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/custom-fields/1", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 func TestGetCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
-	app := customFieldAppAs(&Handler{}, &models.User{ID: 0, Role: "user"})
+	app := customFieldAppAs(minHandler(), &models.User{ID: 0, Role: "user"})
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/custom-fields/1", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
@@ -111,7 +111,7 @@ func TestGetCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateCustomFieldDefinition_BadID_Returns400(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	req := httptest.NewRequest("PUT", "/admin/custom-fields/notanumber", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
@@ -120,7 +120,7 @@ func TestUpdateCustomFieldDefinition_BadID_Returns400(t *testing.T) {
 }
 
 func TestUpdateCustomFieldDefinition_NoUser_Returns401(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	req := httptest.NewRequest("PUT", "/admin/custom-fields/1", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
@@ -129,7 +129,7 @@ func TestUpdateCustomFieldDefinition_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
-	app := customFieldAppAs(&Handler{}, &models.User{ID: 0, Role: "user"})
+	app := customFieldAppAs(minHandler(), &models.User{ID: 0, Role: "user"})
 	req := httptest.NewRequest("PUT", "/admin/custom-fields/1", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
@@ -142,21 +142,21 @@ func TestUpdateCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteCustomFieldDefinition_BadID_Returns400(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/admin/custom-fields/notanumber", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 }
 
 func TestDeleteCustomFieldDefinition_NoUser_Returns401(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/admin/custom-fields/1", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
 func TestDeleteCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
-	app := customFieldAppAs(&Handler{}, &models.User{ID: 0, Role: "user"})
+	app := customFieldAppAs(minHandler(), &models.User{ID: 0, Role: "user"})
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/admin/custom-fields/1", nil))
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
@@ -167,7 +167,7 @@ func TestDeleteCustomFieldDefinition_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestReorderCustomFieldDefinitions_NoUser_Returns401(t *testing.T) {
-	app := customFieldApp(&Handler{})
+	app := customFieldApp(minHandler())
 	req := httptest.NewRequest("PUT", "/admin/custom-fields/reorder", strings.NewReader(`{"ids":[1,2]}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)
@@ -176,7 +176,7 @@ func TestReorderCustomFieldDefinitions_NoUser_Returns401(t *testing.T) {
 }
 
 func TestReorderCustomFieldDefinitions_NoPermission_Returns403(t *testing.T) {
-	app := customFieldAppAs(&Handler{}, &models.User{ID: 0, Role: "user"})
+	app := customFieldAppAs(minHandler(), &models.User{ID: 0, Role: "user"})
 	req := httptest.NewRequest("PUT", "/admin/custom-fields/reorder", strings.NewReader(`{"ids":[1,2]}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(req)

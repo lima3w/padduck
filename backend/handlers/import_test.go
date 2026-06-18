@@ -127,7 +127,7 @@ func buildImportHandlerApp(method, route string, handlerFn func(h *Handler) fibe
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestImportSubnetsCSV_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/import/subnets", h.ImportSubnetsCSV)
 
@@ -138,7 +138,7 @@ func TestImportSubnetsCSV_NoUser_Returns401(t *testing.T) {
 }
 
 func TestImportSubnetsCSV_LowPrivilege_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := buildImportApp(&models.User{ID: 0, Role: "viewer"}, "POST", "/admin/import/subnets", h.ImportSubnetsCSV)
 
 	req := httptest.NewRequest("POST", "/admin/import/subnets", nil)
@@ -210,7 +210,7 @@ func TestImportSubnetsCSV_ValidFile_Returns200(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestImportIPsCSV_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/import/ips", h.ImportIPsCSV)
 
@@ -221,7 +221,7 @@ func TestImportIPsCSV_NoUser_Returns401(t *testing.T) {
 }
 
 func TestImportIPsCSV_LowPrivilege_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := buildImportApp(&models.User{ID: 0, Role: "viewer"}, "POST", "/admin/import/ips", h.ImportIPsCSV)
 
 	req := httptest.NewRequest("POST", "/admin/import/ips", nil)
@@ -266,7 +266,7 @@ func TestImportIPsCSV_ValidFile_Returns200(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestImportFromPHPIpam_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/import/phpipam", h.ImportFromPHPIpam)
 
@@ -277,7 +277,7 @@ func TestImportFromPHPIpam_NoUser_Returns401(t *testing.T) {
 }
 
 func TestImportFromPHPIpam_LowPrivilege_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := buildImportApp(&models.User{ID: 0, Role: "viewer"}, "POST", "/admin/import/phpipam", h.ImportFromPHPIpam)
 
 	req := httptest.NewRequest("POST", "/admin/import/phpipam?kind=subnets", nil)
@@ -341,7 +341,7 @@ func TestImportFromPHPIpam_ValidFile_Returns200(t *testing.T) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 func TestExportFullData_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/export/full", h.ExportFullData)
 
@@ -352,7 +352,7 @@ func TestExportFullData_NoUser_Returns401(t *testing.T) {
 }
 
 func TestExportFullData_LowPrivilege_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := buildImportApp(&models.User{ID: 0, Role: "viewer"}, "GET", "/admin/export/full", h.ExportFullData)
 
 	req := httptest.NewRequest("GET", "/admin/export/full", nil)
@@ -406,7 +406,7 @@ func TestExportFullData_JSON_Returns200(t *testing.T) {
 }
 
 func TestExportV2MigrationBundle_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/export/v2-migration-bundle", h.ExportV2MigrationBundle)
 
@@ -417,7 +417,7 @@ func TestExportV2MigrationBundle_NoUser_Returns401(t *testing.T) {
 }
 
 func TestExportV2MigrationBundle_LowPrivilege_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := buildImportApp(&models.User{ID: 0, Role: "viewer"}, "GET", "/admin/export/v2-migration-bundle", h.ExportV2MigrationBundle)
 
 	req := httptest.NewRequest("GET", "/admin/export/v2-migration-bundle", nil)

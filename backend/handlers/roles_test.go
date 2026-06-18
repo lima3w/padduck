@@ -15,7 +15,7 @@ import (
 // buildRolesApp creates a minimal Fiber app that injects the given user into
 // locals before invoking the target handler. Pass nil user to test unauthenticated.
 func buildRolesApp(user *models.User, route string, method string, handler fiber.Handler) *fiber.App {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New(fiber.Config{
 		// Convert panics to 500 so tests don't crash.
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -80,7 +80,7 @@ func TestAssignRoleRequest_Fields(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListRoles_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/roles", h.ListRoles)
 
@@ -93,7 +93,7 @@ func TestListRoles_NoUser_Returns403(t *testing.T) {
 func TestListRoles_NonAdmin_Returns403(t *testing.T) {
 	for _, role := range []string{"user", "viewer", "operator"} {
 		t.Run(role, func(t *testing.T) {
-			h := &Handler{service: nil}
+			h := minHandler()
 			app := fiber.New()
 			app.Get("/admin/roles", func(c *fiber.Ctx) error {
 				c.Locals("user", &models.User{Role: role})
@@ -114,7 +114,7 @@ func TestListRoles_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetRole_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/roles/:id", h.GetRole)
 
@@ -125,7 +125,7 @@ func TestGetRole_NoUser_Returns403(t *testing.T) {
 }
 
 func TestGetRole_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/roles/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -138,7 +138,7 @@ func TestGetRole_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestGetRole_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/roles/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -155,7 +155,7 @@ func TestGetRole_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateRole_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/roles", h.CreateRole)
 
@@ -166,7 +166,7 @@ func TestCreateRole_NoUser_Returns403(t *testing.T) {
 }
 
 func TestCreateRole_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/roles", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "viewer"})
@@ -183,7 +183,7 @@ func TestCreateRole_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateRole_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/roles/:id", h.UpdateRole)
 
@@ -194,7 +194,7 @@ func TestUpdateRole_NoUser_Returns403(t *testing.T) {
 }
 
 func TestUpdateRole_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/roles/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -211,7 +211,7 @@ func TestUpdateRole_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteRole_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/roles/:id", h.DeleteRole)
 
@@ -222,7 +222,7 @@ func TestDeleteRole_NoUser_Returns403(t *testing.T) {
 }
 
 func TestDeleteRole_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/roles/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -239,7 +239,7 @@ func TestDeleteRole_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddPermissionToRole_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/roles/:id/permissions", h.AddPermissionToRole)
 
@@ -250,7 +250,7 @@ func TestAddPermissionToRole_NoUser_Returns403(t *testing.T) {
 }
 
 func TestAddPermissionToRole_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/roles/:id/permissions", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -267,7 +267,7 @@ func TestAddPermissionToRole_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRemovePermissionFromRole_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/roles/:id/permissions/:perm_id", h.RemovePermissionFromRole)
 
@@ -278,7 +278,7 @@ func TestRemovePermissionFromRole_NoUser_Returns403(t *testing.T) {
 }
 
 func TestRemovePermissionFromRole_AdminInvalidPermID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/roles/:id/permissions/:perm_id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -295,7 +295,7 @@ func TestRemovePermissionFromRole_AdminInvalidPermID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListAvailablePermissions_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/permissions", h.ListAvailablePermissions)
 
@@ -306,7 +306,7 @@ func TestListAvailablePermissions_NoUser_Returns403(t *testing.T) {
 }
 
 func TestListAvailablePermissions_Admin_Returns200WithAllPerms(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/permissions", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -331,7 +331,7 @@ func TestListAvailablePermissions_Admin_Returns200WithAllPerms(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetUserRoles_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/users/:id/roles", h.GetUserRoles)
 
@@ -342,7 +342,7 @@ func TestGetUserRoles_NoUser_Returns403(t *testing.T) {
 }
 
 func TestGetUserRoles_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/users/:id/roles", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -359,7 +359,7 @@ func TestGetUserRoles_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAssignRoleToUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/roles", h.AssignRoleToUser)
 
@@ -370,7 +370,7 @@ func TestAssignRoleToUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestAssignRoleToUser_AdminInvalidID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/roles", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -387,7 +387,7 @@ func TestAssignRoleToUser_AdminInvalidID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRemoveRoleFromUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/users/:id/roles/:role_id", h.RemoveRoleFromUser)
 
@@ -398,7 +398,7 @@ func TestRemoveRoleFromUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestRemoveRoleFromUser_AdminInvalidUserID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/users/:id/roles/:role_id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -411,7 +411,7 @@ func TestRemoveRoleFromUser_AdminInvalidUserID_Returns400(t *testing.T) {
 }
 
 func TestRemoveRoleFromUser_AdminInvalidRoleID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/users/:id/roles/:role_id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})

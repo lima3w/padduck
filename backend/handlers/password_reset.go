@@ -31,7 +31,7 @@ func (h *Handler) RequestPasswordReset(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "email is required")
 	}
 
-	if err := h.service.SendPasswordResetEmail(c.Context(), req.Email); err != nil {
+	if err := h.ops.Identity.SendPasswordResetEmail(c.Context(), req.Email); err != nil {
 		reqLogger(c).Error("error sending password reset email", "error", err)
 	}
 
@@ -62,7 +62,7 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to reset password")
 	}
 
-	userID, err := h.service.ResetPasswordWithToken(c.Context(), req.Token, passwordHash)
+	userID, err := h.ops.Identity.ResetPasswordWithToken(c.Context(), req.Token, passwordHash)
 	if err != nil {
 		reqLogger(c).Warn("password reset failed", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid or expired reset token")
@@ -106,7 +106,7 @@ func (h *Handler) ChangeMyPassword(c *fiber.Ctx) error {
 
 	// Keep the session making the change alive; every other session for the
 	// user is revoked by the service.
-	if err := h.service.ChangePassword(c.Context(), currentUser.ID, req.CurrentPassword, req.NewPassword, c.Cookies(sessionCookieName)); err != nil {
+	if err := h.ops.Identity.ChangePassword(c.Context(), currentUser.ID, req.CurrentPassword, req.NewPassword, c.Cookies(sessionCookieName)); err != nil {
 		if err.Error() == "current password is incorrect" {
 			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, err.Error())
 		}

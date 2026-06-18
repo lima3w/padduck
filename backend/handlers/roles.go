@@ -75,7 +75,7 @@ func (h *Handler) ListRoles(c *fiber.Ctx) error {
 	if err := requireAdmin(c); err != nil {
 		return nil
 	}
-	roles, err := h.service.ListRoles(c.Context())
+	roles, err := h.ops.Identity.ListRoles(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to list roles")
 	}
@@ -90,7 +90,7 @@ func (h *Handler) GetRole(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role ID")
 	}
-	role, err := h.service.GetRole(c.Context(), int64(id))
+	role, err := h.ops.Identity.GetRole(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "role not found")
 	}
@@ -110,7 +110,7 @@ func (h *Handler) CreateRole(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	role, err := h.service.CreateRole(c.Context(), req.Name, req.Description)
+	role, err := h.ops.Identity.CreateRole(c.Context(), req.Name, req.Description)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -134,7 +134,7 @@ func (h *Handler) UpdateRole(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	role, err := h.service.UpdateRole(c.Context(), int64(id), req.Name, req.Description)
+	role, err := h.ops.Identity.UpdateRole(c.Context(), int64(id), req.Name, req.Description)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -149,7 +149,7 @@ func (h *Handler) DeleteRole(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role ID")
 	}
-	if err := h.service.DeleteRole(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Identity.DeleteRole(c.Context(), int64(id)); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -175,7 +175,7 @@ func (h *Handler) AddPermissionToRole(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	perm, err := h.service.AddPermissionToRole(c.Context(), int64(id), req.Permission, req.ResourceType, req.ResourceID)
+	perm, err := h.ops.Identity.AddPermissionToRole(c.Context(), int64(id), req.Permission, req.ResourceType, req.ResourceID)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -190,7 +190,7 @@ func (h *Handler) RemovePermissionFromRole(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid permission ID")
 	}
-	if err := h.service.RemovePermissionFromRole(c.Context(), int64(permID)); err != nil {
+	if err := h.ops.Identity.RemovePermissionFromRole(c.Context(), int64(permID)); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to remove permission")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -213,7 +213,7 @@ func (h *Handler) GetUserRoles(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
-	roles, err := h.service.GetUserRoles(c.Context(), int64(id))
+	roles, err := h.ops.Identity.GetUserRoles(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to get user roles")
 	}
@@ -238,7 +238,7 @@ func (h *Handler) AssignRoleToUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.service.AssignRoleToUser(c.Context(), int64(id), req.RoleID, req.LocationID); err != nil {
+	if err := h.ops.Identity.AssignRoleToUser(c.Context(), int64(id), req.RoleID, req.LocationID); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
@@ -261,7 +261,7 @@ func (h *Handler) RemoveRoleFromUser(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role ID")
 	}
-	if err := h.service.RemoveRoleFromUser(c.Context(), int64(id), int64(roleID)); err != nil {
+	if err := h.ops.Identity.RemoveRoleFromUser(c.Context(), int64(id), int64(roleID)); err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to remove role")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -305,7 +305,7 @@ func (h *Handler) GetRolePresetDiff(c *fiber.Ctx) error {
 	}
 
 	// Load the role from the database.
-	role, err := h.service.GetRole(c.Context(), int64(id))
+	role, err := h.ops.Identity.GetRole(c.Context(), int64(id))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "role not found")
 	}

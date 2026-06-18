@@ -12,11 +12,11 @@ import (
 
 // issueSessionResponse creates a web session for user and returns the standard LoginResponse.
 func (h *Handler) issueSessionResponse(c *fiber.Ctx, user *models.User) error {
-	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
+	if err := h.ops.Identity.UpdateLastLogin(c.Context(), user.ID); err != nil {
 		reqLogger(c).Error("error updating last login", "user_id", user.ID, "error", err)
 	}
 
-	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
+	token, err := h.ops.Identity.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
 	}
@@ -47,11 +47,11 @@ func (h *Handler) issueSessionResponse(c *fiber.Ctx, user *models.User) error {
 // Used by redirect-based flows (OAuth2, SAML) where the response is a redirect, not JSON.
 // Returns true on success. On error, an error response has already been written.
 func (h *Handler) issueSessionCookie(c *fiber.Ctx, user *models.User, provider string) bool {
-	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
+	if err := h.ops.Identity.UpdateLastLogin(c.Context(), user.ID); err != nil {
 		reqLogger(c).Error("error updating last login", "user_id", user.ID, "error", err)
 	}
 
-	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
+	token, err := h.ops.Identity.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		_ = RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
 		return false
