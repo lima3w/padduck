@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestRegister_MissingUsername_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/register", h.Register)
 	req := httptest.NewRequest("POST", "/auth/register", strings.NewReader(`{"email":"a@b.com","password":"secret123"}`))
@@ -25,7 +25,7 @@ func TestRegister_MissingUsername_Returns400(t *testing.T) {
 }
 
 func TestRegister_MissingEmail_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/register", h.Register)
 	req := httptest.NewRequest("POST", "/auth/register", strings.NewReader(`{"username":"alice","password":"secret123"}`))
@@ -36,7 +36,7 @@ func TestRegister_MissingEmail_Returns400(t *testing.T) {
 }
 
 func TestRegister_MissingPassword_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/register", h.Register)
 	req := httptest.NewRequest("POST", "/auth/register", strings.NewReader(`{"username":"alice","email":"a@b.com"}`))
@@ -51,7 +51,7 @@ func TestRegister_MissingPassword_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestVerifyEmail_MissingToken_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/auth/verify-email", h.VerifyEmail)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/verify-email", nil))
@@ -64,7 +64,7 @@ func TestVerifyEmail_MissingToken_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestResendVerification_MissingEmail_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/resend-verification", h.ResendVerification)
 	req := httptest.NewRequest("POST", "/auth/resend-verification", strings.NewReader(`{}`))

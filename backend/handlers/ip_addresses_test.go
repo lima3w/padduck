@@ -16,7 +16,7 @@ var unprivIP = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestCreateIPAddress_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:subnetID/ip-addresses", h.CreateIPAddress)
 
@@ -26,7 +26,7 @@ func TestCreateIPAddress_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateIPAddress_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:subnetID/ip-addresses", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivIP)
@@ -39,7 +39,7 @@ func TestCreateIPAddress_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestCreateIPAddress_BadSubnetID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:subnetID/ip-addresses", h.CreateIPAddress)
 
@@ -53,7 +53,7 @@ func TestCreateIPAddress_BadSubnetID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListIPAddresses_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:subnetID/ip-addresses", h.ListIPAddresses)
 
@@ -63,7 +63,7 @@ func TestListIPAddresses_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListIPAddresses_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:subnetID/ip-addresses", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivIP)
@@ -76,7 +76,7 @@ func TestListIPAddresses_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestListIPAddresses_BadSubnetID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:subnetID/ip-addresses", h.ListIPAddresses)
 
@@ -90,7 +90,7 @@ func TestListIPAddresses_BadSubnetID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetIPAddress_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/ip-addresses/:id", h.GetIPAddress)
 
@@ -100,7 +100,7 @@ func TestGetIPAddress_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetIPAddress_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/ip-addresses/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivIP)
@@ -113,7 +113,7 @@ func TestGetIPAddress_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetIPAddress_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/ip-addresses/:id", h.GetIPAddress)
 
@@ -128,7 +128,7 @@ func TestGetIPAddress_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAllocateIPAddress_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
 
@@ -138,7 +138,7 @@ func TestAllocateIPAddress_NoUser_Returns401(t *testing.T) {
 }
 
 func TestAllocateIPAddress_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:subnetID/ip-addresses/allocate", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivIP)
@@ -151,7 +151,7 @@ func TestAllocateIPAddress_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestAllocateIPAddress_BadSubnetID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:subnetID/ip-addresses/allocate", h.AllocateIPAddress)
 
@@ -165,7 +165,7 @@ func TestAllocateIPAddress_BadSubnetID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetSubnetUtilization_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:subnetID/utilization", h.GetSubnetUtilization)
 
@@ -175,7 +175,7 @@ func TestGetSubnetUtilization_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSubnetUtilization_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:subnetID/utilization", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivIP)
@@ -188,7 +188,7 @@ func TestGetSubnetUtilization_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetSubnetUtilization_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:subnetID/utilization", h.GetSubnetUtilization)
 

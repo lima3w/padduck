@@ -33,7 +33,7 @@ func captureAuditFilter(queryString string) *models.AuditLogFilter {
 // ---------------------------------------------------------------------------
 
 func TestGetAuditLogs_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/audit-logs", h.GetAuditLogs)
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/audit-logs", nil))
@@ -42,7 +42,7 @@ func TestGetAuditLogs_NoUser_Returns403(t *testing.T) {
 }
 
 func TestGetAuditLogs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -59,7 +59,7 @@ func TestGetAuditLogs_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExportAuditLogs_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/audit-logs/export", h.ExportAuditLogs)
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/audit-logs/export", nil))
@@ -68,7 +68,7 @@ func TestExportAuditLogs_NoUser_Returns403(t *testing.T) {
 }
 
 func TestExportAuditLogs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -85,7 +85,7 @@ func TestExportAuditLogs_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPurgeAuditLogs_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/audit-logs/purge", h.PurgeAuditLogs)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/audit-logs/purge", nil))
@@ -94,7 +94,7 @@ func TestPurgeAuditLogs_NoUser_Returns403(t *testing.T) {
 }
 
 func TestPurgeAuditLogs_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)

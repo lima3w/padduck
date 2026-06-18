@@ -18,7 +18,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestGetCSRFToken_Returns200WithToken(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/csrf-token", h.GetCSRFToken)
 	resp, err := app.Test(httptest.NewRequest("GET", "/csrf-token", nil))
@@ -32,7 +32,7 @@ func TestGetCSRFToken_Returns200WithToken(t *testing.T) {
 }
 
 func TestGetCSRFToken_TokenHasSignedFormat(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/csrf-token", h.GetCSRFToken)
 	resp, err := app.Test(httptest.NewRequest("GET", "/csrf-token", nil))
@@ -94,7 +94,7 @@ func TestGetCSRFToken_ProductionForwardedHTTPS_SetsSecureCookie(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCSRFMiddleware_GET_Passes(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -105,7 +105,7 @@ func TestCSRFMiddleware_GET_Passes(t *testing.T) {
 }
 
 func TestCSRFMiddleware_GET_IssuesCookieWhenAbsent(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -144,7 +144,7 @@ func TestCSRFMiddleware_GET_ProductionHTTP_DoesNotForceSecureCookie(t *testing.T
 }
 
 func TestCSRFMiddleware_GET_DoesNotRotateCookieWhenPresent(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -167,7 +167,7 @@ func TestCSRFMiddleware_GET_DoesNotRotateCookieWhenPresent(t *testing.T) {
 }
 
 func TestCSRFMiddleware_POST_WithoutToken_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Post("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -180,7 +180,7 @@ func TestCSRFMiddleware_POST_WithoutToken_Returns403(t *testing.T) {
 }
 
 func TestCSRFMiddleware_POST_WithMatchingSignedToken_Passes(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Post("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -198,7 +198,7 @@ func TestCSRFMiddleware_POST_WithMatchingSignedToken_Passes(t *testing.T) {
 }
 
 func TestCSRFMiddleware_POST_UnsignedToken_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Post("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -215,7 +215,7 @@ func TestCSRFMiddleware_POST_UnsignedToken_Returns403(t *testing.T) {
 }
 
 func TestCSRFMiddleware_POST_TokenMismatch_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.CSRFMiddleware)
 	app.Post("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })
@@ -234,7 +234,7 @@ func TestCSRFMiddleware_POST_TokenMismatch_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestNewCSRFToken_ReturnsDifferentTokensEachCall(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	t1, err1 := h.newCSRFToken()
 	t2, err2 := h.newCSRFToken()
 	assert.NoError(t, err1)
@@ -243,14 +243,14 @@ func TestNewCSRFToken_ReturnsDifferentTokensEachCall(t *testing.T) {
 }
 
 func TestNewCSRFToken_ValidatesCorrectly(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	token, err := h.newCSRFToken()
 	require.NoError(t, err)
 	assert.True(t, h.validCSRFToken(token, token), "a freshly generated token must pass its own validation")
 }
 
 func TestNewCSRFToken_TamperedMACFails(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	token, err := h.newCSRFToken()
 	require.NoError(t, err)
 	// Flip the last character of the MAC to simulate tampering.

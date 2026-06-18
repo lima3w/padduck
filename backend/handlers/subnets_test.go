@@ -16,7 +16,7 @@ var unprivSubnet = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestCreateSubnet_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks/:networkID/subnets", h.CreateSubnet)
 
@@ -26,7 +26,7 @@ func TestCreateSubnet_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateSubnet_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks/:networkID/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
@@ -39,7 +39,7 @@ func TestCreateSubnet_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestCreateSubnet_BadSectionID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks/:networkID/subnets", h.CreateSubnet)
 
@@ -53,7 +53,7 @@ func TestCreateSubnet_BadSectionID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListSubnets_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:networkID/subnets", h.ListSubnets)
 
@@ -63,7 +63,7 @@ func TestListSubnets_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListSubnets_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:networkID/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
@@ -76,7 +76,7 @@ func TestListSubnets_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestListSubnets_BadSectionID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:networkID/subnets", h.ListSubnets)
 
@@ -90,7 +90,7 @@ func TestListSubnets_BadSectionID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetSubnet_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id", h.GetSubnet)
 
@@ -100,7 +100,7 @@ func TestGetSubnet_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSubnet_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
@@ -113,7 +113,7 @@ func TestGetSubnet_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetSubnet_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id", h.GetSubnet)
 
@@ -128,7 +128,7 @@ func TestGetSubnet_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateSubnet_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/subnets/:id", h.UpdateSubnet)
 
@@ -138,7 +138,7 @@ func TestUpdateSubnet_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateSubnet_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/subnets/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
@@ -151,7 +151,7 @@ func TestUpdateSubnet_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestUpdateSubnet_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/subnets/:id", h.UpdateSubnet)
 
@@ -165,7 +165,7 @@ func TestUpdateSubnet_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteSubnet_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/subnets/:id", h.DeleteSubnet)
 
@@ -175,7 +175,7 @@ func TestDeleteSubnet_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteSubnet_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/subnets/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)
@@ -188,7 +188,7 @@ func TestDeleteSubnet_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestDeleteSubnet_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/subnets/:id", h.DeleteSubnet)
 
@@ -202,7 +202,7 @@ func TestDeleteSubnet_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetOverlapReport_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/subnets/overlap-report", h.GetOverlapReport)
 
@@ -212,7 +212,7 @@ func TestGetOverlapReport_NoUser_Returns403(t *testing.T) {
 }
 
 func TestGetOverlapReport_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/subnets/overlap-report", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSubnet)

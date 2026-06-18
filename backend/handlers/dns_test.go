@@ -16,7 +16,7 @@ var unprivDNS = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestCheckAllDNS_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/dns/check-all", h.CheckAllDNS)
 
@@ -26,7 +26,7 @@ func TestCheckAllDNS_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCheckAllDNS_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/dns/check-all", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDNS)
@@ -43,7 +43,7 @@ func TestCheckAllDNS_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTestPowerDNSConnection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/dns/test", h.TestPowerDNSConnection)
 
@@ -53,7 +53,7 @@ func TestTestPowerDNSConnection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestTestPowerDNSConnection_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/dns/test", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDNS)
@@ -70,7 +70,7 @@ func TestTestPowerDNSConnection_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTestTechnitiumConnection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/dns/technitium/test", h.TestTechnitiumConnection)
 
@@ -80,7 +80,7 @@ func TestTestTechnitiumConnection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestTestTechnitiumConnection_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/dns/technitium/test", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDNS)
@@ -97,7 +97,7 @@ func TestTestTechnitiumConnection_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListDNSZones_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/dns/zones", h.ListDNSZones)
 
@@ -107,7 +107,7 @@ func TestListDNSZones_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListDNSZones_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/dns/zones", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDNS)
@@ -124,7 +124,7 @@ func TestListDNSZones_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetDNSZoneRecords_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/dns/zones/:zone/records", h.GetDNSZoneRecords)
 
@@ -134,7 +134,7 @@ func TestGetDNSZoneRecords_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetDNSZoneRecords_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/dns/zones/:zone/records", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDNS)

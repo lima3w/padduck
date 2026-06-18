@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListVRFs_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vrfs", h.ListVRFs)
 	resp, err := app.Test(httptest.NewRequest("GET", "/vrfs", nil))
@@ -23,7 +23,7 @@ func TestListVRFs_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListVRFs_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())
@@ -40,7 +40,7 @@ func TestListVRFs_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetVRF_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vrfs/:id", h.GetVRF)
 	// permCheck runs before ParamsInt, so unauthenticated requests get 401.
@@ -50,7 +50,7 @@ func TestGetVRF_BadID_NoAuth_Returns401(t *testing.T) {
 }
 
 func TestGetVRF_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vrfs/:id", h.GetVRF)
 	resp, err := app.Test(httptest.NewRequest("GET", "/vrfs/1", nil))
@@ -59,7 +59,7 @@ func TestGetVRF_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetVRF_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())
@@ -76,7 +76,7 @@ func TestGetVRF_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateVRF_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vrfs", h.CreateVRF)
 	req := httptest.NewRequest("POST", "/vrfs", strings.NewReader(`{"name":"mgmt"}`))
@@ -87,7 +87,7 @@ func TestCreateVRF_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateVRF_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", permUser())
@@ -106,7 +106,7 @@ func TestCreateVRF_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateVRF_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vrfs/:id", h.UpdateVRF)
 	req := httptest.NewRequest("PUT", "/vrfs/notanumber", strings.NewReader(`{}`))
@@ -117,7 +117,7 @@ func TestUpdateVRF_BadID_Returns400(t *testing.T) {
 }
 
 func TestUpdateVRF_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vrfs/:id", h.UpdateVRF)
 	req := httptest.NewRequest("PUT", "/vrfs/1", strings.NewReader(`{"name":"mgmt"}`))
@@ -132,7 +132,7 @@ func TestUpdateVRF_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteVRF_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vrfs/:id", h.DeleteVRF)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/vrfs/notanumber", nil))
@@ -141,7 +141,7 @@ func TestDeleteVRF_BadID_Returns400(t *testing.T) {
 }
 
 func TestDeleteVRF_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vrfs/:id", h.DeleteVRF)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/vrfs/1", nil))

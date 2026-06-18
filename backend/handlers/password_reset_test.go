@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestRequestPasswordReset_MissingEmail_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/request-password-reset", h.RequestPasswordReset)
 	req := httptest.NewRequest("POST", "/auth/request-password-reset", strings.NewReader(`{}`))
@@ -29,7 +29,7 @@ func TestRequestPasswordReset_MissingEmail_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestResetPassword_MissingFields_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/reset-password", h.ResetPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(`{}`))
@@ -40,7 +40,7 @@ func TestResetPassword_MissingFields_Returns400(t *testing.T) {
 }
 
 func TestResetPassword_PasswordTooShort_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/reset-password", h.ResetPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(`{"token":"abc","password":"short"}`))
@@ -51,7 +51,7 @@ func TestResetPassword_PasswordTooShort_Returns400(t *testing.T) {
 }
 
 func TestResetPassword_MissingToken_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/reset-password", h.ResetPassword)
 	req := httptest.NewRequest("POST", "/auth/reset-password", strings.NewReader(`{"password":"longpassword"}`))

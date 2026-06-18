@@ -111,7 +111,7 @@ func TestParseDeviceName_TruncationLength(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestIsSessionExpired(t *testing.T) {
-	svc := &Service{} // zero-value; IsSessionExpired does not use any Service fields
+	svc := &IdentityService{} // zero-value; IsSessionExpired does not use any IdentityService fields
 
 	t.Run("nil lastLoginAt returns false", func(t *testing.T) {
 		assert.False(t, svc.IsSessionExpired(nil))

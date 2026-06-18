@@ -152,7 +152,7 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	token, err := h.service.GenerateAPIToken(c.Context(), userID, req.TokenName, req.Scope, req.ExpiresInDays)
+	token, err := h.ops.Identity.GenerateAPIToken(c.Context(), userID, req.TokenName, req.Scope, req.ExpiresInDays)
 	if err != nil {
 		reqLogger(c).Error("error generating token", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -182,7 +182,7 @@ func (h *Handler) ListMyTokens(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
-	tokens, err := h.service.ListUserTokens(c.Context(), userID)
+	tokens, err := h.ops.Identity.ListUserTokens(c.Context(), userID)
 	if err != nil {
 		reqLogger(c).Error("error listing tokens", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -229,14 +229,14 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username and password required")
 	}
 
-	if throttled, err := h.service.IsIPThrottled(c.Context(), c.IP()); err == nil && throttled {
+	if throttled, err := h.ops.Identity.IsIPThrottled(c.Context(), c.IP()); err == nil && throttled {
 		return RespondError(c, fiber.StatusTooManyRequests, ErrTooManyRequests, "too many failed login attempts from this IP, please try again later")
 	}
 
 	ipAddress := c.IP()
 	userAgent := c.Get("User-Agent")
 
-	result, err := h.service.AuthenticateUser(c.Context(), req.Username, req.Password, ipAddress, userAgent)
+	result, err := h.ops.Identity.AuthenticateUser(c.Context(), req.Username, req.Password, ipAddress, userAgent)
 	if err != nil {
 		reqLogger(c).Warn("authentication failed", "username", req.Username, "error", err)
 		switch {
@@ -260,11 +260,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	user := result.User
 
 	// Update last login time
-	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
+	if err := h.ops.Identity.UpdateLastLogin(c.Context(), user.ID); err != nil {
 		reqLogger(c).Warn("error updating last login", "user_id", user.ID, "error", err)
 	}
 
-	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
+	token, err := h.ops.Identity.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		reqLogger(c).Error("error creating session", "user_id", user.ID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
@@ -310,7 +310,7 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "missing session cookie")
 	}
 
-	if err := h.service.RevokeSession(c.Context(), userID, token); err != nil {
+	if err := h.ops.Identity.RevokeSession(c.Context(), userID, token); err != nil {
 		reqLogger(c).Error("error revoking session", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to logout")
 	}
@@ -339,7 +339,7 @@ func (h *Handler) ListMySessions(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
-	sessions, err := h.service.ListUserSessions(c.Context(), userID)
+	sessions, err := h.ops.Identity.ListUserSessions(c.Context(), userID)
 	if err != nil {
 		reqLogger(c).Error("error listing sessions", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -372,7 +372,7 @@ func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid session ID")
 	}
 
-	if err := h.service.RevokeSessionByID(c.Context(), userID, int64(sessionID)); err != nil {
+	if err := h.ops.Identity.RevokeSessionByID(c.Context(), userID, int64(sessionID)); err != nil {
 		reqLogger(c).Error("error revoking session by ID", "session_id", sessionID, "error", err)
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "session not found")
 	}
@@ -399,7 +399,7 @@ func (h *Handler) LogoutAllDevices(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
-	if err := h.service.RevokeAllSessions(c.Context(), userID); err != nil {
+	if err := h.ops.Identity.RevokeAllSessions(c.Context(), userID); err != nil {
 		reqLogger(c).Error("error revoking all sessions", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -424,7 +424,7 @@ func (h *Handler) RotateToken(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid token ID")
 	}
 
-	newToken, graceExpiresAt, err := h.service.RotateAPIToken(c.Context(), int64(id), user.ID)
+	newToken, graceExpiresAt, err := h.ops.Identity.RotateAPIToken(c.Context(), int64(id), user.ID)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -453,7 +453,7 @@ func (h *Handler) ExtendToken(c *fiber.Ctx) error {
 	}
 	_ = c.BodyParser(&req)
 
-	token, err := h.service.ExtendAPIToken(c.Context(), int64(id), user.ID, req.Days)
+	token, err := h.ops.Identity.ExtendAPIToken(c.Context(), int64(id), user.ID, req.Days)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -471,7 +471,7 @@ func (h *Handler) GetMyAvatar(c *fiber.Ctx) error {
 	if user.AvatarSource != "custom" {
 		return c.Redirect(gravatarURL(user.Email, 256), fiber.StatusFound)
 	}
-	data, err := h.service.GetUserAvatarData(c.Context(), user.ID)
+	data, err := h.ops.Identity.GetUserAvatarData(c.Context(), user.ID)
 	if err != nil || data == nil || *data == "" {
 		return c.Redirect(gravatarURL(user.Email, 256), fiber.StatusFound)
 	}
@@ -513,7 +513,7 @@ func (h *Handler) UpdateMyAvatar(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	if err := h.service.UpdateUserAvatar(c.Context(), user.ID, req.Source, req.Data); err != nil {
+	if err := h.ops.Identity.UpdateUserAvatar(c.Context(), user.ID, req.Source, req.Data); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(fiber.Map{"message": "avatar updated"})

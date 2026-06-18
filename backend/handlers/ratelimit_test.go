@@ -50,7 +50,7 @@ func TestRateLimiter_WindowExpiry_AllowsAgain(t *testing.T) {
 func TestRateLimitMiddleware_Returns429WhenLimitExceeded(t *testing.T) {
 	t.Parallel()
 
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.RateLimitMiddleware(2, 1*time.Minute))
 	app.Get("/test", func(c *fiber.Ctx) error { return c.SendStatus(200) })

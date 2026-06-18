@@ -28,7 +28,7 @@ func (h *Handler) RequestUnlock(c *fiber.Ctx) error {
 
 	// Always return success to prevent username enumeration
 	if req.Username != "" {
-		if err := h.service.RequestUnlockEmail(c.Context(), req.Username); err != nil {
+		if err := h.ops.Identity.RequestUnlockEmail(c.Context(), req.Username); err != nil {
 			reqLogger(c).Error("error sending unlock email", "error", err)
 		}
 	}
@@ -44,7 +44,7 @@ func (h *Handler) VerifyUnlock(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "token is required")
 	}
 
-	if err := h.service.UnlockAccountByToken(c.Context(), token); err != nil {
+	if err := h.ops.Identity.UnlockAccountByToken(c.Context(), token); err != nil {
 		if err == services.ErrInvalidUnlockToken {
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid or expired unlock token")
 		}
@@ -62,7 +62,7 @@ func (h *Handler) GetLoginHistory(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "user ID not found in context")
 	}
 
-	attempts, err := h.service.GetLoginHistory(c.Context(), userID, 20)
+	attempts, err := h.ops.Identity.GetLoginHistory(c.Context(), userID, 20)
 	if err != nil {
 		reqLogger(c).Error("error fetching login history", "error", err)
 		return h.StatusInternalServerError(c, "Failed to fetch login history", err.Error())
@@ -95,7 +95,7 @@ func (h *Handler) AdminUnlockUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
-	if err := h.service.UnlockAccountByAdmin(c.Context(), int64(targetID), adminID); err != nil {
+	if err := h.ops.Identity.UnlockAccountByAdmin(c.Context(), int64(targetID), adminID); err != nil {
 		reqLogger(c).Error("error admin-unlocking user", "target_id", targetID, "error", err)
 		return h.StatusInternalServerError(c, "Failed to unlock account", err.Error())
 	}

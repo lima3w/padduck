@@ -32,16 +32,16 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "MFA verification failed")
 	}
 
-	user, err := h.service.GetUserByID(c.Context(), userID)
+	user, err := h.ops.Identity.GetUserByID(c.Context(), userID)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "user not found")
 	}
 
-	if err := h.service.UpdateLastLogin(c.Context(), user.ID); err != nil {
+	if err := h.ops.Identity.UpdateLastLogin(c.Context(), user.ID); err != nil {
 		reqLogger(c).Warn("error updating last login", "user_id", user.ID, "error", err)
 	}
 
-	token, err := h.service.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
+	token, err := h.ops.Identity.CreateWebSession(c.Context(), user.ID, c.IP(), c.Get("User-Agent"))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create session")
 	}

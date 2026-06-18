@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListDelegations_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/delegations", h.ListDelegations)
 
@@ -28,7 +28,7 @@ func TestListDelegations_NoUser_Returns401(t *testing.T) {
 func TestListDelegations_NonAdmin_Returns403(t *testing.T) {
 	// viewer/user without roles uses legacy fallback; nil service means
 	// CheckPermission cannot query DB, returns permission denied for non-admin.
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/delegations", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "viewer", ID: 0})
@@ -44,7 +44,7 @@ func TestListDelegations_NonAdmin_Returns403(t *testing.T) {
 
 func TestListDelegations_AdminInvalidID_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before param parsing
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/delegations", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -62,7 +62,7 @@ func TestListDelegations_AdminInvalidID_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateDelegation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:id/delegations", h.CreateDelegation)
 
@@ -74,7 +74,7 @@ func TestCreateDelegation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateDelegation_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:id/delegations", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -90,7 +90,7 @@ func TestCreateDelegation_NonAdmin_Returns403(t *testing.T) {
 
 func TestCreateDelegation_AdminMissingPrefix_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before body validation
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/subnets/:id/delegations", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -109,7 +109,7 @@ func TestCreateDelegation_AdminMissingPrefix_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateDelegation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/delegations/:id", h.UpdateDelegation)
 
@@ -121,7 +121,7 @@ func TestUpdateDelegation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateDelegation_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/delegations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -137,7 +137,7 @@ func TestUpdateDelegation_NonAdmin_Returns403(t *testing.T) {
 
 func TestUpdateDelegation_AdminInvalidID_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before ID parsing
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/delegations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -156,7 +156,7 @@ func TestUpdateDelegation_AdminInvalidID_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteDelegation_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/delegations/:id", h.DeleteDelegation)
 
@@ -167,7 +167,7 @@ func TestDeleteDelegation_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteDelegation_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/delegations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -182,7 +182,7 @@ func TestDeleteDelegation_NonAdmin_Returns403(t *testing.T) {
 
 func TestDeleteDelegation_AdminInvalidID_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before ID parsing
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/delegations/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})
@@ -200,7 +200,7 @@ func TestDeleteDelegation_AdminInvalidID_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetSectionTopology_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id/topology", h.GetNetworkTopology)
 
@@ -211,7 +211,7 @@ func TestGetSectionTopology_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSectionTopology_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id/topology", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "user"})
@@ -226,7 +226,7 @@ func TestGetSectionTopology_NonAdmin_Returns403(t *testing.T) {
 
 func TestGetSectionTopology_AdminInvalidID_Returns403(t *testing.T) {
 	// permCheck with nil service and admin user (ID=0) returns 403 before param parsing
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id/topology", func(c *fiber.Ctx) error {
 		c.Locals("user", &models.User{Role: "admin"})

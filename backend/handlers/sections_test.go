@@ -17,7 +17,7 @@ var unprivSection = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestCreateSection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks", h.CreateNetwork)
 
@@ -29,7 +29,7 @@ func TestCreateSection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateSection_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSection)
@@ -48,7 +48,7 @@ func TestCreateSection_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListSections_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks", h.ListNetworks)
 
@@ -58,7 +58,7 @@ func TestListSections_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListSections_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSection)
@@ -75,7 +75,7 @@ func TestListSections_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetSection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id", h.GetNetwork)
 
@@ -85,7 +85,7 @@ func TestGetSection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSection_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSection)
@@ -98,7 +98,7 @@ func TestGetSection_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetSection_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/networks/:id", h.GetNetwork)
 
@@ -113,7 +113,7 @@ func TestGetSection_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateSection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/networks/:id", h.UpdateNetwork)
 
@@ -123,7 +123,7 @@ func TestUpdateSection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateSection_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/networks/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSection)
@@ -136,7 +136,7 @@ func TestUpdateSection_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestUpdateSection_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/networks/:id", h.UpdateNetwork)
 
@@ -150,7 +150,7 @@ func TestUpdateSection_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteSection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/networks/:id", h.DeleteNetwork)
 
@@ -160,7 +160,7 @@ func TestDeleteSection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteSection_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/networks/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivSection)
@@ -173,7 +173,7 @@ func TestDeleteSection_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestDeleteSection_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/networks/:id", h.DeleteNetwork)
 
@@ -187,7 +187,7 @@ func TestDeleteSection_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateSection_BadBody_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/networks", h.CreateNetwork)
 

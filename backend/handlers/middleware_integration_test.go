@@ -100,7 +100,7 @@ func TestAuthMiddleware_SessionCookie_Integration(t *testing.T) {
 	ctx := context.Background()
 	app := probeApp(h.AuthMiddleware)
 
-	token, err := svc.CreateWebSession(ctx, userID, "10.0.0.1", "test-browser")
+	token, err := svc.Ops.Identity.CreateWebSession(ctx, userID, "10.0.0.1", "test-browser")
 	require.NoError(t, err)
 
 	// Valid session: authenticated with the right user.
@@ -114,7 +114,7 @@ func TestAuthMiddleware_SessionCookie_Integration(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, status)
 
 	// Revoked session: 401.
-	require.NoError(t, svc.RevokeAllSessions(ctx, userID))
+	require.NoError(t, svc.Ops.Identity.RevokeAllSessions(ctx, userID))
 	status, _ = doProbe(t, app, sessionRequest("GET", "/probe", token))
 	assert.Equal(t, http.StatusUnauthorized, status)
 }
@@ -124,7 +124,7 @@ func TestAuthMiddleware_BearerToken_Integration(t *testing.T) {
 	ctx := context.Background()
 	app := probeApp(h.AuthMiddleware)
 
-	raw, err := svc.GenerateAPIToken(ctx, userID, "mw-token", "admin", 30)
+	raw, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "mw-token", "admin", 30)
 	require.NoError(t, err)
 
 	status, out := doProbe(t, app, bearerRequest("GET", "/probe", raw))
@@ -166,11 +166,11 @@ func TestAuthMiddleware_TokenScopes_Integration(t *testing.T) {
 	ctx := context.Background()
 	app := probeApp(h.AuthMiddleware)
 
-	readToken, err := svc.GenerateAPIToken(ctx, userID, "ro", "read", 30)
+	readToken, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "ro", "read", 30)
 	require.NoError(t, err)
-	writeToken, err := svc.GenerateAPIToken(ctx, userID, "rw", "write", 30)
+	writeToken, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "rw", "write", 30)
 	require.NoError(t, err)
-	adminToken, err := svc.GenerateAPIToken(ctx, userID, "adm", "admin", 30)
+	adminToken, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "adm", "admin", 30)
 	require.NoError(t, err)
 
 	// read scope: GET allowed, mutations forbidden.
@@ -198,7 +198,7 @@ func TestAuthMiddleware_RateLimit_Integration(t *testing.T) {
 	require.NoError(t, svc.Config.SetCtx(ctx, "api_token_rate_limit_per_minute", "2"))
 	t.Cleanup(func() { _ = svc.Config.SetCtx(ctx, "api_token_rate_limit_per_minute", "100") })
 
-	raw, err := svc.GenerateAPIToken(ctx, userID, "limited", "admin", 30)
+	raw, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "limited", "admin", 30)
 	require.NoError(t, err)
 
 	for i := 0; i < 2; i++ {
@@ -240,7 +240,7 @@ func TestOptionalAuthMiddleware_Integration(t *testing.T) {
 	assert.False(t, out.Authenticated)
 
 	// Valid session cookie: identified.
-	token, err := svc.CreateWebSession(ctx, userID, "10.0.0.1", "test-browser")
+	token, err := svc.Ops.Identity.CreateWebSession(ctx, userID, "10.0.0.1", "test-browser")
 	require.NoError(t, err)
 	status, out = doProbe(t, app, sessionRequest("GET", "/probe", token))
 	assert.Equal(t, http.StatusOK, status)
@@ -248,7 +248,7 @@ func TestOptionalAuthMiddleware_Integration(t *testing.T) {
 	assert.Equal(t, userID, out.UserID)
 
 	// Valid bearer: identified.
-	raw, err := svc.GenerateAPIToken(ctx, userID, "opt", "read", 30)
+	raw, err := svc.Ops.Identity.GenerateAPIToken(ctx, userID, "opt", "read", 30)
 	require.NoError(t, err)
 	status, out = doProbe(t, app, bearerRequest("GET", "/probe", raw))
 	assert.Equal(t, http.StatusOK, status)
@@ -273,7 +273,7 @@ func TestAnonymousAPIMiddleware_Integration(t *testing.T) {
 	assert.False(t, out.Authenticated)
 
 	// Enabled with a valid session: still identifies the user.
-	token, err := svc.CreateWebSession(ctx, userID, "10.0.0.1", "test-browser")
+	token, err := svc.Ops.Identity.CreateWebSession(ctx, userID, "10.0.0.1", "test-browser")
 	require.NoError(t, err)
 	status, out = doProbe(t, app, sessionRequest("GET", "/probe", token))
 	assert.Equal(t, http.StatusOK, status)

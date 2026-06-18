@@ -23,7 +23,7 @@ var nonAdminUser = &models.User{ID: 2, Role: "user"}
 // ---------------------------------------------------------------------------
 
 func TestListUsers_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/users", h.ListUsers)
 
@@ -33,7 +33,7 @@ func TestListUsers_NoUser_Returns403(t *testing.T) {
 }
 
 func TestListUsers_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/users", func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -50,7 +50,7 @@ func TestListUsers_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/users", h.CreateUser)
 
@@ -60,7 +60,7 @@ func TestCreateUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestCreateUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/users", func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -76,7 +76,7 @@ func TestCreateUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestCreateUser_Admin_MissingFields_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/users", func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -92,7 +92,7 @@ func TestCreateUser_Admin_MissingFields_Returns400(t *testing.T) {
 }
 
 func TestCreateUser_Admin_InvalidRole_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/users", func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)

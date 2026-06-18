@@ -54,7 +54,7 @@ func jsonReq(method, path, body string) *http.Request {
 // ---------------------------------------------------------------------------
 
 func TestSuspendUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/suspend", h.SuspendUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/suspend", `{"reason":"test"}`))
@@ -63,7 +63,7 @@ func TestSuspendUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestSuspendUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/suspend", h.SuspendUser, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/suspend", `{"reason":"test"}`))
 	assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestSuspendUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestSuspendUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/suspend", h.SuspendUser, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/notanumber/suspend", `{"reason":"test"}`))
 	assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestSuspendUser_BadID_Returns400(t *testing.T) {
 }
 
 func TestSuspendUser_MissingReason_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/suspend", h.SuspendUser, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/suspend", `{}`))
 	assert.NoError(t, err)
@@ -91,7 +91,7 @@ func TestSuspendUser_MissingReason_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUnsuspendUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/unsuspend", h.UnsuspendUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/unsuspend", ``))
@@ -100,7 +100,7 @@ func TestUnsuspendUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestUnsuspendUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/unsuspend", h.UnsuspendUser, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/unsuspend", ``))
 	assert.NoError(t, err)
@@ -108,7 +108,7 @@ func TestUnsuspendUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestUnsuspendUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/unsuspend", h.UnsuspendUser, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/notanumber/unsuspend", ``))
 	assert.NoError(t, err)
@@ -120,7 +120,7 @@ func TestUnsuspendUser_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestImpersonateUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/impersonate", h.ImpersonateUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/impersonate", ``))
@@ -129,7 +129,7 @@ func TestImpersonateUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestImpersonateUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/impersonate", h.ImpersonateUser, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/impersonate", ``))
 	assert.NoError(t, err)
@@ -137,7 +137,7 @@ func TestImpersonateUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestImpersonateUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/impersonate", h.ImpersonateUser, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/notanumber/impersonate", ``))
 	assert.NoError(t, err)
@@ -149,7 +149,7 @@ func TestImpersonateUser_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBulkSuspendUsers_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/bulk-suspend", h.BulkSuspendUsers)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-suspend", `{"user_ids":[1]}`))
@@ -158,7 +158,7 @@ func TestBulkSuspendUsers_NoUser_Returns403(t *testing.T) {
 }
 
 func TestBulkSuspendUsers_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-suspend", h.BulkSuspendUsers, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-suspend", `{"user_ids":[1]}`))
 	assert.NoError(t, err)
@@ -166,7 +166,7 @@ func TestBulkSuspendUsers_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestBulkSuspendUsers_EmptyIDs_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-suspend", h.BulkSuspendUsers, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-suspend", `{"user_ids":[]}`))
 	assert.NoError(t, err)
@@ -178,7 +178,7 @@ func TestBulkSuspendUsers_EmptyIDs_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBulkActivateUsers_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/bulk-activate", h.BulkActivateUsers)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-activate", `{"user_ids":[1]}`))
@@ -187,7 +187,7 @@ func TestBulkActivateUsers_NoUser_Returns403(t *testing.T) {
 }
 
 func TestBulkActivateUsers_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-activate", h.BulkActivateUsers, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-activate", `{"user_ids":[1]}`))
 	assert.NoError(t, err)
@@ -195,7 +195,7 @@ func TestBulkActivateUsers_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestBulkActivateUsers_EmptyIDs_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-activate", h.BulkActivateUsers, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-activate", `{}`))
 	assert.NoError(t, err)
@@ -207,7 +207,7 @@ func TestBulkActivateUsers_EmptyIDs_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBulkDeleteUsers_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/bulk-delete", h.BulkDeleteUsers)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-delete", `{"user_ids":[1]}`))
@@ -216,7 +216,7 @@ func TestBulkDeleteUsers_NoUser_Returns403(t *testing.T) {
 }
 
 func TestBulkDeleteUsers_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-delete", h.BulkDeleteUsers, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-delete", `{"user_ids":[1]}`))
 	assert.NoError(t, err)
@@ -224,7 +224,7 @@ func TestBulkDeleteUsers_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestBulkDeleteUsers_EmptyIDs_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-delete", h.BulkDeleteUsers, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/bulk-delete", `{"user_ids":[]}`))
 	assert.NoError(t, err)
@@ -236,7 +236,7 @@ func TestBulkDeleteUsers_EmptyIDs_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestBulkImportUsers_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/bulk-import", h.BulkImportUsers)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/users/bulk-import", nil))
@@ -245,7 +245,7 @@ func TestBulkImportUsers_NoUser_Returns403(t *testing.T) {
 }
 
 func TestBulkImportUsers_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-import", h.BulkImportUsers, nonAdminUser)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/users/bulk-import", nil))
 	assert.NoError(t, err)
@@ -253,7 +253,7 @@ func TestBulkImportUsers_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestBulkImportUsers_NoFile_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-import", h.BulkImportUsers, adminUser)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/users/bulk-import", nil))
 	assert.NoError(t, err)
@@ -261,7 +261,7 @@ func TestBulkImportUsers_NoFile_Returns400(t *testing.T) {
 }
 
 func TestBulkImportUsers_CSVMissingColumns_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/bulk-import", h.BulkImportUsers, adminUser)
 
 	var buf bytes.Buffer
@@ -282,7 +282,7 @@ func TestBulkImportUsers_CSVMissingColumns_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExportMyData_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "GET", "/auth/me/export", h.ExportMyData, nil)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/me/export", nil))
 	assert.NoError(t, err)
@@ -294,7 +294,7 @@ func TestExportMyData_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRequestDeletion_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/me/deletion-request", h.RequestDeletion, nil)
 	resp, err := app.Test(httptest.NewRequest("POST", "/auth/me/deletion-request", nil))
 	assert.NoError(t, err)
@@ -306,7 +306,7 @@ func TestRequestDeletion_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGDPRDeleteUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/users/:id/gdpr-delete", h.GDPRDeleteUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/gdpr-delete", ``))
@@ -315,7 +315,7 @@ func TestGDPRDeleteUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestGDPRDeleteUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/gdpr-delete", h.GDPRDeleteUser, nonAdminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/1/gdpr-delete", ``))
 	assert.NoError(t, err)
@@ -323,7 +323,7 @@ func TestGDPRDeleteUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestGDPRDeleteUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := adminOnlyAppAs(h, "POST", "/admin/users/:id/gdpr-delete", h.GDPRDeleteUser, adminUser)
 	resp, err := app.Test(jsonReq("POST", "/admin/users/notanumber/gdpr-delete", ``))
 	assert.NoError(t, err)
@@ -335,7 +335,7 @@ func TestGDPRDeleteUser_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAcceptPrivacyPolicy_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/me/accept-privacy", h.AcceptPrivacyPolicy, nil)
 	resp, err := app.Test(httptest.NewRequest("POST", "/auth/me/accept-privacy", nil))
 	assert.NoError(t, err)

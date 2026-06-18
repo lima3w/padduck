@@ -6,7 +6,7 @@ import (
 )
 
 func TestWebhookRoutes_AuthRequired(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	assertAuthRequired(t, []authRoute{
 		{
 			name:        "list webhook endpoints",

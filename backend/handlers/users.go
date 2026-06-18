@@ -64,7 +64,7 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 		})
 	}
 
-	users, err := h.service.ListAllUsers(c.Context())
+	users, err := h.ops.Identity.ListAllUsers(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing users", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -103,7 +103,7 @@ func (h *Handler) GetUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "cannot view other users")
 	}
 
-	user, err := h.service.GetUserByID(c.Context(), int64(userID))
+	user, err := h.ops.Identity.GetUserByID(c.Context(), int64(userID))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "user not found")
 	}
@@ -152,7 +152,7 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create user")
 	}
 
-	user, err := h.service.CreateUserWithPassword(c.Context(), req.Username, req.Email, hash, role)
+	user, err := h.ops.Identity.CreateUserWithPassword(c.Context(), req.Username, req.Email, hash, role)
 	if err != nil {
 		reqLogger(c).Error("error creating user", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to create user")
@@ -197,7 +197,7 @@ func (h *Handler) UpdateUserRole(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role")
 	}
 
-	user, err := h.service.UpdateUserRole(c.Context(), int64(userID), req.Role)
+	user, err := h.ops.Identity.UpdateUserRole(c.Context(), int64(userID), req.Role)
 	if err != nil {
 		reqLogger(c).Error("error updating user role", "user_id", userID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to update user")
@@ -238,7 +238,7 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "cannot delete your own account")
 	}
 
-	if err := h.service.DeleteUser(c.Context(), int64(userID)); err != nil {
+	if err := h.ops.Identity.DeleteUser(c.Context(), int64(userID)); err != nil {
 		reqLogger(c).Error("error deleting user", "user_id", userID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to delete user")
 	}
@@ -272,7 +272,7 @@ func (h *Handler) UpdateUserEmail(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "email is required")
 	}
 
-	if err := h.service.UpdateUserEmail(c.Context(), int64(userID), req.Email); err != nil {
+	if err := h.ops.Identity.UpdateUserEmail(c.Context(), int64(userID), req.Email); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
@@ -297,7 +297,7 @@ func (h *Handler) SendPasswordResetEmail(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid user ID")
 	}
 
-	if err := h.service.SendPasswordResetEmailByID(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Identity.SendPasswordResetEmailByID(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error sending password reset email", "user_id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to send password reset email")
 	}

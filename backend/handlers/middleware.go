@@ -21,7 +21,7 @@ func (h *Handler) AnonymousAPIMiddleware(c *fiber.Ctx) error {
 func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	// Try session cookie first (web browser requests)
 	if cookieToken := c.Cookies(sessionCookieName); cookieToken != "" {
-		user, session, err := h.service.ValidateSession(c.Context(), cookieToken)
+		user, session, err := h.ops.Identity.ValidateSession(c.Context(), cookieToken)
 		if err == nil {
 			c.Locals("user", user)
 			c.Locals("userID", user.ID)
@@ -44,13 +44,13 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	token := parts[1]
 
 	// Bearer tokens are API tokens only
-	user, apiToken, err := h.service.ValidateAPIToken(c.Context(), token, c.IP())
+	user, apiToken, err := h.ops.Identity.ValidateAPIToken(c.Context(), token, c.IP())
 	if err != nil {
 		reqLogger(c).Error("auth error", "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Invalid or expired token")
 	}
 
-	if user.LastLoginAt != nil && h.service.IsSessionExpired(user.LastLoginAt) {
+	if user.LastLoginAt != nil && h.ops.Identity.IsSessionExpired(user.LastLoginAt) {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "Session expired, please login again")
 	}
 
@@ -103,7 +103,7 @@ func (h *Handler) RequireBearerAuth(c *fiber.Ctx) error {
 func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 	// Try session cookie first
 	if cookieToken := c.Cookies(sessionCookieName); cookieToken != "" {
-		user, session, err := h.service.ValidateSession(c.Context(), cookieToken)
+		user, session, err := h.ops.Identity.ValidateSession(c.Context(), cookieToken)
 		if err == nil {
 			c.Locals("user", user)
 			c.Locals("userID", user.ID)
@@ -123,7 +123,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	user, _, err := h.service.ValidateAPIToken(c.Context(), parts[1], c.IP())
+	user, _, err := h.ops.Identity.ValidateAPIToken(c.Context(), parts[1], c.IP())
 	if err == nil {
 		c.Locals("user", user)
 		c.Locals("userID", user.ID)

@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestVerifyMFA_MissingChallenge_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/verify-mfa", h.VerifyMFA)
 	req := httptest.NewRequest("POST", "/auth/verify-mfa", strings.NewReader(`{"code":"123456"}`))
@@ -26,7 +26,7 @@ func TestVerifyMFA_MissingChallenge_Returns400(t *testing.T) {
 }
 
 func TestVerifyMFA_MissingCode_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/verify-mfa", h.VerifyMFA)
 	req := httptest.NewRequest("POST", "/auth/verify-mfa", strings.NewReader(`{"mfa_challenge":"abc"}`))
@@ -37,7 +37,7 @@ func TestVerifyMFA_MissingCode_Returns400(t *testing.T) {
 }
 
 func TestVerifyMFA_EmptyBody_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/verify-mfa", h.VerifyMFA)
 	req := httptest.NewRequest("POST", "/auth/verify-mfa", strings.NewReader(`{}`))
@@ -52,7 +52,7 @@ func TestVerifyMFA_EmptyBody_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestConfirmTOTP_MissingCode_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -71,7 +71,7 @@ func TestConfirmTOTP_MissingCode_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDisableTOTP_MissingCode_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -90,7 +90,7 @@ func TestDisableTOTP_MissingCode_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRegenerateBackupCodes_MissingCode_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)

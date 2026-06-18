@@ -59,7 +59,7 @@ func (h *Handler) requirePerm(c *fiber.Ctx, permission string, scopes ...service
 		_ = RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 		return false
 	}
-	if err := h.service.CheckPermission(c.Context(), user.ID, permission, scopes...); err != nil {
+	if err := h.ops.Identity.CheckPermission(c.Context(), user.ID, permission, scopes...); err != nil {
 		_ = RespondError(c, fiber.StatusForbidden, ErrForbidden, "permission denied")
 		return false
 	}

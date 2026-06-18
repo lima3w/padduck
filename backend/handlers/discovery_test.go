@@ -16,7 +16,7 @@ var unprivDiscovery = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestGetScanJobResults_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/results", h.GetScanJobResults)
 
@@ -26,7 +26,7 @@ func TestGetScanJobResults_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetScanJobResults_ViewerUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/results", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDiscovery)
@@ -39,7 +39,7 @@ func TestGetScanJobResults_ViewerUser_Returns403(t *testing.T) {
 }
 
 func TestGetScanJobResults_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/results", h.GetScanJobResults)
 
@@ -54,7 +54,7 @@ func TestGetScanJobResults_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetSubnetScanResults_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/scan-results", h.GetSubnetScanResults)
 
@@ -64,7 +64,7 @@ func TestGetSubnetScanResults_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSubnetScanResults_ViewerUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/scan-results", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDiscovery)
@@ -79,7 +79,7 @@ func TestGetSubnetScanResults_ViewerUser_Returns403(t *testing.T) {
 func TestGetSubnetScanResults_BadID_NoUser_Returns401(t *testing.T) {
 	// permCheck runs before param parsing, so a missing user returns 401 before
 	// the bad ID can be checked.
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/subnets/:id/scan-results", h.GetSubnetScanResults)
 
@@ -93,7 +93,7 @@ func TestGetSubnetScanResults_BadID_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRunScanJobNow_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/scan-jobs/:id/run", h.RunScanJobNow)
 
@@ -103,7 +103,7 @@ func TestRunScanJobNow_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRunScanJobNow_ViewerUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/scan-jobs/:id/run", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivDiscovery)

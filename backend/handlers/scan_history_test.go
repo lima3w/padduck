@@ -16,7 +16,7 @@ var unprivHistory = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestGetScanJobHistory_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/history", h.GetScanJobHistory)
 
@@ -27,7 +27,7 @@ func TestGetScanJobHistory_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetScanJobHistory_ViewerUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/history", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivHistory)
@@ -44,7 +44,7 @@ func TestGetScanJobHistory_ViewerUser_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetScanRunDetail_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/history/:run_id", h.GetScanRunDetail)
 
@@ -55,7 +55,7 @@ func TestGetScanRunDetail_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetScanRunDetail_ViewerUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/scan-jobs/:id/history/:run_id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivHistory)

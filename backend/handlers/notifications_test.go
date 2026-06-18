@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestGetNotificationPreferences_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/user/notification-preferences", h.GetNotificationPreferences)
 	resp, err := app.Test(httptest.NewRequest("GET", "/user/notification-preferences", nil))
@@ -27,7 +27,7 @@ func TestGetNotificationPreferences_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateNotificationPreferences_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/user/notification-preferences", h.UpdateNotificationPreferences)
 	req := httptest.NewRequest("PUT", "/user/notification-preferences", strings.NewReader(`{}`))
@@ -42,7 +42,7 @@ func TestUpdateNotificationPreferences_NoUser_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetNotificationStats_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/notification-stats", h.GetNotificationStats)
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/notification-stats", nil))
@@ -51,7 +51,7 @@ func TestGetNotificationStats_NoUser_Returns403(t *testing.T) {
 }
 
 func TestGetNotificationStats_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)

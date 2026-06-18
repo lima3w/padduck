@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestListPendingApprovals_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/approvals", h.ListPendingApprovals)
 	resp, err := app.Test(httptest.NewRequest("GET", "/admin/approvals", nil))
@@ -24,7 +24,7 @@ func TestListPendingApprovals_NoUser_Returns403(t *testing.T) {
 }
 
 func TestListPendingApprovals_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -41,7 +41,7 @@ func TestListPendingApprovals_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestApproveUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/approvals/:id/approve", h.ApproveUser)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/approvals/1/approve", nil))
@@ -50,7 +50,7 @@ func TestApproveUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestApproveUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -63,7 +63,7 @@ func TestApproveUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestApproveUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -80,7 +80,7 @@ func TestApproveUser_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRejectUser_NoUser_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/approvals/:id/reject", h.RejectUser)
 	resp, err := app.Test(httptest.NewRequest("POST", "/admin/approvals/1/reject", nil))
@@ -89,7 +89,7 @@ func TestRejectUser_NoUser_Returns403(t *testing.T) {
 }
 
 func TestRejectUser_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", nonAdminUser)
@@ -102,7 +102,7 @@ func TestRejectUser_NonAdmin_Returns403(t *testing.T) {
 }
 
 func TestRejectUser_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)

@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"padduck/models"
-	"padduck/services"
 )
 
 // ---------------------------------------------------------------------------
@@ -42,7 +41,7 @@ var unprivExtUser = &models.User{ID: 0, Username: "user1", Email: "user@example.
 // ============================================================
 
 func TestGetLDAPConfig_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/auth/ldap", h.GetLDAPConfig)
 
@@ -53,7 +52,7 @@ func TestGetLDAPConfig_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetLDAPConfig_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "GET", "/admin/auth/ldap", h.GetLDAPConfig)
 
 	req := httptest.NewRequest("GET", "/admin/auth/ldap", nil)
@@ -63,7 +62,7 @@ func TestGetLDAPConfig_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestUpdateLDAPConfig_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/auth/ldap", h.UpdateLDAPConfig)
 
@@ -75,7 +74,7 @@ func TestUpdateLDAPConfig_NoUser_Returns401(t *testing.T) {
 }
 
 func TestTestLDAPConnection_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/auth/ldap/test", h.TestLDAPConnection)
 
@@ -86,7 +85,7 @@ func TestTestLDAPConnection_NoUser_Returns401(t *testing.T) {
 }
 
 func TestTestLDAPConnection_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "POST", "/admin/auth/ldap/test", h.TestLDAPConnection)
 
 	req := httptest.NewRequest("POST", "/admin/auth/ldap/test", nil)
@@ -96,7 +95,7 @@ func TestTestLDAPConnection_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestListLDAPGroupMappings_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/auth/ldap/group-mappings", h.ListLDAPGroupMappings)
 
@@ -107,7 +106,7 @@ func TestListLDAPGroupMappings_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListLDAPGroupMappings_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "GET", "/admin/auth/ldap/group-mappings", h.ListLDAPGroupMappings)
 
 	req := httptest.NewRequest("GET", "/admin/auth/ldap/group-mappings", nil)
@@ -117,7 +116,7 @@ func TestListLDAPGroupMappings_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestCreateLDAPGroupMapping_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/admin/auth/ldap/group-mappings", h.CreateLDAPGroupMapping)
 
@@ -129,7 +128,7 @@ func TestCreateLDAPGroupMapping_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateLDAPGroupMapping_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "POST", "/admin/auth/ldap/group-mappings", h.CreateLDAPGroupMapping)
 
 	req := httptest.NewRequest("POST", "/admin/auth/ldap/group-mappings", strings.NewReader(`{}`))
@@ -140,7 +139,7 @@ func TestCreateLDAPGroupMapping_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestDeleteLDAPGroupMapping_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/admin/auth/ldap/group-mappings/:id", h.DeleteLDAPGroupMapping)
 
@@ -151,7 +150,7 @@ func TestDeleteLDAPGroupMapping_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteLDAPGroupMapping_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "DELETE", "/admin/auth/ldap/group-mappings/:id", h.DeleteLDAPGroupMapping)
 
 	req := httptest.NewRequest("DELETE", "/admin/auth/ldap/group-mappings/1", nil)
@@ -161,7 +160,7 @@ func TestDeleteLDAPGroupMapping_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestGetOAuth2Config_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/auth/oauth2", h.GetOAuth2Config)
 
@@ -172,7 +171,7 @@ func TestGetOAuth2Config_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetOAuth2Config_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "GET", "/admin/auth/oauth2", h.GetOAuth2Config)
 
 	req := httptest.NewRequest("GET", "/admin/auth/oauth2", nil)
@@ -182,7 +181,7 @@ func TestGetOAuth2Config_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestUpdateOAuth2Config_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/auth/oauth2", h.UpdateOAuth2Config)
 
@@ -194,7 +193,7 @@ func TestUpdateOAuth2Config_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateOAuth2Config_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "PUT", "/admin/auth/oauth2", h.UpdateOAuth2Config)
 
 	req := httptest.NewRequest("PUT", "/admin/auth/oauth2", strings.NewReader(`{}`))
@@ -205,7 +204,7 @@ func TestUpdateOAuth2Config_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestGetSAMLConfig_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/auth/saml", h.GetSAMLConfig)
 
@@ -216,7 +215,7 @@ func TestGetSAMLConfig_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetSAMLConfig_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "GET", "/admin/auth/saml", h.GetSAMLConfig)
 
 	req := httptest.NewRequest("GET", "/admin/auth/saml", nil)
@@ -226,7 +225,7 @@ func TestGetSAMLConfig_UnprivUser_Returns403(t *testing.T) {
 }
 
 func TestUpdateSAMLConfig_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/admin/auth/saml", h.UpdateSAMLConfig)
 
@@ -238,7 +237,7 @@ func TestUpdateSAMLConfig_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateSAMLConfig_UnprivUser_Returns403(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := buildExternalAuthApp(unprivExtUser, "PUT", "/admin/auth/saml", h.UpdateSAMLConfig)
 
 	req := httptest.NewRequest("PUT", "/admin/auth/saml", strings.NewReader(`{}`))
@@ -255,7 +254,7 @@ func TestUpdateSAMLConfig_UnprivUser_Returns403(t *testing.T) {
 func TestLDAPLogin_EmptyBody_Returns400(t *testing.T) {
 	// The handler validates credentials before reaching the LDAP service.
 	// An empty body (no username/password) → 400 BadRequest.
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/ldap/login", h.LDAPLogin)
 
@@ -267,7 +266,7 @@ func TestLDAPLogin_EmptyBody_Returns400(t *testing.T) {
 }
 
 func TestLDAPLogin_MissingPassword_Returns400(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/ldap/login", h.LDAPLogin)
 
@@ -280,7 +279,7 @@ func TestLDAPLogin_MissingPassword_Returns400(t *testing.T) {
 
 func TestOAuth2Callback_MissingParams_Returns400(t *testing.T) {
 	// Missing code and state → 400 before reaching the OAuth2 service.
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/auth/oauth2/callback", h.OAuth2Callback)
 
@@ -291,7 +290,7 @@ func TestOAuth2Callback_MissingParams_Returns400(t *testing.T) {
 }
 
 func TestOAuth2Callback_MissingState_Returns400(t *testing.T) {
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/auth/oauth2/callback", h.OAuth2Callback)
 
@@ -303,7 +302,7 @@ func TestOAuth2Callback_MissingState_Returns400(t *testing.T) {
 
 func TestSAMLACS_MissingSAMLResponse_Returns400(t *testing.T) {
 	// A POST to ACS with no SAMLResponse form field → 400 before reaching service.
-	h := &Handler{service: &services.Service{}}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/saml/acs", h.SAMLAssertionConsumerService)
 

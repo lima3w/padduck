@@ -46,7 +46,7 @@ func jsonBody(t *testing.T, v any) *bytes.Reader {
 // ---------------------------------------------------------------------------
 
 func TestUpdateConfig_NoUser_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := configApp(h)
 	req := httptest.NewRequest("PUT", "/admin/config", jsonBody(t, map[string]string{}))
 	req.Header.Set("Content-Type", "application/json")
@@ -56,7 +56,7 @@ func TestUpdateConfig_NoUser_Returns403(t *testing.T) {
 }
 
 func TestUpdateConfig_NonAdmin_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := configAppAs(h, nonAdminUser)
 	req := httptest.NewRequest("PUT", "/admin/config", jsonBody(t, map[string]string{}))
 	req.Header.Set("Content-Type", "application/json")
@@ -70,7 +70,7 @@ func TestUpdateConfig_NonAdmin_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateConfig_UnknownKey_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := configAppAs(h, adminUser)
 	req := httptest.NewRequest("PUT", "/admin/config", jsonBody(t, map[string]string{
 		"totally_unknown_key": "value",

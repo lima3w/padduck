@@ -17,7 +17,7 @@ var unprivVLAN = &models.User{ID: 0, Role: "viewer"}
 // ---------------------------------------------------------------------------
 
 func TestListVLANs_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans", h.ListVLANs)
 
@@ -27,7 +27,7 @@ func TestListVLANs_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListVLANs_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -44,7 +44,7 @@ func TestListVLANs_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetVLAN_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans/:id", h.GetVLAN)
 
@@ -54,7 +54,7 @@ func TestGetVLAN_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetVLAN_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -67,7 +67,7 @@ func TestGetVLAN_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetVLAN_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans/:id", h.GetVLAN)
 
@@ -82,7 +82,7 @@ func TestGetVLAN_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateVLAN_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlans", h.CreateVLAN)
 
@@ -92,7 +92,7 @@ func TestCreateVLAN_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateVLAN_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlans", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -109,7 +109,7 @@ func TestCreateVLAN_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateVLAN_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlans/:id", h.UpdateVLAN)
 
@@ -119,7 +119,7 @@ func TestUpdateVLAN_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateVLAN_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlans/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -132,7 +132,7 @@ func TestUpdateVLAN_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestUpdateVLAN_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlans/:id", h.UpdateVLAN)
 
@@ -146,7 +146,7 @@ func TestUpdateVLAN_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteVLAN_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id", h.DeleteVLAN)
 
@@ -156,7 +156,7 @@ func TestDeleteVLAN_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteVLAN_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -169,7 +169,7 @@ func TestDeleteVLAN_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestDeleteVLAN_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id", h.DeleteVLAN)
 
@@ -183,7 +183,7 @@ func TestDeleteVLAN_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetVLANUsageReport_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/vlans/usage-report", h.GetVLANUsageReport)
 
@@ -193,7 +193,7 @@ func TestGetVLANUsageReport_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetVLANUsageReport_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/admin/vlans/usage-report", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -210,7 +210,7 @@ func TestGetVLANUsageReport_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetVLANSubnets_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans/:id/subnets", h.GetVLANSubnets)
 
@@ -220,7 +220,7 @@ func TestGetVLANSubnets_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetVLANSubnets_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans/:id/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -233,7 +233,7 @@ func TestGetVLANSubnets_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetVLANSubnets_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlans/:id/subnets", h.GetVLANSubnets)
 
@@ -248,7 +248,7 @@ func TestGetVLANSubnets_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAssignSubnetToVLAN_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlans/:id/subnets", h.AssignSubnetToVLAN)
 
@@ -258,7 +258,7 @@ func TestAssignSubnetToVLAN_NoUser_Returns401(t *testing.T) {
 }
 
 func TestAssignSubnetToVLAN_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlans/:id/subnets", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -271,7 +271,7 @@ func TestAssignSubnetToVLAN_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestAssignSubnetToVLAN_BadID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlans/:id/subnets", h.AssignSubnetToVLAN)
 
@@ -285,7 +285,7 @@ func TestAssignSubnetToVLAN_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRemoveSubnetFromVLAN_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
 
@@ -295,7 +295,7 @@ func TestRemoveSubnetFromVLAN_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRemoveSubnetFromVLAN_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id/subnets/:subnetID", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -308,7 +308,7 @@ func TestRemoveSubnetFromVLAN_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestRemoveSubnetFromVLAN_BadVLANID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
 
@@ -318,7 +318,7 @@ func TestRemoveSubnetFromVLAN_BadVLANID_Returns400(t *testing.T) {
 }
 
 func TestRemoveSubnetFromVLAN_BadSubnetID_Returns400(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlans/:id/subnets/:subnetID", h.RemoveSubnetFromVLAN)
 
@@ -332,7 +332,7 @@ func TestRemoveSubnetFromVLAN_BadSubnetID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListVLANDomains_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-domains", h.ListVLANDomains)
 
@@ -342,7 +342,7 @@ func TestListVLANDomains_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListVLANDomains_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-domains", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -359,7 +359,7 @@ func TestListVLANDomains_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetVLANDomain_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-domains/:id", h.GetVLANDomain)
 
@@ -369,7 +369,7 @@ func TestGetVLANDomain_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetVLANDomain_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-domains/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -382,7 +382,7 @@ func TestGetVLANDomain_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-domains/:id", h.GetVLANDomain)
 
@@ -397,7 +397,7 @@ func TestGetVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateVLANDomain_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlan-domains", h.CreateVLANDomain)
 
@@ -407,7 +407,7 @@ func TestCreateVLANDomain_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateVLANDomain_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlan-domains", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -424,7 +424,7 @@ func TestCreateVLANDomain_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateVLANDomain_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlan-domains/:id", h.UpdateVLANDomain)
 
@@ -434,7 +434,7 @@ func TestUpdateVLANDomain_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateVLANDomain_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlan-domains/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -447,7 +447,7 @@ func TestUpdateVLANDomain_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestUpdateVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlan-domains/:id", h.UpdateVLANDomain)
 
@@ -462,7 +462,7 @@ func TestUpdateVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteVLANDomain_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlan-domains/:id", h.DeleteVLANDomain)
 
@@ -472,7 +472,7 @@ func TestDeleteVLANDomain_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteVLANDomain_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlan-domains/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -485,7 +485,7 @@ func TestDeleteVLANDomain_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestDeleteVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlan-domains/:id", h.DeleteVLANDomain)
 
@@ -500,7 +500,7 @@ func TestDeleteVLANDomain_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListVLANGroups_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-groups", h.ListVLANGroups)
 
@@ -510,7 +510,7 @@ func TestListVLANGroups_NoUser_Returns401(t *testing.T) {
 }
 
 func TestListVLANGroups_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-groups", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -527,7 +527,7 @@ func TestListVLANGroups_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetVLANGroup_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-groups/:id", h.GetVLANGroup)
 
@@ -537,7 +537,7 @@ func TestGetVLANGroup_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetVLANGroup_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-groups/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -550,7 +550,7 @@ func TestGetVLANGroup_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestGetVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Get("/vlan-groups/:id", h.GetVLANGroup)
 
@@ -565,7 +565,7 @@ func TestGetVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCreateVLANGroup_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlan-groups", h.CreateVLANGroup)
 
@@ -575,7 +575,7 @@ func TestCreateVLANGroup_NoUser_Returns401(t *testing.T) {
 }
 
 func TestCreateVLANGroup_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/vlan-groups", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -592,7 +592,7 @@ func TestCreateVLANGroup_NoPermission_Returns403(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateVLANGroup_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlan-groups/:id", h.UpdateVLANGroup)
 
@@ -602,7 +602,7 @@ func TestUpdateVLANGroup_NoUser_Returns401(t *testing.T) {
 }
 
 func TestUpdateVLANGroup_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlan-groups/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -615,7 +615,7 @@ func TestUpdateVLANGroup_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestUpdateVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Put("/vlan-groups/:id", h.UpdateVLANGroup)
 
@@ -630,7 +630,7 @@ func TestUpdateVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteVLANGroup_NoUser_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlan-groups/:id", h.DeleteVLANGroup)
 
@@ -640,7 +640,7 @@ func TestDeleteVLANGroup_NoUser_Returns401(t *testing.T) {
 }
 
 func TestDeleteVLANGroup_NoPermission_Returns403(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlan-groups/:id", func(c *fiber.Ctx) error {
 		c.Locals("user", unprivVLAN)
@@ -653,7 +653,7 @@ func TestDeleteVLANGroup_NoPermission_Returns403(t *testing.T) {
 }
 
 func TestDeleteVLANGroup_BadID_NoAuth_Returns401(t *testing.T) {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/vlan-groups/:id", h.DeleteVLANGroup)
 

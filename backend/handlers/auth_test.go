@@ -59,7 +59,7 @@ func simpleApp(h *Handler, method, path string, handler fiber.Handler, u *models
 // ---------------------------------------------------------------------------
 
 func TestGetCurrentUser_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "GET", "/auth/me", h.GetCurrentUser, nil)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/me", nil))
 	assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestGetCurrentUser_NoUser_Returns401(t *testing.T) {
 }
 
 func TestGetCurrentUser_WithUser_Returns200(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "GET", "/auth/me", h.GetCurrentUser, adminUser)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/me", nil))
 	assert.NoError(t, err)
@@ -79,7 +79,7 @@ func TestGetCurrentUser_WithUser_Returns200(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLogin_MissingBothFields_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/login", h.Login, nil)
 	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -89,7 +89,7 @@ func TestLogin_MissingBothFields_Returns400(t *testing.T) {
 }
 
 func TestLogin_MissingPassword_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/login", h.Login, nil)
 	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"username":"alice"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -99,7 +99,7 @@ func TestLogin_MissingPassword_Returns400(t *testing.T) {
 }
 
 func TestLogin_MissingUsername_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/login", h.Login, nil)
 	req := httptest.NewRequest("POST", "/auth/login", strings.NewReader(`{"password":"secret"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -172,7 +172,7 @@ func TestSetSessionCookie_SecureOverride(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLogout_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/logout", h.Logout, nil)
 	resp, err := app.Test(httptest.NewRequest("POST", "/auth/logout", nil))
 	assert.NoError(t, err)
@@ -180,7 +180,7 @@ func TestLogout_NoUserID_Returns401(t *testing.T) {
 }
 
 func TestLogout_MissingAuthHeader_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/logout", h.Logout, adminUser)
 	resp, err := app.Test(httptest.NewRequest("POST", "/auth/logout", nil))
 	assert.NoError(t, err)
@@ -192,7 +192,7 @@ func TestLogout_MissingAuthHeader_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListMyTokens_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "GET", "/auth/me/tokens", h.ListMyTokens, nil)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/me/tokens", nil))
 	assert.NoError(t, err)
@@ -204,7 +204,7 @@ func TestListMyTokens_NoUserID_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListMySessions_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "GET", "/auth/me/sessions", h.ListMySessions, nil)
 	resp, err := app.Test(httptest.NewRequest("GET", "/auth/me/sessions", nil))
 	assert.NoError(t, err)
@@ -216,7 +216,7 @@ func TestListMySessions_NoUserID_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRevokeMySession_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Delete("/auth/me/sessions/:sessionID", h.RevokeMySession)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/auth/me/sessions/1", nil))
@@ -225,7 +225,7 @@ func TestRevokeMySession_NoUserID_Returns401(t *testing.T) {
 }
 
 func TestRevokeMySession_BadSessionID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("userID", int64(1))
@@ -242,7 +242,7 @@ func TestRevokeMySession_BadSessionID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestLogoutAllDevices_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "DELETE", "/auth/me/sessions", h.LogoutAllDevices, nil)
 	resp, err := app.Test(httptest.NewRequest("DELETE", "/auth/me/sessions", nil))
 	assert.NoError(t, err)
@@ -254,7 +254,7 @@ func TestLogoutAllDevices_NoUserID_Returns401(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRotateToken_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/me/tokens/:id/rotate", h.RotateToken)
 	resp, err := app.Test(httptest.NewRequest("POST", "/auth/me/tokens/1/rotate", nil))
@@ -263,7 +263,7 @@ func TestRotateToken_NoUser_Returns401(t *testing.T) {
 }
 
 func TestRotateToken_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -280,7 +280,7 @@ func TestRotateToken_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestExtendToken_NoUser_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Post("/auth/me/tokens/:id/extend", h.ExtendToken)
 	resp, err := app.Test(httptest.NewRequest("POST", "/auth/me/tokens/1/extend", nil))
@@ -289,7 +289,7 @@ func TestExtendToken_NoUser_Returns401(t *testing.T) {
 }
 
 func TestExtendToken_BadID_Returns400(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(func(c *fiber.Ctx) error {
 		c.Locals("user", adminUser)
@@ -306,7 +306,7 @@ func TestExtendToken_BadID_Returns400(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGenerateTokenForMe_NoUserID_Returns401(t *testing.T) {
-	h := &Handler{}
+	h := minHandler()
 	app := simpleApp(h, "POST", "/auth/me/tokens", h.GenerateTokenForMe, nil)
 	req := httptest.NewRequest("POST", "/auth/me/tokens", strings.NewReader(`{"token_name":"ci"}`))
 	req.Header.Set("Content-Type", "application/json")

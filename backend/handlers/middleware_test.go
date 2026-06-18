@@ -13,7 +13,7 @@ import (
 // newMiddlewareTestApp builds a minimal Fiber app that applies AuthMiddleware
 // and serves a simple success response on GET /test.
 func newMiddlewareTestApp() *fiber.App {
-	h := &Handler{service: nil}
+	h := minHandler()
 	app := fiber.New()
 	app.Use(h.AuthMiddleware)
 	app.Get("/test", func(c *fiber.Ctx) error {
