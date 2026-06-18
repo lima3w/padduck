@@ -13,7 +13,7 @@ import (
 // LDAPStatus handles GET /api/v1/auth/ldap/login.
 // Returns 404 when LDAP is disabled, or {"ldap_enabled": true} when active.
 func (h *Handler) LDAPStatus(c *fiber.Ctx) error {
-	cfg, err := h.service.LDAP.GetConfig(c.Context())
+	cfg, err := h.auth.LDAP.GetConfig(c.Context())
 	if err != nil || cfg == nil || !cfg.Enabled {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "LDAP authentication is not enabled")
 	}
@@ -34,12 +34,12 @@ func (h *Handler) LDAPLogin(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username and password required")
 	}
 
-	cfg, err := h.service.LDAP.GetConfig(c.Context())
+	cfg, err := h.auth.LDAP.GetConfig(c.Context())
 	if err != nil || cfg == nil || !cfg.Enabled {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "LDAP authentication is not enabled")
 	}
 
-	user, err := h.service.LDAP.Authenticate(c.Context(), req.Username, req.Password)
+	user, err := h.auth.LDAP.Authenticate(c.Context(), req.Username, req.Password)
 	if err != nil {
 		reqLogger(c).Error("LDAP authentication failed", "username", req.Username, "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid credentials")
@@ -58,7 +58,7 @@ func (h *Handler) GetLDAPConfig(c *fiber.Ctx) error {
 		return nil
 	}
 
-	cfg, err := h.service.LDAP.GetConfig(c.Context())
+	cfg, err := h.auth.LDAP.GetConfig(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load LDAP config")
 	}
@@ -151,7 +151,7 @@ func (h *Handler) UpdateLDAPConfig(c *fiber.Ctx) error {
 		cfg.BindPasswordEnc = []byte(req.BindPassword)
 	}
 
-	if err := h.service.LDAP.SaveConfig(c.Context(), cfg); err != nil {
+	if err := h.auth.LDAP.SaveConfig(c.Context(), cfg); err != nil {
 		reqLogger(c).Error("UpdateLDAPConfig error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to save LDAP config")
 	}
@@ -170,7 +170,7 @@ func (h *Handler) TestLDAPConnection(c *fiber.Ctx) error {
 		return nil
 	}
 
-	if err := h.service.LDAP.TestConnection(c.Context()); err != nil {
+	if err := h.auth.LDAP.TestConnection(c.Context()); err != nil {
 		reqLogger(c).Error("LDAP connection test failed", "error", err)
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{"ok": false, "error": "LDAP connection failed"})
 	}

@@ -183,7 +183,7 @@ func main() {
 	// Setup application layers
 	repo := repository.NewRepository(database.Pool())
 	svc := services.NewService(repo, cfg.MFAEncryptionKey)
-	handler := handlers.NewHandler(svc, svc.Ops, cfg.Environment == "production")
+	handler := handlers.NewHandler(svc, svc.Ops, svc.Auth, cfg.Environment == "production")
 	handler.StartTokenLimiterCleanup(ctx)
 
 	// Initialize admin password on first boot
@@ -192,7 +192,7 @@ func main() {
 	}
 
 	// Start notification queue worker
-	svc.Notification.StartWorker(ctx)
+	svc.Auth.Notification.StartWorker(ctx)
 	svc.Ops.Webhooks.StartWorker(ctx)
 
 	// Start discovery scheduler

@@ -13,7 +13,7 @@ import (
 // SAMLMetadata handles GET /api/v1/auth/saml/metadata.
 // Returns the SP metadata XML document.
 func (h *Handler) SAMLMetadata(c *fiber.Ctx) error {
-	xml, err := h.service.SAML.GetSPMetadata(c.Context())
+	xml, err := h.auth.SAML.GetSPMetadata(c.Context())
 	if err != nil {
 		reqLogger(c).Error("SAML metadata error", "error", err)
 		return RespondError(c, fiber.StatusServiceUnavailable, ErrServiceUnavailable, "SAML not configured")
@@ -25,13 +25,13 @@ func (h *Handler) SAMLMetadata(c *fiber.Ctx) error {
 // SAMLLogin handles GET /api/v1/auth/saml/login.
 // Redirects to the IdP login page.
 func (h *Handler) SAMLLogin(c *fiber.Ctx) error {
-	cfg, err := h.service.SAML.GetConfig(c.Context())
+	cfg, err := h.auth.SAML.GetConfig(c.Context())
 	if err != nil || cfg == nil || !cfg.Enabled {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "SAML authentication is not enabled")
 	}
 
 	relayState := c.Query("relay_state", "/")
-	loginURL, err := h.service.SAML.GetLoginURL(c.Context(), relayState)
+	loginURL, err := h.auth.SAML.GetLoginURL(c.Context(), relayState)
 	if err != nil {
 		reqLogger(c).Error("SAML GetLoginURL error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to build SAML login URL")
@@ -49,7 +49,7 @@ func (h *Handler) SAMLAssertionConsumerService(c *fiber.Ctx) error {
 
 	acsURL := c.BaseURL() + "/api/v1/auth/saml/acs"
 
-	user, err := h.service.SAML.ProcessAssertion(c.Context(), samlResponse, acsURL)
+	user, err := h.auth.SAML.ProcessAssertion(c.Context(), samlResponse, acsURL)
 	if err != nil {
 		reqLogger(c).Error("SAML ACS error", "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "SAML authentication failed")
@@ -71,7 +71,7 @@ func (h *Handler) GetSAMLConfig(c *fiber.Ctx) error {
 		return nil
 	}
 
-	cfg, err := h.service.SAML.GetConfig(c.Context())
+	cfg, err := h.auth.SAML.GetConfig(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load SAML config")
 	}
@@ -123,7 +123,7 @@ func (h *Handler) UpdateSAMLConfig(c *fiber.Ctx) error {
 		}
 	}
 
-	if err := h.service.SAML.SaveConfig(c.Context(), &req); err != nil {
+	if err := h.auth.SAML.SaveConfig(c.Context(), &req); err != nil {
 		reqLogger(c).Error("UpdateSAMLConfig error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to save SAML config")
 	}

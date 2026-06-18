@@ -69,7 +69,7 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 	}
 
 	if userID > 0 {
-		_ = h.service.Notification.Queue(c.Context(), userID, services.NotifPasswordChanged, map[string]interface{}{
+		_ = h.auth.Notification.Queue(c.Context(), userID, services.NotifPasswordChanged, map[string]interface{}{
 			"IP": c.IP(),
 		})
 	}
@@ -120,7 +120,7 @@ func (h *Handler) ChangeMyPassword(c *fiber.Ctx) error {
 		ResourceType: "user", ResourceID: &currentUser.ID, ResourceName: currentUser.Username,
 	})
 
-	_ = h.service.Notification.Queue(c.Context(), currentUser.ID, services.NotifPasswordChanged, map[string]interface{}{
+	_ = h.auth.Notification.Queue(c.Context(), currentUser.ID, services.NotifPasswordChanged, map[string]interface{}{
 		"IP": c.IP(),
 	})
 

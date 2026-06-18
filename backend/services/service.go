@@ -12,14 +12,8 @@ type Service struct {
 	repository    *repository.Repository
 	encryptionKey string
 	Config        *ConfigService
-	Email         *EmailService
-	Registration  *RegistrationService
-	MFA           *MFAService
 	Audit         *AuditService
-	Notification  *NotificationService
-	LDAP          *LDAPService
-	OAuth2        *OAuth2Service
-	SAML          *SAMLService
+	Auth          *AuthManager
 	Ops           *OpsManager
 
 	dashboardSummaryCache  *ttlCache[*models.DashboardSummary]
@@ -40,27 +34,33 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	oauth2Svc := NewOAuth2Service(repo, mfaEncryptionKey)
 	samlSvc := NewSAMLService(repo, mfaEncryptionKey)
 
+	// Webhooks must be created before AuditService (Audit queues webhook events).
+	webhookSvc := NewWebhookService(repo)
+	auditSvc := NewAuditService(repo, configSvc, webhookSvc)
+
 	svc := &Service{
-		repository:             repo,
-		encryptionKey:          mfaEncryptionKey,
-		Config:                 configSvc,
-		Email:                  emailSvc,
-		Registration:           registrationSvc,
-		MFA:                    mfaSvc,
-		Notification:           NewNotificationService(repo, emailSvc),
-		LDAP:                   ldapSvc,
-		OAuth2:                 oauth2Svc,
-		SAML:                   samlSvc,
+		repository:    repo,
+		encryptionKey: mfaEncryptionKey,
+		Config:        configSvc,
+		Audit:         auditSvc,
+		Auth: &AuthManager{
+			Email:        emailSvc,
+			Registration: registrationSvc,
+			MFA:          mfaSvc,
+			Notification: NewNotificationService(repo, emailSvc),
+			LDAP:         ldapSvc,
+			OAuth2:       oauth2Svc,
+			SAML:         samlSvc,
+		},
 		dashboardSummaryCache:  newTTLCache[*models.DashboardSummary](30 * time.Second),
 		dashboardActivityCache: newTTLCache[[]*models.DashboardActivity](15 * time.Second),
 	}
-	svc.Audit = NewAuditService(svc)
 	svc.Ops = &OpsManager{
 		Discovery:  NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
-		Reports:    NewReportsService(repo, configSvc, emailSvc, svc.Audit),
+		Reports:    NewReportsService(repo, configSvc, emailSvc, auditSvc),
 		Import:     NewImportService(repo),
 		Jobs:       NewJobService(),
-		Webhooks:   NewWebhookService(repo),
+		Webhooks:   webhookSvc,
 		Topology:   NewTopologyService(repo),
 		DNS:        NewDNSService(configSvc, repo),
 		Automation: NewAutomationService(repo, svc),

@@ -82,18 +82,18 @@ func (h *Handler) GetAuthProviders(c *fiber.Ctx) error {
 	oauth2Enabled := false
 	samlEnabled := false
 
-	if h.service != nil && h.service.LDAP != nil {
-		if cfg, err := h.service.LDAP.GetConfig(c.Context()); err == nil && cfg != nil {
+	if h.auth != nil && h.auth.LDAP != nil {
+		if cfg, err := h.auth.LDAP.GetConfig(c.Context()); err == nil && cfg != nil {
 			ldapEnabled = cfg.Enabled
 		}
 	}
-	if h.service != nil && h.service.OAuth2 != nil {
-		if cfg, err := h.service.OAuth2.GetConfig(c.Context()); err == nil && cfg != nil {
+	if h.auth != nil && h.auth.OAuth2 != nil {
+		if cfg, err := h.auth.OAuth2.GetConfig(c.Context()); err == nil && cfg != nil {
 			oauth2Enabled = cfg.Enabled
 		}
 	}
-	if h.service != nil && h.service.SAML != nil {
-		if cfg, err := h.service.SAML.GetConfig(c.Context()); err == nil && cfg != nil {
+	if h.auth != nil && h.auth.SAML != nil {
+		if cfg, err := h.auth.SAML.GetConfig(c.Context()); err == nil && cfg != nil {
 			samlEnabled = cfg.Enabled
 		}
 	}
