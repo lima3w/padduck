@@ -17,7 +17,7 @@ func (h *Handler) CheckAllDNS(c *fiber.Ctx) error {
 	}
 	job := h.ops.Jobs.Enqueue("dns_check", "Check all DNS records", nil, 1, func(ctx context.Context, reporter *services.JobReporter) (interface{}, error) {
 		reporter.Progress(0, 1, "checking DNS records")
-		h.service.DNS.CheckAllDNS(ctx)
+		h.ops.DNS.CheckAllDNS(ctx)
 		reporter.Progress(1, 1, "DNS check complete")
 		return fiber.Map{"message": "DNS check complete"}, nil
 	})
@@ -30,7 +30,7 @@ func (h *Handler) TestPowerDNSConnection(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AuditRead) {
 		return nil
 	}
-	if err := h.service.DNS.TestPDNSConnection(c.Context()); err != nil {
+	if err := h.ops.DNS.TestPDNSConnection(c.Context()); err != nil {
 		reqLogger(c).Error("PowerDNS connection test failed", "error", err)
 		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "PowerDNS connection failed")
 	}
@@ -53,9 +53,9 @@ func (h *Handler) TestTechnitiumConnection(c *fiber.Ctx) error {
 
 	var err error
 	if body.URL != "" && body.Token != "" {
-		err = h.service.DNS.TestTechnitiumConnectionWith(c.Context(), body.URL, body.Token, body.SkipTLS)
+		err = h.ops.DNS.TestTechnitiumConnectionWith(c.Context(), body.URL, body.Token, body.SkipTLS)
 	} else {
-		err = h.service.DNS.TestTechnitiumConnection(c.Context())
+		err = h.ops.DNS.TestTechnitiumConnection(c.Context())
 	}
 	if err != nil {
 		reqLogger(c).Error("Technitium connection test failed", "error", err)
@@ -71,7 +71,7 @@ func (h *Handler) ListDNSZones(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2NameserverList) {
 		return nil
 	}
-	zones, configured, err := h.service.DNS.ListDNSZones(c.Context())
+	zones, configured, err := h.ops.DNS.ListDNSZones(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing DNS zones", "error", err)
 		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "DNS provider error")
@@ -170,7 +170,7 @@ func (h *Handler) GetDNSZoneRecords(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "zone name is required")
 	}
 	typeFilter := c.Query("type")
-	records, err := h.service.DNS.GetDNSZoneRecords(c.Context(), zone, typeFilter)
+	records, err := h.ops.DNS.GetDNSZoneRecords(c.Context(), zone, typeFilter)
 	if err != nil {
 		reqLogger(c).Error("error getting DNS zone records", "zone", zone, "error", err)
 		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "DNS provider error")

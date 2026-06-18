@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.15
+
+### Internal
+- **OpsManager Step 2** (#192): broke `*Service` back-references in `DNSService`, `AutomationService`, and `TelemetryService`. Each now receives narrow interfaces/concrete deps (config, repo, LDAP/OAuth2/SAML) instead of the whole `*Service`. All three are now housed in `OpsManager`; `Service` no longer holds DNS, Automation, or Telemetry fields. Handler files updated to `h.ops.DNS.*`, `h.ops.Automation.*`, `h.ops.Telemetry.*`. `Service` struct is down to 12 fields (Config, Email, Registration, MFA, Audit, Notification, LDAP, OAuth2, SAML, repository, encryptionKey, Ops).
+
 ## v1.32.14
 
 ### Internal

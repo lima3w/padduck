@@ -10,8 +10,24 @@ import (
 	"padduck/repository"
 )
 
+type automationRepo interface {
+	ListAutomationPolicies(ctx context.Context) ([]*models.AutomationPolicy, error)
+	UpdateAutomationPolicy(ctx context.Context, policy *models.AutomationPolicy) (*models.AutomationPolicy, error)
+	CreateAutomationPolicy(ctx context.Context, policy *models.AutomationPolicy) (*models.AutomationPolicy, error)
+	DeleteAutomationPolicy(ctx context.Context, id int64) error
+	ListEnabledAutomationPolicies(ctx context.Context, workflow, action string) ([]*models.AutomationPolicy, error)
+}
+
+type automationIPAM interface {
+	AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64) (*models.IPAddress, error)
+	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, tagID *int64, macAddress, ptrRecord, dnsName *string, customFields ...map[string]*string) (*models.IPAddress, error)
+	ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAddress, error)
+	CreateDevice(ctx context.Context, req *DeviceCreateRequest) (*models.Device, error)
+}
+
 type AutomationService struct {
-	svc *Service
+	repo automationRepo
+	ipam automationIPAM
 }
 
 type AutomationRequest struct {
@@ -29,12 +45,12 @@ type PolicyDecision struct {
 	Values       map[string]string        `json:"values,omitempty"`
 }
 
-func NewAutomationService(svc *Service) *AutomationService {
-	return &AutomationService{svc: svc}
+func NewAutomationService(repo automationRepo, ipam automationIPAM) *AutomationService {
+	return &AutomationService{repo: repo, ipam: ipam}
 }
 
 func (a *AutomationService) ListPolicies(ctx context.Context) ([]*models.AutomationPolicy, error) {
-	return a.svc.repository.ListAutomationPolicies(ctx)
+	return a.repo.ListAutomationPolicies(ctx)
 }
 
 func (a *AutomationService) SavePolicy(ctx context.Context, policy *models.AutomationPolicy) (*models.AutomationPolicy, error) {
@@ -60,17 +76,17 @@ func (a *AutomationService) SavePolicy(ctx context.Context, policy *models.Autom
 		return nil, fmt.Errorf("effect must be allow, deny, or manual_review")
 	}
 	if policy.ID > 0 {
-		return a.svc.repository.UpdateAutomationPolicy(ctx, policy)
+		return a.repo.UpdateAutomationPolicy(ctx, policy)
 	}
-	return a.svc.repository.CreateAutomationPolicy(ctx, policy)
+	return a.repo.CreateAutomationPolicy(ctx, policy)
 }
 
 func (a *AutomationService) DeletePolicy(ctx context.Context, id int64) error {
-	return a.svc.repository.DeleteAutomationPolicy(ctx, id)
+	return a.repo.DeleteAutomationPolicy(ctx, id)
 }
 
 func (a *AutomationService) Evaluate(ctx context.Context, req AutomationRequest) (*PolicyDecision, error) {
-	policies, err := a.svc.repository.ListEnabledAutomationPolicies(ctx, req.Workflow, req.Action)
+	policies, err := a.repo.ListEnabledAutomationPolicies(ctx, req.Workflow, req.Action)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +132,7 @@ func (a *AutomationService) AllocateIPAddress(ctx context.Context, subnetID int6
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
-	ip, err := a.svc.AllocateIPAddress(ctx, subnetID, deviceID)
+	ip, err := a.ipam.AllocateIPAddress(ctx, subnetID, deviceID)
 	return ip, decision, err
 }
 
@@ -126,7 +142,7 @@ func (a *AutomationService) ReserveIPAddress(ctx context.Context, subnetID int64
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
-	ip, err := a.svc.CreateIPAddress(ctx, subnetID, address, hostname, "reserved", nil, nil, nil, nil)
+	ip, err := a.ipam.CreateIPAddress(ctx, subnetID, address, hostname, "reserved", nil, nil, nil, nil)
 	return ip, decision, err
 }
 
@@ -140,7 +156,7 @@ func (a *AutomationService) ReleaseIPAddress(ctx context.Context, ipID int64, dr
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
-	ip, err := a.svc.ReleaseIPAddress(ctx, ipID)
+	ip, err := a.ipam.ReleaseIPAddress(ctx, ipID)
 	return ip, decision, err
 }
 
@@ -154,7 +170,7 @@ func (a *AutomationService) RegisterDevice(ctx context.Context, params *reposito
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
-	device, err := a.svc.CreateDevice(ctx, params)
+	device, err := a.ipam.CreateDevice(ctx, params)
 	return device, decision, err
 }
 

@@ -205,7 +205,7 @@ func main() {
 	svc.Ops.Reports.StartScheduledReportJob(ctx)
 
 	// Start telemetry job (no-op unless opt-in is enabled in admin settings)
-	svc.Telemetry.StartTelemetryJob(ctx)
+	svc.Ops.Telemetry.StartTelemetryJob(ctx)
 
 	// Setup HTTP server with centralized error handler
 	trustedProxies := parseTrustedProxies(os.Getenv("TRUSTED_PROXIES"))

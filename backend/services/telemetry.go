@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"padduck/repository"
 	"padduck/version"
 )
 
@@ -109,20 +110,29 @@ type TelemetrySnapshot struct {
 	ExtraMetricsJSON map[string]any  `json:"extra_metrics_json,omitempty"`
 }
 
-// TelemetryService assembles and sends TelemetrySnapshot values.
-type TelemetryService struct {
-	svc *Service
+type telemetryRepo interface {
+	GetTelemetryCounts(ctx context.Context) (*repository.TelemetryCounts, error)
+	GetTelemetryUtilizationMetrics(ctx context.Context) (*repository.TelemetryUtilizationMetrics, error)
 }
 
-func newTelemetryService(svc *Service) *TelemetryService {
-	return &TelemetryService{svc: svc}
+// TelemetryService assembles and sends TelemetrySnapshot values.
+type TelemetryService struct {
+	config *ConfigService
+	repo   telemetryRepo
+	ldap   *LDAPService
+	oauth2 *OAuth2Service
+	saml   *SAMLService
+}
+
+func newTelemetryService(config *ConfigService, repo telemetryRepo, ldap *LDAPService, oauth2 *OAuth2Service, saml *SAMLService) *TelemetryService {
+	return &TelemetryService{config: config, repo: repo, ldap: ldap, oauth2: oauth2, saml: saml}
 }
 
 // GetOrCreateInstallID returns the stable per-install UUID, generating and
 // persisting it on first call. The ID is stored in the configs table and
 // never derived from any identifying host or network property.
 func (t *TelemetryService) GetOrCreateInstallID(ctx context.Context) (string, error) {
-	val, err := t.svc.Config.GetCtx(ctx, telemetryInstallIDKey)
+	val, err := t.config.GetCtx(ctx, telemetryInstallIDKey)
 	if err == nil && val != "" {
 		return val, nil
 	}
@@ -130,7 +140,7 @@ func (t *TelemetryService) GetOrCreateInstallID(ctx context.Context) (string, er
 		return "", err
 	}
 	id := uuid.New().String()
-	if err := t.svc.Config.SetCtx(ctx, telemetryInstallIDKey, id); err != nil {
+	if err := t.config.SetCtx(ctx, telemetryInstallIDKey, id); err != nil {
 		return "", err
 	}
 	return id, nil
@@ -144,12 +154,12 @@ func (t *TelemetryService) CollectSnapshot(ctx context.Context, period string) (
 		return nil, err
 	}
 
-	counts, err := t.svc.repository.GetTelemetryCounts(ctx)
+	counts, err := t.repo.GetTelemetryCounts(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	util, err := t.svc.repository.GetTelemetryUtilizationMetrics(ctx)
+	util, err := t.repo.GetTelemetryUtilizationMetrics(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +236,7 @@ func (t *TelemetryService) SendNow(ctx context.Context) error {
 // SendSnapshot sends a scheduled snapshot. Silently skips if the opt-in
 // flag is not set or the connection is not configured.
 func (t *TelemetryService) SendSnapshot(ctx context.Context, period string) error {
-	if enabled, _ := t.svc.Config.GetCtx(ctx, "telemetry_enabled"); enabled != "true" {
+	if enabled, _ := t.config.GetCtx(ctx, "telemetry_enabled"); enabled != "true" {
 		return nil
 	}
 	return t.doSend(ctx, period)
@@ -273,7 +283,7 @@ func (t *TelemetryService) StartTelemetryJob(ctx context.Context) {
 	go func() {
 		period := "daily"
 		interval := 24 * time.Hour
-		if cfg, _ := t.svc.Config.GetCtx(ctx, "telemetry_snapshot_period"); cfg == "weekly" {
+		if cfg, _ := t.config.GetCtx(ctx, "telemetry_snapshot_period"); cfg == "weekly" {
 			period = "weekly"
 			interval = 7 * 24 * time.Hour
 		}
@@ -296,30 +306,30 @@ func (t *TelemetryService) StartTelemetryJob(ctx context.Context) {
 
 // authFlags returns whether LDAP, OIDC, and SAML are each enabled.
 func (t *TelemetryService) authFlags(ctx context.Context) (ldap, oidc, saml bool) {
-	if cfg, err := t.svc.LDAP.GetConfig(ctx); err == nil && cfg != nil {
+	if cfg, err := t.ldap.GetConfig(ctx); err == nil && cfg != nil {
 		ldap = cfg.Enabled
 	}
-	if cfg, err := t.svc.OAuth2.GetConfig(ctx); err == nil && cfg != nil {
+	if cfg, err := t.oauth2.GetConfig(ctx); err == nil && cfg != nil {
 		oidc = cfg.Enabled
 	}
-	if cfg, err := t.svc.SAML.GetConfig(ctx); err == nil && cfg != nil {
+	if cfg, err := t.saml.GetConfig(ctx); err == nil && cfg != nil {
 		saml = cfg.Enabled
 	}
 	return
 }
 
 func (t *TelemetryService) snmpConfigured(ctx context.Context) bool {
-	v, err := t.svc.Config.GetCtx(ctx, "scanner_snmp_community")
+	v, err := t.config.GetCtx(ctx, "scanner_snmp_community")
 	return err == nil && v != ""
 }
 
 func (t *TelemetryService) apiEnabled(ctx context.Context) bool {
-	v, err := t.svc.Config.GetCtx(ctx, "anonymous_api_enabled")
+	v, err := t.config.GetCtx(ctx, "anonymous_api_enabled")
 	return err == nil && v == "true"
 }
 
 func (t *TelemetryService) configStr(ctx context.Context, key string) string {
-	v, _ := t.svc.Config.GetCtx(ctx, key)
+	v, _ := t.config.GetCtx(ctx, key)
 	return v
 }
 
@@ -333,7 +343,7 @@ func configStrDefault(v, def string) string {
 func (t *TelemetryService) featureFlagsJSON(ctx context.Context) map[string]bool {
 	flags := make(map[string]bool, len(featureConfigKeys))
 	for _, k := range featureConfigKeys {
-		v, err := t.svc.Config.GetCtx(ctx, k)
+		v, err := t.config.GetCtx(ctx, k)
 		flags[k] = err != nil || v != "false"
 	}
 	return flags
