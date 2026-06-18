@@ -12,13 +12,25 @@ import (
 	"padduck/models"
 )
 
-// AuditService handles writing and querying audit logs.
-type AuditService struct {
-	svc *Service
+type auditRepo interface {
+	CreateAuditLog(ctx context.Context, entry *models.AuditLog) error
+	ListAuditLogs(ctx context.Context, filter *models.AuditLogFilter) ([]*models.AuditLog, error)
+	CountAuditLogs(ctx context.Context, filter *models.AuditLogFilter) (int64, error)
+	DeleteAuditLogsBefore(ctx context.Context, before time.Time) (int64, error)
+	GetAuditRetentionSettings(ctx context.Context) (*models.AuditRetentionSettings, error)
+	UpdateAuditRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error)
+	PruneAuditLogs(ctx context.Context, retentionDays int) (int64, error)
 }
 
-func NewAuditService(svc *Service) *AuditService {
-	return &AuditService{svc: svc}
+// AuditService handles writing and querying audit logs.
+type AuditService struct {
+	repo     auditRepo
+	config   *ConfigService
+	webhooks *WebhookService
+}
+
+func NewAuditService(repo auditRepo, config *ConfigService, webhooks *WebhookService) *AuditService {
+	return &AuditService{repo: repo, config: config, webhooks: webhooks}
 }
 
 // AuditEntry is the input to Log().
@@ -71,11 +83,11 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 		}
 	}
 
-	if err := a.svc.repository.CreateAuditLog(ctx, entry); err != nil {
+	if err := a.repo.CreateAuditLog(ctx, entry); err != nil {
 		slog.Error("audit: failed to write log", "action", e.Action, "error", err)
 	}
-	if a.svc.Ops != nil && a.svc.Ops.Webhooks != nil {
-		a.svc.Ops.Webhooks.Queue(ctx, WebhookEvent{
+	if a.webhooks != nil {
+		a.webhooks.Queue(ctx, WebhookEvent{
 			EventType:    e.ResourceType + "." + e.Action,
 			Action:       e.Action,
 			ResourceType: e.ResourceType,
@@ -174,43 +186,43 @@ func RedactSensitiveJSON(value *string) *string {
 
 // ListAuditLogs returns audit log entries matching the filter.
 func (a *AuditService) ListAuditLogs(ctx context.Context, filter *models.AuditLogFilter) ([]*models.AuditLog, error) {
-	return a.svc.repository.ListAuditLogs(ctx, filter)
+	return a.repo.ListAuditLogs(ctx, filter)
 }
 
 // CountAuditLogs returns the total count matching the filter (for pagination).
 func (a *AuditService) CountAuditLogs(ctx context.Context, filter *models.AuditLogFilter) (int64, error) {
-	return a.svc.repository.CountAuditLogs(ctx, filter)
+	return a.repo.CountAuditLogs(ctx, filter)
 }
 
 // PurgeOldLogs deletes audit log entries older than the configured retention period.
 // Returns the number of rows deleted.
 func (a *AuditService) PurgeOldLogs(ctx context.Context) (int64, error) {
 	retentionDays := 90
-	if val, err := a.svc.Config.GetCtx(ctx, "audit_log_retention_days"); err == nil && val != "" {
+	if val, err := a.config.GetCtx(ctx, "audit_log_retention_days"); err == nil && val != "" {
 		if days, err := strconv.Atoi(val); err == nil && days > 0 {
 			retentionDays = days
 		}
 	}
 	before := time.Now().UTC().AddDate(0, 0, -retentionDays)
-	return a.svc.repository.DeleteAuditLogsBefore(ctx, before)
+	return a.repo.DeleteAuditLogsBefore(ctx, before)
 }
 
 // GetRetentionSettings returns the audit retention settings row.
 func (a *AuditService) GetRetentionSettings(ctx context.Context) (*models.AuditRetentionSettings, error) {
-	return a.svc.repository.GetAuditRetentionSettings(ctx)
+	return a.repo.GetAuditRetentionSettings(ctx)
 }
 
 // UpdateRetentionSettings updates the audit retention settings row.
 func (a *AuditService) UpdateRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error) {
-	return a.svc.repository.UpdateAuditRetentionSettings(ctx, retentionDays, archiveEnabled)
+	return a.repo.UpdateAuditRetentionSettings(ctx, retentionDays, archiveEnabled)
 }
 
 // PruneByRetentionSettings prunes audit logs using the retention_days from the settings table.
 func (a *AuditService) PruneByRetentionSettings(ctx context.Context) (int64, error) {
-	s, err := a.svc.repository.GetAuditRetentionSettings(ctx)
+	s, err := a.repo.GetAuditRetentionSettings(ctx)
 	if err != nil {
 		// Fall back to 365 days if settings unavailable
-		return a.svc.repository.PruneAuditLogs(ctx, 365)
+		return a.repo.PruneAuditLogs(ctx, 365)
 	}
-	return a.svc.repository.PruneAuditLogs(ctx, s.RetentionDays)
+	return a.repo.PruneAuditLogs(ctx, s.RetentionDays)
 }

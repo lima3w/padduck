@@ -32,7 +32,7 @@ func testAuthHandler(t *testing.T) (*Handler, *services.Service, *repository.Rep
 	testdb.Truncate(t, pool, "sessions", "api_tokens", "users")
 	repo := repository.NewRepository(pool)
 	svc := services.NewService(repo, testHandlerMFAKey)
-	h := NewHandler(svc, svc.Ops, false)
+	h := NewHandler(svc, svc.Ops, svc.Auth, false)
 
 	hash, err := utils.HashPassword("middleware-password")
 	require.NoError(t, err)

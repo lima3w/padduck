@@ -88,7 +88,7 @@ func TestAuthenticateUser_MFAChallenge_Integration(t *testing.T) {
 	prevCost := backupCodeBcryptCost
 	backupCodeBcryptCost = 1 // bcrypt.MinCost
 	t.Cleanup(func() { backupCodeBcryptCost = prevCost })
-	secret, _ := setupAndConfirm(t, svc.MFA, userID)
+	secret, _ := setupAndConfirm(t, svc.Auth.MFA, userID)
 
 	result, err := svc.AuthenticateUser(ctx, "pw-user", "original-password", "10.0.0.1", "ua")
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestAuthenticateUser_MFAChallenge_Integration(t *testing.T) {
 	require.NotEmpty(t, result.MFAChallenge)
 
 	// The returned challenge completes with a valid TOTP code.
-	gotUser, err := svc.MFA.CompleteChallenge(ctx, result.MFAChallenge, totpCode(t, secret))
+	gotUser, err := svc.Auth.MFA.CompleteChallenge(ctx, result.MFAChallenge, totpCode(t, secret))
 	require.NoError(t, err)
 	assert.Equal(t, userID, gotUser)
 }

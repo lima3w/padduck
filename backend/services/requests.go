@@ -431,7 +431,7 @@ func (s *Service) notifyAdminsSubnetRequest(ctx context.Context, sr *models.Subn
 		return
 	}
 	for _, admin := range admins {
-		if err := s.Notification.Queue(ctx, admin.ID, NotifRequestSubmitted, map[string]interface{}{
+		if err := s.Auth.Notification.Queue(ctx, admin.ID, NotifRequestSubmitted, map[string]interface{}{
 			"RequestType": "Subnet",
 			"RequestID":   sr.ID,
 			"Purpose":     sr.Purpose,
@@ -449,7 +449,7 @@ func (s *Service) notifyAdminsIPRequest(ctx context.Context, ir *models.IPReques
 		return
 	}
 	for _, admin := range admins {
-		if err := s.Notification.Queue(ctx, admin.ID, NotifRequestSubmitted, map[string]interface{}{
+		if err := s.Auth.Notification.Queue(ctx, admin.ID, NotifRequestSubmitted, map[string]interface{}{
 			"RequestType": "IP",
 			"RequestID":   ir.ID,
 			"Purpose":     ir.Purpose,
@@ -462,7 +462,7 @@ func (s *Service) notifyAdminsIPRequest(ctx context.Context, ir *models.IPReques
 
 func (s *Service) notifyRequesterSubnetApproved(ctx context.Context, sr *models.SubnetRequest, subnet *models.Subnet) {
 	cidr := fmt.Sprintf("%s/%d", subnet.NetworkAddress, subnet.PrefixLength)
-	if err := s.Notification.Queue(ctx, sr.RequesterID, NotifRequestApprovedSubnet, map[string]interface{}{
+	if err := s.Auth.Notification.Queue(ctx, sr.RequesterID, NotifRequestApprovedSubnet, map[string]interface{}{
 		"RequestID":    sr.ID,
 		"SubnetCIDR":   cidr,
 		"ReviewerNote": sr.ReviewerNote,
@@ -472,7 +472,7 @@ func (s *Service) notifyRequesterSubnetApproved(ctx context.Context, sr *models.
 }
 
 func (s *Service) notifyRequesterSubnetRejected(ctx context.Context, sr *models.SubnetRequest) {
-	if err := s.Notification.Queue(ctx, sr.RequesterID, NotifRequestRejected, map[string]interface{}{
+	if err := s.Auth.Notification.Queue(ctx, sr.RequesterID, NotifRequestRejected, map[string]interface{}{
 		"RequestType":  "Subnet",
 		"RequestID":    sr.ID,
 		"ReviewerNote": sr.ReviewerNote,
@@ -482,7 +482,7 @@ func (s *Service) notifyRequesterSubnetRejected(ctx context.Context, sr *models.
 }
 
 func (s *Service) notifyRequesterIPApproved(ctx context.Context, ir *models.IPRequest, ipAddr *models.IPAddress) {
-	if err := s.Notification.Queue(ctx, ir.RequesterID, NotifRequestApprovedIP, map[string]interface{}{
+	if err := s.Auth.Notification.Queue(ctx, ir.RequesterID, NotifRequestApprovedIP, map[string]interface{}{
 		"RequestID":    ir.ID,
 		"AssignedIP":   ipAddr.Address,
 		"ReviewerNote": ir.ReviewerNote,
@@ -492,7 +492,7 @@ func (s *Service) notifyRequesterIPApproved(ctx context.Context, ir *models.IPRe
 }
 
 func (s *Service) notifyRequesterIPRejected(ctx context.Context, ir *models.IPRequest) {
-	if err := s.Notification.Queue(ctx, ir.RequesterID, NotifRequestRejected, map[string]interface{}{
+	if err := s.Auth.Notification.Queue(ctx, ir.RequesterID, NotifRequestRejected, map[string]interface{}{
 		"RequestType":  "IP",
 		"RequestID":    ir.ID,
 		"ReviewerNote": ir.ReviewerNote,
@@ -541,7 +541,7 @@ func (s *Service) notifyRequestComment(ctx context.Context, requestType string, 
 	if otherUserID <= 0 {
 		return
 	}
-	if err := s.Notification.Queue(ctx, otherUserID, NotifRequestComment, map[string]interface{}{
+	if err := s.Auth.Notification.Queue(ctx, otherUserID, NotifRequestComment, map[string]interface{}{
 		"RequestType": requestType,
 		"RequestID":   requestID,
 		"AuthorName":  comment.AuthorUsername,
@@ -557,7 +557,7 @@ func (s *Service) notifyAdminsComment(ctx context.Context, comment *models.Reque
 		return
 	}
 	for _, admin := range admins {
-		_ = s.Notification.Queue(ctx, admin.ID, NotifRequestComment, map[string]interface{}{
+		_ = s.Auth.Notification.Queue(ctx, admin.ID, NotifRequestComment, map[string]interface{}{
 			"RequestType": comment.RequestType,
 			"RequestID":   comment.RequestID,
 			"AuthorName":  comment.AuthorUsername,

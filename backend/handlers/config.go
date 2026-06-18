@@ -200,7 +200,7 @@ func (h *Handler) TestSMTP(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "to address is required")
 	}
 
-	if err := h.service.Email.Send(req.To, "IPAM SMTP Test", "This is a test email from IPAM."); err != nil {
+	if err := h.auth.Email.Send(req.To, "IPAM SMTP Test", "This is a test email from IPAM."); err != nil {
 		reqLogger(c).Error("SMTP test failed", "error", err)
 		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "SMTP test failed")
 	}

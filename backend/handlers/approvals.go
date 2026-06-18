@@ -14,7 +14,7 @@ func (h *Handler) ListPendingApprovals(c *fiber.Ctx) error {
 		return nil
 	}
 
-	approvals, err := h.service.Registration.ListPendingApprovals(c.Context())
+	approvals, err := h.auth.Registration.ListPendingApprovals(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to list approvals")
 	}
@@ -63,7 +63,7 @@ func (h *Handler) ApproveUser(c *fiber.Ctx) error {
 
 	reviewerID := currentUser.ID
 
-	if err := h.service.Registration.ApproveUser(c.Context(), approvalID, reviewerID); err != nil {
+	if err := h.auth.Registration.ApproveUser(c.Context(), approvalID, reviewerID); err != nil {
 		reqLogger(c).Error("approve user failed", "approval_id", approvalID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -98,7 +98,7 @@ func (h *Handler) RejectUser(c *fiber.Ctx) error {
 
 	reviewerID := currentUser.ID
 
-	if err := h.service.Registration.RejectUser(c.Context(), approvalID, reviewerID, req.Reason); err != nil {
+	if err := h.auth.Registration.RejectUser(c.Context(), approvalID, reviewerID, req.Reason); err != nil {
 		reqLogger(c).Error("reject user failed", "approval_id", approvalID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

@@ -23,7 +23,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "username, email, and password are required")
 	}
 
-	result, err := h.service.Registration.Register(c.Context(), services.RegisterRequest{
+	result, err := h.auth.Registration.Register(c.Context(), services.RegisterRequest{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: req.Password,
@@ -70,7 +70,7 @@ func (h *Handler) VerifyEmail(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "token is required")
 	}
 
-	if err := h.service.Registration.VerifyEmail(c.Context(), token); err != nil {
+	if err := h.auth.Registration.VerifyEmail(c.Context(), token); err != nil {
 		switch {
 		case errors.Is(err, services.ErrVerificationInvalid):
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid or expired verification token")
@@ -93,7 +93,7 @@ func (h *Handler) ResendVerification(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "email is required")
 	}
 
-	_ = h.service.Registration.ResendVerification(c.Context(), req.Email)
+	_ = h.auth.Registration.ResendVerification(c.Context(), req.Email)
 
 	// Always return success to avoid email enumeration
 	return c.JSON(fiber.Map{"message": "If your email is pending verification, a new link has been sent."})

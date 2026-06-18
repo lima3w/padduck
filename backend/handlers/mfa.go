@@ -19,7 +19,7 @@ func (h *Handler) VerifyMFA(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "mfa_challenge and code are required")
 	}
 
-	userID, err := h.service.MFA.CompleteChallenge(c.Context(), req.Challenge, req.Code)
+	userID, err := h.auth.MFA.CompleteChallenge(c.Context(), req.Challenge, req.Code)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrInvalidChallenge), errors.Is(err, services.ErrChallengeExpired):
@@ -73,7 +73,7 @@ func (h *Handler) GetMFAStatus(c *fiber.Ctx) error {
 	if !ok || user == nil {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
-	enabled, backupRemaining := h.service.MFA.GetMFAStatus(c.Context(), user.ID)
+	enabled, backupRemaining := h.auth.MFA.GetMFAStatus(c.Context(), user.ID)
 	return c.JSON(fiber.Map{
 		"totp_enabled":      enabled,
 		"backup_codes_left": backupRemaining,
@@ -88,7 +88,7 @@ func (h *Handler) SetupTOTP(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
-	secret, qrDataURL, err := h.service.MFA.SetupTOTP(c.Context(), user.ID, user.Username, user.Email)
+	secret, qrDataURL, err := h.auth.MFA.SetupTOTP(c.Context(), user.ID, user.Username, user.Email)
 	if err != nil {
 		if errors.Is(err, services.ErrMFAAlreadyEnabled) {
 			return RespondError(c, fiber.StatusConflict, ErrConflict, "MFA is already enabled — disable it first")
@@ -119,7 +119,7 @@ func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "code is required")
 	}
 
-	backupCodes, err := h.service.MFA.ConfirmTOTP(c.Context(), user.ID, req.Code)
+	backupCodes, err := h.auth.MFA.ConfirmTOTP(c.Context(), user.ID, req.Code)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrMFANotSetup):
@@ -135,7 +135,7 @@ func (h *Handler) ConfirmTOTP(c *fiber.Ctx) error {
 		UserID: &uid, Username: user.Username, Action: "mfa_enabled", ResourceType: "user", ResourceID: &uid,
 	})
 
-	_ = h.service.Notification.Queue(c.Context(), user.ID, services.NotifMFAEnabled, map[string]interface{}{
+	_ = h.auth.Notification.Queue(c.Context(), user.ID, services.NotifMFAEnabled, map[string]interface{}{
 		"IP":     c.IP(),
 		"Device": c.Get("User-Agent"),
 	})
@@ -160,7 +160,7 @@ func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "code is required to disable MFA")
 	}
 
-	if err := h.service.MFA.DisableTOTP(c.Context(), user.ID, req.Code); err != nil {
+	if err := h.auth.MFA.DisableTOTP(c.Context(), user.ID, req.Code); err != nil {
 		switch {
 		case errors.Is(err, services.ErrMFANotEnabled):
 			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "MFA is not enabled")
@@ -175,7 +175,7 @@ func (h *Handler) DisableTOTP(c *fiber.Ctx) error {
 		UserID: &uid, Username: user.Username, Action: "mfa_disabled", ResourceType: "user", ResourceID: &uid,
 	})
 
-	_ = h.service.Notification.Queue(c.Context(), user.ID, services.NotifMFADisabled, map[string]interface{}{
+	_ = h.auth.Notification.Queue(c.Context(), user.ID, services.NotifMFADisabled, map[string]interface{}{
 		"IP":     c.IP(),
 		"Device": c.Get("User-Agent"),
 	})
@@ -197,7 +197,7 @@ func (h *Handler) RegenerateBackupCodes(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "current MFA code is required")
 	}
 
-	codes, err := h.service.MFA.RegenerateBackupCodes(c.Context(), user.ID, req.Code)
+	codes, err := h.auth.MFA.RegenerateBackupCodes(c.Context(), user.ID, req.Code)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidTOTPCode) {
 			return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid code")

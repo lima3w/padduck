@@ -118,7 +118,7 @@ func (s *Service) lockAccount(ctx context.Context, userID int64, username string
 		appURL = "http://localhost:3000"
 	}
 	unlockURL := fmt.Sprintf("%s/unlock-account?token=%s", appURL, rawToken)
-	_ = s.Notification.Queue(ctx, userID, NotifAccountLocked, map[string]interface{}{
+	_ = s.Auth.Notification.Queue(ctx, userID, NotifAccountLocked, map[string]interface{}{
 		"UnlockURL": unlockURL,
 		"Duration":  duration.String(),
 	})
@@ -135,7 +135,7 @@ func (s *Service) sendFailedLoginAlert(ctx context.Context, userID int64, userna
 		return err
 	}
 
-	if err := s.Notification.Queue(ctx, userID, NotifLoginFailed, map[string]interface{}{
+	if err := s.Auth.Notification.Queue(ctx, userID, NotifLoginFailed, map[string]interface{}{
 		"IP":    ipAddress,
 		"Count": count,
 	}); err != nil {
@@ -210,7 +210,7 @@ func (s *Service) RequestUnlockEmail(ctx context.Context, username string) error
 	}
 	unlockURL := fmt.Sprintf("%s/unlock-account?token=%s", appURL, rawToken)
 	duration := time.Until(lockout.UnlockAt)
-	_ = s.Email.SendAccountLockedEmail(user.Email, user.Username, unlockURL, duration)
+	_ = s.Auth.Email.SendAccountLockedEmail(user.Email, user.Username, unlockURL, duration)
 	return nil
 }
 

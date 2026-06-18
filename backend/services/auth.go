@@ -264,8 +264,8 @@ func (s *Service) AuthenticateUser(ctx context.Context, username, password, ipAd
 	}
 
 	// If MFA is enabled, issue a challenge instead of returning the full user
-	if s.MFA.IsMFAEnabled(ctx, user.ID) {
-		challenge, err := s.MFA.CreateChallenge(ctx, user.ID)
+	if s.Auth.MFA.IsMFAEnabled(ctx, user.ID) {
+		challenge, err := s.Auth.MFA.CreateChallenge(ctx, user.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create MFA challenge: %w", err)
 		}
@@ -337,7 +337,7 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, email string) erro
 	if err != nil {
 		return err
 	}
-	return s.Email.SendPasswordResetEmail(user.Email, user.Username, token)
+	return s.Auth.Email.SendPasswordResetEmail(user.Email, user.Username, token)
 }
 
 // SendPasswordResetEmailByID creates a reset token for the given user ID and sends it.
@@ -351,7 +351,7 @@ func (s *Service) SendPasswordResetEmailByID(ctx context.Context, userID int64) 
 	if err != nil {
 		return err
 	}
-	return s.Email.SendPasswordResetEmail(user.Email, user.Username, token)
+	return s.Auth.Email.SendPasswordResetEmail(user.Email, user.Username, token)
 }
 
 // ResetPasswordWithToken verifies a reset token and updates the password

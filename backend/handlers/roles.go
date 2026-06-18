@@ -242,7 +242,7 @@ func (h *Handler) AssignRoleToUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 
-	_ = h.service.Notification.Queue(c.Context(), int64(id), services.NotifRoleChanged, map[string]interface{}{
+	_ = h.auth.Notification.Queue(c.Context(), int64(id), services.NotifRoleChanged, map[string]interface{}{
 		"ChangedBy": user.Username,
 	})
 

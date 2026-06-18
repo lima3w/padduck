@@ -276,7 +276,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		ResourceType: "session", Status: "success",
 	})
 
-	_ = h.service.Notification.Queue(c.Context(), user.ID, services.NotifLoginSuccess, map[string]interface{}{
+	_ = h.auth.Notification.Queue(c.Context(), user.ID, services.NotifLoginSuccess, map[string]interface{}{
 		"IP":     c.IP(),
 		"Device": c.Get("User-Agent"),
 	})
@@ -384,7 +384,7 @@ func (h *Handler) RevokeMySession(c *fiber.Ctx) error {
 		ResourceType: "session", ResourceID: &sid,
 	})
 
-	_ = h.service.Notification.Queue(c.Context(), userID, services.NotifSessionRevoked, map[string]interface{}{
+	_ = h.auth.Notification.Queue(c.Context(), userID, services.NotifSessionRevoked, map[string]interface{}{
 		"IP":     c.IP(),
 		"Device": c.Get("User-Agent"),
 	})

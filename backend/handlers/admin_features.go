@@ -94,11 +94,11 @@ func (h *Handler) ImpersonateUser(c *fiber.Ctx) error {
 	}
 	_ = c.BodyParser(&req)
 
-	if h.service.MFA.IsMFAEnabled(c.Context(), admin.ID) {
+	if h.auth.MFA.IsMFAEnabled(c.Context(), admin.ID) {
 		if req.MFACode == "" {
 			return RespondError(c, fiber.StatusForbidden, ErrForbidden, "MFA code required for impersonation")
 		}
-		if !h.service.MFA.ValidateTOTPCode(c.Context(), admin.ID, req.MFACode) {
+		if !h.auth.MFA.ValidateTOTPCode(c.Context(), admin.ID, req.MFACode) {
 			return RespondError(c, fiber.StatusForbidden, ErrForbidden, "invalid MFA code")
 		}
 	}

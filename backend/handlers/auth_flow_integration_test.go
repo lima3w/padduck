@@ -36,7 +36,7 @@ func testFullApp(t *testing.T) (*fiber.App, *services.Service, *repository.Repos
 		"login_attempts", "account_lockouts", "security_notifications", "users")
 	repo := repository.NewRepository(pool)
 	svc := services.NewService(repo, testHandlerMFAKey)
-	h := NewHandler(svc, svc.Ops, false)
+	h := NewHandler(svc, svc.Ops, svc.Auth, false)
 	app := fiber.New()
 	h.RegisterRoutes(app)
 
@@ -209,11 +209,11 @@ func TestLogin_MFAFlow_E2E(t *testing.T) {
 	ctx := context.Background()
 
 	// Enroll the user in MFA directly through the service.
-	secret, _, err := svc.MFA.SetupTOTP(ctx, userID, "flow-user", "flow@example.com")
+	secret, _, err := svc.Auth.MFA.SetupTOTP(ctx, userID, "flow-user", "flow@example.com")
 	require.NoError(t, err)
 	code, err := totp.GenerateCode(secret, time.Now())
 	require.NoError(t, err)
-	_, err = svc.MFA.ConfirmTOTP(ctx, userID, code)
+	_, err = svc.Auth.MFA.ConfirmTOTP(ctx, userID, code)
 	require.NoError(t, err)
 
 	// Password login returns a challenge, no session cookie.

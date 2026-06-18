@@ -13,13 +13,13 @@ import (
 // OAuth2Login handles GET /api/v1/auth/oauth2/login.
 // Redirects the browser to the provider's authorization URL.
 func (h *Handler) OAuth2Login(c *fiber.Ctx) error {
-	cfg, err := h.service.OAuth2.GetConfig(c.Context())
+	cfg, err := h.auth.OAuth2.GetConfig(c.Context())
 	if err != nil || cfg == nil || !cfg.Enabled {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "OAuth2 authentication is not enabled")
 	}
 
 	redirectBack := c.Query("redirect", "/")
-	authURL, _, err := h.service.OAuth2.GetAuthURL(c.Context(), redirectBack)
+	authURL, _, err := h.auth.OAuth2.GetAuthURL(c.Context(), redirectBack)
 	if err != nil {
 		reqLogger(c).Error("OAuth2 GetAuthURL error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to build authorization URL")
@@ -36,7 +36,7 @@ func (h *Handler) OAuth2Callback(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "missing code or state parameter")
 	}
 
-	user, err := h.service.OAuth2.Exchange(c.Context(), code, state)
+	user, err := h.auth.OAuth2.Exchange(c.Context(), code, state)
 	if err != nil {
 		reqLogger(c).Error("OAuth2 exchange error", "error", err)
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "OAuth2 authentication failed")
@@ -58,7 +58,7 @@ func (h *Handler) GetOAuth2Config(c *fiber.Ctx) error {
 		return nil
 	}
 
-	cfg, err := h.service.OAuth2.GetConfig(c.Context())
+	cfg, err := h.auth.OAuth2.GetConfig(c.Context())
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load OAuth2 config")
 	}
@@ -138,7 +138,7 @@ func (h *Handler) UpdateOAuth2Config(c *fiber.Ctx) error {
 		cfg.ClientSecretEnc = []byte(req.ClientSecret)
 	}
 
-	if err := h.service.OAuth2.SaveConfig(c.Context(), cfg); err != nil {
+	if err := h.auth.OAuth2.SaveConfig(c.Context(), cfg); err != nil {
 		reqLogger(c).Error("UpdateOAuth2Config error", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to save OAuth2 config")
 	}

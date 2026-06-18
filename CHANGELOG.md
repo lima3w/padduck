@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.16
+
+### Internal
+- **OpsManager Step 3** (#192): broke `AuditService`'s `*Service` back-reference (now takes `repo auditRepo`, `config *ConfigService`, `webhooks *WebhookService`); created `AuthManager` bundling Email, Registration, MFA, Notification, LDAP, OAuth2, SAML. `Service.Auth *AuthManager` replaces those 7 fields; `Handler.auth *AuthManager` is injected alongside `Handler.ops`. Handler files updated to `h.auth.*`; service-layer callers updated to `s.Auth.*`. `Service` struct is down to 6 fields (Config, Audit, Auth, Ops + 2 private).
+
 ## v1.32.15
 
 ### Internal
