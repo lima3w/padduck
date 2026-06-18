@@ -651,6 +651,7 @@ Click **Send Test Snapshot Now** to post a snapshot immediately and confirm it s
 
 ---
 
+
 ## Grafana Data Source
 
 **Admin → Grafana Data Source** — connect Grafana to IPAM data using the SimpleJSON protocol.
