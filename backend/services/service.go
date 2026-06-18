@@ -1,8 +1,8 @@
 package services
 
 import (
+	"context"
 	"log"
-	"time"
 
 	"padduck/models"
 	"padduck/repository"
@@ -15,9 +15,6 @@ type Service struct {
 	Audit         *AuditService
 	Auth          *AuthManager
 	Ops           *OpsManager
-
-	dashboardSummaryCache  *ttlCache[*models.DashboardSummary]
-	dashboardActivityCache *ttlCache[[]*models.DashboardActivity]
 }
 
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
@@ -52,9 +49,8 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 			OAuth2:       oauth2Svc,
 			SAML:         samlSvc,
 		},
-		dashboardSummaryCache:  newTTLCache[*models.DashboardSummary](30 * time.Second),
-		dashboardActivityCache: newTTLCache[[]*models.DashboardActivity](15 * time.Second),
 	}
+	dnsSvc := NewDNSService(configSvc, repo)
 	svc.Ops = &OpsManager{
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
@@ -62,10 +58,11 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Jobs:           NewJobService(),
 		Webhooks:       webhookSvc,
 		Topology:       NewTopologyService(repo),
-		DNS:            NewDNSService(configSvc, repo),
+		DNS:            dnsSvc,
 		Automation:     NewAutomationService(repo, svc),
 		Telemetry:      newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
 		NetworkModules: NewNetworkModulesService(repo),
+		IPAM:           NewIPAMService(repo, configSvc, dnsSvc),
 	}
 	return svc
 }
@@ -73,4 +70,19 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 // GetRepository returns the underlying repository
 func (s *Service) GetRepository() *repository.Repository {
 	return s.repository
+}
+
+// AllocateIPAddress forwards to IPAMService to satisfy the automationIPAM interface.
+func (s *Service) AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64) (*models.IPAddress, error) {
+	return s.Ops.IPAM.AllocateIPAddress(ctx, subnetID, deviceID)
+}
+
+// CreateIPAddress forwards to IPAMService to satisfy the automationIPAM interface.
+func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname, status string, tagID *int64, macAddress, ptrRecord, dnsName *string, customFields ...map[string]*string) (*models.IPAddress, error) {
+	return s.Ops.IPAM.CreateIPAddress(ctx, subnetID, address, hostname, status, tagID, macAddress, ptrRecord, dnsName, customFields...)
+}
+
+// ReleaseIPAddress forwards to IPAMService to satisfy the automationIPAM interface.
+func (s *Service) ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAddress, error) {
+	return s.Ops.IPAM.ReleaseIPAddress(ctx, id)
 }

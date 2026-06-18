@@ -160,7 +160,7 @@ func TestCreateSubnet_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.CreateSubnet(ctx, tt.networkID, tt.networkAddress, tt.prefixLength, "", nil, false, false, nil, nil, nil)
+			_, err := svc.Ops.IPAM.CreateSubnet(ctx, tt.networkID, tt.networkAddress, tt.prefixLength, "", nil, false, false, nil, nil, nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorContains)
@@ -186,7 +186,7 @@ func TestGetSubnet_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.GetSubnet(ctx, tt.id)
+			_, err := svc.Ops.IPAM.GetSubnet(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})
@@ -207,7 +207,7 @@ func TestListSubnets_InvalidSectionID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.ListSubnets(ctx, tt.networkID)
+			_, err := svc.Ops.IPAM.ListSubnets(ctx, tt.networkID)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid section ID")
 		})
@@ -228,7 +228,7 @@ func TestUpdateSubnet_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := svc.UpdateSubnet(ctx, tt.id, "new description", nil, false, false, nil, nil, nil, nil)
+			_, err := svc.Ops.IPAM.UpdateSubnet(ctx, tt.id, "new description", nil, false, false, nil, nil, nil, nil)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})
@@ -249,7 +249,7 @@ func TestDeleteSubnet_InvalidID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := svc.DeleteSubnet(ctx, tt.id)
+			err := svc.Ops.IPAM.DeleteSubnet(ctx, tt.id)
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), "invalid subnet ID")
 		})

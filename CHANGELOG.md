@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.1
+
+### Internal
+- **IPAM domain extraction**: extracted `IPAMService` from the root `Service` struct — networks, subnets, IP addresses, VRFs, VLANs, VLAN domains/groups, tags, search, dashboard summary/activity, IPv6 delegations, and subnet split/merge/resize now live in `services.IPAMService`, exposed via `OpsManager.IPAM`. `IPAMService` receives `*ConfigService` and `*DNSService` at construction time (no monolithic back-reference). All handler files updated to `h.ops.IPAM.*`; `*Service` forwarding stubs added for `automationIPAM` interface compatibility. Service source files gutted to `package services`. Unit tests updated to call methods via `svc.Ops.IPAM.*`.
+
 ## v1.33.0
 
 ### Internal

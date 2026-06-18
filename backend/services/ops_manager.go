@@ -14,4 +14,5 @@ type OpsManager struct {
 	Automation     *AutomationService
 	Telemetry      *TelemetryService
 	NetworkModules *NetworkModulesService
+	IPAM           *IPAMService
 }

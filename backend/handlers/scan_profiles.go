@@ -131,7 +131,7 @@ func (h *Handler) GetSubnetScanProfile(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
-	subnet, err := h.service.GetSubnet(c.Context(), int64(subnetID))
+	subnet, err := h.ops.IPAM.GetSubnet(c.Context(), int64(subnetID))
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "subnet not found")
 	}

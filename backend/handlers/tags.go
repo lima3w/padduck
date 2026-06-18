@@ -41,7 +41,7 @@ func (h *Handler) ListTags(c *fiber.Ctx) error {
 		return nil
 	}
 
-	tags, err := h.service.ListIPTags(c.Context())
+	tags, err := h.ops.IPAM.ListIPTags(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing tags", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -70,7 +70,7 @@ func (h *Handler) CreateTag(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "name is required")
 	}
 
-	tag, err := h.service.CreateIPTag(c.Context(), req.Name, req.Colour, req.Description)
+	tag, err := h.ops.IPAM.CreateIPTag(c.Context(), req.Name, req.Colour, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating tag", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -94,7 +94,7 @@ func (h *Handler) UpdateTag(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	tag, err := h.service.UpdateIPTag(c.Context(), int64(id), req.Name, req.Colour, req.Description)
+	tag, err := h.ops.IPAM.UpdateIPTag(c.Context(), int64(id), req.Name, req.Colour, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating tag", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -113,7 +113,7 @@ func (h *Handler) DeleteTag(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid tag ID")
 	}
 
-	if err := h.service.DeleteIPTag(c.Context(), int64(id)); err != nil {
+	if err := h.ops.IPAM.DeleteIPTag(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrSystemTag) || errors.Is(err, services.ErrTagInUse) {
 			return RespondError(c, fiber.StatusConflict, ErrConflict, err.Error())
 		}

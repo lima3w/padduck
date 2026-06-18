@@ -24,7 +24,7 @@ func (h *Handler) GetReconciliationReport(c *fiber.Ctx) error {
 		dnsEntries = []*repository.DNSAuditRow{}
 	}
 
-	overlaps, _ := h.service.OverlapReport(ctx)
+	overlaps, _ := h.ops.IPAM.OverlapReport(ctx)
 	if overlaps == nil {
 		overlaps = []*services.OverlapPair{}
 	}

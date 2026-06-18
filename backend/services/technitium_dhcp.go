@@ -142,7 +142,7 @@ func (s *Service) ImportTechnitiumScope(ctx context.Context, scopeName string, n
 		gw = &gateway
 	}
 
-	subnet, err := s.CreateSubnet(ctx, networkID, networkAddr, prefixLen, scope.Name, gw, false, false, nil, nil, nil, nil)
+	subnet, err := s.Ops.IPAM.CreateSubnet(ctx, networkID, networkAddr, prefixLen, scope.Name, gw, false, false, nil, nil, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating subnet: %w", err)
 	}

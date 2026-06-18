@@ -39,7 +39,7 @@ func (h *Handler) ListDelegations(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid subnet ID")
 	}
 
-	delegations, err := h.service.ListDelegations(c.Context(), int64(subnetID))
+	delegations, err := h.ops.IPAM.ListDelegations(c.Context(), int64(subnetID))
 	if err != nil {
 		reqLogger(c).Error("error listing delegations", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -79,7 +79,7 @@ func (h *Handler) CreateDelegation(c *fiber.Ctx) error {
 		ExpiresAt:              req.ExpiresAt,
 	}
 
-	result, err := h.service.CreateDelegation(c.Context(), d)
+	result, err := h.ops.IPAM.CreateDelegation(c.Context(), d)
 	if err != nil {
 		reqLogger(c).Error("error creating delegation", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -123,7 +123,7 @@ func (h *Handler) UpdateDelegation(c *fiber.Ctx) error {
 		ExpiresAt:              req.ExpiresAt,
 	}
 
-	result, err := h.service.UpdateDelegation(c.Context(), int64(id), d)
+	result, err := h.ops.IPAM.UpdateDelegation(c.Context(), int64(id), d)
 	if err != nil {
 		reqLogger(c).Error("error updating delegation", "id", id, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -150,7 +150,7 @@ func (h *Handler) DeleteDelegation(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid delegation ID")
 	}
 
-	if err := h.service.DeleteDelegation(c.Context(), int64(id)); err != nil {
+	if err := h.ops.IPAM.DeleteDelegation(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting delegation", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

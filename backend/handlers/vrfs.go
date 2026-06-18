@@ -27,7 +27,7 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 
 	page, limit, _ := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" {
-		vrfs, total, err := h.service.ListVRFsPaginated(c.Context(), page, limit)
+		vrfs, total, err := h.ops.IPAM.ListVRFsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing VRFs", "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -43,7 +43,7 @@ func (h *Handler) ListVRFs(c *fiber.Ctx) error {
 		})
 	}
 
-	vrfs, err := h.service.ListVRFs(c.Context())
+	vrfs, err := h.ops.IPAM.ListVRFs(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing VRFs", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -65,7 +65,7 @@ func (h *Handler) GetVRF(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid VRF ID")
 	}
 
-	vrf, err := h.service.GetVRF(c.Context(), int64(id))
+	vrf, err := h.ops.IPAM.GetVRF(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting VRF", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -83,7 +83,7 @@ func (h *Handler) CreateVRF(c *fiber.Ctx) error {
 		return nil
 	}
 
-	vrf, err := h.service.CreateVRF(c.Context(), req.Name, req.RouteDistinguisher, req.Description)
+	vrf, err := h.ops.IPAM.CreateVRF(c.Context(), req.Name, req.RouteDistinguisher, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating VRF", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -113,7 +113,7 @@ func (h *Handler) UpdateVRF(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	vrf, err := h.service.UpdateVRF(c.Context(), int64(id), req.Name, req.RouteDistinguisher, req.Description)
+	vrf, err := h.ops.IPAM.UpdateVRF(c.Context(), int64(id), req.Name, req.RouteDistinguisher, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating VRF", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -138,7 +138,7 @@ func (h *Handler) DeleteVRF(c *fiber.Ctx) error {
 		return nil
 	}
 
-	if err := h.service.DeleteVRF(c.Context(), int64(id)); err != nil {
+	if err := h.ops.IPAM.DeleteVRF(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting VRF", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

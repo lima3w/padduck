@@ -42,7 +42,7 @@ func (h *Handler) SplitSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "new_prefix_len is required")
 	}
 
-	children, err := h.service.SplitSubnet(c.Context(), int64(id), req.NewPrefixLen)
+	children, err := h.ops.IPAM.SplitSubnet(c.Context(), int64(id), req.NewPrefixLen)
 	if err != nil {
 		var blockedErr *services.SplitBlockedError
 		if errors.As(err, &blockedErr) {
@@ -83,7 +83,7 @@ func (h *Handler) MergeSubnets(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "at least 2 subnet_ids required")
 	}
 
-	parent, err := h.service.MergeSubnets(c.Context(), req.SubnetIDs)
+	parent, err := h.ops.IPAM.MergeSubnets(c.Context(), req.SubnetIDs)
 	if err != nil {
 		reqLogger(c).Error("merge subnets error", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -120,7 +120,7 @@ func (h *Handler) ResizeSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "new_prefix is required")
 	}
 
-	subnet, err := h.service.ResizeSubnet(c.Context(), int64(id), req.NewPrefix)
+	subnet, err := h.ops.IPAM.ResizeSubnet(c.Context(), int64(id), req.NewPrefix)
 	if err != nil {
 		var conflictErr *services.SubnetResizeConflictError
 		if errors.As(err, &conflictErr) {

@@ -167,7 +167,7 @@ func (h *Handler) AgentGetJobs(c *fiber.Ctx) error {
 			ScanType:        job.ScanType,
 		}
 		for _, sid := range job.SubnetIDs {
-			subnet, err := h.service.GetSubnet(c.Context(), sid)
+			subnet, err := h.ops.IPAM.GetSubnet(c.Context(), sid)
 			if err != nil {
 				reqLogger(c).Warn("subnet not found for agent job", "subnet_id", sid, "job_id", job.ID, "error", err)
 				continue

@@ -11,7 +11,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 		return nil
 	}
 
-	summary, err := h.service.GetDashboardSummary(c.Context())
+	summary, err := h.ops.IPAM.GetDashboardSummary(c.Context())
 	if err != nil {
 		reqLogger(c).Error("GetDashboardSummary failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -26,7 +26,7 @@ func (h *Handler) GetDashboardRecentActivity(c *fiber.Ctx) error {
 		return nil
 	}
 
-	activities, err := h.service.GetDashboardRecentActivity(c.Context())
+	activities, err := h.ops.IPAM.GetDashboardRecentActivity(c.Context())
 	if err != nil {
 		reqLogger(c).Error("GetDashboardRecentActivity failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -45,7 +45,7 @@ func (h *Handler) GetSubnetTree(c *fiber.Ctx) error {
 		return nil
 	}
 
-	tree, err := h.service.GetSubnetTree(c.Context(), int64(networkID))
+	tree, err := h.ops.IPAM.GetSubnetTree(c.Context(), int64(networkID))
 	if err != nil {
 		reqLogger(c).Error("GetSubnetTree failed", "error", err, "network_id", networkID)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
