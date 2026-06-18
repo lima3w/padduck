@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.32.17
+
+### Internal
+- **Dependency updates** (#216): frontend ESLint 9→10, migrated from `eslint-plugin-react` to `@eslint-react/eslint-plugin` (ESLint 10-native); added `@eslint/js` and `typescript` as explicit deps; fixed missing `key` prop on fragment in `AdminUsersPage`. Backend: `go-oidc/v3` v3.18→v3.19.
+
 ## v1.32.16
 
 ### Internal
