@@ -22,7 +22,7 @@ import (
 //   - Commit 37b176e ("feat: complete v1.28 compatibility readiness") later added four new
 //     API paths and a new response component to the spec without bumping the version.
 //   - The app is currently at v1.31.x, so the 1.26.0 pin was stale.
-const wantSpecVersion = "1.31.32"
+const wantSpecVersion = "1.32.17"
 
 func TestOpenAPIContractStableV1(t *testing.T) {
 	spec := readOpenAPISpec(t)

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Padduck API
   description: Route-complete REST API specification for the current backend.
-  version: 1.31.32
+  version: 1.32.17
   x-api-contract: stable-v1
   contact:
     name: Padduck
@@ -45,6 +45,12 @@ tags:
   - name: GDPR
   - name: Automation
   - name: Grafana
+  - name: Customers
+  - name: NAT
+  - name: Firewall
+  - name: DHCP
+  - name: Circuits
+  - name: BGP
 
 components:
   securitySchemes:
@@ -363,6 +369,12 @@ components:
             $ref: "#/components/schemas/Error"
     Conflict:
       description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadGateway:
+      description: Bad gateway — upstream service error
       content:
         application/json:
           schema:
@@ -3301,3 +3313,1058 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/OK"
+
+  # ── System utility ─────────────────────────────────────────────────────────
+
+  /api/v1/public-info:
+    get:
+      tags: [System]
+      summary: Get public instance metadata
+      description: Returns publicly visible instance settings (no authentication required).
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/features:
+    get:
+      tags: [System]
+      summary: Get enabled feature flags
+      description: Returns a map of feature name to enabled boolean for the current instance.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/search:
+    get:
+      tags: [System]
+      summary: Global search
+      description: Searches networks, subnets, IP addresses, and devices. Returns up to 5 results per category.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/agent/download:
+    get:
+      tags: [System]
+      summary: Download agent binary
+      description: Serves the pre-built padduck-agent binary. No authentication required.
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/BinaryDownload"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/agent/version:
+    get:
+      tags: [System]
+      summary: Get hosted agent version
+      description: Returns the version string and availability of the hosted agent binary.
+      security: []
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── IP address operations ───────────────────────────────────────────────────
+
+  /api/v1/ip-addresses/quick-create:
+    post:
+      tags: [IP Addresses]
+      summary: Quick-create IP record by address
+      description: Finds the most-specific matching subnet for the given address and creates an IP record in it.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/subnets/{subnetID}/next-available:
+    get:
+      tags: [Subnets, IP Addresses]
+      summary: Peek at next available IP
+      description: Returns the next free IP address in the subnet without allocating it.
+      parameters:
+        - $ref: "#/components/parameters/subnetID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/ip-addresses/{id}/dhcp-reservation:
+    post:
+      tags: [IP Addresses, DHCP]
+      summary: Push DHCP reservation
+      description: Creates a DHCP reservation on the linked DHCP server for this IP record.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+    delete:
+      tags: [IP Addresses, DHCP]
+      summary: Remove DHCP reservation
+      description: Removes the DHCP reservation from the linked DHCP server.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/ip-addresses/search:
+    get:
+      tags: [IP Addresses]
+      summary: Search IP addresses globally
+      description: Returns up to 20 IP addresses matching the query across all subnets.
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/ip-addresses/bulk-delete:
+    post:
+      tags: [Admin, IP Addresses]
+      summary: Bulk delete IP records
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — audit retention ─────────────────────────────────────────────────
+
+  /api/v1/admin/audit/retention:
+    get:
+      tags: [Admin]
+      summary: Get audit log retention settings
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Update audit log retention settings
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/audit/prune:
+    post:
+      tags: [Admin]
+      summary: Prune audit logs
+      description: Immediately deletes audit log entries older than the configured retention period.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — backup / restore ────────────────────────────────────────────────
+
+  /api/v1/admin/backup/download:
+    get:
+      tags: [Admin, Import Export]
+      summary: Download database backup (SQL)
+      description: Returns a plain-text PostgreSQL dump of the database.
+      responses:
+        "200":
+          $ref: "#/components/responses/BinaryDownload"
+
+  /api/v1/admin/backups/download:
+    get:
+      tags: [Admin, Import Export]
+      summary: Download full backup archive
+      description: Returns a ZIP archive containing the database dump, config, and data files.
+      responses:
+        "200":
+          $ref: "#/components/responses/BinaryDownload"
+
+  /api/v1/admin/backups/restore:
+    post:
+      tags: [Admin, Import Export]
+      summary: Restore from backup archive
+      description: Accepts a ZIP backup archive (multipart/form-data field `file`) and restores the instance.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — break-glass ─────────────────────────────────────────────────────
+
+  /api/v1/admin/break-glass:
+    get:
+      tags: [Admin, Security]
+      summary: Get break-glass status
+      description: Returns the currently active break-glass session (if any) and the full session history.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/break-glass/activate:
+    post:
+      tags: [Admin, Security]
+      summary: Activate break-glass session
+      description: Opens an emergency break-glass session. Requires a justification of at least 10 characters.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/admin/break-glass/end:
+    post:
+      tags: [Admin, Security]
+      summary: End break-glass session
+      description: Closes the currently active break-glass session.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── Admin — config ──────────────────────────────────────────────────────────
+
+  /api/v1/admin/config/reveal:
+    get:
+      tags: [Admin]
+      summary: Reveal sensitive config values
+      description: Returns the full system configuration including plaintext secrets. Admin-only.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — identity policies & session risk ────────────────────────────────
+
+  /api/v1/admin/identity-policies:
+    get:
+      tags: [Admin, Security]
+      summary: Get identity policies
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin, Security]
+      summary: Update identity policies
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/session-risk:
+    get:
+      tags: [Admin, Security]
+      summary: List session risk flags
+      description: Returns all active sessions with associated risk flag analysis.
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  # ── Admin — jobs ────────────────────────────────────────────────────────────
+
+  /api/v1/admin/jobs:
+    get:
+      tags: [Admin]
+      summary: List background jobs
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/jobs/{id}:
+    get:
+      tags: [Admin]
+      summary: Get background job
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/admin/jobs/{id}/cancel:
+    post:
+      tags: [Admin]
+      summary: Cancel background job
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/jobs/{id}/retry:
+    post:
+      tags: [Admin]
+      summary: Retry background job
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "202":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — privacy ─────────────────────────────────────────────────────────
+
+  /api/v1/admin/privacy/versions:
+    get:
+      tags: [Admin, GDPR]
+      summary: List privacy policy versions
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin, GDPR]
+      summary: Create privacy policy version
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/privacy/consent-report:
+    get:
+      tags: [Admin, GDPR]
+      summary: Get privacy consent report
+      description: Returns per-user consent status for the current privacy policy version.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — reports (additional exports) ───────────────────────────────────
+
+  /api/v1/admin/reports/export/networks:
+    get:
+      tags: [Admin, Reports]
+      summary: Export networks report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/export/devices:
+    get:
+      tags: [Admin, Reports]
+      summary: Export devices report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/export/vlans:
+    get:
+      tags: [Admin, Reports]
+      summary: Export VLANs report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/export/vrfs:
+    get:
+      tags: [Admin, Reports]
+      summary: Export VRFs report
+      responses:
+        "200":
+          $ref: "#/components/responses/CSV"
+
+  /api/v1/admin/reports/reconciliation:
+    get:
+      tags: [Admin, Reports]
+      summary: Get reconciliation report
+      description: Returns stale IPs, DNS drift, and address overlaps detected by the reconciliation engine.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/reports/duplicates:
+    get:
+      tags: [Admin, Reports]
+      summary: Get duplicates report
+      description: Returns duplicate hostnames and conflicting IP assignments.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — roles (presets) ─────────────────────────────────────────────────
+
+  /api/v1/admin/roles/presets:
+    get:
+      tags: [Admin, RBAC]
+      summary: List role presets
+      description: Returns the built-in role presets that can be applied to custom roles.
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/roles/{id}/diff:
+    get:
+      tags: [Admin, RBAC]
+      summary: Diff role against a preset
+      description: Compares a custom role's permissions against a named preset. Pass `?preset=PRESET_ID` to specify which preset.
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - name: preset
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — scan agents / jobs (additional) ─────────────────────────────────
+
+  /api/v1/admin/scan-agents/health:
+    get:
+      tags: [Admin, Scan Agents]
+      summary: Get agent health summary
+      description: Returns health and last-seen status for all registered scan agents.
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/scan-jobs/{id}/status:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get scan job status
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — system health & updates ────────────────────────────────────────
+
+  /api/v1/admin/system-health:
+    get:
+      tags: [Admin]
+      summary: Get system health
+      description: Returns database connectivity and scan agent health aggregate.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/updates/check:
+    get:
+      tags: [Admin]
+      summary: Check for updates
+      description: Queries the release API for the latest available version and compares to the running build.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — Technitium DHCP ─────────────────────────────────────────────────
+
+  /api/v1/admin/dhcp/technitium/scopes:
+    get:
+      tags: [Admin, DHCP]
+      summary: List Technitium DHCP scopes
+      description: Fetches available DHCP scopes from the configured Technitium server.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/admin/dhcp/technitium/sync:
+    post:
+      tags: [Admin, DHCP]
+      summary: Sync Technitium leases
+      description: Pulls current DHCP leases from Technitium and upserts them into the local DHCP lease table.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/admin/dhcp/technitium/import-scope:
+    post:
+      tags: [Admin, DHCP]
+      summary: Import Technitium scope as subnet
+      description: Creates a subnet from the named Technitium DHCP scope in the specified network.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  # ── Admin — topology hints ──────────────────────────────────────────────────
+
+  /api/v1/admin/topology/hints:
+    get:
+      tags: [Admin, Discovery]
+      summary: List topology hints
+      description: Returns suggested relationships between inventory entities derived from discovery data. Filter by `?status=suggested|confirmed|dismissed`.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [suggested, confirmed, dismissed]
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/topology/hints/{id}:
+    get:
+      tags: [Admin, Discovery]
+      summary: Get topology hint
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/topology/hints/{id}/status:
+    put:
+      tags: [Admin, Discovery]
+      summary: Update topology hint status
+      description: Confirm or dismiss a topology hint.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — device fingerprints ─────────────────────────────────────────────
+
+  /api/v1/admin/devices/{id}/fingerprint:
+    get:
+      tags: [Admin, Devices]
+      summary: Get device fingerprint
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    post:
+      tags: [Admin, Devices]
+      summary: Build device fingerprint
+      description: Runs fingerprint analysis for the device and stores the result.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  # ── Admin — integration templates ──────────────────────────────────────────
+
+  /api/v1/admin/integration-templates:
+    get:
+      tags: [Admin, Automation]
+      summary: List integration templates (admin)
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/automation/integration-templates:
+    get:
+      tags: [Automation]
+      summary: List integration templates
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  # ── Auth — change password ──────────────────────────────────────────────────
+
+  /api/v1/auth/me/change-password:
+    post:
+      tags: [Auth]
+      summary: Change current user's password
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  # ── Customers (feature-gated) ───────────────────────────────────────────────
+
+  /api/v1/customers:
+    get:
+      tags: [Customers]
+      summary: List customers
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Customers]
+      summary: Create customer
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/customers/{id}:
+    get:
+      tags: [Customers]
+      summary: Get customer
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Customers]
+      summary: Update customer
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Customers]
+      summary: Delete customer
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/customers/{id}/associations:
+    get:
+      tags: [Customers]
+      summary: List associations for a customer
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/customer-associations:
+    get:
+      tags: [Customers]
+      summary: List customer associations
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Customers]
+      summary: Create customer association
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/customer-associations/{id}:
+    delete:
+      tags: [Customers]
+      summary: Delete customer association
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  # ── NAT Rules (feature-gated) ───────────────────────────────────────────────
+
+  /api/v1/nat-rules:
+    get:
+      tags: [NAT]
+      summary: List NAT rules
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [NAT]
+      summary: Create NAT rule
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/nat-rules/{id}:
+    get:
+      tags: [NAT]
+      summary: Get NAT rule
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [NAT]
+      summary: Update NAT rule
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [NAT]
+      summary: Delete NAT rule
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  # ── Firewall Zones (feature-gated) ─────────────────────────────────────────
+
+  /api/v1/firewall-zones:
+    get:
+      tags: [Firewall]
+      summary: List firewall zones
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Firewall]
+      summary: Create firewall zone
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/firewall-zones/{id}:
+    get:
+      tags: [Firewall]
+      summary: Get firewall zone
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Firewall]
+      summary: Update firewall zone
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Firewall]
+      summary: Delete firewall zone
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/firewall-zone-mappings:
+    get:
+      tags: [Firewall]
+      summary: List firewall zone mappings
+      parameters:
+        - name: zone_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Firewall]
+      summary: Create firewall zone mapping
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/firewall-zone-mappings/{id}:
+    put:
+      tags: [Firewall]
+      summary: Update firewall zone mapping
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Firewall]
+      summary: Delete firewall zone mapping
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  # ── DHCP Servers & Leases (feature-gated) ──────────────────────────────────
+
+  /api/v1/dhcp-servers:
+    get:
+      tags: [DHCP]
+      summary: List DHCP servers
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [DHCP]
+      summary: Create DHCP server
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/dhcp-servers/{id}:
+    put:
+      tags: [DHCP]
+      summary: Update DHCP server
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [DHCP]
+      summary: Delete DHCP server
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/dhcp-leases:
+    get:
+      tags: [DHCP]
+      summary: List DHCP leases
+      parameters:
+        - name: server_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [DHCP]
+      summary: Create DHCP lease
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/dhcp-leases/{id}:
+    put:
+      tags: [DHCP]
+      summary: Update DHCP lease
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [DHCP]
+      summary: Delete DHCP lease
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  # ── Circuits (feature-gated) ────────────────────────────────────────────────
+
+  /api/v1/circuit-providers:
+    get:
+      tags: [Circuits]
+      summary: List circuit providers
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Circuits]
+      summary: Create circuit provider
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/circuit-providers/{id}:
+    put:
+      tags: [Circuits]
+      summary: Update circuit provider
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Circuits]
+      summary: Delete circuit provider
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/physical-circuits:
+    get:
+      tags: [Circuits]
+      summary: List physical circuits
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Circuits]
+      summary: Create physical circuit
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/physical-circuits/{id}:
+    put:
+      tags: [Circuits]
+      summary: Update physical circuit
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Circuits]
+      summary: Delete physical circuit
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/logical-circuits:
+    get:
+      tags: [Circuits]
+      summary: List logical circuits
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Circuits]
+      summary: Create logical circuit
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/logical-circuits/{id}:
+    put:
+      tags: [Circuits]
+      summary: Update logical circuit
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [Circuits]
+      summary: Delete logical circuit
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  # ── Autonomous Systems / BGP (feature-gated) ───────────────────────────────
+
+  /api/v1/autonomous-systems:
+    get:
+      tags: [BGP]
+      summary: List autonomous systems
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [BGP]
+      summary: Create autonomous system
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/autonomous-systems/{id}:
+    get:
+      tags: [BGP]
+      summary: Get autonomous system
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [BGP]
+      summary: Update autonomous system
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    delete:
+      tags: [BGP]
+      summary: Delete autonomous system
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
