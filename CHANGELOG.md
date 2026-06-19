@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.33.15
+
+### Added
+- **Platform admin role** (issue #11): `is_platform_admin BOOLEAN` column on `users`; users with this flag bypass org-scoping across all platform endpoints.
+- **Platform API namespace** at `/api/v1/platform/` — all routes require `is_platform_admin = true`:
+  - `GET /platform/organizations` — list all orgs
+  - `GET /platform/organizations/:id` — org detail with user count stat
+  - `GET /platform/audit-log` — cross-org audit log; optionally filter by `?org_id=`
+  - `POST /platform/impersonate` — returns a 1-hour Bearer token scoped to a target org; all actions taken with it are audit-logged under the requesting platform admin's identity
+  - `PUT /platform/users/:id/platform-admin` — grant or revoke `is_platform_admin` on any user (platform admin only)
+- **Impersonation token mechanics**: `api_tokens.impersonated_org_id` column added; when a token carries this column, `AuthMiddleware` uses it as the effective `orgID` instead of the user's native org, so the platform admin seamlessly acts within the target org's data scope.
+- **`PLATFORM_ADMIN_EMAIL` env var**: on startup, if set, the matching user is idempotently promoted to platform admin (safe to leave in place after first boot).
+- **`PlatformAdminMiddleware`**: Fiber middleware that returns 403 to anyone without `is_platform_admin = true`.
+
 ## v1.33.14
 
 ### Added

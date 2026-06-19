@@ -216,6 +216,21 @@ func main() {
 		log.Fatalf("Failed to ensure default organization: %v", err)
 	}
 
+	// Seed platform admin from PLATFORM_ADMIN_EMAIL env var (idempotent)
+	if email := strings.TrimSpace(os.Getenv("PLATFORM_ADMIN_EMAIL")); email != "" {
+		safeEmail := strings.NewReplacer("\n", "", "\r", "").Replace(email)
+		if u, err := repo.GetUserByEmail(ctx, email); err == nil {
+			if !u.IsPlatformAdmin {
+				if err := repo.SetPlatformAdmin(ctx, u.ID, true); err != nil {
+					log.Fatalf("Failed to set platform admin: %v", err)
+				}
+				log.Printf("Platform admin enabled for user: %s", safeEmail) // #nosec G706 -- newlines stripped above
+			}
+		} else {
+			slog.Warn("PLATFORM_ADMIN_EMAIL set but user not found", "email", safeEmail) // #nosec G706 -- newlines stripped above
+		}
+	}
+
 	// Start notification queue worker
 	svc.Auth.Notification.StartWorker(ctx)
 	svc.Ops.Webhooks.StartWorker(ctx)

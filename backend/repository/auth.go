@@ -11,13 +11,13 @@ import (
 
 func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash, name string) (*models.APIToken, error) {
 	query := `INSERT INTO api_tokens (user_id, token_hash, name) VALUES ($1, $2, $3)
-	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at`
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, name)
 
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -27,12 +27,27 @@ func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash
 func (r *Repository) CreateAPITokenFull(ctx context.Context, userID int64, tokenHash, name, scope string, expiresAt *time.Time) (*models.APIToken, error) {
 	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at)
 	          VALUES ($1, $2, $3, $4, $5)
-	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at`
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, name, scope, expiresAt)
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (r *Repository) CreateImpersonationToken(ctx context.Context, userID int64, tokenHash, name string, orgID int64, expiresAt time.Time) (*models.APIToken, error) {
+	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at, impersonated_org_id)
+	          VALUES ($1, $2, $3, 'admin', $4, $5)
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
+	row := r.db.QueryRow(ctx, query, userID, tokenHash, name, expiresAt, orgID)
+	token := &models.APIToken{}
+	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
+		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -40,13 +55,13 @@ func (r *Repository) CreateAPITokenFull(ctx context.Context, userID int64, token
 }
 
 func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
 	row := r.db.QueryRow(ctx, query, tokenHash)
 
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +69,7 @@ func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*
 }
 
 func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -66,7 +81,7 @@ func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*
 		token := &models.APIToken{}
 		err := rows.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 			&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +113,7 @@ func (r *Repository) ListAPITokenAnalytics(ctx context.Context, orgID *int64) ([
 		token := &models.APIToken{}
 		err := rows.Scan(&token.ID, &token.UserID, &token.Username, &token.TokenHash, &token.Name, &token.Scope,
 			&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -128,12 +143,12 @@ func (r *Repository) MarkAPITokenRotated(ctx context.Context, tokenID int64, gra
 func (r *Repository) ExtendAPIToken(ctx context.Context, tokenID, userID int64, newExpiresAt time.Time) (*models.APIToken, error) {
 	query := `UPDATE api_tokens SET expires_at = $3, updated_at = CURRENT_TIMESTAMP
 	          WHERE id = $1 AND user_id = $2
-	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at`
+	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, tokenID, userID, newExpiresAt)
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -141,12 +156,12 @@ func (r *Repository) ExtendAPIToken(ctx context.Context, tokenID, userID int64, 
 }
 
 func (r *Repository) GetAPITokenByID(ctx context.Context, tokenID int64) (*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, created_at, updated_at FROM api_tokens WHERE id = $1`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at FROM api_tokens WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, tokenID)
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
