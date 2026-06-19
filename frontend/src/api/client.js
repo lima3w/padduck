@@ -8,6 +8,7 @@ function getCookie(name) {
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+export const API_V2_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/api\/v\d+$/, '') + '/api/v2'
 
 export const api = axios.create({
   baseURL: API_BASE,

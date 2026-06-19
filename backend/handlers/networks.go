@@ -72,6 +72,7 @@ func (h *Handler) GetNetwork(c *fiber.Ctx) error {
 // ListNetworks handles GET /api/v1/networks
 // Supports ?page=1&limit=25 for pagination. Without those params it returns all results.
 func (h *Handler) ListNetworks(c *fiber.Ctx) error {
+	addDeprecationHeaders(c, "/api/v2/networks")
 	if !h.requirePerm(c, services.PermV2NetworkList) {
 		return nil
 	}

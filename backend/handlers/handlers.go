@@ -653,6 +653,16 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	asSystems.Put("/:id", h.UpdateAutonomousSystem)
 	asSystems.Delete("/:id", h.DeleteAutonomousSystem)
 
+	// API v2 routes — new endpoint contract with standard pagination envelope.
+	// v1 equivalents that have a v2 counterpart emit Deprecation headers.
+	v2 := app.Group("/api/v2")
+	v2protected := v2.Group("")
+	v2protected.Use(h.AuthMiddleware)
+	v2protected.Use(h.CSRFMiddleware)
+
+	v2networks := v2protected.Group("/networks")
+	v2networks.Get("", h.V2ListNetworks)
+
 	log.Println("Routes registered successfully")
 }
 

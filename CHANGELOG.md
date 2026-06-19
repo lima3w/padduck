@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.6
+
+### Added
+- **v2 API scaffold**: introduced `/api/v2` route group with standard response envelope `{ "data": ..., "meta": { "page", "limit", "total" } }`. Helper functions `V2List`, `V2Item`, and `V2Meta` in `handlers/v2_response.go`. Reference endpoint `GET /api/v2/networks` returns paginated networks in the v2 envelope. `API_V2_BASE` constant exported from `frontend/src/api/client.js`.
+- **Deprecation headers on v1 networks**: `GET /api/v1/networks` now emits `Deprecation: true` and `Link: </api/v2/networks>; rel="successor-version"` on every response (including 401/403) per RFC 8594.
+
 ## v1.33.5
 
 ### Internal
