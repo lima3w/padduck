@@ -1,3 +1,4 @@
+-- +migrate Up
 CREATE TABLE background_jobs (
   id            BIGSERIAL    PRIMARY KEY,
   type          TEXT         NOT NULL,
