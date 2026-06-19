@@ -158,9 +158,13 @@ func (s *JobService) List() []*BackgroundJob {
 func (s *JobService) Get(id int64) (*BackgroundJob, bool) {
 	s.mu.RLock()
 	job, ok := s.jobs[id]
+	var out *BackgroundJob
+	if ok {
+		out = publicJob(job)
+	}
 	s.mu.RUnlock()
 	if ok {
-		return publicJob(job), true
+		return out, true
 	}
 	if s.repo != nil {
 		rec, err := s.repo.GetJobRecord(context.Background(), id)

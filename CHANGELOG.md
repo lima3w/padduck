@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.10
+
+### Fixed
+- **Data race in `JobService.Get()`**: the read lock was released before `publicJob()` copied the job struct, allowing a concurrent `run()` goroutine to write `FinishedAt` while the copy was in progress. Lock is now held for the duration of the copy. Caught by `-race` in CI.
+- **Missing `-- +migrate Up/Down` annotations** in `20260618_001_background_jobs` migration files, causing the CI annotation check and the backend health check to fail.
+
 ## v1.33.9
 
 ### Added
