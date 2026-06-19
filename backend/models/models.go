@@ -1260,3 +1260,14 @@ type AuditRetentionSettings struct {
 	ArchiveEnabled bool      `json:"archive_enabled"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
+
+type RoleGrant struct {
+	ID             int64     `json:"id"`
+	OrganizationID int64     `json:"organization_id"`
+	UserID         int64     `json:"user_id"`
+	Permission     string    `json:"permission"`
+	ScopeType      *string   `json:"scope_type"`
+	ScopeID        *int64    `json:"scope_id"`
+	GrantedBy      *int64    `json:"granted_by"`
+	GrantedAt      time.Time `json:"granted_at"`
+}

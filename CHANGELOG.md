@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.33.13
+
+### Added
+- **Delegated administration / scoped role grants** (issue #9): `role_grants` table allows org admins to grant individual permissions to users, either globally or scoped to a specific resource type and ID (`scope_type`, `scope_id`).
+- **`CheckPermission` extended**: after legacy-role and custom-role checks fail, the identity service now queries `role_grants` for a matching global or scoped direct grant, so delegated users get the right access without elevated legacy roles.
+- **`IdentityService.CreateGrant`**: validates the grantor holds the permission being granted (preventing privilege escalation) before inserting the row.
+- **Grant CRUD API**: `GET /api/v1/admin/users/:id/grants` (PermV2OrgRead), `POST /api/v1/admin/role-grants` (PermV2OrgWrite), `DELETE /api/v1/admin/role-grants/:id` (PermV2OrgWrite).
+- **Admin UI**: expanded user row in Admin → Users now shows a "Direct Permission Grants" section with per-grant revoke confirmations and an "Add Grant" modal (permission input, optional scope type + scope ID).
+
 ## v1.33.12
 
 ### Added

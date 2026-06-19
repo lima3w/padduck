@@ -139,6 +139,12 @@ export const assignUserRole = (userId, data) => api.post(`/admin/users/${userId}
 
 export const removeUserRole = (userId, roleId) => api.delete(`/admin/users/${userId}/roles/${roleId}`)
 
+export const listUserGrants = (userId) => api.get(`/admin/users/${userId}/grants`)
+
+export const createGrant = (data) => api.post('/admin/role-grants', data)
+
+export const revokeGrant = (id) => api.delete(`/admin/role-grants/${id}`)
+
 export const getInactiveIPs = (days = 30, limit = 10) => api.get('/admin/reports/inactive-ips', { params: { days, limit } })
 
 export const getDuplicates = () => api.get('/admin/reports/duplicates')
