@@ -56,7 +56,9 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	ipamSvc := NewIPAMService(repo, configSvc, dnsSvc)
 	identitySvc := NewIdentityService(repo, configSvc, emailSvc, mfaSvc, notificationSvc)
 	infraSvc := NewInfrastructureService(repo, mfaEncryptionKey)
-	workflowSvc := NewWorkflowService(repo, ipamSvc, dnsSvc, auditSvc, notificationSvc)
+	bus := NewEventBus()
+	auditSvc.SubscribeTo(bus)
+	workflowSvc := NewWorkflowService(repo, ipamSvc, dnsSvc, bus, notificationSvc)
 	svc.Ops = &OpsManager{
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
@@ -73,6 +75,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Infrastructure: infraSvc,
 		Customers:      NewCustomerService(repo),
 		Workflow:       workflowSvc,
+		EventBus:       bus,
 	}
 	return svc
 }

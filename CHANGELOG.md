@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.33.8
+
+### Added
+- **Typed event bus**: `EventBus` in `services/event_bus.go` provides synchronous in-process pub-sub with typed `Subscribe` / `Publish`. Handlers run in the publisher's goroutine; panics per-handler are caught and logged so a bad subscriber cannot crash the caller. Core domain event types defined in `services/events.go`: subnet CRUD, IP CRUD, scan completed, user login/logout, and workflow request events.
+- **AuditService subscribes to bus**: `AuditService.SubscribeTo(bus)` registers a wildcard handler that calls `Log()` for any `AuditableEvent`. `OpsManager` exposes the bus as `EventBus`.
+- **WorkflowService decoupled from AuditService**: `WorkflowService` now receives `*EventBus` instead of `*AuditService`. The one service-layer audit call (`request_comment_added`) is replaced with `bus.Publish(RequestCommentAddedEvent{...})`.
+
 ## v1.33.7
 
 ### Added

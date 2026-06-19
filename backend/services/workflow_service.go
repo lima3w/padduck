@@ -30,12 +30,12 @@ type WorkflowService struct {
 	repo         *repository.Repository
 	ipam         *IPAMService
 	dns          *DNSService
-	audit        *AuditService
+	bus          *EventBus
 	notification *NotificationService
 }
 
-func NewWorkflowService(repo *repository.Repository, ipam *IPAMService, dns *DNSService, audit *AuditService, notification *NotificationService) *WorkflowService {
-	return &WorkflowService{repo: repo, ipam: ipam, dns: dns, audit: audit, notification: notification}
+func NewWorkflowService(repo *repository.Repository, ipam *IPAMService, dns *DNSService, bus *EventBus, notification *NotificationService) *WorkflowService {
+	return &WorkflowService{repo: repo, ipam: ipam, dns: dns, bus: bus, notification: notification}
 }
 
 // ---- Subnet Requests ----
@@ -359,10 +359,11 @@ func (s *WorkflowService) AddRequestComment(ctx context.Context, requestType str
 		return nil, err
 	}
 
-	s.audit.Log(ctx, AuditEntry{
-		UserID: &authorID, Action: "request_comment_added",
-		ResourceType: requestType + "_request", ResourceID: &requestID,
-		NewValues: map[string]interface{}{"body": body},
+	s.bus.Publish(ctx, RequestCommentAddedEvent{
+		RequestType: requestType,
+		RequestID:   requestID,
+		AuthorID:    authorID,
+		CommentID:   comment.ID,
 	})
 	s.notifyRequestComment(ctx, requestType, requestID, authorID, comment)
 	return comment, nil
