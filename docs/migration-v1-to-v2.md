@@ -1,5 +1,7 @@
 # v1 → v2 Migration Guide
 
+> For the stability guarantee and deprecation policy that governs this migration, see [compatibility.md](compatibility.md).
+
 This document covers every breaking change between the padduck v1 and v2 APIs, and explains how to update automation, webhooks, and direct API consumers before the v1 sunset date.
 
 ---
