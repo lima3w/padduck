@@ -61,7 +61,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
 		Import:         NewImportService(repo),
-		Jobs:           NewJobService(),
+		Jobs:           NewJobService(repo),
 		Webhooks:       webhookSvc,
 		Topology:       NewTopologyService(repo),
 		DNS:            dnsSvc,

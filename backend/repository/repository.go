@@ -22,3 +22,7 @@ func (r *Repository) Ping(ctx context.Context) error {
 func (r *Repository) GetPool() *pgxpool.Pool {
 	return r.db
 }
+
+func (r *Repository) HasPool() bool {
+	return r.db != nil
+}

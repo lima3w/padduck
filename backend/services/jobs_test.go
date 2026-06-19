@@ -11,7 +11,7 @@ import (
 )
 
 func TestJobServiceTracksProgressAndResult(t *testing.T) {
-	jobs := NewJobService()
+	jobs := NewJobService(nil)
 	job := jobs.Enqueue("test", "successful job", nil, 1, func(ctx context.Context, reporter *JobReporter) (interface{}, error) {
 		reporter.Progress(1, 2, "halfway")
 		reporter.Diagnostic("checkpoint")
@@ -27,7 +27,7 @@ func TestJobServiceTracksProgressAndResult(t *testing.T) {
 }
 
 func TestJobServiceCancelAndRetry(t *testing.T) {
-	jobs := NewJobService()
+	jobs := NewJobService(nil)
 	started := make(chan struct{})
 	var once sync.Once
 	job := jobs.Enqueue("test", "cancellable job", nil, 1, func(ctx context.Context, reporter *JobReporter) (interface{}, error) {
@@ -51,7 +51,7 @@ func TestJobServiceCancelAndRetry(t *testing.T) {
 }
 
 func TestJobServiceFailedJobCarriesDiagnostics(t *testing.T) {
-	jobs := NewJobService()
+	jobs := NewJobService(nil)
 	job := jobs.Enqueue("test", "failed job", nil, 1, func(ctx context.Context, reporter *JobReporter) (interface{}, error) {
 		return nil, errors.New("boom")
 	})

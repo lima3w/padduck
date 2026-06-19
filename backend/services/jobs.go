@@ -2,12 +2,16 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"padduck/repository"
 )
 
 type JobStatus string
@@ -66,10 +70,24 @@ type JobService struct {
 	mu     sync.RWMutex
 	nextID atomic.Int64
 	jobs   map[int64]*BackgroundJob
+	repo   *repository.Repository
 }
 
-func NewJobService() *JobService {
-	return &JobService{jobs: make(map[int64]*BackgroundJob)}
+// NewJobService creates a JobService. If repo is nil, jobs are tracked
+// in-memory only (useful in tests). With a real repo, job state is persisted
+// to the background_jobs table and stale running jobs are recovered on startup.
+func NewJobService(repo *repository.Repository) *JobService {
+	if repo != nil && !repo.HasPool() {
+		repo = nil
+	}
+	s := &JobService{
+		jobs: make(map[int64]*BackgroundJob),
+		repo: repo,
+	}
+	if repo != nil {
+		_ = repo.RecoverStaleJobs(context.Background())
+	}
+	return s
 }
 
 func (s *JobService) Enqueue(kind, name string, metadata map[string]interface{}, maxAttempts int, runner JobRunner) *BackgroundJob {
@@ -77,8 +95,20 @@ func (s *JobService) Enqueue(kind, name string, metadata map[string]interface{},
 		maxAttempts = 1
 	}
 	now := time.Now().UTC()
+
+	var id int64
+	if s.repo != nil {
+		var err error
+		id, err = s.repo.InsertJob(context.Background(), kind, name, metadata, maxAttempts)
+		if err != nil {
+			id = s.nextID.Add(1)
+		}
+	} else {
+		id = s.nextID.Add(1)
+	}
+
 	job := &BackgroundJob{
-		ID:          s.nextID.Add(1),
+		ID:          id,
 		Kind:        kind,
 		Name:        name,
 		Status:      JobQueued,
@@ -90,33 +120,55 @@ func (s *JobService) Enqueue(kind, name string, metadata map[string]interface{},
 	}
 
 	s.mu.Lock()
-	s.jobs[job.ID] = job
+	s.jobs[id] = job
 	out := publicJob(job)
 	s.mu.Unlock()
 
-	go s.run(job.ID)
+	go s.run(id)
 	return out
 }
 
+// List returns all in-memory (active/recent) jobs plus historical DB records
+// not currently in memory, sorted newest-first.
 func (s *JobService) List() []*BackgroundJob {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
+	inMemIDs := make(map[int64]struct{}, len(s.jobs))
 	out := make([]*BackgroundJob, 0, len(s.jobs))
-	for _, job := range s.jobs {
+	for id, job := range s.jobs {
+		inMemIDs[id] = struct{}{}
 		out = append(out, publicJob(job))
 	}
+	s.mu.RUnlock()
+
+	if s.repo != nil {
+		records, err := s.repo.ListJobRecords(context.Background(), 100)
+		if err == nil {
+			for _, rec := range records {
+				if _, ok := inMemIDs[rec.ID]; !ok {
+					out = append(out, jobFromRecord(rec))
+				}
+			}
+		}
+	}
+
 	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.After(out[j].CreatedAt) })
 	return out
 }
 
 func (s *JobService) Get(id int64) (*BackgroundJob, bool) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	job, ok := s.jobs[id]
-	if !ok {
-		return nil, false
+	s.mu.RUnlock()
+	if ok {
+		return publicJob(job), true
 	}
-	return publicJob(job), true
+	if s.repo != nil {
+		rec, err := s.repo.GetJobRecord(context.Background(), id)
+		if err == nil {
+			return jobFromRecord(rec), true
+		}
+	}
+	return nil, false
 }
 
 func (s *JobService) Cancel(id int64) (*BackgroundJob, error) {
@@ -124,6 +176,15 @@ func (s *JobService) Cancel(id int64) (*BackgroundJob, error) {
 	job, ok := s.jobs[id]
 	if !ok {
 		s.mu.Unlock()
+		// Check DB for historical job — can't cancel it, but report why.
+		if s.repo != nil {
+			rec, err := s.repo.GetJobRecord(context.Background(), id)
+			if err == nil {
+				if rec.Status != "queued" && rec.Status != "running" {
+					return nil, errors.New("job is not cancellable")
+				}
+			}
+		}
 		return nil, fmt.Errorf("job not found")
 	}
 	if job.Status != JobQueued && job.Status != JobRunning {
@@ -136,8 +197,12 @@ func (s *JobService) Cancel(id int64) (*BackgroundJob, error) {
 	job.FinishedAt = &now
 	out := publicJob(job)
 	s.mu.Unlock()
+
 	if cancel != nil {
 		cancel()
+	}
+	if s.repo != nil {
+		_ = s.repo.MarkJobCanceled(context.Background(), id)
 	}
 	return out, nil
 }
@@ -147,7 +212,7 @@ func (s *JobService) Retry(id int64) (*BackgroundJob, error) {
 	job, ok := s.jobs[id]
 	if !ok {
 		s.mu.Unlock()
-		return nil, fmt.Errorf("job not found")
+		return nil, fmt.Errorf("job not found or runner no longer available after restart")
 	}
 	if job.Status != JobFailed && job.Status != JobCanceled {
 		s.mu.Unlock()
@@ -187,7 +252,12 @@ func (s *JobService) run(id int64) {
 	job.FinishedAt = nil
 	job.cancel = cancel
 	runner := job.runner
+	attempts := job.Attempts
 	s.mu.Unlock()
+
+	if s.repo != nil {
+		_ = s.repo.MarkJobRunning(context.Background(), id, attempts)
+	}
 
 	result, err := runner(ctx, &JobReporter{service: s, jobID: id})
 
@@ -198,13 +268,18 @@ func (s *JobService) run(id int64) {
 	if job.runID != runID {
 		return
 	}
+
+	var finalStatus JobStatus
 	if job.Status == JobCanceled || errors.Is(err, context.Canceled) {
+		finalStatus = JobCanceled
 		job.Status = JobCanceled
 	} else if err != nil {
+		finalStatus = JobFailed
 		job.Status = JobFailed
 		job.Error = err.Error()
 		job.Diagnostics = append(job.Diagnostics, err.Error())
 	} else {
+		finalStatus = JobSucceeded
 		job.Status = JobSucceeded
 		job.Result = result
 		if job.Progress.Total > 0 {
@@ -214,6 +289,19 @@ func (s *JobService) run(id int64) {
 	finished := time.Now().UTC()
 	job.FinishedAt = &finished
 	job.cancel = nil
+
+	if s.repo != nil {
+		progress := 0
+		if job.Progress.Total > 0 {
+			progress = int(job.Progress.Current * 100 / job.Progress.Total)
+		}
+		diagnostic := strings.Join(job.Diagnostics, "\n")
+		var resultBytes []byte
+		if result != nil {
+			resultBytes, _ = json.Marshal(result)
+		}
+		_ = s.repo.MarkJobFinished(context.Background(), id, string(finalStatus), job.Error, diagnostic, progress, resultBytes)
+	}
 }
 
 func (s *JobService) setProgress(id, current, total int64, message string) {
@@ -246,4 +334,32 @@ func publicJob(job *BackgroundJob) *BackgroundJob {
 		}
 	}
 	return &cp
+}
+
+// jobFromRecord converts a DB-sourced JobRecord into a BackgroundJob.
+// The result has no runner or cancel func (the process that ran it may be gone).
+func jobFromRecord(rec *repository.JobRecord) *BackgroundJob {
+	job := &BackgroundJob{
+		ID:          rec.ID,
+		Kind:        rec.Kind,
+		Name:        rec.Name,
+		Status:      JobStatus(rec.Status),
+		MaxAttempts: rec.MaxAttempts,
+		Attempts:    rec.Attempts,
+		Error:       rec.ErrorMessage,
+		Metadata:    rec.Payload,
+		Result:      rec.Result,
+		CreatedAt:   rec.CreatedAt,
+		StartedAt:   rec.StartedAt,
+		FinishedAt:  rec.FinishedAt,
+	}
+	if rec.Progress > 0 {
+		job.Progress = JobProgress{Current: int64(rec.Progress), Total: 100}
+	}
+	if rec.Diagnostic != "" {
+		job.Diagnostics = strings.Split(rec.Diagnostic, "\n")
+	} else {
+		job.Diagnostics = []string{}
+	}
+	return job
 }
