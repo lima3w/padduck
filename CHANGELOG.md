@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.33.9
+
+### Added
+- **`--migrate-dry-run` flag**: pass `--migrate-dry-run` to the server binary to print all pending migration IDs and their SQL without applying them, then exit cleanly. Useful for pre-deploy validation.
+- **`V1_COMPAT_SUNSET` env var**: set to an ISO 8601 date (`YYYY-MM-DD`) to log a startup warning reminding operators to migrate API consumers before v1 routes are retired.
+- **`docs/migration-v1-to-v2.md`**: comprehensive migration guide covering response shape changes (new `{ data, meta }` envelope), field renames (`colour` → `color`), endpoint mapping table, webhook payload changes with before/after examples, automation script updates, and operator configuration reference.
+
 ## v1.33.8
 
 ### Added

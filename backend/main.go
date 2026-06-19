@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -160,6 +161,9 @@ func parseTrustedProxies(s string) []string {
 }
 
 func main() {
+	migrateDryRun := flag.Bool("migrate-dry-run", false, "Print pending migrations and their SQL without applying, then exit.")
+	flag.Parse()
+
 	initLogging()
 
 	// Load configuration
@@ -175,9 +179,25 @@ func main() {
 	}
 	defer database.Close()
 
+	// --migrate-dry-run: show pending migrations without applying, then exit.
+	if *migrateDryRun {
+		if _, err := database.DryRunMigrations("./migrations"); err != nil {
+			log.Fatalf("migrate-dry-run: %v", err)
+		}
+		return
+	}
+
 	// Run migrations
 	if err := database.RunMigrations("./migrations"); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
+	}
+
+	// Warn if a v1 API compat sunset date has been configured.
+	if cfg.V1CompatSunset != "" {
+		slog.Warn("v1 API compat mode: v1 routes will be retired after the configured sunset date",
+			"v1_compat_sunset", cfg.V1CompatSunset,
+			"action", "migrate consumers to /api/v2 before this date",
+		)
 	}
 
 	// Setup application layers

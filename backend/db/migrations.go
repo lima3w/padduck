@@ -41,3 +41,31 @@ func (db *DB) GetMigrationStatus(migrationsPath string) ([]*migrate.MigrationRec
 
 	return records, nil
 }
+
+// DryRunMigrations prints pending migrations and their SQL without applying them.
+// Returns the number of pending migrations.
+func (db *DB) DryRunMigrations(migrationsPath string) (int, error) {
+	sqlDB := sql.OpenDB(stdlib.GetConnector(*db.pool.Config().ConnConfig))
+	defer sqlDB.Close()
+
+	source := &migrate.FileMigrationSource{Dir: migrationsPath}
+	planned, _, err := migrate.PlanMigration(sqlDB, "postgres", source, migrate.Up, 0)
+	if err != nil {
+		return 0, fmt.Errorf("planning migrations: %w", err)
+	}
+
+	if len(planned) == 0 {
+		fmt.Println("No pending migrations.")
+		return 0, nil
+	}
+
+	fmt.Printf("%d pending migration(s):\n\n", len(planned))
+	for _, p := range planned {
+		fmt.Printf("--- %s ---\n", p.Migration.Id)
+		for _, q := range p.Queries {
+			fmt.Println(q)
+		}
+		fmt.Println()
+	}
+	return len(planned), nil
+}

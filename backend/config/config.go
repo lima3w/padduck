@@ -18,6 +18,10 @@ type Config struct {
 	ServerPort       string
 	Environment      string
 	MFAEncryptionKey string
+	// V1CompatSunset is an ISO 8601 date (YYYY-MM-DD) after which v1 API routes
+	// are considered retired. When set, the server logs a warning at startup.
+	// Configure via V1_COMPAT_SUNSET env var.
+	V1CompatSunset string
 }
 
 func Load() *Config {
@@ -37,6 +41,7 @@ func Load() *Config {
 		ServerPort:       getEnv("SERVER_PORT", "8080"),
 		Environment:      env,
 		MFAEncryptionKey: mfaKey,
+		V1CompatSunset:   strings.TrimSpace(getEnv("V1_COMPAT_SUNSET", "")),
 	}
 }
 
