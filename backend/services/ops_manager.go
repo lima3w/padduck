@@ -16,4 +16,5 @@ type OpsManager struct {
 	NetworkModules *NetworkModulesService
 	IPAM           *IPAMService
 	Identity       *IdentityService
+	Infrastructure *InfrastructureService
 }

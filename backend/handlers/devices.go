@@ -16,7 +16,7 @@ func (h *Handler) ListDeviceTypes(c *fiber.Ctx) error {
 		return nil
 	}
 
-	types, err := h.service.ListDeviceTypes(c.Context())
+	types, err := h.ops.Infrastructure.ListDeviceTypes(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing device types", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -34,7 +34,7 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 	page, limit, opts := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" || opts.Sort != "" || opts.Query != "" {
 		offset := (page - 1) * limit
-		devices, total, err := h.service.ListDevicesWithOptions(c.Context(), limit, offset, opts)
+		devices, total, err := h.ops.Infrastructure.ListDevicesWithOptions(c.Context(), limit, offset, opts)
 		if err != nil {
 			reqLogger(c).Error("error listing devices", "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -50,7 +50,7 @@ func (h *Handler) ListDevices(c *fiber.Ctx) error {
 		})
 	}
 
-	devices, err := h.service.ListAllDevices(c.Context())
+	devices, err := h.ops.Infrastructure.ListAllDevices(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing devices", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -77,7 +77,7 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "hostname is required")
 	}
 
-	device, err := h.service.CreateDevice(c.Context(), req)
+	device, err := h.ops.Infrastructure.CreateDevice(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating device", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -97,7 +97,7 @@ func (h *Handler) GetDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 
-	device, err := h.service.GetDevice(c.Context(), int64(id))
+	device, err := h.ops.Infrastructure.GetDevice(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "device not found")
@@ -130,7 +130,7 @@ func (h *Handler) UpdateDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "hostname is required")
 	}
 
-	device, err := h.service.UpdateDevice(c.Context(), int64(id), req)
+	device, err := h.ops.Infrastructure.UpdateDevice(c.Context(), int64(id), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "device not found")
@@ -153,7 +153,7 @@ func (h *Handler) DeleteDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 
-	if err := h.service.DeleteDevice(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Infrastructure.DeleteDevice(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "device not found")
 		}
@@ -175,7 +175,7 @@ func (h *Handler) GetDeviceSNMPCredentials(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 
-	creds, err := h.service.GetDeviceSNMPCredentials(c.Context(), int64(id))
+	creds, err := h.ops.Infrastructure.GetDeviceSNMPCredentials(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "device not found")
@@ -198,7 +198,7 @@ func (h *Handler) ListDeviceIPAddresses(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 
-	ips, err := h.service.ListDeviceIPAddresses(c.Context(), int64(id))
+	ips, err := h.ops.Infrastructure.ListDeviceIPAddresses(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error listing IP addresses for device", "device_id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -233,7 +233,7 @@ func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	if err := h.service.AssociateIPToDevice(c.Context(), int64(id), int64(ipID), req.InterfaceName, req.IsPrimary); err != nil {
+	if err := h.ops.Infrastructure.AssociateIPToDevice(c.Context(), int64(id), int64(ipID), req.InterfaceName, req.IsPrimary); err != nil {
 		reqLogger(c).Error("error associating IP to device", "device_id", id, "ip_id", ipID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -257,7 +257,7 @@ func (h *Handler) UnlinkIPFromDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid IP address ID")
 	}
 
-	if err := h.service.UnlinkIPFromDevice(c.Context(), int64(id), int64(ipID)); err != nil {
+	if err := h.ops.Infrastructure.UnlinkIPFromDevice(c.Context(), int64(id), int64(ipID)); err != nil {
 		if errors.Is(err, services.ErrNotAssociated) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
 		}
@@ -279,7 +279,7 @@ func (h *Handler) ListDeviceInterfaces(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid device ID")
 	}
 
-	ifaces, err := h.service.ListDeviceInterfaces(c.Context(), int64(id))
+	ifaces, err := h.ops.Infrastructure.ListDeviceInterfaces(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error listing interfaces for device", "device_id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -309,7 +309,7 @@ func (h *Handler) CreateDeviceInterface(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "interface name is required")
 	}
 
-	iface, err := h.service.CreateDeviceInterface(c.Context(), int64(id), req)
+	iface, err := h.ops.Infrastructure.CreateDeviceInterface(c.Context(), int64(id), req)
 	if err != nil {
 		reqLogger(c).Error("error creating interface for device", "device_id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -344,7 +344,7 @@ func (h *Handler) UpdateDeviceInterface(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "interface name is required")
 	}
 
-	iface, err := h.service.UpdateDeviceInterface(c.Context(), int64(id), int64(ifID), req)
+	iface, err := h.ops.Infrastructure.UpdateDeviceInterface(c.Context(), int64(id), int64(ifID), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "interface not found")
@@ -372,7 +372,7 @@ func (h *Handler) DeleteDeviceInterface(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid interface ID")
 	}
 
-	if err := h.service.DeleteDeviceInterface(c.Context(), int64(id), int64(ifID)); err != nil {
+	if err := h.ops.Infrastructure.DeleteDeviceInterface(c.Context(), int64(id), int64(ifID)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "interface not found")
 		}
@@ -413,7 +413,7 @@ func (h *Handler) SearchDevices(c *fiber.Ctx) error {
 		VLANID:    req.VLANID,
 	}
 
-	devices, err := h.service.SearchDevices(c.Context(), filter, req.CustomFields)
+	devices, err := h.ops.Infrastructure.SearchDevices(c.Context(), filter, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error searching devices", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

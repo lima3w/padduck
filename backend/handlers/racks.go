@@ -21,7 +21,7 @@ func (h *Handler) ListRacks(c *fiber.Ctx) error {
 		locationID = &id
 	}
 
-	racks, err := h.service.ListRacks(c.Context(), locationID)
+	racks, err := h.ops.Infrastructure.ListRacks(c.Context(), locationID)
 	if err != nil {
 		reqLogger(c).Error("error listing racks", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -45,7 +45,7 @@ func (h *Handler) CreateRack(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "rack name is required")
 	}
 
-	rack, err := h.service.CreateRack(c.Context(), req)
+	rack, err := h.ops.Infrastructure.CreateRack(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating rack", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -64,7 +64,7 @@ func (h *Handler) GetRack(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid rack ID")
 	}
 
-	rack, err := h.service.GetRack(c.Context(), int64(id))
+	rack, err := h.ops.Infrastructure.GetRack(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "rack not found")
@@ -96,7 +96,7 @@ func (h *Handler) UpdateRack(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "rack name is required")
 	}
 
-	rack, err := h.service.UpdateRack(c.Context(), int64(id), req)
+	rack, err := h.ops.Infrastructure.UpdateRack(c.Context(), int64(id), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "rack not found")
@@ -118,7 +118,7 @@ func (h *Handler) DeleteRack(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid rack ID")
 	}
 
-	if err := h.service.DeleteRack(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Infrastructure.DeleteRack(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "rack not found")
 		}
@@ -139,7 +139,7 @@ func (h *Handler) ListDevicesInRack(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid rack ID")
 	}
 
-	devices, err := h.service.ListDevicesInRack(c.Context(), int64(id))
+	devices, err := h.ops.Infrastructure.ListDevicesInRack(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error listing devices in rack", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

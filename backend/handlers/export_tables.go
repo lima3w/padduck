@@ -53,7 +53,7 @@ func (h *Handler) ExportDevicesCSV(c *fiber.Ctx) error {
 		return nil
 	}
 
-	devices, err := h.service.ListAllDevices(c.Context())
+	devices, err := h.ops.Infrastructure.ListAllDevices(c.Context())
 	if err != nil {
 		reqLogger(c).Error("export devices CSV failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

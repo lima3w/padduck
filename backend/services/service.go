@@ -54,6 +54,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	}
 	dnsSvc := NewDNSService(configSvc, repo)
 	identitySvc := NewIdentityService(repo, configSvc, emailSvc, mfaSvc, notificationSvc)
+	infraSvc := NewInfrastructureService(repo, mfaEncryptionKey)
 	svc.Ops = &OpsManager{
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
@@ -67,6 +68,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		NetworkModules: NewNetworkModulesService(repo),
 		IPAM:           NewIPAMService(repo, configSvc, dnsSvc),
 		Identity:       identitySvc,
+		Infrastructure: infraSvc,
 	}
 	return svc
 }
@@ -89,6 +91,11 @@ func (s *Service) CreateIPAddress(ctx context.Context, subnetID int64, address, 
 // ReleaseIPAddress forwards to IPAMService to satisfy the automationIPAM interface.
 func (s *Service) ReleaseIPAddress(ctx context.Context, id int64) (*models.IPAddress, error) {
 	return s.Ops.IPAM.ReleaseIPAddress(ctx, id)
+}
+
+// CreateDevice forwards to InfrastructureService to satisfy the automationIPAM interface.
+func (s *Service) CreateDevice(ctx context.Context, req *DeviceCreateRequest) (*models.Device, error) {
+	return s.Ops.Infrastructure.CreateDevice(ctx, req)
 }
 
 // InitAdminPassword forwards to IdentityService (called from main.go startup).

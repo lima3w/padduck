@@ -19,7 +19,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 
 	page, limit, _ := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" {
-		locs, total, err := h.service.ListLocationsPaginated(c.Context(), page, limit)
+		locs, total, err := h.ops.Infrastructure.ListLocationsPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing locations", "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -35,7 +35,7 @@ func (h *Handler) ListLocations(c *fiber.Ctx) error {
 		})
 	}
 
-	locs, err := h.service.ListLocations(c.Context())
+	locs, err := h.ops.Infrastructure.ListLocations(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing locations", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -51,7 +51,7 @@ func (h *Handler) GetLocationTree(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2LocationList) {
 		return nil
 	}
-	tree, err := h.service.GetLocationTree(c.Context())
+	tree, err := h.ops.Infrastructure.GetLocationTree(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error getting location tree", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -75,7 +75,7 @@ func (h *Handler) CreateLocation(c *fiber.Ctx) error {
 	if len(req.Name) > 255 {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name must be 255 characters or fewer")
 	}
-	loc, err := h.service.CreateLocation(c.Context(), req)
+	loc, err := h.ops.Infrastructure.CreateLocation(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating location", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -92,7 +92,7 @@ func (h *Handler) GetLocation(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid location ID")
 	}
-	loc, err := h.service.GetLocation(c.Context(), int64(id))
+	loc, err := h.ops.Infrastructure.GetLocation(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "location not found")
@@ -123,7 +123,7 @@ func (h *Handler) UpdateLocation(c *fiber.Ctx) error {
 	if len(req.Name) > 255 {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "location name must be 255 characters or fewer")
 	}
-	loc, err := h.service.UpdateLocation(c.Context(), int64(id), req)
+	loc, err := h.ops.Infrastructure.UpdateLocation(c.Context(), int64(id), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "location not found")
@@ -143,7 +143,7 @@ func (h *Handler) DeleteLocation(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid location ID")
 	}
-	if err := h.service.DeleteLocation(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Infrastructure.DeleteLocation(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "location not found")
 		}

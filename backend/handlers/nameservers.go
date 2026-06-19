@@ -14,7 +14,7 @@ func (h *Handler) ListNameservers(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2NameserverList) {
 		return nil
 	}
-	ns, err := h.service.ListNameservers(c.Context())
+	ns, err := h.ops.Infrastructure.ListNameservers(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing nameservers", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -31,7 +31,7 @@ func (h *Handler) GetNameserver(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid nameserver ID")
 	}
-	ns, err := h.service.GetNameserver(c.Context(), int64(id))
+	ns, err := h.ops.Infrastructure.GetNameserver(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "nameserver not found")
@@ -59,7 +59,7 @@ func (h *Handler) CreateNameserver(c *fiber.Ctx) error {
 	if req.Server1 == "" {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "server1 is required")
 	}
-	ns, err := h.service.CreateNameserver(c.Context(), req)
+	ns, err := h.ops.Infrastructure.CreateNameserver(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating nameserver", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -93,7 +93,7 @@ func (h *Handler) UpdateNameserver(c *fiber.Ctx) error {
 	if req.Server1 == "" {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "server1 is required")
 	}
-	ns, err := h.service.UpdateNameserver(c.Context(), int64(id), req)
+	ns, err := h.ops.Infrastructure.UpdateNameserver(c.Context(), int64(id), req)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "nameserver not found")
@@ -118,7 +118,7 @@ func (h *Handler) DeleteNameserver(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid nameserver ID")
 	}
-	if err := h.service.DeleteNameserver(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Infrastructure.DeleteNameserver(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "nameserver not found")
 		}
