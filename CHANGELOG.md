@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.7
+
+### Added
+- **Persistent background jobs**: job state is now written to a new `background_jobs` PostgreSQL table (migration `20260618_001_background_jobs`). `JobService` inserts a row on `Enqueue`, marks it `running` when the goroutine starts, and writes the final status, progress percentage, diagnostics, and result on completion. `List()` merges live in-memory jobs with DB history so completed jobs survive process restarts. `Get()` falls back to the DB when the job is no longer in memory. `Cancel()` updates the DB row. On startup, any rows still marked `running` are automatically reset to `failed` (crash recovery). `Retry()` still requires the runner closure to be in memory (closures can't be serialized). `NewJobService(nil)` keeps the original in-memory-only behavior for tests.
+
 ## v1.33.6
 
 ### Added
