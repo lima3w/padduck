@@ -223,6 +223,9 @@ const (
 	PermV2FirewallRead   = "ipam:firewall:read"
 	PermV2FirewallWrite  = "ipam:firewall:write"
 	PermV2FirewallDelete = "ipam:firewall:delete"
+
+	PermV2OrgRead  = "auth:org:read"
+	PermV2OrgWrite = "auth:org:write"
 )
 
 var AllPermissions = []string{
@@ -245,6 +248,7 @@ var AllPermissions = []string{
 	PermV2DHCPList, PermV2DHCPRead, PermV2DHCPWrite, PermV2DHCPDelete,
 	PermV2CircuitList, PermV2CircuitRead, PermV2CircuitWrite, PermV2CircuitDelete,
 	PermV2FirewallList, PermV2FirewallRead, PermV2FirewallWrite, PermV2FirewallDelete,
+	PermV2OrgRead, PermV2OrgWrite,
 }
 
 // ResourceScope identifies a resource that a permission check should be scoped to.
@@ -395,6 +399,7 @@ func legacyRoleHasPermission(role, permission string) bool {
 			PermV2DHCPWrite: true, PermV2DHCPDelete: true,
 			PermV2CircuitWrite: true, PermV2CircuitDelete: true,
 			PermV2FirewallWrite: true, PermV2FirewallDelete: true,
+			PermV2OrgRead: true, PermV2OrgWrite: true,
 		}
 		return !adminOnly[permission]
 	case "viewer":

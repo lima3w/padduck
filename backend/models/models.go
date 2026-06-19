@@ -27,6 +27,14 @@ type CustomFieldValue struct {
 	Value        *string `json:"value"`
 }
 
+// Organization is the top-level isolation boundary for multi-tenancy.
+type Organization struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // User represents a system user
 type User struct {
 	ID                     int64
@@ -46,6 +54,7 @@ type User struct {
 	ExternalAuthProvider   *string
 	ExternalAuthID         *string
 	AvatarSource           string // "gravatar" or "custom"
+	OrganizationID         *int64
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
