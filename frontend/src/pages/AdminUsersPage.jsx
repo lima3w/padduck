@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
-import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser, adminUnlockUser, suspendUser, unsuspendUser, impersonateUser, sendPasswordResetEmail, updateUserEmail, gdprDeleteUser, bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers, getBreakGlassStatus, activateBreakGlass, endBreakGlass } from '../api/admin'
+import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser, adminUnlockUser, suspendUser, unsuspendUser, impersonateUser, sendPasswordResetEmail, updateUserEmail, gdprDeleteUser, bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers, getBreakGlassStatus, activateBreakGlass, endBreakGlass, listUserGrants, createGrant, revokeGrant } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
@@ -322,6 +322,11 @@ export default function AdminUsersPage() {
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [expandedUser, setExpandedUser] = useState(null)
   const [userRoles, setUserRoles] = useState({}) // userId -> roles[]
+  const [userGrants, setUserGrants] = useState({}) // userId -> grants[]
+  const [grantModal, setGrantModal] = useState(null) // userId
+  const [grantForm, setGrantForm] = useState({ permission: '', scope_type: '', scope_id: '' })
+  const [grantError, setGrantError] = useState('')
+  const [revokeConfirm, setRevokeConfirm] = useState(null) // { userId, grantId }
   const [assignModal, setAssignModal] = useState(null) // userId
   const [assignForm, setAssignForm] = useState(ASSIGN_EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -380,6 +385,13 @@ export default function AdminUsersPage() {
     } catch {}
   }
 
+  async function loadUserGrants(userId) {
+    try {
+      const res = await listUserGrants(userId)
+      setUserGrants(prev => ({ ...prev, [userId]: res.data?.grants ?? [] }))
+    } catch {}
+  }
+
   async function toggleExpand(userId) {
     if (expandedUser === userId) {
       setExpandedUser(null)
@@ -388,6 +400,44 @@ export default function AdminUsersPage() {
     setExpandedUser(userId)
     if (!userRoles[userId]) {
       await loadUserRoles(userId)
+    }
+    if (!userGrants[userId]) {
+      await loadUserGrants(userId)
+    }
+  }
+
+  function openGrantModal(userId) {
+    setGrantForm({ permission: '', scope_type: '', scope_id: '' })
+    setGrantError('')
+    setGrantModal(userId)
+  }
+
+  async function handleGrantSubmit(e) {
+    e.preventDefault()
+    setGrantError('')
+    if (!grantForm.permission) { setGrantError('Permission is required'); return }
+    setSaving(true)
+    try {
+      const body = { user_id: grantModal, permission: grantForm.permission }
+      if (grantForm.scope_type) body.scope_type = grantForm.scope_type
+      if (grantForm.scope_id) body.scope_id = parseInt(grantForm.scope_id)
+      await createGrant(body)
+      setGrantModal(null)
+      await loadUserGrants(grantModal)
+    } catch (err) {
+      setGrantError(err.response?.data?.error || err.message || 'Failed to create grant')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleRevokeGrant(userId, grantId) {
+    try {
+      await revokeGrant(grantId)
+      setRevokeConfirm(null)
+      await loadUserGrants(userId)
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Failed to revoke grant')
     }
   }
 
@@ -742,24 +792,25 @@ export default function AdminUsersPage() {
                 </tr>
                 {expandedUser === user.id && (
                   <tr key={`${user.id}-roles`} className="border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-700/20">
-                    <td colSpan={7} className="px-8 py-3">
-                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                        Assigned Custom Roles
-                      </div>
-                      {!userRoles[user.id] ? (
-                        <p className="text-sm text-gray-400">Loading...</p>
-                      ) : userRoles[user.id].length === 0 ? (
-                        <p className="text-sm text-gray-400">No custom roles assigned.</p>
-                      ) : (
-                        <div className="space-y-1">
-                          {userRoles[user.id].map(ur => (
-                            <div key={ur.id} className="flex items-center justify-between gap-3 py-1.5 px-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700">
-                              <div>
-                                <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{ur.name || `Role #${ur.id}`}</span>
-                                {ur.description && (
-                                  <span className="ml-2 text-xs text-gray-400">{ur.description}</span>
-                                )}
-                              </div>
+                    <td colSpan={7} className="px-8 py-3 space-y-4">
+                      <div>
+                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                          Assigned Custom Roles
+                        </div>
+                        {!userRoles[user.id] ? (
+                          <p className="text-sm text-gray-400">Loading...</p>
+                        ) : userRoles[user.id].length === 0 ? (
+                          <p className="text-sm text-gray-400">No custom roles assigned.</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {userRoles[user.id].map(ur => (
+                              <div key={ur.id} className="flex items-center justify-between gap-3 py-1.5 px-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700">
+                                <div>
+                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{ur.name || `Role #${ur.id}`}</span>
+                                  {ur.description && (
+                                    <span className="ml-2 text-xs text-gray-400">{ur.description}</span>
+                                  )}
+                                </div>
                                 <div>
                                   {removeConfirm?.userId === user.id && removeConfirm?.roleId === ur.id ? (
                                     <span className="space-x-2">
@@ -782,8 +833,61 @@ export default function AdminUsersPage() {
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Direct Permission Grants
+                          </div>
+                          <button
+                            onClick={() => openGrantModal(user.id)}
+                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                          >+ Add Grant</button>
                         </div>
-                      )}
+                        {!userGrants[user.id] ? (
+                          <p className="text-sm text-gray-400">Loading...</p>
+                        ) : userGrants[user.id].length === 0 ? (
+                          <p className="text-sm text-gray-400">No direct grants.</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {userGrants[user.id].map(g => (
+                              <div key={g.id} className="flex items-center justify-between gap-3 py-1.5 px-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-sm font-mono text-gray-800 dark:text-gray-100">{g.permission}</span>
+                                  {g.scope_type && (
+                                    <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded">
+                                      {g.scope_type}:{g.scope_id}
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  {revokeConfirm?.userId === user.id && revokeConfirm?.grantId === g.id ? (
+                                    <span className="space-x-2">
+                                      <span className="text-red-600 text-xs">Revoke?</span>
+                                      <button
+                                        onClick={() => handleRevokeGrant(user.id, g.id)}
+                                        className="text-red-600 hover:text-red-800 text-xs font-medium"
+                                      >Yes</button>
+                                      <button
+                                        onClick={() => setRevokeConfirm(null)}
+                                        className="text-gray-400 hover:text-gray-600 text-xs"
+                                      >No</button>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => setRevokeConfirm({ userId: user.id, grantId: g.id })}
+                                      className="text-gray-400 hover:text-red-600 text-xs"
+                                    >Revoke</button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -975,6 +1079,65 @@ export default function AdminUsersPage() {
               >
                 {saving ? 'Assigning...' : 'Assign Role'}
               </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {grantModal && (
+        <Modal title="Add Direct Permission Grant" onClose={() => setGrantModal(null)}>
+          <form onSubmit={handleGrantSubmit} className="space-y-4">
+            {grantError && <p className="text-red-600 text-sm">{grantError}</p>}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Permission <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. ipam:subnet:write"
+                className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={grantForm.permission}
+                onChange={e => setGrantForm(f => ({ ...f, permission: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Scope type <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. network"
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={grantForm.scope_type}
+                onChange={e => setGrantForm(f => ({ ...f, scope_type: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Scope ID <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="number"
+                placeholder="e.g. 5"
+                className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                value={grantForm.scope_id}
+                onChange={e => setGrantForm(f => ({ ...f, scope_id: e.target.value }))}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Leave scope blank for a global grant. Scoped grants only apply to the specified resource.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setGrantModal(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >Cancel</button>
+              <button
+                type="submit"
+                disabled={saving || !grantForm.permission}
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              >{saving ? 'Granting...' : 'Grant Permission'}</button>
             </div>
           </form>
         </Modal>

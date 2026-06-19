@@ -323,6 +323,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/users/:id/roles", h.AssignRoleToUser)
 	admin.Delete("/users/:id/roles/:role_id", h.RemoveRoleFromUser)
 
+	// Direct permission grants (v1.33.13)
+	admin.Get("/users/:id/grants", h.ListUserGrants)
+	admin.Post("/role-grants", h.CreateGrant)
+	admin.Delete("/role-grants/:id", h.RevokeGrant)
+
 	// User suspension (v0.8.14 #168)
 	admin.Post("/users/:id/suspend", h.SuspendUser)
 	admin.Post("/users/:id/unsuspend", h.UnsuspendUser)
