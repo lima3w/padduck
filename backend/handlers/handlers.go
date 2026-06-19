@@ -663,6 +663,15 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	asSystems.Put("/:id", h.UpdateAutonomousSystem)
 	asSystems.Delete("/:id", h.DeleteAutonomousSystem)
 
+	// Platform admin routes (v1.33.15) — require is_platform_admin flag
+	platform := protected.Group("/platform")
+	platform.Use(h.PlatformAdminMiddleware)
+	platform.Get("/organizations", h.ListPlatformOrganizations)
+	platform.Get("/organizations/:id", h.GetPlatformOrganization)
+	platform.Get("/audit-log", h.GetPlatformAuditLog)
+	platform.Post("/impersonate", h.PlatformImpersonate)
+	platform.Put("/users/:id/platform-admin", h.SetPlatformAdmin)
+
 	// API v2 routes — new endpoint contract with standard pagination envelope.
 	// v1 equivalents that have a v2 counterpart emit Deprecation headers.
 	v2 := app.Group("/api/v2")

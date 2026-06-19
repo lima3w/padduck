@@ -55,6 +55,7 @@ type User struct {
 	ExternalAuthID         *string
 	AvatarSource           string // "gravatar" or "custom"
 	OrganizationID         *int64
+	IsPlatformAdmin        bool
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -178,6 +179,7 @@ type APIToken struct {
 	LastUsedIP             *string    `json:"last_used_ip,omitempty"`
 	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
 	RotationGraceExpiresAt *time.Time `json:"rotation_grace_expires_at,omitempty"`
+	ImpersonatedOrgID      *int64     `json:"impersonated_org_id,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }

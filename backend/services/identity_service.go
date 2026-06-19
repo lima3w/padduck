@@ -1246,6 +1246,22 @@ func (s *IdentityService) GenerateAPIToken(ctx context.Context, userID int64, to
 	return token, nil
 }
 
+func (s *IdentityService) GenerateImpersonationToken(ctx context.Context, adminUserID, targetOrgID int64) (string, *models.APIToken, error) {
+	tokenBytes := make([]byte, TokenLength)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", nil, err
+	}
+	token := hex.EncodeToString(tokenBytes)
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+	expiresAt := time.Now().UTC().Add(time.Hour)
+	apiToken, err := s.repo.CreateImpersonationToken(ctx, adminUserID, tokenHash, fmt.Sprintf("platform-impersonate-org-%d", targetOrgID), targetOrgID, expiresAt)
+	if err != nil {
+		return "", nil, err
+	}
+	return token, apiToken, nil
+}
+
 func (s *IdentityService) ValidateAPIToken(ctx context.Context, token, ip string) (*models.User, *models.APIToken, error) {
 	if token == "" {
 		return nil, nil, fmt.Errorf("token is required")

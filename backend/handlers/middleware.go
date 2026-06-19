@@ -27,6 +27,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 			c.Locals("userID", user.ID)
 			c.Locals("sessionID", session.ID)
 			c.Locals("orgID", user.OrganizationID)
+			c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
 			return c.Next()
 		}
 	}
@@ -57,7 +58,13 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 
 	c.Locals("user", user)
 	c.Locals("userID", user.ID)
-	c.Locals("orgID", user.OrganizationID)
+	c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
+	// Impersonation tokens carry an org override; use it as the effective org.
+	if apiToken != nil && apiToken.ImpersonatedOrgID != nil {
+		c.Locals("orgID", apiToken.ImpersonatedOrgID)
+	} else {
+		c.Locals("orgID", user.OrganizationID)
+	}
 
 	// Store token scope and enforce rate limit
 	if apiToken != nil {
@@ -91,6 +98,14 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// PlatformAdminMiddleware rejects non-platform-admins with 403.
+func (h *Handler) PlatformAdminMiddleware(c *fiber.Ctx) error {
+	if ok, _ := c.Locals("isPlatformAdmin").(bool); !ok {
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "platform admin access required")
+	}
+	return c.Next()
+}
+
 // RequireBearerAuth rejects requests that authenticated via session cookie instead of a Bearer token.
 // Use on endpoints designed for server-to-server API calls (e.g., Grafana datasource) to prevent CSRF.
 func (h *Handler) RequireBearerAuth(c *fiber.Ctx) error {
@@ -111,6 +126,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 			c.Locals("userID", user.ID)
 			c.Locals("sessionID", session.ID)
 			c.Locals("orgID", user.OrganizationID)
+			c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
 			return c.Next()
 		}
 	}
@@ -126,11 +142,16 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 		return c.Next()
 	}
 
-	user, _, err := h.ops.Identity.ValidateAPIToken(c.Context(), parts[1], c.IP())
+	user, apiToken, err := h.ops.Identity.ValidateAPIToken(c.Context(), parts[1], c.IP())
 	if err == nil {
 		c.Locals("user", user)
 		c.Locals("userID", user.ID)
-		c.Locals("orgID", user.OrganizationID)
+		c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
+		if apiToken != nil && apiToken.ImpersonatedOrgID != nil {
+			c.Locals("orgID", apiToken.ImpersonatedOrgID)
+		} else {
+			c.Locals("orgID", user.OrganizationID)
+		}
 	}
 
 	return c.Next()
