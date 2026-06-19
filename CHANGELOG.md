@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.11
+
+### Added
+- **`docs/compatibility.md`**: API compatibility policy defining the support window (v1 active → maintenance at v2.0.0 → end of life at v3.0.0 earliest), breaking change definition, non-breaking addition categories, deprecation process (minimum two release cycles + `Deprecation` header), breaking change registry, endpoint stability table, and an operator upgrade checklist for API consumers, webhook consumers, and infrastructure operators.
+- Linked from `docs/migration-v1-to-v2.md` and `README.md`.
+
 ## v1.33.10
 
 ### Fixed

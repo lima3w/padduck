@@ -65,6 +65,8 @@ Full documentation is on the [GitHub Wiki](https://github.com/lima3w/padduck/wik
 - [User Guide](https://github.com/lima3w/padduck/wiki/User-Guide)
 - [API Documentation](https://github.com/lima3w/padduck/wiki/API-Documentation)
 - [Troubleshooting](https://github.com/lima3w/padduck/wiki/Troubleshooting)
+- [v1 → v2 Migration Guide](docs/migration-v1-to-v2.md)
+- [API Compatibility Policy](docs/compatibility.md)
 
 ## Development Conventions
 
