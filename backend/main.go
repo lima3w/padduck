@@ -211,6 +211,11 @@ func main() {
 		log.Fatalf("Failed to initialize admin password: %v", err)
 	}
 
+	// Ensure default organization exists (seeds existing users on upgrade)
+	if _, err := svc.Ops.Organizations.EnsureDefault(ctx); err != nil {
+		log.Fatalf("Failed to ensure default organization: %v", err)
+	}
+
 	// Start notification queue worker
 	svc.Auth.Notification.StartWorker(ctx)
 	svc.Ops.Webhooks.StartWorker(ctx)

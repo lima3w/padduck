@@ -26,6 +26,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 			c.Locals("user", user)
 			c.Locals("userID", user.ID)
 			c.Locals("sessionID", session.ID)
+			c.Locals("orgID", user.OrganizationID)
 			return c.Next()
 		}
 	}
@@ -56,6 +57,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 
 	c.Locals("user", user)
 	c.Locals("userID", user.ID)
+	c.Locals("orgID", user.OrganizationID)
 
 	// Store token scope and enforce rate limit
 	if apiToken != nil {
@@ -108,6 +110,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 			c.Locals("user", user)
 			c.Locals("userID", user.ID)
 			c.Locals("sessionID", session.ID)
+			c.Locals("orgID", user.OrganizationID)
 			return c.Next()
 		}
 	}
@@ -127,6 +130,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 	if err == nil {
 		c.Locals("user", user)
 		c.Locals("userID", user.ID)
+		c.Locals("orgID", user.OrganizationID)
 	}
 
 	return c.Next()

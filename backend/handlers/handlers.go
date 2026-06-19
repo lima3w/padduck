@@ -301,6 +301,11 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Put("/audit/retention", h.UpdateAuditRetention)
 	admin.Post("/audit/prune", h.PruneAuditLogs)
 
+	// Organizations (v1.33.12)
+	admin.Get("/organizations", h.ListOrganizations)
+	admin.Post("/organizations", h.CreateOrganization)
+	admin.Delete("/organizations/:id", h.DeleteOrganization)
+
 	// Role management
 	admin.Get("/roles", h.ListRoles)
 	admin.Post("/roles", h.CreateRole)

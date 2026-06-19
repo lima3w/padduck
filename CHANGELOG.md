@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.33.12
+
+### Added
+- **Organizations scaffold** (issue #8): multi-tenancy foundation with an `organizations` table, nullable `organization_id` FK on `users`, and a seed migration that assigns all existing users to a default "Default" org on upgrade.
+- **`OrganizationService`** (`services/organization_service.go`): `Create` (validates lowercase-alphanumeric-hyphen slug), `Get`, `List`, `Delete`, `EnsureDefault` (idempotent startup seeder).
+- **`repository/organizations.go`**: `CreateOrganization`, `GetOrganization`, `GetOrganizationBySlug`, `ListOrganizations`, `DeleteOrganization`, `OrganizationExists`, `EnsureDefaultOrganization`.
+- **`models.Organization`** struct; `User.OrganizationID *int64` field added to the `User` model and reflected in all repository SELECT/Scan calls.
+- **Admin REST API** under `/api/v1/admin/organizations`: `GET` (list), `POST` (create), `DELETE /:id`. Protected by new `auth:org:read` / `auth:org:write` permissions (admin-only via legacy role map).
+- **`orgID` in Fiber context**: `AuthMiddleware` and `OptionalAuthMiddleware` now store `user.OrganizationID` in `c.Locals("orgID")` for both session-cookie and Bearer-token auth paths.
+- **Startup seeding**: `main.go` calls `svc.Ops.Organizations.EnsureDefault(ctx)` after admin password init, creating the default org and assigning orphaned users on first boot after upgrade.
+
 ## v1.33.11
 
 ### Added

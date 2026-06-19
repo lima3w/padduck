@@ -20,4 +20,5 @@ type OpsManager struct {
 	Customers      *CustomerService
 	Workflow       *WorkflowService
 	EventBus       *EventBus
+	Organizations  *OrganizationService
 }
