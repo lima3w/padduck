@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.33.14
+
+### Added
+- **Org-scoped API tokens, webhooks, audit logs, reports, and dashboard** (issue #10): all major data surfaces now carry an `organization_id` column (migration `20260619_003_org_scope.up.sql`) and are automatically filtered to the caller's org via the `orgID` already stored in Fiber context by `AuthMiddleware`.
+- **`PermV2PlatformAdmin` (`auth:platform:admin`)**: new admin-only permission that allows cross-org audit log queries via `GET /api/v1/admin/audit?all_orgs=true`, useful for platform-level compliance audits.
+- **`orgIDFromCtx` helper** in `handlers/audit_helper.go`: extracts `*int64` org from Fiber locals; `auditLog` auto-injects it into every `AuditEntry` when not explicitly set.
+- **Repository changes**: `ListAPITokenAnalytics`, `ListWebhookEndpoints`, `CreateWebhookEndpoint`, `ListScheduledReports`, `CreateScheduledReport`, `GetDashboardSummary` all accept an `orgID *int64` parameter; `nil` is used by background workers to query across all orgs without filtering.
+- **Cache bypass for org-scoped queries**: `IPAMService.GetDashboardSummary` and `ReportsService.ListScheduledReports` skip the global cache when `orgID` is non-nil to prevent cross-org cache poisoning.
+
 ## v1.33.13
 
 ### Added

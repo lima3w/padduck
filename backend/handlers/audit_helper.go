@@ -6,10 +6,13 @@ import (
 	"padduck/services"
 )
 
-// auditLog writes an audit log entry, injecting IP and user-agent from the request.
+// auditLog writes an audit log entry, injecting IP, user-agent, and orgID from the request.
 func (h *Handler) auditLog(c *fiber.Ctx, entry services.AuditEntry) {
 	entry.IPAddress = c.IP()
 	entry.UserAgent = c.Get("User-Agent")
+	if entry.OrgID == nil {
+		entry.OrgID = orgIDFromCtx(c)
+	}
 	h.service.Audit.Log(c.Context(), entry)
 }
 
@@ -20,4 +23,10 @@ func auditUserFromCtx(c *fiber.Ctx) (userID *int64, username string) {
 		return &id, u.Username
 	}
 	return nil, ""
+}
+
+// orgIDFromCtx extracts the caller's organization ID from context (set by AuthMiddleware).
+func orgIDFromCtx(c *fiber.Ctx) *int64 {
+	v, _ := c.Locals("orgID").(*int64)
+	return v
 }

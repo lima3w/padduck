@@ -45,6 +45,7 @@ func (a *AuditService) SubscribeTo(bus *EventBus) {
 
 // AuditEntry is the input to Log().
 type AuditEntry struct {
+	OrgID        *int64
 	UserID       *int64
 	Username     string
 	Action       string
@@ -66,16 +67,17 @@ func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
 	}
 
 	entry := &models.AuditLog{
-		UserID:       e.UserID,
-		Username:     e.Username,
-		Action:       e.Action,
-		ResourceType: e.ResourceType,
-		ResourceID:   e.ResourceID,
-		ResourceName: e.ResourceName,
-		IPAddress:    e.IPAddress,
-		UserAgent:    e.UserAgent,
-		Status:       e.Status,
-		ErrorMessage: e.ErrorMessage,
+		OrganizationID: e.OrgID,
+		UserID:         e.UserID,
+		Username:       e.Username,
+		Action:         e.Action,
+		ResourceType:   e.ResourceType,
+		ResourceID:     e.ResourceID,
+		ResourceName:   e.ResourceName,
+		IPAddress:      e.IPAddress,
+		UserAgent:      e.UserAgent,
+		Status:         e.Status,
+		ErrorMessage:   e.ErrorMessage,
 	}
 
 	if e.OldValues != nil {

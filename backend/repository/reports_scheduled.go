@@ -14,7 +14,7 @@ import (
 // ─────────────────────────────────────────────────────────────────────────────
 
 // CreateScheduledReport inserts a new scheduled report.
-func (r *Repository) CreateScheduledReport(ctx context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
+func (r *Repository) CreateScheduledReport(ctx context.Context, orgID *int64, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
 	emailsJSON, err := json.Marshal(recipientEmails)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling recipient emails: %w", err)
@@ -25,10 +25,10 @@ func (r *Repository) CreateScheduledReport(ctx context.Context, name, reportType
 	}
 
 	row := r.db.QueryRow(ctx,
-		`INSERT INTO scheduled_reports (name, report_type, schedule_cron, recipient_emails, filters, format, created_by)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`INSERT INTO scheduled_reports (organization_id, name, report_type, schedule_cron, recipient_emails, filters, format, created_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		 RETURNING id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at`,
-		name, reportType, scheduleCron, emailsJSON, filtersJSON, format, createdBy,
+		orgID, name, reportType, scheduleCron, emailsJSON, filtersJSON, format, createdBy,
 	)
 	return scanScheduledReport(row)
 }
@@ -43,12 +43,18 @@ func (r *Repository) GetScheduledReportByID(ctx context.Context, id int64) (*mod
 	return scanScheduledReport(row)
 }
 
-// ListScheduledReports returns all scheduled reports ordered by name.
-func (r *Repository) ListScheduledReports(ctx context.Context) ([]*models.ScheduledReport, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at
-		 FROM scheduled_reports ORDER BY name`,
-	)
+// ListScheduledReports returns scheduled reports, optionally filtered to a single org.
+// Pass nil to return all reports (used by the background scheduler).
+func (r *Repository) ListScheduledReports(ctx context.Context, orgID *int64) ([]*models.ScheduledReport, error) {
+	query := `SELECT id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at
+		 FROM scheduled_reports`
+	var args []interface{}
+	if orgID != nil {
+		query += ` WHERE organization_id = $1`
+		args = append(args, *orgID)
+	}
+	query += ` ORDER BY name`
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,8 @@ import (
 // Dashboard operations
 
 // GetDashboardSummary returns aggregate IPAM counts and top utilised subnets.
-func (r *Repository) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
+// orgID is reserved for future per-org IPAM scoping once network/subnet tables gain organization_id.
+func (r *Repository) GetDashboardSummary(ctx context.Context, orgID *int64) (*models.DashboardSummary, error) {
 	summary := &models.DashboardSummary{}
 
 	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM networks`).Scan(&summary.TotalNetworks); err != nil {

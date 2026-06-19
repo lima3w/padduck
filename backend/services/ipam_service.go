@@ -1091,16 +1091,20 @@ func (s *IPAMService) SearchIPAddressesGlobal(ctx context.Context, query string)
 
 // ---- Dashboard / Pagination -------------------------------------------------
 
-func (s *IPAMService) GetDashboardSummary(ctx context.Context) (*models.DashboardSummary, error) {
-	if summary, ok := s.summaryCache.get("summary"); ok {
-		return cloneDashboardSummary(summary), nil
+func (s *IPAMService) GetDashboardSummary(ctx context.Context, orgID *int64) (*models.DashboardSummary, error) {
+	if orgID == nil {
+		if summary, ok := s.summaryCache.get("summary"); ok {
+			return cloneDashboardSummary(summary), nil
+		}
 	}
 
-	summary, err := s.repo.GetDashboardSummary(ctx)
+	summary, err := s.repo.GetDashboardSummary(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
-	s.summaryCache.set("summary", cloneDashboardSummary(summary))
+	if orgID == nil {
+		s.summaryCache.set("summary", cloneDashboardSummary(summary))
+	}
 	return cloneDashboardSummary(summary), nil
 }
 

@@ -14,13 +14,21 @@ import (
 )
 
 // GetAuditLogs handles GET /api/v1/admin/audit-logs
-// Supports query params: action, resource_type, username, ip, status, since, until, limit, offset
+// Supports query params: action, resource_type, username, ip, status, since, until, limit, offset, all_orgs
 func (h *Handler) GetAuditLogs(c *fiber.Ctx) error {
 	if err := requireAdmin(c); err != nil {
 		return nil
 	}
 
 	filter := buildAuditFilter(c)
+	filter.OrgID = orgIDFromCtx(c)
+	if c.QueryBool("all_orgs") {
+		userID, _ := c.Locals("userID").(int64)
+		if err := h.ops.Identity.CheckPermission(c.Context(), userID, services.PermV2PlatformAdmin); err == nil {
+			filter.OrgID = nil
+			filter.AllOrgs = true
+		}
+	}
 
 	logs, err := h.service.Audit.ListAuditLogs(c.Context(), filter)
 	if err != nil {
@@ -48,6 +56,7 @@ func (h *Handler) ExportAuditLogs(c *fiber.Ctx) error {
 	}
 
 	filter := buildAuditFilter(c)
+	filter.OrgID = orgIDFromCtx(c)
 	filter.Limit = 10000 // allow larger export
 
 	logs, err := h.service.Audit.ListAuditLogs(c.Context(), filter)

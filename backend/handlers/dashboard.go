@@ -11,7 +11,7 @@ func (h *Handler) GetDashboardSummary(c *fiber.Ctx) error {
 		return nil
 	}
 
-	summary, err := h.ops.IPAM.GetDashboardSummary(c.Context())
+	summary, err := h.ops.IPAM.GetDashboardSummary(c.Context(), orgIDFromCtx(c))
 	if err != nil {
 		reqLogger(c).Error("GetDashboardSummary failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

@@ -12,10 +12,10 @@ import (
 
 func (r *Repository) CreateAuditLog(ctx context.Context, entry *models.AuditLog) error {
 	query := `INSERT INTO audit_logs
-		(user_id, username, action, resource_type, resource_id, resource_name, old_values, new_values, ip_address, user_agent, status, error_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+		(organization_id, user_id, username, action, resource_type, resource_id, resource_name, old_values, new_values, ip_address, user_agent, status, error_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 	_, err := r.db.Exec(ctx, query,
-		entry.UserID, entry.Username, entry.Action,
+		entry.OrganizationID, entry.UserID, entry.Username, entry.Action,
 		nullableString(entry.ResourceType), entry.ResourceID, nullableString(entry.ResourceName),
 		entry.OldValues, entry.NewValues,
 		nullableString(entry.IPAddress), nullableString(entry.UserAgent),
@@ -28,6 +28,12 @@ func (r *Repository) ListAuditLogs(ctx context.Context, filter *models.AuditLogF
 	args := []interface{}{}
 	where := []string{}
 	i := 1
+
+	if !filter.AllOrgs && filter.OrgID != nil {
+		where = append(where, fmt.Sprintf("organization_id = $%d", i))
+		args = append(args, *filter.OrgID)
+		i++
+	}
 
 	if filter.UserID != nil {
 		where = append(where, fmt.Sprintf("user_id = $%d", i))
@@ -75,7 +81,7 @@ func (r *Repository) ListAuditLogs(ctx context.Context, filter *models.AuditLogF
 		i++
 	}
 
-	query := `SELECT id, user_id, username, action, resource_type, resource_id, resource_name,
+	query := `SELECT id, organization_id, user_id, username, action, resource_type, resource_id, resource_name,
 		old_values, new_values, ip_address, user_agent, status, error_message, created_at
 		FROM audit_logs`
 	if len(where) > 0 {
@@ -102,7 +108,7 @@ func (r *Repository) ListAuditLogs(ctx context.Context, filter *models.AuditLogF
 	for rows.Next() {
 		l := &models.AuditLog{}
 		err := rows.Scan(
-			&l.ID, &l.UserID, &l.Username, &l.Action,
+			&l.ID, &l.OrganizationID, &l.UserID, &l.Username, &l.Action,
 			scanNullString(&l.ResourceType), &l.ResourceID, scanNullString(&l.ResourceName),
 			&l.OldValues, &l.NewValues,
 			scanNullString(&l.IPAddress), scanNullString(&l.UserAgent),
@@ -120,6 +126,12 @@ func (r *Repository) CountAuditLogs(ctx context.Context, filter *models.AuditLog
 	args := []interface{}{}
 	where := []string{}
 	i := 1
+
+	if !filter.AllOrgs && filter.OrgID != nil {
+		where = append(where, fmt.Sprintf("organization_id = $%d", i))
+		args = append(args, *filter.OrgID)
+		i++
+	}
 
 	if filter.UserID != nil {
 		where = append(where, fmt.Sprintf("user_id = $%d", i))

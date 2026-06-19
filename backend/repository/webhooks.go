@@ -9,12 +9,17 @@ import (
 	"padduck/models"
 )
 
-func (r *Repository) ListWebhookEndpoints(ctx context.Context) ([]*models.WebhookEndpoint, error) {
-	query := `SELECT id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
+func (r *Repository) ListWebhookEndpoints(ctx context.Context, orgID *int64) ([]*models.WebhookEndpoint, error) {
+	query := `SELECT id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                 is_active, created_by, created_at, updated_at
-	          FROM webhook_endpoints
-	          ORDER BY name ASC`
-	rows, err := r.db.Query(ctx, query)
+	          FROM webhook_endpoints`
+	var args []interface{}
+	if orgID != nil {
+		query += ` WHERE organization_id = $1`
+		args = append(args, *orgID)
+	}
+	query += ` ORDER BY name ASC`
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +29,7 @@ func (r *Repository) ListWebhookEndpoints(ctx context.Context) ([]*models.Webhoo
 	for rows.Next() {
 		w := &models.WebhookEndpoint{}
 		var conditions string
-		if err := rows.Scan(&w.ID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt); err != nil {
+		if err := rows.Scan(&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt); err != nil {
 			return nil, err
 		}
 		w.FilterConditions = decodeStringMap(conditions)
@@ -34,7 +39,7 @@ func (r *Repository) ListWebhookEndpoints(ctx context.Context) ([]*models.Webhoo
 }
 
 func (r *Repository) ListActiveWebhookEndpoints(ctx context.Context) ([]*models.WebhookEndpoint, error) {
-	query := `SELECT id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
+	query := `SELECT id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                 is_active, created_by, created_at, updated_at
 	          FROM webhook_endpoints
 	          WHERE is_active = TRUE
@@ -49,7 +54,7 @@ func (r *Repository) ListActiveWebhookEndpoints(ctx context.Context) ([]*models.
 	for rows.Next() {
 		w := &models.WebhookEndpoint{}
 		var conditions string
-		if err := rows.Scan(&w.ID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt); err != nil {
+		if err := rows.Scan(&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt); err != nil {
 			return nil, err
 		}
 		w.FilterConditions = decodeStringMap(conditions)
@@ -59,15 +64,15 @@ func (r *Repository) ListActiveWebhookEndpoints(ctx context.Context) ([]*models.
 }
 
 func (r *Repository) CreateWebhookEndpoint(ctx context.Context, endpoint *models.WebhookEndpoint) (*models.WebhookEndpoint, error) {
-	query := `INSERT INTO webhook_endpoints (name, url, secret, events, object_types, tag_filters, filter_conditions, is_active, created_by)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
-	          RETURNING id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
+	query := `INSERT INTO webhook_endpoints (organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions, is_active, created_by)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10)
+	          RETURNING id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                    is_active, created_by, created_at, updated_at`
 	w := &models.WebhookEndpoint{}
 	conditions := encodeStringMap(endpoint.FilterConditions)
 	var storedConditions string
-	err := r.db.QueryRow(ctx, query, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive, endpoint.CreatedBy).Scan(
-		&w.ID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &storedConditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt,
+	err := r.db.QueryRow(ctx, query, endpoint.OrganizationID, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive, endpoint.CreatedBy).Scan(
+		&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &storedConditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -81,13 +86,13 @@ func (r *Repository) UpdateWebhookEndpoint(ctx context.Context, endpoint *models
 	          SET name = $2, url = $3, secret = $4, events = $5, object_types = $6,
 	              tag_filters = $7, filter_conditions = $8::jsonb, is_active = $9, updated_at = NOW()
 	          WHERE id = $1
-	          RETURNING id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
+	          RETURNING id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                    is_active, created_by, created_at, updated_at`
 	w := &models.WebhookEndpoint{}
 	conditions := encodeStringMap(endpoint.FilterConditions)
 	var storedConditions string
 	err := r.db.QueryRow(ctx, query, endpoint.ID, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive).Scan(
-		&w.ID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &storedConditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt,
+		&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &storedConditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err
@@ -213,12 +218,12 @@ func (r *Repository) ListWebhookFailureGroups(ctx context.Context, limit int) ([
 }
 
 func (r *Repository) GetWebhookEndpoint(ctx context.Context, id int64) (*models.WebhookEndpoint, error) {
-	query := `SELECT id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
+	query := `SELECT id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                 is_active, created_by, created_at, updated_at
 	          FROM webhook_endpoints WHERE id = $1`
 	w := &models.WebhookEndpoint{}
 	var conditions string
-	err := r.db.QueryRow(ctx, query, id).Scan(&w.ID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
