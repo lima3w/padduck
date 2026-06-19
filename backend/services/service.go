@@ -53,8 +53,10 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		},
 	}
 	dnsSvc := NewDNSService(configSvc, repo)
+	ipamSvc := NewIPAMService(repo, configSvc, dnsSvc)
 	identitySvc := NewIdentityService(repo, configSvc, emailSvc, mfaSvc, notificationSvc)
 	infraSvc := NewInfrastructureService(repo, mfaEncryptionKey)
+	workflowSvc := NewWorkflowService(repo, ipamSvc, dnsSvc, auditSvc, notificationSvc)
 	svc.Ops = &OpsManager{
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
@@ -66,10 +68,11 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Automation:     NewAutomationService(repo, svc),
 		Telemetry:      newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
 		NetworkModules: NewNetworkModulesService(repo),
-		IPAM:           NewIPAMService(repo, configSvc, dnsSvc),
+		IPAM:           ipamSvc,
 		Identity:       identitySvc,
 		Infrastructure: infraSvc,
 		Customers:      NewCustomerService(repo),
+		Workflow:       workflowSvc,
 	}
 	return svc
 }

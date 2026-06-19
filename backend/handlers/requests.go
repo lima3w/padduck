@@ -53,7 +53,7 @@ func (h *Handler) SubmitSubnetRequest(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "purpose is required")
 	}
 
-	sr, err := h.service.SubmitSubnetRequest(c.Context(), currentUser.ID, req.NetworkID, req.ParentSubnetID, req.RequestedPrefixLen, req.Purpose)
+	sr, err := h.ops.Workflow.SubmitSubnetRequest(c.Context(), currentUser.ID, req.NetworkID, req.ParentSubnetID, req.RequestedPrefixLen, req.Purpose)
 	if err != nil {
 		reqLogger(c).Error("error submitting subnet request", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -76,7 +76,7 @@ func (h *Handler) ListMySubnetRequests(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
-	requests, err := h.service.ListMySubnetRequests(c.Context(), currentUser.ID)
+	requests, err := h.ops.Workflow.ListMySubnetRequests(c.Context(), currentUser.ID)
 	if err != nil {
 		reqLogger(c).Error("error listing subnet requests", "user_id", currentUser.ID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -90,7 +90,7 @@ func (h *Handler) ListAllSubnetRequests(c *fiber.Ctx) error {
 		return nil
 	}
 
-	requests, err := h.service.ListAllSubnetRequests(c.Context())
+	requests, err := h.ops.Workflow.ListAllSubnetRequests(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing all subnet requests", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -114,7 +114,7 @@ func (h *Handler) ApproveSubnetRequest(c *fiber.Ctx) error {
 	req := new(ReviewRequestBody)
 	_ = c.BodyParser(req) // reviewer_note is optional for approval
 
-	sr, err := h.service.ApproveSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
+	sr, err := h.ops.Workflow.ApproveSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error approving subnet request", "id", id, "error", err)
 		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
@@ -153,7 +153,7 @@ func (h *Handler) RejectSubnetRequest(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "reviewer_note is required")
 	}
 
-	sr, err := h.service.RejectSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
+	sr, err := h.ops.Workflow.RejectSubnetRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error rejecting subnet request", "id", id, "error", err)
 		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
@@ -183,7 +183,7 @@ func (h *Handler) CancelSubnetRequest(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request ID")
 	}
 
-	if err := h.service.CancelSubnetRequest(c.Context(), int64(id), currentUser.ID); err != nil {
+	if err := h.ops.Workflow.CancelSubnetRequest(c.Context(), int64(id), currentUser.ID); err != nil {
 		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotCancellable) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
 		}
@@ -222,7 +222,7 @@ func (h *Handler) SubmitIPRequest(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "purpose is required")
 	}
 
-	ir, err := h.service.SubmitIPRequest(c.Context(), currentUser.ID, req.SubnetID, req.RequestedIP, req.DNSName, req.Purpose)
+	ir, err := h.ops.Workflow.SubmitIPRequest(c.Context(), currentUser.ID, req.SubnetID, req.RequestedIP, req.DNSName, req.Purpose)
 	if err != nil {
 		reqLogger(c).Error("error submitting IP request", "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -245,7 +245,7 @@ func (h *Handler) ListMyIPRequests(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "not authenticated")
 	}
 
-	requests, err := h.service.ListMyIPRequests(c.Context(), currentUser.ID)
+	requests, err := h.ops.Workflow.ListMyIPRequests(c.Context(), currentUser.ID)
 	if err != nil {
 		reqLogger(c).Error("error listing IP requests", "user_id", currentUser.ID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -259,7 +259,7 @@ func (h *Handler) ListAllIPRequests(c *fiber.Ctx) error {
 		return nil
 	}
 
-	requests, err := h.service.ListAllIPRequests(c.Context())
+	requests, err := h.ops.Workflow.ListAllIPRequests(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing all IP requests", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -283,7 +283,7 @@ func (h *Handler) ApproveIPRequest(c *fiber.Ctx) error {
 	req := new(ReviewRequestBody)
 	_ = c.BodyParser(req) // reviewer_note optional for approval
 
-	ir, err := h.service.ApproveIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
+	ir, err := h.ops.Workflow.ApproveIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error approving IP request", "id", id, "error", err)
 		var takenErr *services.IPAlreadyTakenError
@@ -326,7 +326,7 @@ func (h *Handler) RejectIPRequest(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "reviewer_note is required")
 	}
 
-	ir, err := h.service.RejectIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
+	ir, err := h.ops.Workflow.RejectIPRequest(c.Context(), int64(id), reviewer.ID, req.ReviewerNote)
 	if err != nil {
 		reqLogger(c).Error("error rejecting IP request", "id", id, "error", err)
 		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotPending) {
@@ -356,7 +356,7 @@ func (h *Handler) CancelIPRequest(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request ID")
 	}
 
-	if err := h.service.CancelIPRequest(c.Context(), int64(id), currentUser.ID); err != nil {
+	if err := h.ops.Workflow.CancelIPRequest(c.Context(), int64(id), currentUser.ID); err != nil {
 		if errors.Is(err, services.ErrNotFound) || errors.Is(err, services.ErrNotCancellable) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
 		}
@@ -394,7 +394,7 @@ func (h *Handler) ListRequestComments(c *fiber.Ctx) error {
 	}
 
 	if currentUser.Role != "admin" {
-		ownerID, err := h.service.GetRequestOwner(c.Context(), reqType, int64(id))
+		ownerID, err := h.ops.Workflow.GetRequestOwner(c.Context(), reqType, int64(id))
 		if err != nil {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "request not found")
 		}
@@ -403,7 +403,7 @@ func (h *Handler) ListRequestComments(c *fiber.Ctx) error {
 		}
 	}
 
-	comments, err := h.service.ListRequestComments(c.Context(), reqType, int64(id))
+	comments, err := h.ops.Workflow.ListRequestComments(c.Context(), reqType, int64(id))
 	if err != nil {
 		reqLogger(c).Error("error listing request comments", "type", reqType, "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -429,7 +429,7 @@ func (h *Handler) AddRequestComment(c *fiber.Ctx) error {
 	}
 
 	if currentUser.Role != "admin" {
-		ownerID, err := h.service.GetRequestOwner(c.Context(), reqType, int64(id))
+		ownerID, err := h.ops.Workflow.GetRequestOwner(c.Context(), reqType, int64(id))
 		if err != nil {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "request not found")
 		}
@@ -448,7 +448,7 @@ func (h *Handler) AddRequestComment(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "body is required")
 	}
 
-	comment, err := h.service.AddRequestComment(c.Context(), reqType, int64(id), currentUser.ID, body.Body)
+	comment, err := h.ops.Workflow.AddRequestComment(c.Context(), reqType, int64(id), currentUser.ID, body.Body)
 	if err != nil {
 		reqLogger(c).Error("error adding request comment", "type", reqType, "id", id, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
@@ -465,7 +465,7 @@ func (h *Handler) GetPendingRequestCount(c *fiber.Ctx) error {
 		return nil
 	}
 
-	subnetCount, ipCount, err := h.service.GetPendingRequestCounts(c.Context())
+	subnetCount, ipCount, err := h.ops.Workflow.GetPendingRequestCounts(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error getting pending request counts", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

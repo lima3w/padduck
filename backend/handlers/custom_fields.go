@@ -28,7 +28,7 @@ func (h *Handler) ListCustomFieldDefinitions(c *fiber.Ctx) error {
 		return nil
 	}
 	entityType := c.Query("entity_type")
-	defs, err := h.service.ListCustomFieldDefinitions(c.Context(), entityType)
+	defs, err := h.ops.Workflow.ListCustomFieldDefinitions(c.Context(), entityType)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -48,7 +48,7 @@ func (h *Handler) CreateCustomFieldDefinition(c *fiber.Ctx) error {
 		return RespondValidationError(c, "validation failed", vf)
 	}
 
-	def, err := h.service.CreateCustomFieldDefinition(c.Context(), p)
+	def, err := h.ops.Workflow.CreateCustomFieldDefinition(c.Context(), p)
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -65,7 +65,7 @@ func (h *Handler) GetCustomFieldDefinition(c *fiber.Ctx) error {
 		return nil
 	}
 
-	def, err := h.service.GetCustomFieldDefinition(c.Context(), int64(id))
+	def, err := h.ops.Workflow.GetCustomFieldDefinition(c.Context(), int64(id))
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
@@ -94,7 +94,7 @@ func (h *Handler) UpdateCustomFieldDefinition(c *fiber.Ctx) error {
 		return RespondValidationError(c, "validation failed", vf)
 	}
 
-	def, err := h.service.UpdateCustomFieldDefinition(c.Context(), int64(id), p)
+	def, err := h.ops.Workflow.UpdateCustomFieldDefinition(c.Context(), int64(id), p)
 	if err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
@@ -114,7 +114,7 @@ func (h *Handler) DeleteCustomFieldDefinition(c *fiber.Ctx) error {
 		return nil
 	}
 
-	if err := h.service.DeleteCustomFieldDefinition(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Workflow.DeleteCustomFieldDefinition(c.Context(), int64(id)); err != nil {
 		if errors.Is(err, services.ErrNotFound) {
 			return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
 		}
@@ -136,7 +136,7 @@ func (h *Handler) ReorderCustomFieldDefinitions(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	if err := h.service.ReorderCustomFieldDefinitions(c.Context(), body.IDs); err != nil {
+	if err := h.ops.Workflow.ReorderCustomFieldDefinitions(c.Context(), body.IDs); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.SendStatus(fiber.StatusNoContent)
