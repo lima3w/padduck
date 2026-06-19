@@ -10,7 +10,7 @@ import (
 // User operations
 
 func (r *Repository) CreateUser(ctx context.Context, username, email string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, created_at, updated_at`
+	query := `INSERT INTO users (username, email, role) VALUES ($1, $2, 'user') RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, organization_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email)
 
 	user := &models.User{}
@@ -91,7 +91,7 @@ func (r *Repository) ListUsersPaginated(ctx context.Context, limit, offset int) 
 }
 
 func (r *Repository) CreateUserWithPassword(ctx context.Context, username, email, passwordHash, role string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, created_at, updated_at`
+	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, organization_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role)
 
 	user := &models.User{}
@@ -103,7 +103,7 @@ func (r *Repository) CreateUserWithPassword(ctx context.Context, username, email
 }
 
 func (r *Repository) CreateUserWithState(ctx context.Context, username, email, passwordHash, role, state string) (*models.User, error) {
-	query := `INSERT INTO users (username, email, password_hash, role, state) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, created_at, updated_at`
+	query := `INSERT INTO users (username, email, password_hash, role, state) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, organization_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, username, email, passwordHash, role, state)
 
 	user := &models.User{}
@@ -127,7 +127,7 @@ func (r *Repository) UpdateUserEmail(ctx context.Context, userID int64, email st
 }
 
 func (r *Repository) UpdateUserRole(ctx context.Context, userID int64, role string) (*models.User, error) {
-	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, created_at, updated_at`
+	query := `UPDATE users SET role = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING id, username, email, COALESCE(password_hash, '') AS password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, avatar_source, organization_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, role)
 
 	user := &models.User{}
