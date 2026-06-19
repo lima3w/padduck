@@ -17,4 +17,5 @@ type OpsManager struct {
 	IPAM           *IPAMService
 	Identity       *IdentityService
 	Infrastructure *InfrastructureService
+	Customers      *CustomerService
 }

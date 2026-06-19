@@ -14,7 +14,7 @@ func (h *Handler) ListCustomerAssociations(c *fiber.Ctx) error {
 	if paramID, err := c.ParamsInt("id"); err == nil && paramID > 0 {
 		customerID = int64(paramID)
 	}
-	items, err := h.service.ListCustomerAssociations(c.Context(), customerID)
+	items, err := h.ops.Customers.ListCustomerAssociations(c.Context(), customerID)
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
@@ -29,7 +29,7 @@ func (h *Handler) CreateCustomerAssociation(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CustomerWrite) {
 		return nil
 	}
-	item, err := h.service.CreateCustomerAssociation(c.Context(), req)
+	item, err := h.ops.Customers.CreateCustomerAssociation(c.Context(), req)
 	if err != nil {
 		return respondCustomerASError(c, err, "customer association")
 	}
@@ -44,7 +44,7 @@ func (h *Handler) DeleteCustomerAssociation(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CustomerDelete) {
 		return nil
 	}
-	if err := h.service.DeleteCustomerAssociation(c.Context(), id); err != nil {
+	if err := h.ops.Customers.DeleteCustomerAssociation(c.Context(), id); err != nil {
 		return respondCustomerASError(c, err, "customer association")
 	}
 	return c.SendStatus(fiber.StatusNoContent)
