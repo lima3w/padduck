@@ -18,4 +18,5 @@ type OpsManager struct {
 	Identity       *IdentityService
 	Infrastructure *InfrastructureService
 	Customers      *CustomerService
+	Workflow       *WorkflowService
 }

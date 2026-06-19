@@ -51,35 +51,35 @@ func TestLegacyRole_Viewer_HasNoRequestPermissions(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSubmitSubnetRequest_InvalidRequesterID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitSubnetRequest(context.Background(), 0, 1, nil, 24, "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid requester ID")
 }
 
 func TestSubmitSubnetRequest_InvalidSectionID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitSubnetRequest(context.Background(), 1, 0, nil, 24, "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid section ID")
 }
 
 func TestSubmitSubnetRequest_InvalidPrefixLen(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitSubnetRequest(context.Background(), 1, 1, nil, 33, "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "requested_prefix_len")
 }
 
 func TestSubmitSubnetRequest_EmptyPurpose(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitSubnetRequest(context.Background(), 1, 1, nil, 24, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "purpose")
 }
 
 func TestSubmitSubnetRequest_WhitespacePurpose(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitSubnetRequest(context.Background(), 1, 1, nil, 24, "   ")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "purpose")
@@ -90,21 +90,21 @@ func TestSubmitSubnetRequest_WhitespacePurpose(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestSubmitIPRequest_InvalidRequesterID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitIPRequest(context.Background(), 0, 1, nil, "", "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid requester ID")
 }
 
 func TestSubmitIPRequest_InvalidSubnetID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitIPRequest(context.Background(), 1, 0, nil, "", "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid subnet ID")
 }
 
 func TestSubmitIPRequest_EmptyPurpose(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.SubmitIPRequest(context.Background(), 1, 1, nil, "", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "purpose")
@@ -115,14 +115,14 @@ func TestSubmitIPRequest_EmptyPurpose(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestApproveSubnetRequest_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.ApproveSubnetRequest(context.Background(), 0, 1, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestApproveSubnetRequest_InvalidReviewerID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.ApproveSubnetRequest(context.Background(), 1, 0, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid reviewer ID")
@@ -133,14 +133,14 @@ func TestApproveSubnetRequest_InvalidReviewerID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRejectSubnetRequest_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.RejectSubnetRequest(context.Background(), 0, 1, "reason")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestRejectSubnetRequest_MissingNote(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.RejectSubnetRequest(context.Background(), 1, 1, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "reviewer_note")
@@ -151,14 +151,14 @@ func TestRejectSubnetRequest_MissingNote(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCancelSubnetRequest_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	err := s.CancelSubnetRequest(context.Background(), 0, 1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestCancelSubnetRequest_InvalidRequesterID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	err := s.CancelSubnetRequest(context.Background(), 1, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid requester ID")
@@ -169,14 +169,14 @@ func TestCancelSubnetRequest_InvalidRequesterID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestApproveIPRequest_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.ApproveIPRequest(context.Background(), 0, 1, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestApproveIPRequest_InvalidReviewerID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.ApproveIPRequest(context.Background(), 1, 0, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid reviewer ID")
@@ -187,14 +187,14 @@ func TestApproveIPRequest_InvalidReviewerID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRejectIPRequest_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.RejectIPRequest(context.Background(), 0, 1, "reason")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestRejectIPRequest_MissingNote(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.RejectIPRequest(context.Background(), 1, 1, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "reviewer_note")
@@ -205,14 +205,14 @@ func TestRejectIPRequest_MissingNote(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCancelIPRequest_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	err := s.CancelIPRequest(context.Background(), 0, 1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestCancelIPRequest_InvalidRequesterID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	err := s.CancelIPRequest(context.Background(), 1, 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid requester ID")
@@ -223,35 +223,35 @@ func TestCancelIPRequest_InvalidRequesterID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestAddRequestComment_InvalidType(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.AddRequestComment(context.Background(), "invalid", 1, 1, "body")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request_type")
 }
 
 func TestAddRequestComment_InvalidRequestID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.AddRequestComment(context.Background(), "subnet", 0, 1, "body")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")
 }
 
 func TestAddRequestComment_InvalidAuthorID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.AddRequestComment(context.Background(), "subnet", 1, 0, "body")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid author ID")
 }
 
 func TestAddRequestComment_EmptyBody(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.AddRequestComment(context.Background(), "subnet", 1, 1, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "body is required")
 }
 
 func TestAddRequestComment_WhitespaceBody(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.AddRequestComment(context.Background(), "ip", 1, 1, "   ")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "body is required")
@@ -262,14 +262,14 @@ func TestAddRequestComment_WhitespaceBody(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestListRequestComments_InvalidType(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.ListRequestComments(context.Background(), "bad", 1)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request_type")
 }
 
 func TestListRequestComments_InvalidID(t *testing.T) {
-	s := &Service{}
+	s := &WorkflowService{}
 	_, err := s.ListRequestComments(context.Background(), "subnet", 0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid request ID")

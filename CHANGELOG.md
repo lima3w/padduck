@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.5
+
+### Internal
+- **Workflow domain extraction**: extracted `WorkflowService` from the root `Service` struct — subnet requests, IP request approval (including auto-allocation and DNS sync), request comments, and all custom field definition/value methods (~33 methods) now live in `services.WorkflowService`, exposed via `OpsManager.Workflow`. `WorkflowService` receives `*IPAMService`, `*DNSService`, `*AuditService`, and `*NotificationService` at construction time. `IPAMService` extracted as a local var in `NewService` so it can be shared with `WorkflowService`. Handler files updated to `h.ops.Workflow.*`. Service test file (`requests_test.go`) updated to use `&WorkflowService{}`. `docs/domain-boundaries.md` updated; residual table replaced with a note that all domains are extracted.
+
 ## v1.33.4
 
 ### Internal

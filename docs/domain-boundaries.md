@@ -36,6 +36,7 @@ As domains are extracted the residual `service` field loses methods. When it is 
 | `Identity` | Users, RBAC roles/permissions, API tokens, web sessions, password management, account security (lockout/unlock), Grafana datasource proxy |
 | `Infrastructure` | Devices (SNMP creds, interfaces, IP associations), racks, locations (tree), nameservers |
 | `Customers` | Customer CRUD, customer associations |
+| `Workflow` | Subnet requests, IP requests, request comments, custom field definitions and values |
 
 ### Identity & Auth (`h.auth` — `AuthManager`)
 
@@ -49,13 +50,9 @@ As domains are extracted the residual `service` field loses methods. When it is 
 | `OAuth2` | OAuth2/OIDC provider integration |
 | `SAML` | SAML2 identity provider integration |
 
-### Residual on `*Service` (to be extracted in subsequent patches)
+### Residual on `*Service`
 
-These method groups remain on the root `Service` struct and will be extracted domain by domain. Each extraction becomes its own patch release.
-
-| Planned domain | Service files | Approx. methods |
-|---|---|---|
-| **Workflow** | requests, custom\_fields | ~33 |
+All domain modules have been extracted. The `*Service` root struct now only contains forwarding stubs for interface compatibility (`AllocateIPAddress`, `CreateIPAddress`, `ReleaseIPAddress`, `CreateDevice`, `InitAdminPassword`, `ForceResetAdminPassword`) and two paginated list helpers (`ListUsersPaginated`) pending a future cleanup pass.
 
 ## Extraction rules
 
