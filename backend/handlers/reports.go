@@ -128,7 +128,7 @@ func (h *Handler) ListScheduledReports(c *fiber.Ctx) error {
 		return nil
 	}
 
-	reports, err := h.ops.Reports.ListScheduledReports(c.Context())
+	reports, err := h.ops.Reports.ListScheduledReports(c.Context(), orgIDFromCtx(c))
 	if err != nil {
 		reqLogger(c).Error("list scheduled reports failed", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -174,6 +174,7 @@ func (h *Handler) CreateScheduledReport(c *fiber.Ctx) error {
 	}
 
 	report, err := h.ops.Reports.CreateScheduledReport(c.Context(),
+		orgIDFromCtx(c),
 		req.Name, req.ReportType, req.ScheduleCron,
 		req.RecipientEmails, req.Filters, format, createdBy,
 	)

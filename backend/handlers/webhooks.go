@@ -87,7 +87,7 @@ func (h *Handler) ListWebhookEndpoints(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
-	endpoints, err := h.ops.Webhooks.ListEndpoints(c.Context())
+	endpoints, err := h.ops.Webhooks.ListEndpoints(c.Context(), orgIDFromCtx(c))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load webhook endpoints")
 	}
@@ -115,6 +115,7 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 	}
 	createdBy, username := auditUserFromCtx(c)
 	endpoint, err := h.ops.Webhooks.CreateEndpoint(c.Context(), &models.WebhookEndpoint{
+		OrganizationID:   orgIDFromCtx(c),
 		Name:             req.Name,
 		URL:              req.URL,
 		Secret:           req.Secret,

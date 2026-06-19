@@ -52,8 +52,8 @@ type WebhookEvent struct {
 	OccurredAt    time.Time   `json:"occurred_at"`
 }
 
-func (w *WebhookService) ListEndpoints(ctx context.Context) ([]*models.WebhookEndpoint, error) {
-	return w.repo.ListWebhookEndpoints(ctx)
+func (w *WebhookService) ListEndpoints(ctx context.Context, orgID *int64) ([]*models.WebhookEndpoint, error) {
+	return w.repo.ListWebhookEndpoints(ctx, orgID)
 }
 
 func (w *WebhookService) ListDeliveries(ctx context.Context, limit int) ([]*models.WebhookDelivery, error) {

@@ -34,9 +34,9 @@ type reportsRepo interface {
 	BulkSetAlertCooldowns(ctx context.Context, entries map[int64]float64) error
 	BulkClearAlertCooldowns(ctx context.Context, subnetIDs []int64) error
 	// scheduled reports
-	CreateScheduledReport(ctx context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error)
+	CreateScheduledReport(ctx context.Context, orgID *int64, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error)
 	GetScheduledReportByID(ctx context.Context, id int64) (*models.ScheduledReport, error)
-	ListScheduledReports(ctx context.Context) ([]*models.ScheduledReport, error)
+	ListScheduledReports(ctx context.Context, orgID *int64) ([]*models.ScheduledReport, error)
 	UpdateScheduledReport(ctx context.Context, id int64, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string) (*models.ScheduledReport, error)
 	UpdateScheduledReportRunTime(ctx context.Context, id int64, t time.Time) error
 	DeleteScheduledReport(ctx context.Context, id int64) error
@@ -288,9 +288,9 @@ func (rs *ReportsService) GetSubnetsNearCapacity(ctx context.Context, thresholdP
 // Scheduled reports (#222)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// CreateScheduledReport creates a new scheduled report.
-func (rs *ReportsService) CreateScheduledReport(ctx context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
-	report, err := rs.repo.CreateScheduledReport(ctx, name, reportType, scheduleCron, recipientEmails, filters, format, createdBy)
+// CreateScheduledReport creates a new scheduled report for the given org.
+func (rs *ReportsService) CreateScheduledReport(ctx context.Context, orgID *int64, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
+	report, err := rs.repo.CreateScheduledReport(ctx, orgID, name, reportType, scheduleCron, recipientEmails, filters, format, createdBy)
 	if err == nil {
 		rs.clearReportCache()
 	}
@@ -302,16 +302,21 @@ func (rs *ReportsService) GetScheduledReport(ctx context.Context, id int64) (*mo
 	return rs.repo.GetScheduledReportByID(ctx, id)
 }
 
-// ListScheduledReports returns all scheduled reports.
-func (rs *ReportsService) ListScheduledReports(ctx context.Context) ([]*models.ScheduledReport, error) {
-	if value, ok := rs.reportCache().get("scheduled_reports"); ok {
-		return cloneScheduledReports(value.([]*models.ScheduledReport)), nil
+// ListScheduledReports returns scheduled reports scoped to the given org.
+// Pass nil to return all reports across orgs (used by the background scheduler).
+func (rs *ReportsService) ListScheduledReports(ctx context.Context, orgID *int64) ([]*models.ScheduledReport, error) {
+	if orgID == nil {
+		if value, ok := rs.reportCache().get("scheduled_reports"); ok {
+			return cloneScheduledReports(value.([]*models.ScheduledReport)), nil
+		}
 	}
-	reports, err := rs.repo.ListScheduledReports(ctx)
+	reports, err := rs.repo.ListScheduledReports(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
-	rs.reportCache().set("scheduled_reports", cloneScheduledReports(reports))
+	if orgID == nil {
+		rs.reportCache().set("scheduled_reports", cloneScheduledReports(reports))
+	}
 	return cloneScheduledReports(reports), nil
 }
 
@@ -698,7 +703,7 @@ func (rs *ReportsService) StartScheduledReportJob(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case now := <-ticker.C:
-				reports, err := rs.ListScheduledReports(ctx)
+				reports, err := rs.ListScheduledReports(ctx, nil)
 				if err != nil {
 					slog.Error("reports: list scheduled reports failed", "error", err)
 					continue

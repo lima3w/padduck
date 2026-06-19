@@ -266,7 +266,7 @@ func (h *Handler) ListAPITokenAnalytics(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2AdminWrite) {
 		return nil
 	}
-	tokens, err := h.service.GetRepository().ListAPITokenAnalytics(c.Context())
+	tokens, err := h.service.GetRepository().ListAPITokenAnalytics(c.Context(), orgIDFromCtx(c))
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load API token analytics")
 	}

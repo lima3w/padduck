@@ -473,24 +473,27 @@ type SecurityNotification struct {
 
 // AuditLog records all significant user actions for compliance and security review
 type AuditLog struct {
-	ID           int64
-	UserID       *int64
-	Username     string
-	Action       string
-	ResourceType string
-	ResourceID   *int64
-	ResourceName string
-	OldValues    *string // JSON
-	NewValues    *string // JSON
-	IPAddress    string
-	UserAgent    string
-	Status       string // success, failure
-	ErrorMessage string
-	CreatedAt    time.Time
+	ID             int64
+	OrganizationID *int64
+	UserID         *int64
+	Username       string
+	Action         string
+	ResourceType   string
+	ResourceID     *int64
+	ResourceName   string
+	OldValues      *string // JSON
+	NewValues      *string // JSON
+	IPAddress      string
+	UserAgent      string
+	Status         string // success, failure
+	ErrorMessage   string
+	CreatedAt      time.Time
 }
 
 // AuditLogFilter defines search criteria for querying audit logs
 type AuditLogFilter struct {
+	OrgID        *int64 // nil = all orgs (platform admin only)
+	AllOrgs      bool   // true = skip org filter entirely
 	UserID       *int64
 	Username     string
 	Action       string
@@ -672,6 +675,7 @@ type NotificationQueue struct {
 // WebhookEndpoint configures an outbound webhook receiver.
 type WebhookEndpoint struct {
 	ID               int64             `json:"id"`
+	OrganizationID   *int64            `json:"organization_id,omitempty"`
 	Name             string            `json:"name"`
 	URL              string            `json:"url"`
 	Secret           string            `json:"-"`

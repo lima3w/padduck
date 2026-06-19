@@ -142,7 +142,7 @@ func (r *stubReportsRepo) BulkClearAlertCooldowns(_ context.Context, ids []int64
 	}
 	return nil
 }
-func (r *stubReportsRepo) CreateScheduledReport(_ context.Context, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
+func (r *stubReportsRepo) CreateScheduledReport(_ context.Context, _ *int64, name, reportType, scheduleCron string, recipientEmails []string, filters map[string]any, format string, createdBy int64) (*models.ScheduledReport, error) {
 	r.nextID++
 	rpt := &models.ScheduledReport{
 		ID: r.nextID, Name: name, ReportType: reportType,
@@ -160,7 +160,7 @@ func (r *stubReportsRepo) GetScheduledReportByID(_ context.Context, id int64) (*
 	}
 	return rpt, nil
 }
-func (r *stubReportsRepo) ListScheduledReports(_ context.Context) ([]*models.ScheduledReport, error) {
+func (r *stubReportsRepo) ListScheduledReports(_ context.Context, _ *int64) ([]*models.ScheduledReport, error) {
 	r.listScheduledCalls++
 	var out []*models.ScheduledReport
 	for _, rpt := range r.scheduledReports {
@@ -424,7 +424,7 @@ func TestScheduledReport_CreateAndGet(t *testing.T) {
 	svc := newTestReportsService(repo)
 	ctx := context.Background()
 
-	rpt, err := svc.CreateScheduledReport(ctx,
+	rpt, err := svc.CreateScheduledReport(ctx, nil,
 		"Test Report", "utilisation_summary", "0 9 * * 1",
 		[]string{"admin@example.com"}, map[string]any{}, "csv", 1,
 	)
@@ -442,7 +442,7 @@ func TestScheduledReport_Delete(t *testing.T) {
 	svc := newTestReportsService(repo)
 	ctx := context.Background()
 
-	rpt, err := svc.CreateScheduledReport(ctx,
+	rpt, err := svc.CreateScheduledReport(ctx, nil,
 		"Temp", "inactive_ips", "0 0 * * *",
 		[]string{}, map[string]any{}, "csv", 1,
 	)
@@ -521,19 +521,19 @@ func TestPerformanceBudget_ScheduledReportListInvalidatesOnMutation(t *testing.T
 	svc := newTestReportsService(repo)
 	ctx := context.Background()
 
-	_, err := svc.CreateScheduledReport(ctx, "Weekly", "utilisation_summary", "0 9 * * 1", []string{"admin@example.com"}, map[string]any{}, "csv", 1)
+	_, err := svc.CreateScheduledReport(ctx, nil, "Weekly", "utilisation_summary", "0 9 * * 1", []string{"admin@example.com"}, map[string]any{}, "csv", 1)
 	require.NoError(t, err)
 
 	for i := 0; i < 3; i++ {
-		reports, err := svc.ListScheduledReports(ctx)
+		reports, err := svc.ListScheduledReports(ctx, nil)
 		require.NoError(t, err)
 		require.Len(t, reports, 1)
 	}
 	require.Equal(t, 1, repo.listScheduledCalls)
 
-	_, err = svc.CreateScheduledReport(ctx, "Daily", "inactive_ips", "0 7 * * *", []string{"admin@example.com"}, map[string]any{"days": 90}, "csv", 1)
+	_, err = svc.CreateScheduledReport(ctx, nil, "Daily", "inactive_ips", "0 7 * * *", []string{"admin@example.com"}, map[string]any{"days": 90}, "csv", 1)
 	require.NoError(t, err)
-	reports, err := svc.ListScheduledReports(ctx)
+	reports, err := svc.ListScheduledReports(ctx, nil)
 	require.NoError(t, err)
 	require.Len(t, reports, 2)
 

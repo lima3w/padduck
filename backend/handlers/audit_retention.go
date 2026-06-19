@@ -83,6 +83,7 @@ func (h *Handler) ExportAuditLog(c *fiber.Ctx) error {
 	}
 
 	filter := buildAuditFilter(c)
+	filter.OrgID = orgIDFromCtx(c)
 	filter.Limit = 10000 // allow large export
 
 	logs, err := h.service.Audit.ListAuditLogs(c.Context(), filter)
