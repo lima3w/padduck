@@ -69,6 +69,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		IPAM:           NewIPAMService(repo, configSvc, dnsSvc),
 		Identity:       identitySvc,
 		Infrastructure: infraSvc,
+		Customers:      NewCustomerService(repo),
 	}
 	return svc
 }

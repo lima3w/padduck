@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.4
+
+### Internal
+- **Customers domain extraction**: extracted `CustomerService` from the root `Service` struct — customer CRUD and customer associations now live in `services.CustomerService`, exposed via `OpsManager.Customers`. `CustomerService` receives `*repository.Repository` at construction time. `ListCustomersPaginated` moved from `dashboard.go` to `CustomerService`. Handler files updated to `h.ops.Customers.*`. `docs/domain-boundaries.md` updated; Customers removed from the residual table.
+
 ## v1.33.3
 
 ### Internal

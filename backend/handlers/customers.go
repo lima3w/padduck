@@ -31,7 +31,7 @@ func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 
 	page, limit, _ := parseListOptions(c)
 	if c.Query("page") != "" || c.Query("limit") != "" {
-		customers, total, err := h.service.ListCustomersPaginated(c.Context(), page, limit)
+		customers, total, err := h.ops.Customers.ListCustomersPaginated(c.Context(), page, limit)
 		if err != nil {
 			reqLogger(c).Error("error listing customers", "error", err)
 			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -47,7 +47,7 @@ func (h *Handler) ListCustomers(c *fiber.Ctx) error {
 		})
 	}
 
-	customers, err := h.service.ListCustomers(c.Context())
+	customers, err := h.ops.Customers.ListCustomers(c.Context())
 	if err != nil {
 		reqLogger(c).Error("error listing customers", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -66,7 +66,7 @@ func (h *Handler) GetCustomer(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid customer ID")
 	}
-	customer, err := h.service.GetCustomer(c.Context(), int64(id))
+	customer, err := h.ops.Customers.GetCustomer(c.Context(), int64(id))
 	if err != nil {
 		reqLogger(c).Error("error getting customer", "id", id, "error", err)
 		return respondCustomerASError(c, err, "customer")
@@ -82,7 +82,7 @@ func (h *Handler) CreateCustomer(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CustomerWrite) {
 		return nil
 	}
-	customer, err := h.service.CreateCustomer(c.Context(), req.Name, req.Description, req.Email, req.Phone, req.Notes)
+	customer, err := h.ops.Customers.CreateCustomer(c.Context(), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
 		reqLogger(c).Error("error creating customer", "error", err)
 		return respondCustomerASError(c, err, "customer")
@@ -108,7 +108,7 @@ func (h *Handler) UpdateCustomer(c *fiber.Ctx) error {
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
-	customer, err := h.service.UpdateCustomer(c.Context(), int64(id), req.Name, req.Description, req.Email, req.Phone, req.Notes)
+	customer, err := h.ops.Customers.UpdateCustomer(c.Context(), int64(id), req.Name, req.Description, req.Email, req.Phone, req.Notes)
 	if err != nil {
 		reqLogger(c).Error("error updating customer", "id", id, "error", err)
 		return respondCustomerASError(c, err, "customer")
@@ -130,7 +130,7 @@ func (h *Handler) DeleteCustomer(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2CustomerDelete, services.ResourceScope{Type: "customer", ID: int64(id)}) {
 		return nil
 	}
-	if err := h.service.DeleteCustomer(c.Context(), int64(id)); err != nil {
+	if err := h.ops.Customers.DeleteCustomer(c.Context(), int64(id)); err != nil {
 		reqLogger(c).Error("error deleting customer", "id", id, "error", err)
 		return respondCustomerASError(c, err, "customer")
 	}
