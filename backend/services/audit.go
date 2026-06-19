@@ -33,6 +33,16 @@ func NewAuditService(repo auditRepo, config *ConfigService, webhooks *WebhookSer
 	return &AuditService{repo: repo, config: config, webhooks: webhooks}
 }
 
+// SubscribeTo registers the AuditService as a subscriber on bus.
+// Any AuditableEvent published on the bus is forwarded to Log().
+func (a *AuditService) SubscribeTo(bus *EventBus) {
+	bus.Subscribe("*", func(ctx context.Context, e Event) {
+		if ae, ok := e.(AuditableEvent); ok {
+			a.Log(ctx, ae.ToAuditEntry())
+		}
+	})
+}
+
 // AuditEntry is the input to Log().
 type AuditEntry struct {
 	UserID       *int64
