@@ -14,7 +14,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCreateNameserver_EmptyName_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.CreateNameserver(context.Background(), &repository.NameserverParams{
 		Name: "", Server1: "8.8.8.8",
 	})
@@ -23,7 +23,7 @@ func TestCreateNameserver_EmptyName_ReturnsError(t *testing.T) {
 }
 
 func TestCreateNameserver_EmptyServer1_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.CreateNameserver(context.Background(), &repository.NameserverParams{
 		Name: "Google DNS", Server1: "",
 	})
@@ -36,7 +36,7 @@ func TestCreateNameserver_EmptyServer1_ReturnsError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetNameserver_InvalidID_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 
 	_, err := svc.GetNameserver(context.Background(), 0)
 	require.Error(t, err)
@@ -52,21 +52,21 @@ func TestGetNameserver_InvalidID_ReturnsError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateNameserver_InvalidID_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.UpdateNameserver(context.Background(), 0, &repository.NameserverParams{Name: "X", Server1: "1.1.1.1"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid nameserver ID")
 }
 
 func TestUpdateNameserver_EmptyName_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.UpdateNameserver(context.Background(), 1, &repository.NameserverParams{Name: "", Server1: "1.1.1.1"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "name is required")
 }
 
 func TestUpdateNameserver_EmptyServer1_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.UpdateNameserver(context.Background(), 1, &repository.NameserverParams{Name: "Cloudflare", Server1: ""})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "server1 is required")
@@ -77,7 +77,7 @@ func TestUpdateNameserver_EmptyServer1_ReturnsError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteNameserver_InvalidID_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	err := svc.DeleteNameserver(context.Background(), 0)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid nameserver ID")

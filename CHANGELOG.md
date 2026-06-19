@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.3
+
+### Internal
+- **Infrastructure domain extraction**: extracted `InfrastructureService` from the root `Service` struct — devices (with SNMP credential encryption/decryption, interfaces, IP associations), racks, locations (including tree builder and pagination), and nameservers now live in `services.InfrastructureService`, exposed via `OpsManager.Infrastructure`. `InfrastructureService` receives `*repository.Repository` and `encryptionKey` at construction time. `SetCustomFieldValues` logic inlined as a private method using the repo directly (no cross-domain dep). `ListLocationsPaginated` moved from `dashboard.go` to `InfrastructureService`. Handler files updated to `h.ops.Infrastructure.*`. `*Service` forwarding stub added for `CreateDevice` (required by the `automationIPAM` interface). Service test files updated to use `&InfrastructureService{}` directly. `docs/domain-boundaries.md` updated; Infrastructure removed from the residual table.
+
 ## v1.33.2
 
 ### Internal

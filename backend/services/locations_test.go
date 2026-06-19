@@ -15,7 +15,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestCreateLocation_EmptyName_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.CreateLocation(context.Background(), &repository.LocationParams{Name: "", Type: "site"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "name is required")
@@ -23,7 +23,7 @@ func TestCreateLocation_EmptyName_ReturnsError(t *testing.T) {
 
 func TestCreateLocation_DefaultsTypeToOther(t *testing.T) {
 	// Type defaulting happens before the repo call; confirm it mutates req.
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	req := &repository.LocationParams{Name: "HQ"} // Type intentionally empty
 	// We expect an error from the nil repo, not from validation.
 	// If Type were not defaulted first, the "other" default would never be set.
@@ -41,7 +41,7 @@ func TestCreateLocation_DefaultsTypeToOther(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestGetLocation_InvalidID_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.GetLocation(context.Background(), 0)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid location ID")
@@ -56,14 +56,14 @@ func TestGetLocation_InvalidID_ReturnsError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUpdateLocation_InvalidID_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.UpdateLocation(context.Background(), 0, &repository.LocationParams{Name: "X"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid location ID")
 }
 
 func TestUpdateLocation_EmptyName_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	_, err := svc.UpdateLocation(context.Background(), 1, &repository.LocationParams{Name: ""})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "name is required")
@@ -74,7 +74,7 @@ func TestUpdateLocation_EmptyName_ReturnsError(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeleteLocation_InvalidID_ReturnsError(t *testing.T) {
-	svc := &Service{}
+	svc := &InfrastructureService{}
 	err := svc.DeleteLocation(context.Background(), 0)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid location ID")
