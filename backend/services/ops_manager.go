@@ -21,4 +21,5 @@ type OpsManager struct {
 	Workflow       *WorkflowService
 	EventBus       *EventBus
 	Organizations  *OrganizationService
+	OrgSettings    *OrgSettingsService
 }

@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.33.16
+
+### Added
+- **Tenant quotas, retention, and integration settings** (issue #12): new `organization_settings` table (migration `20260621_001_org_settings.up.sql`) stores per-org resource limits and SMTP overrides.
+- **`OrgSettingsService`**: `CheckQuota` enforces `max_users`, `max_webhooks`, and `max_api_tokens`; returns `QuotaExceededError` (HTTP 422) when a limit would be breached. Subnet/IP quota enforcement is deferred until those tables have `organization_id` columns.
+- **Quota enforcement** in handlers: `POST /users`, `POST /admin/webhooks`, and `POST /auth/me/tokens` all call `CheckQuota` before creating the resource.
+- **Per-org SMTP overrides**: `organization_settings.smtp_host`, `smtp_port`, and `smtp_from` stored per org; accessible via `OrgSettingsService.GetOrgSMTPOverride`.
+- **Per-org audit retention**: `organization_settings.audit_retention_days` overrides the global retention; `POST /admin/audit/prune` now applies per-org retention after the global prune pass.
+- **Org settings API**:
+  - `GET /api/v1/admin/organization/settings` — org admins view their own quota and SMTP settings
+  - `PUT /api/v1/admin/organization/settings` — org admins may update SMTP override fields (quota fields are preserved from platform-admin values)
+  - `GET /api/v1/platform/organizations/:id/settings` — platform admins view any org's settings
+  - `PUT /api/v1/platform/organizations/:id/settings` — platform admins set all quota and integration fields for any org
+
 ## v1.33.15
 
 ### Added

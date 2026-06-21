@@ -146,6 +146,10 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid role")
 	}
 
+	if err := h.ops.OrgSettings.CheckQuota(c.Context(), orgIDFromCtx(c), "users"); err != nil {
+		return RespondError(c, fiber.StatusUnprocessableEntity, ErrQuotaExceeded, err.Error())
+	}
+
 	hash, err := utils.HashPassword(req.Password)
 	if err != nil {
 		reqLogger(c).Error("error hashing password", "error", err)

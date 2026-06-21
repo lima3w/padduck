@@ -152,6 +152,10 @@ func (h *Handler) GenerateTokenForMe(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
+	if err := h.ops.OrgSettings.CheckQuota(c.Context(), orgIDFromCtx(c), "api_tokens"); err != nil {
+		return RespondError(c, fiber.StatusUnprocessableEntity, ErrQuotaExceeded, err.Error())
+	}
+
 	token, err := h.ops.Identity.GenerateAPIToken(c.Context(), userID, req.TokenName, req.Scope, req.ExpiresInDays)
 	if err != nil {
 		reqLogger(c).Error("error generating token", "error", err)

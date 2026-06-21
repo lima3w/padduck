@@ -32,6 +32,7 @@ const (
 	ErrBadGateway          ErrorCode = "BAD_GATEWAY"
 	ErrInternalServer      ErrorCode = "INTERNAL_SERVER_ERROR"
 	ErrServiceUnavailable  ErrorCode = "SERVICE_UNAVAILABLE"
+	ErrQuotaExceeded       ErrorCode = "QUOTA_EXCEEDED"
 )
 
 // RespondError sends a standardized error response

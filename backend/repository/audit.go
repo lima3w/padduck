@@ -234,6 +234,18 @@ func (r *Repository) PruneAuditLogs(ctx context.Context, retentionDays int) (int
 	return result.RowsAffected(), nil
 }
 
+// PruneOrgAuditLogs deletes audit_logs for a specific org older than retentionDays.
+func (r *Repository) PruneOrgAuditLogs(ctx context.Context, orgID int64, retentionDays int) (int64, error) {
+	before := time.Now().UTC().AddDate(0, 0, -retentionDays)
+	result, err := r.db.Exec(ctx,
+		`DELETE FROM audit_logs WHERE organization_id = $1 AND created_at < $2`,
+		orgID, before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 // scanNullString returns a pointer that scan can write into; empty DB nulls become ""
 func scanNullString(dest *string) *nullStringScanner {
 	return &nullStringScanner{dest: dest}

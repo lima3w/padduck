@@ -64,6 +64,15 @@ func (h *Handler) PruneAuditLogs(c *fiber.Ctx) error {
 	if err != nil {
 		return h.StatusInternalServerError(c, "Failed to prune audit logs", err.Error())
 	}
+	// Apply per-org retention overrides.
+	if orgSettings, listErr := h.ops.OrgSettings.ListAll(c.Context()); listErr == nil {
+		for _, os := range orgSettings {
+			if os.AuditRetentionDays != nil && *os.AuditRetentionDays > 0 {
+				n, _ := h.service.Audit.PruneOrgLogs(c.Context(), os.OrganizationID, *os.AuditRetentionDays)
+				deleted += n
+			}
+		}
+	}
 	uid, uname := auditUserFromCtx(c)
 	h.auditLog(c, services.AuditEntry{
 		UserID: uid, Username: uname, Action: "audit_logs_pruned",
