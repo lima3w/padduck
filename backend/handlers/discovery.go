@@ -231,3 +231,36 @@ func (h *Handler) GetSubnetScanResults(c *fiber.Ctx) error {
 	}
 	return c.JSON(results)
 }
+
+// GetObservedState handles GET /api/v1/discovery/observed?resource_type=ip_address&resource_id=42
+func (h *Handler) GetObservedState(c *fiber.Ctx) error {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
+		return nil
+	}
+	resourceType := c.Query("resource_type", "ip_address")
+	resourceID := c.QueryInt("resource_id")
+	if resourceID <= 0 {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "resource_id query param required")
+	}
+	state, err := h.ops.Discovery.GetObservedState(c.Context(), resourceType, int64(resourceID))
+	if err != nil {
+		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "observed state not found")
+	}
+	return c.JSON(state)
+}
+
+// ListUnregisteredHosts handles GET /api/v1/discovery/unregistered
+// Returns IPs seen by the scanner that do not match any authoritative ip_addresses record.
+func (h *Handler) ListUnregisteredHosts(c *fiber.Ctx) error {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
+		return nil
+	}
+	hosts, err := h.ops.Discovery.ListUnregisteredHosts(c.Context(), orgIDFromCtx(c))
+	if err != nil {
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
+	}
+	if hosts == nil {
+		hosts = []*models.ObservedState{}
+	}
+	return c.JSON(hosts)
+}

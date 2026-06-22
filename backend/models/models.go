@@ -1243,6 +1243,21 @@ type TopologyHint struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+// ObservedState is a rolling snapshot of what a scanner last saw for a resource.
+// It is never written to the authoritative subnet/IP/device tables without user approval.
+type ObservedState struct {
+	ID             int64          `json:"id"`
+	OrganizationID *int64         `json:"organization_id,omitempty"`
+	ResourceType   string         `json:"resource_type"`
+	ResourceID     *int64         `json:"resource_id,omitempty"`
+	IPAddress      *string        `json:"ip_address,omitempty"`
+	ObservedData   map[string]any `json:"observed_data"`
+	Source         string         `json:"source"`
+	ScanResultID   *int64         `json:"scan_result_id,omitempty"`
+	FirstSeenAt    time.Time      `json:"first_seen_at"`
+	LastSeenAt     time.Time      `json:"last_seen_at"`
+}
+
 // PrivacyPolicyVersion represents a versioned privacy policy record.
 type PrivacyPolicyVersion struct {
 	ID            int64     `json:"id"`

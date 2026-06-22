@@ -387,6 +387,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/discovery/conflicts/:id", h.GetDiscoveryConflict)
 	admin.Post("/discovery/conflicts/:id/resolve", h.ResolveDiscoveryConflict)
 
+	// Observed state (#14)
+	admin.Get("/discovery/observed", h.GetObservedState)
+	admin.Get("/discovery/unregistered", h.ListUnregisteredHosts)
+
 	// Agent API routes (#212) — authenticated via Bearer token
 	scanAgent := api.Group("/scan-agent")
 	scanAgent.Use(h.AgentAuthMiddleware)

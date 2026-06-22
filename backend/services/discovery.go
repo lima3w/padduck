@@ -76,6 +76,10 @@ type discoveryRepo interface {
 	UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string, ttlDays int) (*models.ScanAgent, error)
 	DeleteScanAgent(ctx context.Context, id int64) error
 	ListScanJobsForAgent(ctx context.Context, agentID int64) ([]*models.ScanJob, error)
+	// Observed state (#14)
+	UpsertObservedState(ctx context.Context, s *models.ObservedState) error
+	GetObservedState(ctx context.Context, resourceType string, resourceID int64) (*models.ObservedState, error)
+	ListUnregisteredHosts(ctx context.Context, orgID *int64) ([]*models.ObservedState, error)
 	// Scan profiles (#432)
 	CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error)
 	ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error)
@@ -305,14 +309,21 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 		}
 
 		// --- Port scan (#214) ---
+		var observedOpenPorts []string
 		if portScanEnabled && r.alive && ipAddressID != nil {
 			portResult := scanner.ScanPorts(ctx, r.ip, ports, portConcurrency, time.Second)
 			if err2 := d.repository.UpdateIPPortScan(ctx, *ipAddressID, portResult); err2 != nil {
 				slog.Warn("discovery: port scan update failed", "ip", r.ip, "error", err2)
 			}
+			for port, open := range portResult {
+				if open {
+					observedOpenPorts = append(observedOpenPorts, port)
+				}
+			}
 		}
 
 		// --- SNMP scan (#210) ---
+		var observedSNMPHost, observedSNMPMAC string
 		if doSNMP && r.alive && ipAddressID != nil {
 			community, version, v3 := d.snmpCredsForIP(ctx, *ipAddressID, snmpCommunity, snmpVersion)
 			snmpResult, err2 := scanner.ScanSNMP(ctx, r.ip, community, version, v3, 5*time.Second)
@@ -324,6 +335,43 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 					}
 				}
 				_ = d.repository.UpdateIPFromSNMP(ctx, *ipAddressID, mac, snmpResult.SysName)
+				observedSNMPHost = snmpResult.SysName
+				observedSNMPMAC = mac
+			}
+		}
+
+		// --- Observed state upsert (#14) ---
+		if sr != nil {
+			observedData := map[string]any{
+				"is_alive":         r.alive,
+				"fwd_rev_mismatch": r.fwdRevMismatch,
+			}
+			if r.ptr != nil {
+				observedData["ptr_record"] = *r.ptr
+			}
+			if r.responseTimeMs > 0 {
+				observedData["response_time_ms"] = r.responseTimeMs
+			}
+			if len(observedOpenPorts) > 0 {
+				observedData["open_ports"] = observedOpenPorts
+			}
+			if observedSNMPHost != "" {
+				observedData["snmp_hostname"] = observedSNMPHost
+			}
+			if observedSNMPMAC != "" {
+				observedData["snmp_mac_address"] = observedSNMPMAC
+			}
+			ipStr := r.ip
+			obs := &models.ObservedState{
+				ResourceType: "ip_address",
+				ResourceID:   ipAddressID,
+				IPAddress:    &ipStr,
+				ObservedData: observedData,
+				Source:       "scan",
+				ScanResultID: &sr.ID,
+			}
+			if err2 := d.repository.UpsertObservedState(ctx, obs); err2 != nil {
+				slog.Warn("discovery: upsert observed state failed", "ip", r.ip, "error", err2)
 			}
 		}
 
@@ -1002,4 +1050,14 @@ func (d *DiscoveryService) ResolveDiscoveryConflict(ctx context.Context, id int6
 		return nil, fmt.Errorf("action must be 'accepted' or 'rejected'")
 	}
 	return d.repository.ResolveDiscoveryConflict(ctx, id, action, reviewedBy)
+}
+
+// GetObservedState returns the observed state for a specific registered resource.
+func (d *DiscoveryService) GetObservedState(ctx context.Context, resourceType string, resourceID int64) (*models.ObservedState, error) {
+	return d.repository.GetObservedState(ctx, resourceType, resourceID)
+}
+
+// ListUnregisteredHosts returns IPs seen by scanner but not matched to any authoritative record.
+func (d *DiscoveryService) ListUnregisteredHosts(ctx context.Context, orgID *int64) ([]*models.ObservedState, error) {
+	return d.repository.ListUnregisteredHosts(ctx, orgID)
 }

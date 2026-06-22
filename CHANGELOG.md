@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.33.17
+
+### Added
+- **Observed state tracking** (issue #14): new `observed_states` table stores a rolling per-resource snapshot of what the scanner last saw, completely separate from the authoritative `ip_addresses` and `devices` tables.
+- **Authoritative data is never modified by scan results** without explicit user action — observed data lives solely in `observed_states`.
+- **Scan integration**: `DiscoveryService.ScanSubnet` upserts an `observed_states` row for every scanned IP after each ping/port-scan/SNMP pass. Captured fields include `is_alive`, `ptr_record`, `response_time_ms`, `fwd_rev_mismatch`, `open_ports` (when port scan is enabled), and `snmp_hostname`/`snmp_mac_address` (when SNMP is enabled).
+- **Unregistered host tracking**: IPs seen by the scanner but not matched to any `ip_addresses` record are stored with `resource_id = NULL`; a dedicated partial unique index keeps them deduplicated per IP address.
+- **API endpoints**:
+  - `GET /api/v1/admin/discovery/observed?resource_type=ip_address&resource_id=<id>` — fetch the latest observed snapshot for a specific registered resource
+  - `GET /api/v1/admin/discovery/unregistered` — list IPs seen by scanner but absent from `ip_addresses`; org-scoped when caller has an org context
+
 ## v1.33.16
 
 ### Added
