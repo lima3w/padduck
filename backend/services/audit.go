@@ -20,6 +20,7 @@ type auditRepo interface {
 	GetAuditRetentionSettings(ctx context.Context) (*models.AuditRetentionSettings, error)
 	UpdateAuditRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error)
 	PruneAuditLogs(ctx context.Context, retentionDays int) (int64, error)
+	PruneOrgAuditLogs(ctx context.Context, orgID int64, retentionDays int) (int64, error)
 }
 
 // AuditService handles writing and querying audit logs.
@@ -227,6 +228,11 @@ func (a *AuditService) GetRetentionSettings(ctx context.Context) (*models.AuditR
 // UpdateRetentionSettings updates the audit retention settings row.
 func (a *AuditService) UpdateRetentionSettings(ctx context.Context, retentionDays int, archiveEnabled bool) (*models.AuditRetentionSettings, error) {
 	return a.repo.UpdateAuditRetentionSettings(ctx, retentionDays, archiveEnabled)
+}
+
+// PruneOrgLogs deletes audit logs for a specific org older than retentionDays.
+func (a *AuditService) PruneOrgLogs(ctx context.Context, orgID int64, retentionDays int) (int64, error) {
+	return a.repo.PruneOrgAuditLogs(ctx, orgID, retentionDays)
 }
 
 // PruneByRetentionSettings prunes audit logs using the retention_days from the settings table.

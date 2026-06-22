@@ -35,6 +35,21 @@ type Organization struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type OrganizationSettings struct {
+	OrganizationID    int64      `json:"organization_id"`
+	MaxSubnets        *int       `json:"max_subnets"`
+	MaxIPAddresses    *int       `json:"max_ip_addresses"`
+	MaxUsers          *int       `json:"max_users"`
+	MaxWebhooks       *int       `json:"max_webhooks"`
+	MaxAPITokens      *int       `json:"max_api_tokens"`
+	AuditRetentionDays *int      `json:"audit_retention_days"`
+	SMTPHost          *string    `json:"smtp_host"`
+	SMTPPort          *int       `json:"smtp_port"`
+	SMTPFrom          *string    `json:"smtp_from"`
+	CreatedAt         time.Time  `json:"created_at"`
+	UpdatedAt         time.Time  `json:"updated_at"`
+}
+
 // User represents a system user
 type User struct {
 	ID                     int64

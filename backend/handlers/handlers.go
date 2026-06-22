@@ -306,6 +306,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/organizations", h.CreateOrganization)
 	admin.Delete("/organizations/:id", h.DeleteOrganization)
 
+	// Org settings — org admins can view and update SMTP overrides (v1.33.16)
+	admin.Get("/organization/settings", h.GetOrgSettings)
+	admin.Put("/organization/settings", h.UpdateOrgSettings)
+
 	// Role management
 	admin.Get("/roles", h.ListRoles)
 	admin.Post("/roles", h.CreateRole)
@@ -671,6 +675,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	platform.Get("/audit-log", h.GetPlatformAuditLog)
 	platform.Post("/impersonate", h.PlatformImpersonate)
 	platform.Put("/users/:id/platform-admin", h.SetPlatformAdmin)
+	platform.Get("/organizations/:id/settings", h.GetPlatformOrgSettings)
+	platform.Put("/organizations/:id/settings", h.UpdatePlatformOrgSettings)
 
 	// API v2 routes — new endpoint contract with standard pagination envelope.
 	// v1 equivalents that have a v2 counterpart emit Deprecation headers.

@@ -77,6 +77,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Workflow:       workflowSvc,
 		EventBus:       bus,
 		Organizations:  NewOrganizationService(repo),
+		OrgSettings:    NewOrgSettingsService(repo),
 	}
 	return svc
 }

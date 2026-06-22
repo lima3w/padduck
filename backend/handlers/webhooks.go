@@ -109,6 +109,9 @@ func (h *Handler) CreateWebhookEndpoint(c *fiber.Ctx) error {
 	if fields := validateWebhookEndpointRequest(req); len(fields) > 0 {
 		return RespondValidationError(c, "validation failed", fields)
 	}
+	if err := h.ops.OrgSettings.CheckQuota(c.Context(), orgIDFromCtx(c), "webhooks"); err != nil {
+		return RespondError(c, fiber.StatusUnprocessableEntity, ErrQuotaExceeded, err.Error())
+	}
 	active := true
 	if req.IsActive != nil {
 		active = *req.IsActive
