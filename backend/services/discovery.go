@@ -80,6 +80,12 @@ type discoveryRepo interface {
 	UpsertObservedState(ctx context.Context, s *models.ObservedState) error
 	GetObservedState(ctx context.Context, resourceType string, resourceID int64) (*models.ObservedState, error)
 	ListUnregisteredHosts(ctx context.Context, orgID *int64) ([]*models.ObservedState, error)
+	// Drift items (#15)
+	GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error)
+	UpsertDriftItem(ctx context.Context, item *models.DriftItem) error
+	GetDriftItem(ctx context.Context, id int64) (*models.DriftItem, error)
+	ListDriftItems(ctx context.Context, orgID *int64, status string) ([]*models.DriftItem, error)
+	ResolveDriftItem(ctx context.Context, id int64, status string, resolvedBy *int64) error
 	// Scan profiles (#432)
 	CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error)
 	ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error)
@@ -431,6 +437,7 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 	}
 
 	var totalNew, totalGone, totalChanged int
+	var allScannedIPIDs []int64
 
 	for _, subnetID := range job.SubnetIDs {
 		subnet, err := d.repository.GetSubnetByID(ctx, subnetID)
@@ -473,13 +480,18 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 			}
 		}
 
-		_, n, g, ch, err := d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, effectiveConcurrency, runID, prevAlive, effectiveJob)
+		results, n, g, ch, err := d.ScanSubnet(ctx, job.ID, subnetID, subnet.NetworkAddress, subnet.PrefixLength, existingIPs, effectiveConcurrency, runID, prevAlive, effectiveJob)
 		if err != nil {
 			slog.Warn("scan job: subnet scan failed", "job_id", job.ID, "subnet_id", subnetID, "error", err)
 		}
 		totalNew += n
 		totalGone += g
 		totalChanged += ch
+		for _, sr := range results {
+			if sr.IPAddressID != nil {
+				allScannedIPIDs = append(allScannedIPIDs, *sr.IPAddressID)
+			}
+		}
 	}
 
 	// Finish scan run (#211)
@@ -493,7 +505,65 @@ func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) erro
 		}
 	}
 
+	// Detect drift between observed state and authoritative records (#15)
+	if len(allScannedIPIDs) > 0 {
+		if err := d.detectDrift(ctx, allScannedIPIDs); err != nil {
+			slog.Warn("scan job: drift detection failed", "job_id", job.ID, "error", err)
+		}
+	}
+
 	return d.repository.UpdateScanJobRunTime(ctx, job.ID, nil)
+}
+
+// detectDrift compares observed state to authoritative records and upserts drift_items.
+func (d *DiscoveryService) detectDrift(ctx context.Context, ipIDs []int64) error {
+	for _, ipID := range ipIDs {
+		obs, err := d.repository.GetObservedState(ctx, "ip_address", ipID)
+		if err != nil {
+			continue
+		}
+		auth, err := d.repository.GetIPAddressByID(ctx, ipID)
+		if err != nil {
+			continue
+		}
+
+		var diffs []models.FieldDiff
+
+		if ptrVal, ok := obs.ObservedData["ptr_record"].(string); ok && ptrVal != "" && ptrVal != auth.Hostname {
+			diffs = append(diffs, models.FieldDiff{
+				Field:         "hostname",
+				Authoritative: auth.Hostname,
+				Observed:      ptrVal,
+			})
+		}
+
+		if macVal, ok := obs.ObservedData["snmp_mac_address"].(string); ok && macVal != "" {
+			authMAC := ""
+			if auth.MACAddress != nil {
+				authMAC = *auth.MACAddress
+			}
+			if macVal != authMAC {
+				diffs = append(diffs, models.FieldDiff{
+					Field:         "mac_address",
+					Authoritative: authMAC,
+					Observed:      macVal,
+				})
+			}
+		}
+
+		if len(diffs) == 0 {
+			continue
+		}
+
+		_ = d.repository.UpsertDriftItem(ctx, &models.DriftItem{
+			OrganizationID:  obs.OrganizationID,
+			ResourceType:    "ip_address",
+			ResourceID:      ipID,
+			ObservedStateID: obs.ID,
+			FieldDiffs:      diffs,
+		})
+	}
+	return nil
 }
 
 // CreateJob creates a new scan job
@@ -1060,4 +1130,19 @@ func (d *DiscoveryService) GetObservedState(ctx context.Context, resourceType st
 // ListUnregisteredHosts returns IPs seen by scanner but not matched to any authoritative record.
 func (d *DiscoveryService) ListUnregisteredHosts(ctx context.Context, orgID *int64) ([]*models.ObservedState, error) {
 	return d.repository.ListUnregisteredHosts(ctx, orgID)
+}
+
+// ListDriftItems returns drift items, optionally filtered by status.
+func (d *DiscoveryService) ListDriftItems(ctx context.Context, orgID *int64, status string) ([]*models.DriftItem, error) {
+	return d.repository.ListDriftItems(ctx, orgID, status)
+}
+
+// GetDriftItem returns a single drift item by ID.
+func (d *DiscoveryService) GetDriftItem(ctx context.Context, id int64) (*models.DriftItem, error) {
+	return d.repository.GetDriftItem(ctx, id)
+}
+
+// ResolveDriftItem sets the resolved status on a drift item.
+func (d *DiscoveryService) ResolveDriftItem(ctx context.Context, id int64, status string, resolvedBy *int64) error {
+	return d.repository.ResolveDriftItem(ctx, id, status, resolvedBy)
 }

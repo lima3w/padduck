@@ -391,6 +391,13 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/discovery/observed", h.GetObservedState)
 	admin.Get("/discovery/unregistered", h.ListUnregisteredHosts)
 
+	// Drift review (#15)
+	admin.Get("/drift", h.ListDriftItems)
+	admin.Get("/drift/:id", h.GetDriftItem)
+	admin.Post("/drift/:id/accept", h.AcceptDrift)
+	admin.Post("/drift/:id/dismiss", h.DismissDrift)
+	admin.Post("/drift/:id/escalate", h.EscalateDrift)
+
 	// Agent API routes (#212) — authenticated via Bearer token
 	scanAgent := api.Group("/scan-agent")
 	scanAgent.Use(h.AgentAuthMiddleware)
