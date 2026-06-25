@@ -3,21 +3,32 @@ package db
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConnect(t *testing.T) {
-	// Test with invalid connection string
+	// Speed up retries for tests.
+	origAttempts, origBase, origMax := connectMaxAttempts, connectBaseDelay, connectMaxDelay
+	connectMaxAttempts = 2
+	connectBaseDelay = 1 * time.Millisecond
+	connectMaxDelay = 2 * time.Millisecond
+	t.Cleanup(func() {
+		connectMaxAttempts = origAttempts
+		connectBaseDelay = origBase
+		connectMaxDelay = origMax
+	})
+
 	ctx := context.Background()
+
 	_, err := Connect(ctx, "invalid://connection")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse connection string")
 
-	// Valid format but unreachable database
 	_, err = Connect(ctx, "postgres://user:pass@localhost:9999/db")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to ping database")
+	assert.Contains(t, err.Error(), "failed to connect to database after")
 }
 
 func TestDB_Close(t *testing.T) {

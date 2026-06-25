@@ -3,6 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -11,7 +13,15 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
-// Connect creates a new PostgreSQL connection pool
+var (
+	connectMaxAttempts = 10
+	connectBaseDelay   = 1 * time.Second
+	connectMaxDelay    = 16 * time.Second
+)
+
+// Connect creates a new PostgreSQL connection pool, retrying the initial ping
+// with exponential backoff to handle the race between the backend and
+// PostgreSQL starting simultaneously on a fresh install.
 func Connect(ctx context.Context, connString string) (*DB, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
@@ -23,13 +33,32 @@ func Connect(ctx context.Context, connString string) (*DB, error) {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
-	// Verify connection works
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+	delay := connectBaseDelay
+	for attempt := 1; attempt <= connectMaxAttempts; attempt++ {
+		if err = pool.Ping(ctx); err == nil {
+			return &DB{pool: pool}, nil
+		}
+		if attempt == connectMaxAttempts {
+			break
+		}
+		log.Printf("database not ready (attempt %d/%d): %v — retrying in %s",
+			attempt, connectMaxAttempts, err, delay)
+		select {
+		case <-ctx.Done():
+			pool.Close()
+			return nil, ctx.Err()
+		case <-time.After(delay):
+		}
+		if delay < connectMaxDelay {
+			delay *= 2
+			if delay > connectMaxDelay {
+				delay = connectMaxDelay
+			}
+		}
 	}
 
-	return &DB{pool: pool}, nil
+	pool.Close()
+	return nil, fmt.Errorf("failed to connect to database after %d attempts: %w", connectMaxAttempts, err)
 }
 
 // Pool returns the underlying pgxpool.Pool
