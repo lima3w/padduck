@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -53,9 +53,10 @@ func loadMFAEncryptionKey(key string, isProd bool) string {
 
 	persisted, path, err := readOrCreatePersistentMFAKey()
 	if err != nil {
-		log.Fatalf("FATAL: failed to initialize persistent MFA encryption key: %v", err)
+		slog.Error("failed to initialize persistent MFA encryption key", "error", err)
+		os.Exit(1)
 	}
-	log.Printf("INFO: Using persistent MFA encryption key from %s.", path)
+	slog.Info("using persistent MFA encryption key", "path", path)
 	return validateMFAKey(persisted, isProd)
 }
 
@@ -65,13 +66,15 @@ func loadMFAEncryptionKey(key string, isProd bool) string {
 func validateMFAKey(key string, isProd bool) string {
 	fail := func(msg string) string {
 		if isProd {
-			log.Fatalf("FATAL: %s", msg)
+			slog.Error(msg)
+			os.Exit(1)
 		}
 		fallback, err := generateEphemeralMFAKey()
 		if err != nil {
-			log.Fatalf("FATAL: failed to generate development MFA key: %v", err)
+			slog.Error("failed to generate development MFA key", "error", err)
+			os.Exit(1)
 		}
-		log.Printf("WARNING: %s Generated an ephemeral development MFA key. Set MFA_ENCRYPTION_KEY to preserve MFA secrets across restarts.", msg)
+		slog.Warn(msg + " Generated an ephemeral development MFA key. Set MFA_ENCRYPTION_KEY to preserve MFA secrets across restarts.")
 		return fallback
 	}
 
@@ -176,11 +179,9 @@ func warnWeakDBCredentials(rawURL string) {
 	knownDefaults := []string{"ipam", "postgres", "password", "secret", "changeme", "demo"}
 	for _, weak := range knownDefaults {
 		if strings.EqualFold(password, weak) || strings.EqualFold(user, weak) && password == user {
-			log.Fatalf(
-				"FATAL: DATABASE_URL contains known-default credentials (%s:***). "+
-					"Set strong credentials via DATABASE_URL or POSTGRES_PASSWORD env var before running in production.",
-				user,
-			)
+			slog.Error("DATABASE_URL contains known-default credentials — set strong credentials before running in production",
+				"user", user)
+			os.Exit(1)
 		}
 	}
 }
@@ -193,10 +194,8 @@ func warnInsecureDBSSL(rawURL string) {
 		return
 	}
 	if strings.EqualFold(u.Query().Get("sslmode"), "disable") {
-		log.Fatalf(
-			"FATAL: DATABASE_URL sets sslmode=disable. " +
-				"Remove sslmode=disable or set sslmode=require (or stronger) before running in production.",
-		)
+		slog.Error("DATABASE_URL sets sslmode=disable — remove it or set sslmode=require before running in production")
+		os.Exit(1)
 	}
 }
 
