@@ -1281,6 +1281,23 @@ type ObservedState struct {
 	LastSeenAt     time.Time      `json:"last_seen_at"`
 }
 
+// ResourceIntent represents a desired-state change queued for review or immediate apply.
+type ResourceIntent struct {
+	ID             int64          `json:"id"`
+	OrganizationID *int64         `json:"organization_id,omitempty"`
+	ResourceType   string         `json:"resource_type"`
+	ResourceID     *int64         `json:"resource_id,omitempty"`
+	Operation      string         `json:"operation"`
+	DesiredState   map[string]any `json:"desired_state"`
+	Status         string         `json:"status"`
+	SubmittedBy    *int64         `json:"submitted_by,omitempty"`
+	ReviewedBy     *int64         `json:"reviewed_by,omitempty"`
+	ReviewerNote   *string        `json:"reviewer_note,omitempty"`
+	SubmittedAt    time.Time      `json:"submitted_at"`
+	ReviewedAt     *time.Time     `json:"reviewed_at,omitempty"`
+	AppliedAt      *time.Time     `json:"applied_at,omitempty"`
+}
+
 // PrivacyPolicyVersion represents a versioned privacy policy record.
 type PrivacyPolicyVersion struct {
 	ID            int64     `json:"id"`

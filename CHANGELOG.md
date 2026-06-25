@@ -1,10 +1,19 @@
 # Changelog
 
-## v1.33.20
+## v1.33.21
 
-### Fixed
-- **Compose port env vars ignored in healthchecks**: `SERVER_PORT` and `FRONTEND_INTERNAL_PORT` now flow through to both the port mapping and the Docker healthcheck test commands. Previously both were hardcoded (`8080`/`3000`), causing containers to be marked unhealthy when either port was changed via env var.
-- **`LOG_LEVEL` not passed through in compose**: added `LOG_LEVEL` to the backend environment block (defaults to `warn`). Set to `debug` or `info` in `.env` to increase verbosity.
+### Added
+- **Desired-state intent model** (issue #13): new `resource_intents` table stores pending desired-state changes for subnets, IP addresses, devices, and VLANs before they are written as authoritative state.
+- **`IntentService`** with four lifecycle methods: `SubmitIntent`, `ApproveIntent`, `RejectIntent`, and internal `applyIntent` dispatcher. Approve transitions the intent to `applied` and immediately writes the change; reject transitions to `rejected` with no write. A failed apply transitions to `failed` with the error captured.
+- **Auto-approve mode** (config key `intent_auto_approve`, default `true`): when enabled, submitted intents are approved and applied synchronously. Set to `false` to require explicit review via the approve endpoint.
+- **REST endpoints** (all under `/api/v1/admin/intents`):
+  - `GET /intents` — list intents; filterable by `?status=` and `?resource_type=`; org-scoped when caller has an org context.
+  - `GET /intents/:id` — fetch a single intent.
+  - `POST /intents` — submit a new intent (`resource_type`, `resource_id`, `operation`, `desired_state`).
+  - `POST /intents/:id/approve` — approve and apply a pending intent (accepts optional `note`).
+  - `POST /intents/:id/reject` — reject a pending intent (accepts optional `note`).
+
+## v1.33.20
 
 ## v1.33.19
 

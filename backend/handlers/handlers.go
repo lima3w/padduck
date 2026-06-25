@@ -398,6 +398,13 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/drift/:id/dismiss", h.DismissDrift)
 	admin.Post("/drift/:id/escalate", h.EscalateDrift)
 
+	// Intent model (#13)
+	admin.Get("/intents", h.ListIntents)
+	admin.Get("/intents/:id", h.GetIntent)
+	admin.Post("/intents", h.SubmitIntent)
+	admin.Post("/intents/:id/approve", h.ApproveIntent)
+	admin.Post("/intents/:id/reject", h.RejectIntent)
+
 	// Agent API routes (#212) — authenticated via Bearer token
 	scanAgent := api.Group("/scan-agent")
 	scanAgent.Use(h.AgentAuthMiddleware)

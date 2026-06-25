@@ -78,6 +78,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		EventBus:       bus,
 		Organizations:  NewOrganizationService(repo),
 		OrgSettings:    NewOrgSettingsService(repo),
+		Intent:         NewIntentService(repo, configSvc, ipamSvc, infraSvc),
 	}
 	return svc
 }

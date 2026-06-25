@@ -22,4 +22,5 @@ type OpsManager struct {
 	EventBus       *EventBus
 	Organizations  *OrganizationService
 	OrgSettings    *OrgSettingsService
+	Intent         *IntentService
 }
