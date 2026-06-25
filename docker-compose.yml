@@ -39,9 +39,7 @@ services:
       - ./data/backend:/app/data
     environment:
       DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER:-padduck}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-padduck}}"
-      # Internal port the backend listens on. Must match the hardcoded value in
-      # nginx.conf — do not change without also rebuilding the frontend image.
-      SERVER_PORT: "8080"
+      SERVER_PORT: "${SERVER_PORT:-8080}"
       ENVIRONMENT: "production"
       MFA_ENCRYPTION_KEY: "${MFA_ENCRYPTION_KEY:-}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
@@ -50,7 +48,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- \"http://127.0.0.1:8080/health\" | grep -q '\"status\":\"ok\"'"]
+      test: ["CMD-SHELL", "wget -qO- \"http://127.0.0.1:${SERVER_PORT:-8080}/health\" | grep -q '\"status\":\"ok\"'"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -85,12 +83,12 @@ services:
       # Traefik) in front and point it at 127.0.0.1:${FRONTEND_PORT:-3000}.
       # To bind on all interfaces (not recommended), override FRONTEND_BIND:
       #   FRONTEND_BIND=0.0.0.0
-      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-3000}:${FRONTEND_INTERNAL_PORT:-3000}"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:3000/health | grep -q '\"status\":\"ok\"'"]
+      test: ["CMD-SHELL", "curl -fs http://127.0.0.1:${FRONTEND_INTERNAL_PORT:-3000}/health | grep -q '\"status\":\"ok\"'"]
       interval: 10s
       timeout: 5s
       retries: 6
