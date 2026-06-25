@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.20
+
+### Fixed
+- **Compose port env vars ignored in healthchecks**: `SERVER_PORT` and `FRONTEND_INTERNAL_PORT` now flow through to both the port mapping and the Docker healthcheck test commands. Previously both were hardcoded (`8080`/`3000`), causing containers to be marked unhealthy when either port was changed via env var.
+
 ## v1.33.19
 
 ### Fixed
