@@ -1243,6 +1243,29 @@ type TopologyHint struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+// FieldDiff describes a single diverged field between observed and authoritative data.
+type FieldDiff struct {
+	Field         string `json:"field"`
+	Authoritative string `json:"authoritative"`
+	Observed      string `json:"observed"`
+}
+
+// DriftItem records fields that diverged between observed_states and the authoritative record.
+// Status: open | accepted | dismissed | escalated.
+type DriftItem struct {
+	ID              int64       `json:"id"`
+	OrganizationID  *int64      `json:"organization_id,omitempty"`
+	ResourceType    string      `json:"resource_type"`
+	ResourceID      int64       `json:"resource_id"`
+	ObservedStateID int64       `json:"observed_state_id"`
+	FieldDiffs      []FieldDiff `json:"field_diffs"`
+	Status          string      `json:"status"`
+	ResolvedBy      *int64      `json:"resolved_by,omitempty"`
+	ResolvedAt      *time.Time  `json:"resolved_at,omitempty"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
+}
+
 // ObservedState is a rolling snapshot of what a scanner last saw for a resource.
 // It is never written to the authoritative subnet/IP/device tables without user approval.
 type ObservedState struct {

@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.33.18
+
+### Added
+- **Drift review workflow** (issue #15): after every scan job, `DiscoveryService` compares each observed state to the authoritative `ip_addresses` record and generates a `drift_item` for any diverged fields (`hostname` via PTR record, `mac_address` via SNMP).
+- **`drift_items` table** (migration `20260623_001_drift_items.up.sql`): one open item per resource at a time, enforced by a partial unique index on `(resource_type, resource_id) WHERE status = 'open'`. Re-scans update the existing open item rather than creating duplicates.
+- **Three resolution actions** — each closes the drift item and audit-logs the decision:
+  - `POST /api/v1/admin/drift/:id/accept` — writes all observed field values back to the authoritative record, then marks accepted
+  - `POST /api/v1/admin/drift/:id/dismiss` — marks expected; no authoritative change
+  - `POST /api/v1/admin/drift/:id/escalate` — creates a `discovery_conflicts` record per diverged field for investigation, then marks escalated
+- **List and detail endpoints**: `GET /api/v1/admin/drift` (filterable by `?status=`; defaults to `open`) and `GET /api/v1/admin/drift/:id`; both are org-scoped when the caller has an org context.
+
 ## v1.33.17
 
 ### Added
