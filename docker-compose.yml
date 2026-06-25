@@ -44,6 +44,7 @@ services:
       MFA_ENCRYPTION_KEY: "${MFA_ENCRYPTION_KEY:-}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
       RESET_ADMIN_PASSWORD: "${RESET_ADMIN_PASSWORD:-false}"
+      LOG_LEVEL: "${LOG_LEVEL:-warn}"
     depends_on:
       db:
         condition: service_healthy

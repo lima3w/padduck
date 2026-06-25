@@ -4,6 +4,7 @@
 
 ### Fixed
 - **Compose port env vars ignored in healthchecks**: `SERVER_PORT` and `FRONTEND_INTERNAL_PORT` now flow through to both the port mapping and the Docker healthcheck test commands. Previously both were hardcoded (`8080`/`3000`), causing containers to be marked unhealthy when either port was changed via env var.
+- **`LOG_LEVEL` not passed through in compose**: added `LOG_LEVEL` to the backend environment block (defaults to `warn`). Set to `debug` or `info` in `.env` to increase verbosity.
 
 ## v1.33.19
 
