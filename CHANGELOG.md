@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.19
+
+### Fixed
+- **Backend startup on fresh install**: `db.Connect` now retries the initial database ping up to 10 times with exponential backoff (1 s → 16 s cap, ~2.5 min total) instead of failing immediately. Eliminates the race condition where the backend container exits before PostgreSQL finishes initializing on a cold Docker install.
+
 ## v1.33.18
 
 ### Added
