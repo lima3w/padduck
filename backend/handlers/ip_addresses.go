@@ -61,6 +61,14 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		req.MACAddress = &normalized
 	}
 
+	if !h.evaluatePolicy(c, "ip_address", "create", map[string]string{
+		"subnet_id": fmt.Sprintf("%d", subnetID),
+		"address":   req.Address,
+		"hostname":  req.Hostname,
+	}, req) {
+		return nil
+	}
+
 	ip, err := h.ops.IPAM.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
 		reqLogger(c).Error("error creating IP address", "subnet_id", subnetID, "error", err)
@@ -328,6 +336,12 @@ func (h *Handler) AllocateIPAddress(c *fiber.Ctx) error {
 	req := new(AllocateRequest)
 	if err := c.BodyParser(req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+
+	if !h.evaluatePolicy(c, "ip_address", "allocate", map[string]string{
+		"subnet_id": fmt.Sprintf("%d", subnetID),
+	}, req) {
+		return nil
 	}
 
 	ip, err := h.ops.IPAM.AllocateIPAddress(c.Context(), int64(subnetID), req.DeviceID)

@@ -77,6 +77,12 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "hostname is required")
 	}
 
+	if !h.evaluatePolicy(c, "device", "register", map[string]string{
+		"hostname": req.Hostname,
+	}, req) {
+		return nil
+	}
+
 	device, err := h.ops.Infrastructure.CreateDevice(c.Context(), req)
 	if err != nil {
 		reqLogger(c).Error("error creating device", "error", err)

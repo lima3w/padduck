@@ -55,7 +55,9 @@ func (s *IntentService) isAutoApprove(ctx context.Context) bool {
 
 // SubmitIntent records a desired-state change. When auto-approve is enabled the
 // intent is applied synchronously and transitions straight to "applied".
-func (s *IntentService) SubmitIntent(ctx context.Context, orgID *int64, resourceType string, resourceID *int64, operation string, desiredState map[string]any, submittedBy *int64) (*models.ResourceIntent, error) {
+// Pass forceManual=true to skip auto-approve and always leave the intent pending
+// (used when a policy decision requires manual review).
+func (s *IntentService) SubmitIntent(ctx context.Context, orgID *int64, resourceType string, resourceID *int64, operation string, desiredState map[string]any, submittedBy *int64, forceManual ...bool) (*models.ResourceIntent, error) {
 	if resourceType == "" {
 		return nil, fmt.Errorf("resource_type is required")
 	}
@@ -83,7 +85,8 @@ func (s *IntentService) SubmitIntent(ctx context.Context, orgID *int64, resource
 		return nil, err
 	}
 
-	if s.isAutoApprove(ctx) {
+	manual := len(forceManual) > 0 && forceManual[0]
+	if !manual && s.isAutoApprove(ctx) {
 		return s.approve(ctx, created, submittedBy, nil)
 	}
 	return created, nil

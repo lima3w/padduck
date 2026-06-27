@@ -695,6 +695,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	platform.Put("/users/:id/platform-admin", h.SetPlatformAdmin)
 	platform.Get("/organizations/:id/settings", h.GetPlatformOrgSettings)
 	platform.Put("/organizations/:id/settings", h.UpdatePlatformOrgSettings)
+	platform.Put("/api-tokens/:id/bypass-policy", h.SetAPITokenBypassPolicy)
 
 	// API v2 routes — new endpoint contract with standard pagination envelope.
 	// v1 equivalents that have a v2 counterpart emit Deprecation headers.

@@ -66,9 +66,10 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 		c.Locals("orgID", user.OrganizationID)
 	}
 
-	// Store token scope and enforce rate limit
+	// Store token scope, bypass flag, and enforce rate limit
 	if apiToken != nil {
 		c.Locals("tokenScope", apiToken.Scope)
+		c.Locals("bypassPolicy", apiToken.BypassPolicy)
 
 		// Rate limit check
 		limitStr, _ := h.service.Config.GetCtx(c.Context(), "api_token_rate_limit_per_minute")

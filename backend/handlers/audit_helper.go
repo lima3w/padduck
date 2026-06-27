@@ -36,3 +36,9 @@ func callerID(c *fiber.Ctx) *int64 {
 	id, _ := auditUserFromCtx(c)
 	return id
 }
+
+// bypassPolicyFromCtx returns true when the request's API token has bypass_policy=true.
+func bypassPolicyFromCtx(c *fiber.Ctx) bool {
+	v, _ := c.Locals("bypassPolicy").(bool)
+	return v
+}
