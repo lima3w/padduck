@@ -30,3 +30,9 @@ func orgIDFromCtx(c *fiber.Ctx) *int64 {
 	v, _ := c.Locals("orgID").(*int64)
 	return v
 }
+
+// callerID extracts the authenticated user's ID from context.
+func callerID(c *fiber.Ctx) *int64 {
+	id, _ := auditUserFromCtx(c)
+	return id
+}
