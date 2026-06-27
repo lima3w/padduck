@@ -38,10 +38,10 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 			c.Context(), orgIDFromCtx(c), workflow, nil, "create", stateMap, uid, true,
 		)
 		if intentErr != nil {
-			RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, intentErr.Error())
+			_ = RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, intentErr.Error())
 			return false
 		}
-		c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		_ = c.Status(fiber.StatusAccepted).JSON(fiber.Map{
 			"status":    "pending_review",
 			"message":   decision.Message,
 			"intent_id": intent.ID,
@@ -53,7 +53,7 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 	if msg == "" {
 		msg = "request denied by automation policy"
 	}
-	RespondError(c, fiber.StatusUnprocessableEntity, ErrPolicyDenied, msg)
+	_ = RespondError(c, fiber.StatusUnprocessableEntity, ErrPolicyDenied, msg)
 	return false
 }
 
