@@ -195,6 +195,7 @@ type APIToken struct {
 	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
 	RotationGraceExpiresAt *time.Time `json:"rotation_grace_expires_at,omitempty"`
 	ImpersonatedOrgID      *int64     `json:"impersonated_org_id,omitempty"`
+	BypassPolicy           bool       `json:"bypass_policy"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }

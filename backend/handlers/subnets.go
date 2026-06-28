@@ -49,6 +49,13 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
+	if !h.evaluatePolicy(c, "subnet", "create", map[string]string{
+		"network_id": fmt.Sprintf("%d", networkID),
+		"prefix_len": fmt.Sprintf("%d", req.PrefixLength),
+	}, req) {
+		return nil
+	}
+
 	subnet, err := h.ops.IPAM.CreateSubnet(c.Context(), int64(networkID), req.NetworkAddress, req.PrefixLength, req.Description, req.Gateway, req.AutoReserveFirst, req.AutoReserveLast, req.LocationID, req.NameserverID, req.VLANID, req.CustomFields)
 	if err != nil {
 		var overlapErr *services.SubnetOverlapError

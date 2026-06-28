@@ -33,6 +33,7 @@ const (
 	ErrInternalServer      ErrorCode = "INTERNAL_SERVER_ERROR"
 	ErrServiceUnavailable  ErrorCode = "SERVICE_UNAVAILABLE"
 	ErrQuotaExceeded       ErrorCode = "QUOTA_EXCEEDED"
+	ErrPolicyDenied        ErrorCode = "POLICY_DENIED"
 )
 
 // RespondError sends a standardized error response

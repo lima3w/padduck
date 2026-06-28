@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.22
+
+### Added
+- **Policy validation before intent changes** (issue #16): `CreateSubnet`, `CreateIPAddress`, `AllocateIPAddress`, and `CreateDevice` now run `AutomationService.Evaluate()` before writing. A `deny` decision returns HTTP 422 `POLICY_DENIED` with the policy message; a `manual_review` decision submits a pending `resource_intent` (always pending regardless of auto-approve setting) and returns HTTP 202 with the intent ID.
+- **`bypass_policy` flag on API tokens**: platform admins can set `bypass_policy = true` on any API token via `PUT /api/v1/platform/api-tokens/:id/bypass-policy`. Requests carrying a bypass token skip policy evaluation entirely; bypasses are audit-logged.
+
 ## v1.33.21
 
 ### Added

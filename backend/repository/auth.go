@@ -55,13 +55,13 @@ func (r *Repository) CreateImpersonationToken(ctx context.Context, userID int64,
 }
 
 func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, bypass_policy, created_at, updated_at FROM api_tokens WHERE token_hash = $1`
 	row := r.db.QueryRow(ctx, query, tokenHash)
 
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.BypassPolicy, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (r *Repository) GetAPITokenByHash(ctx context.Context, tokenHash string) (*
 }
 
 func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, bypass_policy, created_at, updated_at FROM api_tokens WHERE user_id = $1 ORDER BY created_at DESC`
 	rows, err := r.db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -81,13 +81,19 @@ func (r *Repository) ListAPITokensByUser(ctx context.Context, userID int64) ([]*
 		token := &models.APIToken{}
 		err := rows.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 			&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
+			&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.BypassPolicy, &token.CreatedAt, &token.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
 		tokens = append(tokens, token)
 	}
 	return tokens, rows.Err()
+}
+
+// SetAPITokenBypassPolicy sets the bypass_policy flag on an API token (platform admin only).
+func (r *Repository) SetAPITokenBypassPolicy(ctx context.Context, tokenID int64, bypass bool) error {
+	_, err := r.db.Exec(ctx, `UPDATE api_tokens SET bypass_policy = $2, updated_at = NOW() WHERE id = $1`, tokenID, bypass)
+	return err
 }
 
 func (r *Repository) ListAPITokenAnalytics(ctx context.Context, orgID *int64) ([]*models.APIToken, error) {
@@ -156,12 +162,12 @@ func (r *Repository) ExtendAPIToken(ctx context.Context, tokenID, userID int64, 
 }
 
 func (r *Repository) GetAPITokenByID(ctx context.Context, tokenID int64) (*models.APIToken, error) {
-	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at FROM api_tokens WHERE id = $1`
+	query := `SELECT id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, bypass_policy, created_at, updated_at FROM api_tokens WHERE id = $1`
 	row := r.db.QueryRow(ctx, query, tokenID)
 	token := &models.APIToken{}
 	err := row.Scan(&token.ID, &token.UserID, &token.TokenHash, &token.Name, &token.Scope,
 		&token.UsageCount, &token.LastUsedAt, &token.LastUsedIP,
-		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.CreatedAt, &token.UpdatedAt)
+		&token.ExpiresAt, &token.RotationGraceExpiresAt, &token.ImpersonatedOrgID, &token.BypassPolicy, &token.CreatedAt, &token.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
