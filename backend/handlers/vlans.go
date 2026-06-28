@@ -128,6 +128,10 @@ func (h *Handler) CreateVLAN(c *fiber.Ctx) error {
 		NewValues: map[string]interface{}{"vlan_id": vlan.VlanID, "name": vlan.Name},
 	})
 
+	if _, err := h.ops.Topology.AddNode(c.Context(), orgIDFromCtx(c), "vlan", vlan.ID); err != nil {
+		reqLogger(c).Warn("topology: failed to register vlan node", "vlan_id", vlan.ID, "error", err)
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(vlan)
 }
 

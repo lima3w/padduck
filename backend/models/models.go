@@ -1228,6 +1228,44 @@ type DiscoveryConflict struct {
 	CreatedAt       time.Time  `json:"created_at"`
 }
 
+// GraphNode is a resource vertex in the directed topology graph.
+type GraphNode struct {
+	ID             int64      `json:"id"`
+	OrganizationID *int64     `json:"organization_id,omitempty"`
+	ResourceType   string     `json:"resource_type"`
+	ResourceID     int64      `json:"resource_id"`
+	CreatedAt      time.Time  `json:"created_at"`
+}
+
+// GraphEdge is a directed, typed relationship between two GraphNodes.
+type GraphEdge struct {
+	ID             int64     `json:"id"`
+	OrganizationID *int64    `json:"organization_id,omitempty"`
+	SourceNodeID   int64     `json:"source_node_id"`
+	TargetNodeID   int64     `json:"target_node_id"`
+	Relationship   string    `json:"relationship"`
+	Confidence     float64   `json:"confidence"`
+	Status         string    `json:"status"`
+	Evidence       *string   `json:"evidence,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// CytoscapeNode is a Cytoscape.js-compatible node element.
+type CytoscapeNode struct {
+	Data map[string]any `json:"data"`
+}
+
+// CytoscapeEdge is a Cytoscape.js-compatible edge element.
+type CytoscapeEdge struct {
+	Data map[string]any `json:"data"`
+}
+
+// CytoscapeGraph is the top-level Cytoscape.js graph payload.
+type CytoscapeGraph struct {
+	Nodes []CytoscapeNode `json:"nodes"`
+	Edges []CytoscapeEdge `json:"edges"`
+}
+
 // TopologyHint represents a suggested relationship between two inventory entities,
 // derived from discovery or inventory data.
 type TopologyHint struct {

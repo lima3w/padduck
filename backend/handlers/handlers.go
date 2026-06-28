@@ -591,6 +591,10 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Get("/topology/hints/:id", h.GetTopologyHint)
 	admin.Put("/topology/hints/:id/status", h.UpdateTopologyHintStatus)
 
+	// Topology graph (#17)
+	protected.Get("/topology/graph", h.GetTopologyGraph)
+	protected.Get("/topology/path", h.GetTopologyPath)
+
 	// Telemetry
 	admin.Post("/telemetry/send", h.SendTelemetryNow)
 
