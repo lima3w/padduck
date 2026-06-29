@@ -738,7 +738,7 @@ type WebhookFailureGroup struct {
 
 // AutomationPolicy is a lightweight rule evaluated before automation writes.
 // PolicyCondition is a single condition row in an automation policy rule.
-// Operator must be one of: eq, neq, contains, starts_with, ends_with, gt, lt, glob.
+// The Operator field must be one of: eq, neq, contains, starts_with, ends_with, gt, lt, glob.
 type PolicyCondition struct {
 	Field    string `json:"field"`
 	Operator string `json:"operator"`
