@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.26
+
+### Added
+- **Automation dry-run and simulation** (issue #20): a new `POST /api/v1/automation/simulate` endpoint evaluates all matching policies for a given workflow/action/context without writing anything, firing webhooks, or sending notifications. Returns the effective decision (`allow`, `deny`, `manual_review`), the full list of matched policies, and a human-readable description of the actions that would have run.
+- **Simulate modal** in the Automation Policies UI: a "Simulate" button opens a modal where you enter a workflow, action, and any number of key/value context pairs. Results are displayed inline with color-coded decision badges, matched policy names, and the actions list.
+
 ## v1.33.25
 
 ### Added

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAutomationPolicies, createAutomationPolicy, updateAutomationPolicy, deleteAutomationPolicy } from '../api/admin'
+import { getAutomationPolicies, createAutomationPolicy, updateAutomationPolicy, deleteAutomationPolicy, simulateAutomation } from '../api/admin'
 
 const OPERATORS = [
   { value: 'eq', label: 'equals' },
@@ -28,6 +28,14 @@ const ACTION_TYPES = [
 const EMPTY_CONDITION = { field: 'hostname', operator: 'eq', value: '' }
 const EMPTY_ACTION = { type: 'notify', params: {} }
 const EMPTY_FORM = { name: '', workflow: '*', action: '*', effect: 'allow', message: '', conditions: [], actions: [], enabled: true }
+const EMPTY_SIM_ROW = { key: '', value: '' }
+const EMPTY_SIM_FORM = { workflow: '', action: '', rows: [] }
+
+function decisionColors(decision) {
+  if (decision === 'deny') return 'bg-red-50 border-red-300 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300'
+  if (decision === 'manual_review') return 'bg-yellow-50 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300'
+  return 'bg-green-50 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300'
+}
 
 function effectBadge(effect) {
   if (effect === 'deny') return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
@@ -136,6 +144,11 @@ export default function AutomationPoliciesPage() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [showSimulate, setShowSimulate] = useState(false)
+  const [simForm, setSimForm] = useState(EMPTY_SIM_FORM)
+  const [simRunning, setSimRunning] = useState(false)
+  const [simResult, setSimResult] = useState(null)
+  const [simError, setSimError] = useState(null)
 
   function load() {
     setLoading(true)
@@ -238,6 +251,31 @@ export default function AutomationPoliciesPage() {
     }
   }
 
+  function openSimulate() {
+    setSimForm(EMPTY_SIM_FORM)
+    setSimResult(null)
+    setSimError(null)
+    setShowSimulate(true)
+  }
+
+  async function handleSimulate(e) {
+    e.preventDefault()
+    setSimRunning(true)
+    setSimResult(null)
+    setSimError(null)
+    const context = Object.fromEntries(
+      simForm.rows.filter(r => r.key.trim()).map(r => [r.key.trim(), r.value])
+    )
+    try {
+      const res = await simulateAutomation({ workflow: simForm.workflow.trim(), action: simForm.action.trim(), context })
+      setSimResult(res.data)
+    } catch (err) {
+      setSimError(err.response?.data?.error || 'Simulation failed')
+    } finally {
+      setSimRunning(false)
+    }
+  }
+
   const previewPayload = {
     name: form.name || '(name)',
     workflow: form.workflow || '*',
@@ -257,12 +295,20 @@ export default function AutomationPoliciesPage() {
             Rules that allow, deny, or require manual review before automation actions are applied.
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          New Policy
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={openSimulate}
+            className="px-4 py-2 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            Simulate
+          </button>
+          <button
+            onClick={openCreate}
+            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            New Policy
+          </button>
+        </div>
       </div>
 
       {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>}
@@ -311,6 +357,123 @@ export default function AutomationPoliciesPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {showSimulate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Simulate Policy</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Read-only — no writes, webhooks, or notifications are triggered.</p>
+              </div>
+              <button onClick={() => setShowSimulate(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">×</button>
+            </div>
+            <form onSubmit={handleSimulate} className="px-6 py-4 space-y-4">
+              {simError && <p className="text-sm text-red-600 dark:text-red-400">{simError}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow</label>
+                  <input
+                    className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. subnet, ip_address, *"
+                    value={simForm.workflow}
+                    onChange={e => setSimForm(f => ({ ...f, workflow: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
+                  <input
+                    className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. create, allocate, *"
+                    value={simForm.action}
+                    onChange={e => setSimForm(f => ({ ...f, action: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Context values</label>
+                  <button
+                    type="button"
+                    onClick={() => setSimForm(f => ({ ...f, rows: [...f.rows, { ...EMPTY_SIM_ROW }] }))}
+                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium"
+                  >
+                    + Add value
+                  </button>
+                </div>
+                {simForm.rows.length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No context values — all condition checks will fail for field-based conditions.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {simForm.rows.map((row, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          className="flex-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="key (e.g. prefix_len)"
+                          value={row.key}
+                          onChange={e => setSimForm(f => ({ ...f, rows: f.rows.map((r, j) => j === i ? { ...r, key: e.target.value } : r) }))}
+                        />
+                        <input
+                          className="flex-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="value"
+                          value={row.value}
+                          onChange={e => setSimForm(f => ({ ...f, rows: f.rows.map((r, j) => j === i ? { ...r, value: e.target.value } : r) }))}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSimForm(f => ({ ...f, rows: f.rows.filter((_, j) => j !== i) }))}
+                          className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-lg leading-none px-1"
+                        >×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {simResult && (
+                <div className={`rounded-lg border p-4 space-y-3 ${decisionColors(simResult.effectiveDecision)}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-base font-semibold capitalize">{simResult.effectiveDecision.replace('_', ' ')}</span>
+                    {simResult.reviewNeeded && <span className="text-xs font-medium px-2 py-0.5 rounded bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100">Review required</span>}
+                    {simResult.allowed && !simResult.reviewNeeded && <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100">Allowed</span>}
+                    {!simResult.allowed && <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100">Blocked</span>}
+                  </div>
+                  {simResult.matchedPolicies && simResult.matchedPolicies.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium opacity-70">{simResult.matchedPolicies.length} policy/policies matched:</p>
+                      {simResult.matchedPolicies.map((mp, i) => (
+                        <div key={i} className="rounded bg-white/50 dark:bg-black/20 px-3 py-2 text-xs space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{mp.name}</span>
+                            <span className={`px-1.5 py-0.5 rounded font-medium ${effectBadge(mp.effect)}`}>{mp.effect}</span>
+                          </div>
+                          {mp.actionsWouldRun && mp.actionsWouldRun.length > 0 && (
+                            <ul className="list-disc list-inside opacity-80 space-y-0.5">
+                              {mp.actionsWouldRun.map((a, j) => <li key={j}>{a}</li>)}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs opacity-70">No policies matched — default allow applies.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowSimulate(false)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">Close</button>
+                <button type="submit" disabled={simRunning} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  {simRunning ? 'Running…' : 'Run Simulation'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

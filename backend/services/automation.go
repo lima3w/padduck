@@ -237,6 +237,102 @@ func toFloat(s string) *float64 {
 	return &v
 }
 
+// MatchedPolicyResult describes how one policy evaluated during a simulation.
+type MatchedPolicyResult struct {
+	PolicyID          int64    `json:"policy_id"`
+	PolicyName        string   `json:"policy_name"`
+	Decision          string   `json:"decision"` // allow | deny | manual_review
+	ActionsWouldRun   []string `json:"actions_would_execute"`
+}
+
+// SimulationResult is the response from Simulate — read-only, no side effects.
+type SimulationResult struct {
+	Allowed           bool                  `json:"allowed"`
+	ReviewNeeded      bool                  `json:"review_needed"`
+	EffectiveDecision string                `json:"effective_decision"`
+	MatchedPolicies   []MatchedPolicyResult `json:"matched_policies"`
+}
+
+// Simulate runs policy evaluation in read-only mode: no goroutines, no DB writes,
+// no webhooks or notifications. Returns the full set of policies that matched and
+// what they would do.
+func (a *AutomationService) Simulate(ctx context.Context, workflow, action string, values map[string]string) (*SimulationResult, error) {
+	policies, err := a.repo.ListEnabledAutomationPolicies(ctx, workflow, action)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &SimulationResult{
+		Allowed:           true,
+		EffectiveDecision: "allow",
+		MatchedPolicies:   []MatchedPolicyResult{},
+	}
+
+	for _, policy := range policies {
+		if !policyMatches(policy.Conditions, values) {
+			continue
+		}
+
+		decision := policy.Effect
+		if decision == "" {
+			decision = "allow"
+		}
+
+		matched := MatchedPolicyResult{
+			PolicyID:        policy.ID,
+			PolicyName:      policy.Name,
+			Decision:        decision,
+			ActionsWouldRun: describeActions(policy.Actions),
+		}
+		result.MatchedPolicies = append(result.MatchedPolicies, matched)
+
+		switch policy.Effect {
+		case "deny":
+			result.Allowed = false
+			result.EffectiveDecision = "deny"
+			return result, nil
+		case "manual_review":
+			result.Allowed = false
+			result.ReviewNeeded = true
+			result.EffectiveDecision = "manual_review"
+			return result, nil
+		}
+	}
+
+	return result, nil
+}
+
+// describeActions returns human-readable strings for each action, used in simulation output.
+func describeActions(actions []models.PolicyAction) []string {
+	if len(actions) == 0 {
+		return []string{}
+	}
+	out := make([]string, 0, len(actions))
+	for _, a := range actions {
+		switch a.Type {
+		case "notify":
+			if uid := a.Params["user_id"]; uid != "" {
+				out = append(out, fmt.Sprintf("notify(user_id=%s)", uid))
+			} else if role := a.Params["role"]; role != "" {
+				out = append(out, fmt.Sprintf("notify(role=%s)", role))
+			} else {
+				out = append(out, "notify()")
+			}
+		case "webhook":
+			out = append(out, fmt.Sprintf("webhook(webhook_id=%s)", a.Params["webhook_id"]))
+		case "audit_annotation":
+			out = append(out, fmt.Sprintf("audit_annotation(%s)", a.Params["message"]))
+		case "scan":
+			out = append(out, fmt.Sprintf("scan(profile_id=%s)", a.Params["profile_id"]))
+		case "tag":
+			out = append(out, fmt.Sprintf("tag(tag_id=%s)", a.Params["tag_id"]))
+		default:
+			out = append(out, a.Type)
+		}
+	}
+	return out
+}
+
 // ExecuteActions runs each action in the matched policy asynchronously.
 // Each action runs in its own goroutine; failures are logged and do not
 // affect the primary operation that triggered the policy match.

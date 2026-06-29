@@ -499,6 +499,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	automation := protected.Group("/automation")
 	automation.Use(h.RequireBearerAuth)
 	automation.Post("/policies/evaluate", h.EvaluateAutomationPolicy)
+	automation.Post("/simulate", h.SimulateAutomation)
 	automation.Get("/integration-templates", h.ListIntegrationTemplates)
 	automation.Use(h.IdempotencyMiddleware)
 	automation.Post("/ip-addresses/allocate", h.AutomationAllocateIPAddress)
