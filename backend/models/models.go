@@ -744,6 +744,13 @@ type PolicyCondition struct {
 	Value    string `json:"value"`
 }
 
+// PolicyAction is a side-effect action executed asynchronously when a policy matches.
+// Type must be one of: notify, webhook, audit_annotation, scan, tag.
+type PolicyAction struct {
+	Type   string            `json:"type"`
+	Params map[string]string `json:"params"`
+}
+
 // AutomationPolicy is a lightweight rule evaluated before automation writes.
 type AutomationPolicy struct {
 	ID         int64             `json:"id"`
@@ -753,6 +760,7 @@ type AutomationPolicy struct {
 	Effect     string            `json:"effect"`
 	Enabled    bool              `json:"enabled"`
 	Conditions []PolicyCondition `json:"conditions,omitempty"`
+	Actions    []PolicyAction    `json:"actions,omitempty"`
 	Message    string            `json:"message,omitempty"`
 	CreatedAt  time.Time         `json:"created_at"`
 	UpdatedAt  time.Time         `json:"updated_at"`

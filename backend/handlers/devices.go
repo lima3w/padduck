@@ -92,6 +92,7 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 	if _, err := h.ops.Topology.AddNode(c.Context(), orgIDFromCtx(c), "device", device.ID); err != nil {
 		reqLogger(c).Warn("topology: failed to register device node", "device_id", device.ID, "error", err)
 	}
+	h.dispatchPolicyActions(c, "device", device.ID, device.Hostname)
 
 	return c.Status(fiber.StatusCreated).JSON(device)
 }

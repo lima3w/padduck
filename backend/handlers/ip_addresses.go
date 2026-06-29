@@ -81,6 +81,7 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 		ResourceType: "ip_address", ResourceID: &ip.ID, ResourceName: ip.Address,
 		NewValues: map[string]string{"address": ip.Address, "hostname": ip.Hostname, "status": ip.Status},
 	})
+	h.dispatchPolicyActions(c, "ip_address", ip.ID, ip.Address)
 
 	return c.Status(fiber.StatusCreated).JSON(ip)
 }

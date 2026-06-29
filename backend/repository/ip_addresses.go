@@ -150,6 +150,17 @@ func (r *Repository) UpdateIPAddressFull(ctx context.Context, id int64, hostname
 	return scanIP(row)
 }
 
+// UpdateIPAddressTag sets only the tag_id field on an IP address.
+func (r *Repository) UpdateIPAddressTag(ctx context.Context, id int64, tagID *int64) (*models.IPAddress, error) {
+	query := `WITH upd AS (
+		UPDATE ip_addresses SET tag_id = $2, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $1 RETURNING id
+	)
+	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
+	row := r.db.QueryRow(ctx, query, id, tagID)
+	return scanIP(row)
+}
+
 func (r *Repository) DeleteIPAddress(ctx context.Context, id int64) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM ip_addresses WHERE id = $1`, id)
 	return err
