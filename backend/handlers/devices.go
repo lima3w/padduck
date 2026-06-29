@@ -89,6 +89,10 @@ func (h *Handler) CreateDevice(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}
 
+	if _, err := h.ops.Topology.AddNode(c.Context(), orgIDFromCtx(c), "device", device.ID); err != nil {
+		reqLogger(c).Warn("topology: failed to register device node", "device_id", device.ID, "error", err)
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(device)
 }
 
@@ -242,6 +246,13 @@ func (h *Handler) AssociateIPToDevice(c *fiber.Ctx) error {
 	if err := h.ops.Infrastructure.AssociateIPToDevice(c.Context(), int64(id), int64(ipID), req.InterfaceName, req.IsPrimary); err != nil {
 		reqLogger(c).Error("error associating IP to device", "device_id", id, "ip_id", ipID, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
+	}
+
+	// Register a device→subnet:member_of edge so the topology graph reflects this association.
+	if ip, err := h.service.GetRepository().GetIPAddressByID(c.Context(), int64(ipID)); err == nil {
+		if _, err := h.ops.Topology.AddEdge(c.Context(), orgIDFromCtx(c), "device", int64(id), "subnet", ip.SubnetID, "member_of"); err != nil {
+			reqLogger(c).Warn("topology: failed to register device→subnet edge", "device_id", id, "subnet_id", ip.SubnetID, "error", err)
+		}
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

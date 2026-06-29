@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.33.23
+
+### Added
+- **Topology graph model** (issue #17): replaces the hints-only system with a proper directed graph stored in `topology_nodes` and `topology_edges` tables (migration `20260628_001_topology_graph.up.sql`).
+- **Graph traversal**: `TopologyService.GetNeighbors` performs a BFS up to a configurable depth (default 3, max 10); `TopologyService.GetPath` finds the shortest path between any two resources.
+- **Cytoscape-compatible API**:
+  - `GET /api/v1/topology/graph?root_type=subnet&root_id=1&depth=3` — returns the subgraph reachable from a root resource
+  - `GET /api/v1/topology/path?from_type=device&from_id=5&to_type=network&to_id=1` — returns the shortest path between two resources
+  - Both endpoints return `{ "nodes": [...], "edges": [...] }` in Cytoscape.js element format.
+- **Auto-sync hooks**: nodes are automatically registered when subnets, devices, and VLANs are created. A `member_of` edge from device to subnet is created when an IP address is associated with a device.
+
 ## v1.33.22
 
 ### Added

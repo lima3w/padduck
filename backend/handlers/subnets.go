@@ -74,6 +74,10 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		NewValues: map[string]interface{}{"cidr": cidr, "description": subnet.Description, "network_id": subnet.NetworkID},
 	})
 
+	if _, err := h.ops.Topology.AddNode(c.Context(), orgIDFromCtx(c), "subnet", subnet.ID); err != nil {
+		reqLogger(c).Warn("topology: failed to register subnet node", "subnet_id", subnet.ID, "error", err)
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(subnet)
 }
 
