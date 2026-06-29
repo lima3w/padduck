@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.33.25
+
+### Added
+- **Built-in automation actions** (issue #19): `AutomationPolicy` now supports an `actions` array. When a policy matches and the primary operation is allowed, configured actions execute asynchronously in background goroutines. Failures are logged but never block or roll back the triggering operation.
+- **Five action types**:
+  - `notify` — queues an in-app notification to a specific `user_id` or all users with a given `role`
+  - `webhook` — fires a webhook event (`automation.action`) to all registered endpoints
+  - `audit_annotation` — logs a structured `slog.Info` entry with the policy name, resource, and custom message (full audit-log write deferred to #21)
+  - `scan` — creates a one-shot scan job for the affected subnet
+  - `tag` — sets the `tag_id` on the newly created IP address resource
+- **`actions JSONB` column** added to `automation_policies` via migration `20260629_001_policy_actions.up.sql`.
+- **Policy modal Actions section**: the Automation Policies UI adds an Actions builder below Conditions — type dropdown with type-specific param inputs, individual row removal.
+- **`dispatchPolicyActions` handler helper**: stores the matched `AutomationPolicy` in Fiber locals during `evaluatePolicy`, then dispatches actions after each successful create (subnet, IP address, device).
+
 ## v1.33.24
 
 ### Added

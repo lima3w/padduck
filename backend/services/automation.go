@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
+	"time"
 
 	"padduck/models"
 	"padduck/repository"
@@ -16,6 +18,11 @@ type automationRepo interface {
 	CreateAutomationPolicy(ctx context.Context, policy *models.AutomationPolicy) (*models.AutomationPolicy, error)
 	DeleteAutomationPolicy(ctx context.Context, id int64) error
 	ListEnabledAutomationPolicies(ctx context.Context, workflow, action string) ([]*models.AutomationPolicy, error)
+
+	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+	GetUsersByRole(ctx context.Context, role string) ([]*models.User, error)
+	CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64, autoAddIPs bool) (*models.ScanJob, error)
+	UpdateIPAddressTag(ctx context.Context, ipID int64, tagID *int64) (*models.IPAddress, error)
 }
 
 type automationIPAM interface {
@@ -25,9 +32,12 @@ type automationIPAM interface {
 	CreateDevice(ctx context.Context, req *DeviceCreateRequest) (*models.Device, error)
 }
 
+// AutomationService handles policy evaluation and built-in action execution.
 type AutomationService struct {
-	repo automationRepo
-	ipam automationIPAM
+	repo          automationRepo
+	ipam          automationIPAM
+	webhooks      *WebhookService
+	notifications *NotificationService
 }
 
 type AutomationRequest struct {
@@ -45,8 +55,8 @@ type PolicyDecision struct {
 	Values       map[string]string        `json:"values,omitempty"`
 }
 
-func NewAutomationService(repo automationRepo, ipam automationIPAM) *AutomationService {
-	return &AutomationService{repo: repo, ipam: ipam}
+func NewAutomationService(repo automationRepo, ipam automationIPAM, webhooks *WebhookService, notifications *NotificationService) *AutomationService {
+	return &AutomationService{repo: repo, ipam: ipam, webhooks: webhooks, notifications: notifications}
 }
 
 func (a *AutomationService) ListPolicies(ctx context.Context) ([]*models.AutomationPolicy, error) {
@@ -225,6 +235,118 @@ func toFloat(s string) *float64 {
 		return nil
 	}
 	return &v
+}
+
+// ExecuteActions runs each action in the matched policy asynchronously.
+// Each action runs in its own goroutine; failures are logged and do not
+// affect the primary operation that triggered the policy match.
+func (a *AutomationService) ExecuteActions(policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) {
+	if len(policy.Actions) == 0 {
+		return
+	}
+	for _, act := range policy.Actions {
+		go func(action models.PolicyAction) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := a.runAction(ctx, action, policy, resourceType, resourceID, resourceName); err != nil {
+				slog.Warn("automation: action failed",
+					"policy", policy.Name, "action", action.Type, "error", err)
+			}
+		}(act)
+	}
+}
+
+func (a *AutomationService) runAction(ctx context.Context, action models.PolicyAction, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) error {
+	switch action.Type {
+	case "notify":
+		return a.runNotifyAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
+	case "webhook":
+		return a.runWebhookAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
+	case "audit_annotation":
+		msg := action.Params["message"]
+		slog.Info("automation audit annotation",
+			"policy", policy.Name, "resource_type", resourceType, "resource_id", resourceID,
+			"resource_name", resourceName, "message", msg)
+		return nil
+	case "scan":
+		return a.runScanAction(ctx, action.Params, resourceType, resourceID)
+	case "tag":
+		return a.runTagAction(ctx, action.Params, resourceType, resourceID)
+	default:
+		return fmt.Errorf("unknown action type %q", action.Type)
+	}
+}
+
+func (a *AutomationService) runNotifyAction(ctx context.Context, params map[string]string, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) error {
+	if a.notifications == nil {
+		return fmt.Errorf("notification service not available")
+	}
+	data := map[string]interface{}{
+		"policy_name":   policy.Name,
+		"resource_type": resourceType,
+		"resource_id":   resourceID,
+		"resource_name": resourceName,
+	}
+	if uidStr := params["user_id"]; uidStr != "" {
+		uid, err := strconv.ParseInt(uidStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid user_id %q", uidStr)
+		}
+		return a.notifications.Queue(ctx, uid, "automation_action", data)
+	}
+	if role := params["role"]; role != "" {
+		users, err := a.repo.GetUsersByRole(ctx, role)
+		if err != nil {
+			return err
+		}
+		for _, u := range users {
+			_ = a.notifications.Queue(ctx, u.ID, "automation_action", data)
+		}
+		return nil
+	}
+	return fmt.Errorf("notify action requires user_id or role param")
+}
+
+func (a *AutomationService) runWebhookAction(ctx context.Context, params map[string]string, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) error {
+	if a.webhooks == nil {
+		return fmt.Errorf("webhook service not available")
+	}
+	a.webhooks.Queue(ctx, WebhookEvent{
+		EventType:    "automation.action",
+		Action:       policy.Effect,
+		ResourceType: resourceType,
+		ResourceID:   &resourceID,
+		ResourceName: resourceName,
+		Status:       "success",
+		NewValues:    map[string]string{"policy": policy.Name},
+		OccurredAt:   time.Now().UTC(),
+	})
+	return nil
+}
+
+func (a *AutomationService) runScanAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) error {
+	if resourceType != "subnet" {
+		return fmt.Errorf("scan action only supported for subnet resources")
+	}
+	name := fmt.Sprintf("auto-scan subnet %d", resourceID)
+	_, err := a.repo.CreateScanJob(ctx, name, []int64{resourceID}, nil, 1, false)
+	return err
+}
+
+func (a *AutomationService) runTagAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) error {
+	if resourceType != "ip_address" {
+		return fmt.Errorf("tag action only supported for ip_address resources")
+	}
+	tagIDStr := params["tag_id"]
+	if tagIDStr == "" {
+		return fmt.Errorf("tag action requires tag_id param")
+	}
+	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid tag_id %q", tagIDStr)
+	}
+	_, err = a.repo.UpdateIPAddressTag(ctx, resourceID, &tagID)
+	return err
 }
 
 func IntegrationTemplates() []models.IntegrationTemplate {

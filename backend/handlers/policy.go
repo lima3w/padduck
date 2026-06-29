@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
+	"padduck/models"
 	"padduck/services"
 )
 
@@ -28,6 +29,9 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 		Values:   policyCtx,
 	})
 	if err != nil || decision.Allowed {
+		if decision != nil && decision.Policy != nil {
+			c.Locals("matchedPolicy", decision.Policy)
+		}
 		return true
 	}
 
@@ -102,4 +106,15 @@ func boolStr(b bool) string {
 		return "true"
 	}
 	return "false"
+}
+
+// dispatchPolicyActions fires any built-in actions attached to the policy that
+// matched during the preceding evaluatePolicy call. Must be called after the
+// primary write succeeds. Actions run asynchronously and never block the response.
+func (h *Handler) dispatchPolicyActions(c *fiber.Ctx, resourceType string, resourceID int64, resourceName string) {
+	p, _ := c.Locals("matchedPolicy").(*models.AutomationPolicy)
+	if p == nil || len(p.Actions) == 0 {
+		return
+	}
+	h.ops.Automation.ExecuteActions(p, resourceType, resourceID, resourceName)
 }

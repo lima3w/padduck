@@ -67,7 +67,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Webhooks:       webhookSvc,
 		Topology:       NewTopologyService(repo),
 		DNS:            dnsSvc,
-		Automation:     NewAutomationService(repo, svc),
+		Automation:     NewAutomationService(repo, svc, webhookSvc, notificationSvc),
 		Telemetry:      newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
 		NetworkModules: NewNetworkModulesService(repo),
 		IPAM:           ipamSvc,

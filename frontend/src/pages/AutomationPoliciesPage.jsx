@@ -17,8 +17,17 @@ const KNOWN_FIELDS = [
   'subnet_id', 'tag_id', 'location_id', 'device_type',
 ]
 
+const ACTION_TYPES = [
+  { value: 'notify', label: 'Notify user(s)' },
+  { value: 'webhook', label: 'Fire webhook' },
+  { value: 'audit_annotation', label: 'Audit annotation' },
+  { value: 'scan', label: 'Trigger scan' },
+  { value: 'tag', label: 'Apply tag' },
+]
+
 const EMPTY_CONDITION = { field: 'hostname', operator: 'eq', value: '' }
-const EMPTY_FORM = { name: '', workflow: '*', action: '*', effect: 'allow', message: '', conditions: [], enabled: true }
+const EMPTY_ACTION = { type: 'notify', params: {} }
+const EMPTY_FORM = { name: '', workflow: '*', action: '*', effect: 'allow', message: '', conditions: [], actions: [], enabled: true }
 
 function effectBadge(effect) {
   if (effect === 'deny') return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
@@ -55,6 +64,63 @@ function ConditionRow({ cond, index, onChange, onRemove }) {
         onClick={() => onRemove(index)}
         className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-lg leading-none px-1"
         title="Remove condition"
+      >×</button>
+    </div>
+  )
+}
+
+function ActionParamField({ label, paramKey, action, onChange }) {
+  return (
+    <input
+      className="flex-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      placeholder={label}
+      value={action.params[paramKey] || ''}
+      onChange={e => onChange({ ...action, params: { ...action.params, [paramKey]: e.target.value } })}
+    />
+  )
+}
+
+function ActionRow({ action, index, onChange, onRemove }) {
+  function handleTypeChange(type) {
+    onChange(index, { type, params: {} })
+  }
+  function handleChange(updated) {
+    onChange(index, updated)
+  }
+  return (
+    <div className="flex items-start gap-2">
+      <select
+        className="px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={action.type}
+        onChange={e => handleTypeChange(e.target.value)}
+      >
+        {ACTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+      </select>
+      <div className="flex-1 flex flex-wrap gap-2">
+        {action.type === 'notify' && (
+          <>
+            <ActionParamField label="user_id (or leave blank)" paramKey="user_id" action={action} onChange={handleChange} />
+            <ActionParamField label="role (e.g. admin)" paramKey="role" action={action} onChange={handleChange} />
+          </>
+        )}
+        {action.type === 'webhook' && (
+          <ActionParamField label="webhook_id" paramKey="webhook_id" action={action} onChange={handleChange} />
+        )}
+        {action.type === 'audit_annotation' && (
+          <ActionParamField label="message" paramKey="message" action={action} onChange={handleChange} />
+        )}
+        {action.type === 'scan' && (
+          <ActionParamField label="profile_id (optional)" paramKey="profile_id" action={action} onChange={handleChange} />
+        )}
+        {action.type === 'tag' && (
+          <ActionParamField label="tag_id" paramKey="tag_id" action={action} onChange={handleChange} />
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-lg leading-none px-1 mt-0.5"
+        title="Remove action"
       >×</button>
     </div>
   )
@@ -97,6 +163,7 @@ export default function AutomationPoliciesPage() {
       effect: p.effect,
       message: p.message || '',
       conditions: Array.isArray(p.conditions) ? p.conditions.map(c => ({ ...c })) : [],
+      actions: Array.isArray(p.actions) ? p.actions.map(a => ({ ...a, params: { ...a.params } })) : [],
       enabled: p.enabled,
     })
     setEditingID(p.id)
@@ -120,6 +187,18 @@ export default function AutomationPoliciesPage() {
     setForm(f => ({ ...f, conditions: f.conditions.filter((_, i) => i !== index) }))
   }
 
+  function addAction() {
+    setForm(f => ({ ...f, actions: [...(f.actions || []), { ...EMPTY_ACTION, params: {} }] }))
+  }
+
+  function updateAction(index, updated) {
+    setForm(f => ({ ...f, actions: (f.actions || []).map((a, i) => i === index ? updated : a) }))
+  }
+
+  function removeAction(index) {
+    setForm(f => ({ ...f, actions: (f.actions || []).filter((_, i) => i !== index) }))
+  }
+
   async function handleSave(e) {
     e.preventDefault()
     setSaving(true)
@@ -131,6 +210,7 @@ export default function AutomationPoliciesPage() {
       effect: form.effect,
       message: form.message.trim(),
       conditions: form.conditions.filter(c => c.field && c.value !== ''),
+      actions: (form.actions || []).filter(a => a.type),
       enabled: form.enabled,
     }
     try {
@@ -297,6 +377,34 @@ export default function AutomationPoliciesPage() {
                         index={i}
                         onChange={updateCondition}
                         onRemove={removeCondition}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Actions <span className="font-normal text-gray-400">(run after allow)</span></label>
+                  <button
+                    type="button"
+                    onClick={addAction}
+                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium"
+                  >
+                    + Add Action
+                  </button>
+                </div>
+                {(form.actions || []).length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No actions — policy only gates the operation.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(form.actions || []).map((action, i) => (
+                      <ActionRow
+                        key={i}
+                        action={action}
+                        index={i}
+                        onChange={updateAction}
+                        onRemove={removeAction}
                       />
                     ))}
                   </div>

@@ -12,13 +12,14 @@ import (
 )
 
 type automationPolicyRequest struct {
-	Name       string            `json:"name"`
-	Workflow   string            `json:"workflow"`
-	Action     string            `json:"action"`
-	Effect     string            `json:"effect"`
-	Enabled    *bool             `json:"enabled"`
+	Name       string                   `json:"name"`
+	Workflow   string                   `json:"workflow"`
+	Action     string                   `json:"action"`
+	Effect     string                   `json:"effect"`
+	Enabled    *bool                    `json:"enabled"`
 	Conditions []models.PolicyCondition `json:"conditions"`
-	Message    string            `json:"message"`
+	Actions    []models.PolicyAction    `json:"actions"`
+	Message    string                   `json:"message"`
 }
 
 func (h *Handler) ListAutomationPolicies(c *fiber.Ctx) error {
@@ -61,7 +62,7 @@ func (h *Handler) saveAutomationPolicy(c *fiber.Ctx, id int64) error {
 	}
 	policy, err := h.ops.Automation.SavePolicy(c.Context(), &models.AutomationPolicy{
 		ID: id, Name: req.Name, Workflow: req.Workflow, Action: req.Action,
-		Effect: req.Effect, Enabled: enabled, Conditions: req.Conditions, Message: req.Message,
+		Effect: req.Effect, Enabled: enabled, Conditions: req.Conditions, Actions: req.Actions, Message: req.Message,
 	})
 	if err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
