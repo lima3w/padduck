@@ -112,6 +112,28 @@ func (h *Handler) EvaluateAutomationPolicy(c *fiber.Ctx) error {
 	return c.Status(status).JSON(decision)
 }
 
+// SimulateAutomation handles POST /api/v1/automation/simulate.
+// Read-only: evaluates all matching policies and describes what would happen
+// without making any DB writes, firing webhooks, or queuing notifications.
+func (h *Handler) SimulateAutomation(c *fiber.Ctx) error {
+	var req struct {
+		Workflow string            `json:"workflow"`
+		Action   string            `json:"action"`
+		Context  map[string]string `json:"context"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if fields := requiredFields(map[string]string{"workflow": req.Workflow, "action": req.Action}); len(fields) > 0 {
+		return RespondValidationError(c, "validation failed", fields)
+	}
+	result, err := h.ops.Automation.Simulate(c.Context(), req.Workflow, req.Action, req.Context)
+	if err != nil {
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "simulation failed")
+	}
+	return c.JSON(result)
+}
+
 func (h *Handler) AutomationAllocateIPAddress(c *fiber.Ctx) error {
 	var req struct {
 		SubnetID    int64  `json:"subnet_id"`

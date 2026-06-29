@@ -56,6 +56,8 @@ export const updateAutomationPolicy = (id, data) => api.put(`/admin/automation/p
 
 export const deleteAutomationPolicy = (id) => api.delete(`/admin/automation/policies/${id}`)
 
+export const simulateAutomation = (data) => api.post('/automation/simulate', data)
+
 export const adminUnlockUser = (id) => api.post(`/admin/users/${id}/unlock`)
 
 export const suspendUser = (id, reason) => api.post(`/admin/users/${id}/suspend`, { reason })
