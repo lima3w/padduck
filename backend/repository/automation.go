@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"padduck/models"
 )
@@ -91,22 +92,45 @@ func (r *Repository) DeleteAutomationPolicy(ctx context.Context, id int64) error
 	return err
 }
 
-func decodePolicyConditions(raw string) map[string]string {
-	out := map[string]string{}
+// decodePolicyConditions parses the stored JSONB into []PolicyCondition.
+// It handles both the legacy map format {"field": "value"} and the new
+// array format [{"field":"f","operator":"eq","value":"v"}].
+func decodePolicyConditions(raw string) []models.PolicyCondition {
 	if raw == "" {
+		return nil
+	}
+	raw = strings.TrimSpace(raw)
+
+	// New array format.
+	if strings.HasPrefix(raw, "[") {
+		var out []models.PolicyCondition
+		_ = json.Unmarshal([]byte(raw), &out)
 		return out
 	}
-	_ = json.Unmarshal([]byte(raw), &out)
+
+	// Legacy object format — migrate on read.
+	var legacy map[string]string
+	if err := json.Unmarshal([]byte(raw), &legacy); err != nil {
+		return nil
+	}
+	out := make([]models.PolicyCondition, 0, len(legacy))
+	for field, value := range legacy {
+		op := "eq"
+		if strings.HasSuffix(value, "*") || value == "*" {
+			op = "glob"
+		}
+		out = append(out, models.PolicyCondition{Field: field, Operator: op, Value: value})
+	}
 	return out
 }
 
-func encodePolicyConditions(values map[string]string) string {
-	if len(values) == 0 {
-		return "{}"
+func encodePolicyConditions(conds []models.PolicyCondition) string {
+	if len(conds) == 0 {
+		return "[]"
 	}
-	b, err := json.Marshal(values)
+	b, err := json.Marshal(conds)
 	if err != nil {
-		return "{}"
+		return "[]"
 	}
 	return string(b)
 }

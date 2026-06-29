@@ -17,7 +17,7 @@ type automationPolicyRequest struct {
 	Action     string            `json:"action"`
 	Effect     string            `json:"effect"`
 	Enabled    *bool             `json:"enabled"`
-	Conditions map[string]string `json:"conditions"`
+	Conditions []models.PolicyCondition `json:"conditions"`
 	Message    string            `json:"message"`
 }
 

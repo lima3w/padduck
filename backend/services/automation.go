@@ -174,26 +174,57 @@ func (a *AutomationService) RegisterDevice(ctx context.Context, params *reposito
 	return device, decision, err
 }
 
-func policyMatches(conditions, values map[string]string) bool {
-	for key, expected := range conditions {
-		expected = strings.TrimSpace(expected)
-		if expected == "" || expected == "*" {
-			continue
-		}
-		actual, ok := values[key]
-		if !ok {
-			return false
-		}
-		switch {
-		case strings.HasSuffix(expected, "*"):
-			if !strings.HasPrefix(actual, strings.TrimSuffix(expected, "*")) {
-				return false
-			}
-		case actual != expected:
+func policyMatches(conditions []models.PolicyCondition, values map[string]string) bool {
+	for _, cond := range conditions {
+		actual := values[cond.Field]
+		if !evalCondition(cond.Operator, actual, cond.Value) {
 			return false
 		}
 	}
 	return true
+}
+
+// evalCondition evaluates a single field condition using the given operator.
+func evalCondition(op, actual, expected string) bool {
+	switch op {
+	case "eq", "":
+		if expected == "" || expected == "*" {
+			return true
+		}
+		return actual == expected
+	case "neq":
+		return actual != expected
+	case "contains":
+		return strings.Contains(actual, expected)
+	case "starts_with":
+		return strings.HasPrefix(actual, expected)
+	case "ends_with":
+		return strings.HasSuffix(actual, expected)
+	case "gt":
+		a, ea := toFloat(actual), toFloat(expected)
+		return a != nil && ea != nil && *a > *ea
+	case "lt":
+		a, ea := toFloat(actual), toFloat(expected)
+		return a != nil && ea != nil && *a < *ea
+	case "glob":
+		if expected == "" || expected == "*" {
+			return true
+		}
+		if strings.HasSuffix(expected, "*") {
+			return strings.HasPrefix(actual, strings.TrimSuffix(expected, "*"))
+		}
+		return actual == expected
+	default:
+		return actual == expected
+	}
+}
+
+func toFloat(s string) *float64 {
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil
+	}
+	return &v
 }
 
 func IntegrationTemplates() []models.IntegrationTemplate {

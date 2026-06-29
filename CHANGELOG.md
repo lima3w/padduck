@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.33.24
+
+### Added
+- **Automation rule builder** (issue #18): the Automation Policies page now shows a structured condition builder instead of a raw text input. Each condition row has a field selector (dropdown of known fields), an operator selector, and a value input. A "Preview JSON" toggle shows the exact payload before saving.
+- **Extended condition operators**: `eq`, `neq`, `contains`, `starts_with`, `ends_with`, `gt`, `lt`, `glob`. The `glob` operator supports trailing `*` wildcards. `gt`/`lt` compare values as numbers.
+- **`PolicyCondition` schema** (`{field, operator, value}`): `AutomationPolicy.conditions` is now `[]PolicyCondition` in the API and the Go model. Existing policies stored in the legacy `{"field": "value"}` map format are migrated to the new array format on first read, then re-saved in the new format on next update.
+- **Unit tests** for all eight condition operators across 30 cases in `services/automation_test.go`.
+
 ## v1.33.23
 
 ### Added
