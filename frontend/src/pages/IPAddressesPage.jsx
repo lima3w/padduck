@@ -8,6 +8,7 @@ import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
 import CustomFieldForm from '../components/CustomFieldForm'
+import ObservedStatePanel from '../components/ObservedStatePanel'
 import { downloadFile } from '../utils/download'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -1243,6 +1244,11 @@ export default function IPAddressesPage() {
                   <span className="font-medium">Last DNS Check:</span>
                   <span>{modal.meta.dnsLastChecked ? new Date(modal.meta.dnsLastChecked).toLocaleString() : '—'}</span>
                 </div>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="border-t pt-3">
+                <ObservedStatePanel resourceType="ip_address" resourceId={modal.meta.id} />
               </div>
             )}
             {cfDefs.length > 0 && (

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.27
+
+### Added
+- **Observed-state UI** (issue #14): the backend observed-state tracking shipped in v1.33.17 (PR #236) had no frontend surface. Adds an `ObservedStatePanel` component, shown on the device detail page (alongside Device Fingerprint) and in the IP address edit modal, displaying the scanner's last-seen data for that resource — alive/offline status, PTR record, SNMP hostname/MAC, response time, open ports, source, and last-seen timestamp. Falls back to a clear "no scan data observed yet" message when nothing has been scanned. Closes out the last unmet acceptance criterion on #14.
+
 ## v1.33.26
 
 ### Added
