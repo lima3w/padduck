@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.28
+
+### Added
+- **Drift review UI** (issue #15): the backend drift-review workflow shipped in v1.33.18 (PR #237) had no frontend surface either — same gap as #14. Adds a new "Drift" tab in the Discovery section listing open drift items with a side-by-side authoritative-vs-observed diff table per resource, and Accept / Dismiss / Escalate actions wired to the existing `/admin/drift*` endpoints. Adds an open-drift-count badge on the Discovery nav link, matching the existing Requests badge pattern.
+
 ## v1.33.27
 
 ### Added

@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getPendingRequestCount } from '../api/requests'
+import { listDriftItems } from '../api/discovery'
 import { getDnsZones } from '../api/dns'
 import { getFeatures } from '../api/app'
 import { checkForUpdates } from '../api/admin'
@@ -19,6 +20,7 @@ export default function Sidebar({ open, onClose }) {
   }, [location.pathname, onClose])
 
   const [pendingCount, setPendingCount] = useState(0)
+  const [driftCount, setDriftCount] = useState(0)
   const [dnsConfigured, setDnsConfigured] = useState(true)
   const [features, setFeatures] = useState(null)
   const [version, setVersion] = useState(null)
@@ -34,6 +36,20 @@ export default function Sidebar({ open, onClose }) {
     }
     fetchCount()
     const interval = setInterval(fetchCount, 30000)
+    return () => { cancelled = true; clearInterval(interval) }
+  }, [isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    let cancelled = false
+    async function fetchDriftCount() {
+      try {
+        const res = await listDriftItems('open')
+        if (!cancelled) setDriftCount(Array.isArray(res.data) ? res.data.length : 0)
+      } catch {}
+    }
+    fetchDriftCount()
+    const interval = setInterval(fetchDriftCount, 30000)
     return () => { cancelled = true; clearInterval(interval) }
   }, [isAdmin])
 
@@ -360,12 +376,17 @@ export default function Sidebar({ open, onClose }) {
             <NavLink
               to="/admin/discovery"
               className={({ isActive }) =>
-                `px-3 py-2 rounded text-sm font-medium transition-colors ${
+                `px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-between ${
                   isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
                 }`
               }
             >
-              Discovery
+              <span>Discovery</span>
+              {driftCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-yellow-500 rounded-full">
+                  {driftCount}
+                </span>
+              )}
             </NavLink>
             <div className={`${SECTION_HEADER} mt-1`}>Automation</div>
             <NavLink

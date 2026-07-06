@@ -3,6 +3,7 @@ import ScanJobsPage from './ScanJobsPage'
 import ScanRetentionPage from './ScanRetentionPage'
 import TopologyHintsPage from './TopologyHintsPage'
 import DiscoveryConflictsPage from './DiscoveryConflictsPage'
+import DriftReviewPage from './DriftReviewPage'
 import AdminAgentsPage from './AdminAgentsPage'
 
 const TABS = [
@@ -10,6 +11,7 @@ const TABS = [
   { id: 'scan-retention', label: 'Scan Retention' },
   { id: 'topology-hints', label: 'Topology Hints' },
   { id: 'conflicts', label: 'Conflicts' },
+  { id: 'drift', label: 'Drift' },
   { id: 'scan-agents', label: 'Scan Agents' },
 ]
 
@@ -45,6 +47,7 @@ export default function DiscoveryPage() {
         {activeTab === 'scan-retention' && <ScanRetentionPage />}
         {activeTab === 'topology-hints' && <TopologyHintsPage />}
         {activeTab === 'conflicts' && <DiscoveryConflictsPage />}
+        {activeTab === 'drift' && <DriftReviewPage />}
         {activeTab === 'scan-agents' && <AdminAgentsPage />}
       </div>
     </div>
