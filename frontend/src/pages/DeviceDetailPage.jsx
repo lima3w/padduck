@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import ChangeHistory from '../components/ChangeHistory'
 import FingerprintPanel from '../components/FingerprintPanel'
+import ObservedStatePanel from '../components/ObservedStatePanel'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import { getLocations } from '../api/locations'
 import { getRacks } from '../api/racks'
@@ -365,8 +366,9 @@ export default function DeviceDetailPage() {
       <DeviceInfoPanel device={device} typeObj={typeObj} locations={locations} cfDefs={cfDefs} />
 
       {isAdmin && device && (
-        <div className="mb-6">
+        <div className="mb-6 space-y-6">
           <FingerprintPanel deviceId={device.id} deviceIp={device.ipAddress || device.ip || ''} />
+          <ObservedStatePanel resourceType="device" resourceId={device.id} />
         </div>
       )}
 
