@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.30
+
+### Fixed
+- **Release workflow Go version**: `build-agent` job pinned Go via the floating `'1.26'` spec, which resolved to a stale 1.26.4 in `actions/setup-go`'s manifest and broke agent binary builds after `agent/go.mod` was bumped to require >=1.26.5 (v1.33.29). Switched to `go-version-file: agent/go.mod` so the workflow always matches the module's actual requirement.
+
 ## v1.33.29
 
 ### Fixed
