@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.29
+
+### Fixed
+- **Security dependency bumps**: `nginx` base image 1.31.1 → 1.31.2 (fixes CVE-2026-42530 HTTP/3 QUIC use-after-free, CVE-2026-42055 proxy/gRPC heap overflow, CVE-2026-48142 buffer overread) and Go toolchain 1.26.4 → 1.26.5 (fixes CVE-2026-42505 crypto/tls ECH hostname deanonymization).
+
 ## v1.33.28
 
 ### Added

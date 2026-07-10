@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 COPY . .
 RUN npm run build
 
-FROM nginx:1.31.1-trixie
+FROM nginx:1.31.2-trixie
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

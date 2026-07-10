@@ -10,7 +10,7 @@ GOVULNCHECK := $(GO_BIN)/govulncheck
 STATICCHECK_VERSION ?= v0.7.0
 GOSEC_VERSION ?= v2.26.1
 GOVULNCHECK_VERSION ?= v1.3.0
-GOVULNCHECK_MIN_GO ?= go1.26.4
+GOVULNCHECK_MIN_GO ?= go1.26.5
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
 ## ci-local: run all checks that must pass before pushing (mirrors GitHub CI)
