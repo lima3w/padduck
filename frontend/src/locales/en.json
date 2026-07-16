@@ -424,5 +424,13 @@
     "newPrefixLength": "New Prefix Length",
     "previewLabel": "Preview — child CIDRs to create:",
     "splitting": "Splitting…"
+  },
+  "subnetMerge": {
+    "title": "Merge with {{cidr}}",
+    "noSiblings": "No sibling subnets with the same prefix length found in this network.",
+    "selectPromptPrefix": "Select subnets to merge with ",
+    "selectPromptSuffix": ":",
+    "mergingCount": "Merging {{count}} subnets with /{{prefix}} prefix",
+    "merging": "Merging…"
   }
 }
