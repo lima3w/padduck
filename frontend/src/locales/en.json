@@ -590,5 +590,24 @@
     "noRecordsFound": "No records found",
     "forType": " for type {{type}}",
     "viewInIpam": "View this IP in IPAM"
+  },
+  "vlans": {
+    "loadError": "Failed to load VLANs",
+    "saveError": "Failed to save VLAN",
+    "deleteError": "Failed to delete VLAN",
+    "created": "VLAN created",
+    "updated": "VLAN updated",
+    "deleted": "VLAN deleted",
+    "loading": "Loading VLANs…",
+    "newVlan": "+ New VLAN",
+    "id": "ID",
+    "domain": "Domain",
+    "group": "Group",
+    "noVlansYet": "No VLANs yet. Add your first VLAN to get started.",
+    "newVlanModalTitle": "New VLAN",
+    "editVlanModalTitle": "Edit VLAN",
+    "vlanIdLabel": "VLAN ID",
+    "noDomain": "No domain",
+    "noGroup": "No group"
   }
 }
