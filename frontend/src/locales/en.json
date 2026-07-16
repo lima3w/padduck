@@ -836,5 +836,38 @@
     "devicesInRack": "Devices in Rack",
     "noDevicesInstalled": "No devices installed in this rack.",
     "position": "Position"
+  },
+  "locations": {
+    "loadError": "Failed to load locations",
+    "saveFailed": "Failed to save location",
+    "deleteFailed": "Failed to delete location",
+    "loadingLocations": "Loading locations...",
+    "addLocation": "+ Add Location",
+    "place": "Place",
+    "facility": "Facility",
+    "noLocationsYet": "No locations yet. Add your first location to get started.",
+    "addModalTitle": "Add Location",
+    "editModalTitle": "Edit Location",
+    "namePlaceholder": "Main Data Center",
+    "city": "City",
+    "region": "Region",
+    "country": "Country",
+    "facilityCode": "Facility Code",
+    "timeZone": "Time Zone",
+    "contactName": "Contact Name",
+    "contactEmail": "Contact Email",
+    "contactPhone": "Contact Phone",
+    "parentLocation": "Parent Location",
+    "noneTopLevel": "None (top-level)",
+    "address": "Address",
+    "addressPlaceholder": "123 Main St, City, State",
+    "types": {
+      "site": "Site",
+      "building": "Building",
+      "floor": "Floor",
+      "room": "Room",
+      "cage": "Cage",
+      "other": "Other"
+    }
   }
 }

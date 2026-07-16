@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getLocationTree, getLocations, createLocation, updateLocation, deleteLocation } from '../api/locations'
 import PageSpinner from '../components/PageSpinner'
@@ -67,6 +68,7 @@ function LocationRow({ node, allNodes, depth, onEdit, onDelete, deleteConfirm, s
 }
 
 export default function LocationsPage() {
+  const { t } = useTranslation()
   const [tree, setTree] = useState([])
   const [allLocations, setAllLocations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -91,7 +93,7 @@ export default function LocationsPage() {
       setTree(Array.isArray(treeData) ? treeData : [])
       setAllLocations(Array.isArray(flatData) ? flatData : (flatData?.locations ?? []))
     } catch (err) {
-      setError(err.message || 'Failed to load locations')
+      setError(err.message || t('locations.loadError'))
     } finally {
       setLoading(false)
     }
@@ -150,7 +152,7 @@ export default function LocationsPage() {
       setModal(null)
       load()
     } catch (err) {
-      setError(err.message || 'Failed to save location')
+      setError(err.message || t('locations.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -162,18 +164,18 @@ export default function LocationsPage() {
       setDeleteConfirm(null)
       load()
     } catch (err) {
-      setError(err.message || 'Failed to delete location')
+      setError(err.message || t('locations.deleteFailed'))
     }
   }
 
-  if (loading) return <PageSpinner message="Loading locations..." />
+  if (loading) return <PageSpinner message={t('locations.loadingLocations')} />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Locations</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('nav.locations')}</h1>
         <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-          + Add Location
+          {t('locations.addLocation')}
         </button>
       </div>
 
@@ -184,12 +186,12 @@ export default function LocationsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Place</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Facility</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('natRules.type')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('locations.place')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('locations.facility')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('delegations.status')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -197,7 +199,7 @@ export default function LocationsPage() {
             {tree.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                  No locations yet. Add your first location to get started.
+                  {t('locations.noLocationsYet')}
                 </td>
               </tr>
             )}
@@ -220,17 +222,17 @@ export default function LocationsPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? 'Add Location' : 'Edit Location'}
+          title={modal === 'create' ? t('locations.addModalTitle') : t('locations.editModalTitle')}
           onClose={() => setModal(null)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="Main Data Center"
+                placeholder={t('locations.namePlaceholder')}
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 required
@@ -238,14 +240,14 @@ export default function LocationsPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                ['city', 'City'],
-                ['region', 'Region'],
-                ['country', 'Country'],
-                ['facility_code', 'Facility Code'],
-                ['time_zone', 'Time Zone'],
-                ['contact_name', 'Contact Name'],
-                ['contact_email', 'Contact Email'],
-                ['contact_phone', 'Contact Phone'],
+                ['city', t('locations.city')],
+                ['region', t('locations.region')],
+                ['country', t('locations.country')],
+                ['facility_code', t('locations.facilityCode')],
+                ['time_zone', t('locations.timeZone')],
+                ['contact_name', t('locations.contactName')],
+                ['contact_email', t('locations.contactEmail')],
+                ['contact_phone', t('locations.contactPhone')],
               ].map(([field, label]) => (
                 <div key={field}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -258,37 +260,37 @@ export default function LocationsPage() {
               ))}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('delegations.status')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={form.status}
                 onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
               >
-                <option value="active">Active</option>
-                <option value="planned">Planned</option>
-                <option value="retired">Retired</option>
+                <option value="active">{t('natRules.active')}</option>
+                <option value="planned">{t('natRules.planned')}</option>
+                <option value="retired">{t('natRules.retired')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('natRules.type')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={form.type}
                 onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
               >
-                {LOCATION_TYPES.map(t => (
-                  <option key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                {LOCATION_TYPES.map(type => (
+                  <option key={type} value={type} className="capitalize">{t(`locations.types.${type}`)}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Parent Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('locations.parentLocation')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={form.parent_id}
                 onChange={e => setForm(f => ({ ...f, parent_id: e.target.value }))}
               >
-                <option value="">None (top-level)</option>
+                <option value="">{t('locations.noneTopLevel')}</option>
                 {allLocations
                   .filter(l => modal === 'create' || l.id !== modal?.edit?.id)
                   .map(l => (
@@ -297,16 +299,16 @@ export default function LocationsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('locations.address')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="123 Main St, City, State"
+                placeholder={t('locations.addressPlaceholder')}
                 value={form.address}
                 onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={2}
@@ -315,9 +317,9 @@ export default function LocationsPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
