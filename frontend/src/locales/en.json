@@ -580,5 +580,15 @@
     "serial": "Serial",
     "noZonesFound": "No DNS zones found.",
     "viewArrow": "View →"
+  },
+  "dnsZoneDetail": {
+    "loadError": "Failed to load zone records",
+    "filterByType": "Filter by type:",
+    "loading": "Loading records…",
+    "ttl": "TTL",
+    "contentValue": "Content / Value",
+    "noRecordsFound": "No records found",
+    "forType": " for type {{type}}",
+    "viewInIpam": "View this IP in IPAM"
   }
 }

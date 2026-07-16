@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getDnsZoneRecords } from '../api/dns'
 
 const RECORD_TYPES = ['All', 'A', 'AAAA', 'PTR', 'CNAME', 'MX']
 
 export default function DnsZoneDetailPage() {
+  const { t } = useTranslation()
   const { zone } = useParams()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,7 +25,7 @@ export default function DnsZoneDetailPage() {
       const data = res.data
       setRecords(Array.isArray(data) ? data : (data?.records ?? []))
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load zone records')
+      setError(err.response?.data?.error || t('dnsZoneDetail.loadError'))
     } finally {
       setLoading(false)
     }
@@ -41,7 +43,7 @@ export default function DnsZoneDetailPage() {
   return (
     <div>
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1">
-        <Link to="/dns/zones" className="hover:text-blue-600">DNS Zones</Link>
+        <Link to="/dns/zones" className="hover:text-blue-600">{t('nav.dnsZones')}</Link>
         <span>/</span>
         <span className="text-gray-800 dark:text-gray-200 font-mono font-medium">{zone}</span>
       </nav>
@@ -49,19 +51,19 @@ export default function DnsZoneDetailPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-mono">{zone}</h1>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Filter by type:</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{t('dnsZoneDetail.filterByType')}</span>
           <div className="flex rounded overflow-hidden border border-gray-300 dark:border-gray-600">
-            {RECORD_TYPES.map(t => (
+            {RECORD_TYPES.map(rt => (
               <button
-                key={t}
-                onClick={() => handleTypeChange(t)}
+                key={rt}
+                onClick={() => handleTypeChange(rt)}
                 className={`px-3 py-1.5 text-xs font-medium transition border-l first:border-l-0 border-gray-300 dark:border-gray-600 ${
-                  typeFilter === t
+                  typeFilter === rt
                     ? 'bg-blue-600 text-white'
                     : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                {t}
+                {rt}
               </button>
             ))}
           </div>
@@ -71,24 +73,24 @@ export default function DnsZoneDetailPage() {
       {error && <p className="mb-4 text-red-600 text-sm">{error}</p>}
 
       {loading ? (
-        <p className="text-gray-500">Loading records...</p>
+        <p className="text-gray-500">{t('dnsZoneDetail.loading')}</p>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">TTL</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Content / Value</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('deviceInfo.type')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dnsZoneDetail.ttl')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dnsZoneDetail.contentValue')}</th>
               </tr>
             </thead>
             <tbody>
               {filteredRecords.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
-                    No records found{typeFilter !== 'All' ? ` for type ${typeFilter}` : ''}.
+                    {t('dnsZoneDetail.noRecordsFound')}{typeFilter !== 'All' ? t('dnsZoneDetail.forType', { type: typeFilter }) : ''}.
                   </td>
                 </tr>
               )}
@@ -106,7 +108,7 @@ export default function DnsZoneDetailPage() {
                       <Link
                         to={`/ip-addresses?highlight=${encodeURIComponent(record.content)}`}
                         className="text-blue-600 dark:text-blue-400 hover:underline"
-                        title="View this IP in IPAM"
+                        title={t('dnsZoneDetail.viewInIpam')}
                       >
                         {record.content}
                       </Link>
