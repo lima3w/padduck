@@ -501,5 +501,21 @@
     "none": "None",
     "noVlansPrefix": "No VLANs configured. Add them under ",
     "noVlansSuffix": "."
+  },
+  "credentials": {
+    "title": "SNMP Credentials",
+    "subtitle": "Stored credentials are revealed on demand. Each field must be individually shown.",
+    "loadCredentials": "Load Credentials",
+    "noCredsStored": "No SNMP credentials stored for this device.",
+    "snmpVersion": "SNMP Version",
+    "communityString": "Community String",
+    "snmpV3Username": "SNMPv3 Username",
+    "authProtocol": "Auth Protocol",
+    "authPassword": "Auth Password",
+    "privProtocol": "Priv Protocol",
+    "privPassword": "Priv Password",
+    "hide": "Hide",
+    "reveal": "Reveal",
+    "clearFromView": "Clear credentials from view"
   }
 }
