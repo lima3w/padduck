@@ -441,5 +441,35 @@
     "typeConfirmPrompt": "Type CONFIRM to proceed anyway:",
     "resizing": "Resizing…",
     "resize": "Resize"
+  },
+  "delegations": {
+    "loadError": "Failed to load delegations",
+    "saveError": "Failed to save delegation",
+    "deleteError": "Failed to delete delegation",
+    "loading": "Loading delegations…",
+    "title": "IPv6 Prefix Delegations",
+    "addDelegation": "+ Add Delegation",
+    "delegatedPrefix": "Delegated Prefix",
+    "descriptionDevice": "Description / Device",
+    "expiresAt": "Expires At",
+    "status": "Status",
+    "noDelegationsYet": "No delegations yet.",
+    "deviceHash": "Device #{{id}}",
+    "expired": "Expired",
+    "active": "Active",
+    "newDelegationModalTitle": "New Delegation",
+    "editDelegationModalTitle": "Edit Delegation",
+    "deviceIdOptional": "Device ID (optional)",
+    "deviceIdPlaceholder": "Device ID",
+    "validLifetime": "Valid Lifetime (sec)",
+    "preferredLifetime": "Preferred Lifetime (sec)",
+    "confirmDelete": "Confirm?"
+  },
+  "utilizationHistory": {
+    "title": "Utilization History",
+    "loadError": "Failed to load utilization history.",
+    "loading": "Loading history…",
+    "noData": "No utilization history available for this period.",
+    "tooltipLabel": "Utilization"
   }
 }
