@@ -480,5 +480,16 @@
     "noIpsAssociated": "No IP addresses associated",
     "remove": "Remove",
     "removeConfirm": "Remove?"
+  },
+  "interfaces": {
+    "addInterface": "+ Add Interface",
+    "speed": "Speed",
+    "media": "Media",
+    "connectedTo": "Connected To",
+    "noInterfacesDefined": "No interfaces defined",
+    "speedMbps": "{{speed}} Mbps",
+    "deviceHash": "Device #{{id}}",
+    "vlanHash": "VLAN #{{id}}",
+    "confirmDelete": "Confirm?"
   }
 }
