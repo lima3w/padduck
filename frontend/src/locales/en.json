@@ -544,5 +544,16 @@
     "primaryAddress": "Primary address",
     "associating": "Associating…",
     "associate": "Associate"
+  },
+  "editDevice": {
+    "title": "Edit Device",
+    "hostname": "Hostname",
+    "noType": "No type",
+    "noRack": "No rack",
+    "rackOptional": "Rack (optional)",
+    "rackUnitStart": "Rack Unit Start",
+    "rackUnitSize": "Rack Unit Size",
+    "snmp": "SNMP",
+    "leaveBlankToKeep": "Leave blank to keep existing"
   }
 }
