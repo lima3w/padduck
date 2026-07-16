@@ -418,5 +418,11 @@
     "alertEmailPlaceholder": "alerts@example.com",
     "alertEmailHint": "Override the default alert recipient for this subnet",
     "customFields": "Custom Fields"
+  },
+  "subnetSplit": {
+    "title": "Split {{cidr}}",
+    "newPrefixLength": "New Prefix Length",
+    "previewLabel": "Preview — child CIDRs to create:",
+    "splitting": "Splitting…"
   }
 }
