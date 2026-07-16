@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.33.31
+
+### Fixed
+- **`DATABASE_URL` construction on fresh installs** (issues #257, #258): `docker-compose.yml` previously built `DATABASE_URL` by raw string interpolation of `POSTGRES_PASSWORD` with no percent-encoding, so any password containing `@ : / ? # %` broke pgx's URL parser (`net/url: invalid userinfo`) and the backend never started. The backend now builds the connection string itself from `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB`/`POSTGRES_HOST`/`POSTGRES_PORT` using `url.UserPassword`, which auto-escapes reserved characters. `DATABASE_URL` still works as an explicit override for custom deployments. As a fallback, a hand-built `DATABASE_URL` that still fails to parse due to un-encoded userinfo now gets an actionable error hint instead of the raw `net/url` message.
+- **`govulncheck` Makefile target**: checked the Go version via `go env GOVERSION` from the repo root, which has no `go.mod`, so it saw the bare installed toolchain instead of the version `backend/go.mod` resolves to. Now checks from inside `backend/`.
+
 ## v1.33.30
 
 ### Fixed
