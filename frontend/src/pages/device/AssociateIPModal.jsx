@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../../components/Modal'
 
 export default function AssociateIPModal({
@@ -7,6 +8,7 @@ export default function AssociateIPModal({
   saving, interfaces, onCreateInterface,
   onSearchChange, onSelectResult, onQuickCreate, onSubmit, onClose,
 }) {
+  const { t } = useTranslation()
   const [ifaceQuery, setIfaceQuery] = useState(assocForm.interface_name || '')
   const [showIfaceDrop, setShowIfaceDrop] = useState(false)
   const [creatingIface, setCreatingIface] = useState(false)
@@ -40,11 +42,11 @@ export default function AssociateIPModal({
   }
 
   return (
-    <Modal title="Associate IP Address" onClose={onClose}>
+    <Modal title={t('associateIp.title')} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            IP Address <span className="text-red-500">*</span>
+            {t('associateIp.ipAddress')} <span className="text-red-500">*</span>
           </label>
           {assocForm.ip_id ? (
             <div className="flex items-center gap-2">
@@ -55,14 +57,14 @@ export default function AssociateIPModal({
                 type="button"
                 onClick={() => { setAssocForm(f => ({ ...f, ip_id: '' })) }}
                 className="px-2 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-sm"
-                title="Clear selection"
+                title={t('associateIp.clearSelection')}
               >✕</button>
             </div>
           ) : (
             <div>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="Type an IP address or hostname to search…"
+                placeholder={t('associateIp.searchPlaceholder')}
                 value={ipSearch}
                 onChange={e => onSearchChange(e.target.value)}
                 autoFocus
@@ -70,11 +72,11 @@ export default function AssociateIPModal({
               {(ipSearching || ipSearchResults.length > 0 || (ipSearch.trim() && !ipSearching)) && (
                 <div className="mt-1 border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800 max-h-48 overflow-y-auto">
                   {ipSearching && (
-                    <div className="px-3 py-2 text-sm text-gray-400">Searching…</div>
+                    <div className="px-3 py-2 text-sm text-gray-400">{t('associateIp.searching')}</div>
                   )}
                   {!ipSearching && ipSearchResults.length === 0 && ipSearch.trim() && (
                     <div>
-                      <div className="px-3 py-2 text-sm text-gray-400">No matching IPs found</div>
+                      <div className="px-3 py-2 text-sm text-gray-400">{t('associateIp.noMatchingIps')}</div>
                       {/^[\d.:a-fA-F]+$/.test(ipSearch.trim()) && (
                         <button
                           type="button"
@@ -82,7 +84,7 @@ export default function AssociateIPModal({
                           disabled={ipCreating}
                           className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
                         >
-                          {ipCreating ? 'Creating…' : `+ Create ${ipSearch.trim()} and select`}
+                          {ipCreating ? t('associateIp.creating') : t('associateIp.createAndSelect', { value: ipSearch.trim() })}
                         </button>
                       )}
                     </div>
@@ -106,7 +108,7 @@ export default function AssociateIPModal({
         </div>
 
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Interface Name</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('associateIp.interfaceName')}</label>
           <input
             className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             placeholder="e.g. eth0"
@@ -141,7 +143,7 @@ export default function AssociateIPModal({
                   disabled={creatingIface}
                   className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
                 >
-                  {creatingIface ? 'Creating…' : `+ Create interface "${ifaceQuery.trim()}"`}
+                  {creatingIface ? t('associateIp.creating') : t('associateIp.createInterface', { name: ifaceQuery.trim() })}
                 </button>
               )}
             </div>
@@ -155,12 +157,12 @@ export default function AssociateIPModal({
             onChange={e => setAssocForm(f => ({ ...f, is_primary: e.target.checked }))}
             className="w-4 h-4 text-blue-600 rounded"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Primary address</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">{t('associateIp.primaryAddress')}</span>
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
           <button type="submit" disabled={saving || !assocForm.ip_id} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'Associating...' : 'Associate'}
+            {saving ? t('associateIp.associating') : t('associateIp.associate')}
           </button>
         </div>
       </form>

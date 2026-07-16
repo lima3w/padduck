@@ -471,5 +471,89 @@
     "loading": "Loading history…",
     "noData": "No utilization history available for this period.",
     "tooltipLabel": "Utilization"
+  },
+  "deviceIp": {
+    "associateIp": "+ Associate IP",
+    "address": "Address",
+    "interface": "Interface",
+    "primary": "Primary",
+    "noIpsAssociated": "No IP addresses associated",
+    "remove": "Remove",
+    "removeConfirm": "Remove?"
+  },
+  "interfaces": {
+    "addInterface": "+ Add Interface",
+    "speed": "Speed",
+    "media": "Media",
+    "connectedTo": "Connected To",
+    "noInterfacesDefined": "No interfaces defined",
+    "speedMbps": "{{speed}} Mbps",
+    "deviceHash": "Device #{{id}}",
+    "vlanHash": "VLAN #{{id}}",
+    "confirmDelete": "Confirm?"
+  },
+  "interfaceModal": {
+    "addTitle": "Add Interface",
+    "editTitle": "Edit Interface",
+    "speedMbpsLabel": "Speed (Mbps)",
+    "mediaType": "Media Type",
+    "selectPlaceholder": "Select...",
+    "none": "None",
+    "noVlansPrefix": "No VLANs configured. Add them under ",
+    "noVlansSuffix": "."
+  },
+  "credentials": {
+    "title": "SNMP Credentials",
+    "subtitle": "Stored credentials are revealed on demand. Each field must be individually shown.",
+    "loadCredentials": "Load Credentials",
+    "noCredsStored": "No SNMP credentials stored for this device.",
+    "snmpVersion": "SNMP Version",
+    "communityString": "Community String",
+    "snmpV3Username": "SNMPv3 Username",
+    "authProtocol": "Auth Protocol",
+    "authPassword": "Auth Password",
+    "privProtocol": "Priv Protocol",
+    "privPassword": "Priv Password",
+    "hide": "Hide",
+    "reveal": "Reveal",
+    "clearFromView": "Clear credentials from view"
+  },
+  "deviceInfo": {
+    "type": "Type",
+    "online": "Online",
+    "offline": "Offline",
+    "vendor": "Vendor",
+    "model": "Model",
+    "osVersion": "OS Version",
+    "lastPing": "Last Ping",
+    "rack": "Rack",
+    "rackHash": "Rack #{{id}}",
+    "rackUnitRange": "(U{{start}}–U{{end}})"
+  },
+  "associateIp": {
+    "title": "Associate IP Address",
+    "ipAddress": "IP Address",
+    "clearSelection": "Clear selection",
+    "searchPlaceholder": "Type an IP address or hostname to search…",
+    "searching": "Searching…",
+    "noMatchingIps": "No matching IPs found",
+    "creating": "Creating…",
+    "createAndSelect": "+ Create {{value}} and select",
+    "interfaceName": "Interface Name",
+    "createInterface": "+ Create interface \"{{name}}\"",
+    "primaryAddress": "Primary address",
+    "associating": "Associating…",
+    "associate": "Associate"
+  },
+  "editDevice": {
+    "title": "Edit Device",
+    "hostname": "Hostname",
+    "noType": "No type",
+    "noRack": "No rack",
+    "rackOptional": "Rack (optional)",
+    "rackUnitStart": "Rack Unit Start",
+    "rackUnitSize": "Rack Unit Size",
+    "snmp": "SNMP",
+    "leaveBlankToKeep": "Leave blank to keep existing"
   }
 }

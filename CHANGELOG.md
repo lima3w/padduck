@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.3
+
+### Added
+- **i18n batch 3/15: device sub-components** (issue #35): converted all `pages/device/*` components (`IPAddressesTab`, `InterfacesTab`, `InterfaceModal`, `CredentialsTab`, `DeviceInfoPanel`, `AssociateIPModal`, `EditDeviceModal`) to `t()` calls. `DevicesPage.jsx` (809 lines) and `DeviceDetailPage.jsx` (509 lines) are deferred to their own follow-up PR given their size, alongside the already-deferred `IPAddressesPage.jsx`.
+
 ## v1.34.2
 
 ### Added
