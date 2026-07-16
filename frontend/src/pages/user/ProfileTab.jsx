@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../../api/auth'
 import { gravatarUrl } from '../../utils/md5'
+import { useLocale, AVAILABLE_LOCALES } from '../../hooks/useLocale'
 
 const AVATAR_ENDPOINT = '/api/v1/auth/me/avatar'
 const MAX_AVATAR_PX = 256   // resize canvas target
@@ -28,6 +30,9 @@ function resizeImage(file) {
 }
 
 export default function ProfileTab({ user, onAvatarChange }) {
+  const { t } = useTranslation()
+  const { locale, setLocale } = useLocale()
+  const [localeSaved, setLocaleSaved] = useState(false)
   const [source, setSource] = useState(user?.avatarSource || 'gravatar')
   const [preview, setPreview] = useState(null)   // data URL for the chosen custom image
   const [saving, setSaving] = useState(false)
@@ -64,6 +69,12 @@ export default function ProfileTab({ user, onAvatarChange }) {
   function handleSourceChange(val) {
     setSource(val)
     if (val === 'gravatar') setPreview(null)
+  }
+
+  async function handleLocaleChange(e) {
+    await setLocale(e.target.value)
+    setLocaleSaved(true)
+    setTimeout(() => setLocaleSaved(false), 3000)
   }
 
   async function handleSave() {
@@ -197,6 +208,24 @@ export default function ProfileTab({ user, onAvatarChange }) {
         >
           {saving ? 'Saving…' : 'Save avatar'}
         </button>
+      </div>
+
+      {/* Language */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+        <label htmlFor="locale-select" className="text-sm font-medium text-gray-700 dark:text-gray-200 block">
+          {t('profile.language')}
+        </label>
+        <select
+          id="locale-select"
+          value={locale}
+          onChange={handleLocaleChange}
+          className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200"
+        >
+          {AVAILABLE_LOCALES.map((l) => (
+            <option key={l.code} value={l.code}>{l.label}</option>
+          ))}
+        </select>
+        {localeSaved && <p className="text-sm text-green-600 dark:text-green-400">{t('profile.languageSaved')}</p>}
       </div>
 
       {/* Account info */}

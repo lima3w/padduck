@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import CommandPalette from './CommandPalette'
@@ -7,6 +8,7 @@ import { useDarkMode } from '../hooks/useDarkMode'
 import { RouteErrorBoundary } from './ErrorBoundary'
 
 export default function Layout() {
+  const { t } = useTranslation()
   const darkMode = useDarkMode()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
@@ -34,7 +36,7 @@ export default function Layout() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-blue-700 focus:ring-2 focus:ring-blue-500 dark:focus:bg-gray-800 dark:focus:text-blue-300"
       >
-        Skip to main content
+        {t('common.skipToMainContent')}
       </a>
       <Header darkMode={darkMode} onSearchClick={() => setPaletteOpen(true)} onNavToggle={() => setNavOpen(o => !o)} />
       <div className="flex flex-1 overflow-hidden">

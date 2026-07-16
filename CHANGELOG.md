@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.34.0
+
+### Added
+- **i18n framework** (issue #35, phase 1): the UI can now be translated by editing a single locale file per language, with no code changes required to add a new one. Adopted `i18next` + `react-i18next`; locale files live in `frontend/src/locales/<lang>.json` and are bundled at build time. Missing keys in a locale automatically fall back to English, so partial translations are safe to ship.
+- **Language switcher**: Account Settings → Profile → Language. The preference is persisted to the user's account (new `PUT /api/v1/auth/me/locale` endpoint, backed by a new `users.locale` column) and cached in `localStorage` as a pre-login/offline fallback.
+- **French locale stub** (`fr.json`) as a worked example, intentionally partial to demonstrate the English-fallback behavior.
+- Migrated the shared app chrome (navigation sidebar, header, user menu), the login flow, and the account settings page to `t()` calls as the reference implementation. The remaining ~110 pages still have hardcoded strings and will be converted incrementally in follow-up releases — see `docs/i18n.md` for how to contribute a translation or convert a page.
+
 ## v1.33.32
 
 ### Fixed

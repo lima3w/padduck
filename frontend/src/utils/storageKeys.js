@@ -1,6 +1,7 @@
 export const STORAGE_KEYS = {
   currentUser: 'padduck_current_user',
   colorScheme: 'padduck-color-scheme',
+  locale: 'padduck-locale',
   ipColumns: 'padduck_ip_columns',
   deviceFilters: 'padduck_filters_devices',
   deviceColumns: 'padduck_cols_devices',

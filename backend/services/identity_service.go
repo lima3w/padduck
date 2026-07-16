@@ -14,6 +14,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"net/mail"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -701,6 +702,18 @@ func (s *IdentityService) UpdateUserAvatar(ctx context.Context, userID int64, so
 		data = &normalized
 	}
 	return s.repo.UpdateUserAvatar(ctx, userID, source, data)
+}
+
+var localePattern = regexp.MustCompile(`^[a-z]{2}(-[A-Z]{2})?$`)
+
+// UpdateUserLocale sets the user's preferred UI locale. The format is validated
+// (e.g. "en", "fr", "en-US") but the value itself isn't checked against a
+// hardcoded list, so adding a new locale file requires no backend changes.
+func (s *IdentityService) UpdateUserLocale(ctx context.Context, userID int64, locale string) error {
+	if !localePattern.MatchString(locale) {
+		return fmt.Errorf("invalid locale: must match a language code like 'en' or 'en-US'")
+	}
+	return s.repo.UpdateUserLocale(ctx, userID, locale)
 }
 
 // ============================================================

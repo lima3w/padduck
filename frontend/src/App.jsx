@@ -3,10 +3,12 @@ import { Suspense, lazy, useEffect } from 'react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './hooks/useAuth'
 import { ToastProvider } from './context/ToastContext'
 import { FeaturesProvider, useFeatures } from './context/FeaturesContext'
 import PageSpinner from './components/PageSpinner'
-import { getStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
+import { getStoredItem, setStoredItem, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from './utils/storageKeys'
+import i18n from './i18n'
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
@@ -89,6 +91,22 @@ function DarkModeBootstrap() {
   return null
 }
 
+// Reconcile the active i18next language with the authenticated user's saved
+// preference (server is authoritative once known; localStorage is just the
+// pre-login/offline fallback).
+function LocaleBootstrap() {
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user?.locale && user.locale !== i18n.language) {
+      i18n.changeLanguage(user.locale)
+      setStoredItem(STORAGE_KEYS.locale, user.locale)
+    }
+  }, [user])
+
+  return null
+}
+
 function PageLoadingFallback() {
   return (
     <div className="flex min-h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
@@ -127,6 +145,7 @@ export default function App() {
       <FeaturesProvider>
       <AuthProvider>
       <DarkModeBootstrap />
+      <LocaleBootstrap />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path="/setup/telemetry" element={<ProtectedRoute><TelemetrySetupPage /></ProtectedRoute>} />
