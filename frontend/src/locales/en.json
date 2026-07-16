@@ -814,5 +814,27 @@
     "deleteModalTitle": "Delete Rack",
     "confirmDeletePrefix": "Delete rack ",
     "confirmDeleteSuffix": "? This cannot be undone."
+  },
+  "rackDetail": {
+    "loadError": "Failed to load rack",
+    "loading": "Loading rack...",
+    "locationLabel": "Location",
+    "locationDescription": "Rack parent location",
+    "devicesLabel": "Devices",
+    "installedDevices": "Installed devices",
+    "devicesMounted_one": "{{count}} device mounted in this rack",
+    "devicesMounted_other": "{{count}} devices mounted in this rack",
+    "capacityLabel": "Capacity",
+    "usedShort": "{{count}}U used",
+    "freeShort": "{{count}}U free",
+    "totalCapacity": "{{count}}U total rack capacity",
+    "total": "Total",
+    "used": "Used",
+    "free": "Free",
+    "rackLayout": "Rack Layout",
+    "bottom": "Bottom",
+    "devicesInRack": "Devices in Rack",
+    "noDevicesInstalled": "No devices installed in this rack.",
+    "position": "Position"
   }
 }
