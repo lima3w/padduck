@@ -700,5 +700,25 @@
     "externalPortPlaceholder": "External port",
     "noCustomer": "No customer",
     "descriptionPlaceholder": "Description"
+  },
+  "firewallZones": {
+    "loadError": "Failed to load firewall zones",
+    "addZone": "+ Zone",
+    "addMapping": "+ Mapping",
+    "zonesTitle": "Zones",
+    "noZonesYet": "No firewall zones yet.",
+    "mappingsTitle": "Mappings",
+    "zone": "Zone",
+    "target": "Target",
+    "direction": "Direction",
+    "noMappingsYet": "No firewall zone mappings yet.",
+    "zoneModalTitle": "Firewall Zone",
+    "mappingModalTitle": "Firewall Zone Mapping",
+    "selectZone": "Select zone",
+    "objectIdPlaceholder": "Object ID",
+    "cidrPlaceholder": "CIDR",
+    "both": "Both",
+    "inbound": "Inbound",
+    "outbound": "Outbound"
   }
 }
