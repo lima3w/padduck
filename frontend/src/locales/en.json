@@ -491,5 +491,15 @@
     "deviceHash": "Device #{{id}}",
     "vlanHash": "VLAN #{{id}}",
     "confirmDelete": "Confirm?"
+  },
+  "interfaceModal": {
+    "addTitle": "Add Interface",
+    "editTitle": "Edit Interface",
+    "speedMbpsLabel": "Speed (Mbps)",
+    "mediaType": "Media Type",
+    "selectPlaceholder": "Select...",
+    "none": "None",
+    "noVlansPrefix": "No VLANs configured. Add them under ",
+    "noVlansSuffix": "."
   }
 }
