@@ -15,7 +15,8 @@
     "no": "No",
     "clear": "Clear",
     "name": "Name",
-    "description": "Description"
+    "description": "Description",
+    "optional": "Optional"
   },
   "nav": {
     "navigation": "Navigation",
@@ -792,6 +793,26 @@
     "noneOption": "— None —",
     "deleteModalTitle": "Delete Autonomous System",
     "confirmDeletePrefix": "Delete ",
+    "confirmDeleteSuffix": "? This cannot be undone."
+  },
+  "racks": {
+    "loadError": "Failed to load racks.",
+    "saveFailed": "Failed to save rack.",
+    "deleteFailed": "Failed to delete rack.",
+    "created": "Rack created.",
+    "updated": "Rack updated.",
+    "deleted": "Rack deleted.",
+    "addRack": "+ Add Rack",
+    "filterByLocation": "Filter by location:",
+    "allLocations": "All locations",
+    "noRacksFound": "No racks found",
+    "noRacksHint": "Add a rack to start tracking physical equipment.",
+    "sizeU": "Size (U)",
+    "addModalTitle": "Add Rack",
+    "editModalTitle": "Edit Rack",
+    "namePlaceholder": "e.g. Rack-A1",
+    "deleteModalTitle": "Delete Rack",
+    "confirmDeletePrefix": "Delete rack ",
     "confirmDeleteSuffix": "? This cannot be undone."
   }
 }

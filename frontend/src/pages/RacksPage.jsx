@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getRacks, createRack, updateRack, deleteRack } from '../api/racks'
 import { getLocations } from '../api/locations'
@@ -7,6 +8,7 @@ import { getLocations } from '../api/locations'
 const EMPTY_FORM = { name: '', size_u: '42', description: '', location_id: '' }
 
 export default function RacksPage() {
+  const { t } = useTranslation()
   const [racks, setRacks] = useState([])
   const [locations, setLocations] = useState([])
   const [loading, setLoading] = useState(true)
@@ -32,7 +34,7 @@ export default function RacksPage() {
       const locs = Array.isArray(locsData) ? locsData : (locsData?.locations ?? [])
       setLocations(locs)
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load racks.')
+      setError(err.response?.data?.error || t('racks.loadError'))
     } finally {
       setLoading(false)
     }
@@ -78,15 +80,15 @@ export default function RacksPage() {
       }
       if (modal === 'create') {
         await createRack(payload)
-        showMessage('Rack created.')
+        showMessage(t('racks.created'))
       } else {
         await updateRack(modal.edit.id, payload)
-        showMessage('Rack updated.')
+        showMessage(t('racks.updated'))
       }
       closeModal()
       await load()
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to save rack.', 'error')
+      showMessage(err.response?.data?.error || t('racks.saveFailed'), 'error')
     } finally {
       setSaving(false)
     }
@@ -96,10 +98,10 @@ export default function RacksPage() {
     try {
       await deleteRack(rack.id)
       setDeleteConfirm(null)
-      showMessage('Rack deleted.')
+      showMessage(t('racks.deleted'))
       await load()
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to delete rack.', 'error')
+      showMessage(err.response?.data?.error || t('racks.deleteFailed'), 'error')
     }
   }
 
@@ -112,12 +114,12 @@ export default function RacksPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Racks</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('nav.racks')}</h1>
         <button
           onClick={openCreate}
           className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
         >
-          + Add Rack
+          {t('racks.addRack')}
         </button>
       </div>
 
@@ -129,13 +131,13 @@ export default function RacksPage() {
 
       {locations.length > 0 && (
         <div className="mb-4 flex items-center gap-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Filter by location:</label>
+          <label className="text-sm text-gray-600 dark:text-gray-400">{t('racks.filterByLocation')}</label>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
             className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:text-gray-100"
           >
-            <option value="">All locations</option>
+            <option value="">{t('racks.allLocations')}</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
@@ -144,24 +146,24 @@ export default function RacksPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : error ? (
         <p className="text-sm text-red-600">{error}</p>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
-          <p className="text-lg font-medium mb-1">No racks found</p>
-          <p className="text-sm">Add a rack to start tracking physical equipment.</p>
+          <p className="text-lg font-medium mb-1">{t('racks.noRacksFound')}</p>
+          <p className="text-sm">{t('racks.noRacksHint')}</p>
         </div>
       ) : (
         <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Name</th>
-                <th className="px-4 py-3 text-left font-medium">Location</th>
-                <th className="px-4 py-3 text-left font-medium">Size</th>
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+                <th className="px-4 py-3 text-left font-medium">{t('common.name')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('subnets.location')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('racks.sizeU')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('common.description')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('vrfs.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -186,8 +188,8 @@ export default function RacksPage() {
                     {rack.description || <span className="text-gray-400">—</span>}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => openEdit(rack)} className="text-blue-600 hover:underline text-xs mr-3">Edit</button>
-                    <button onClick={() => setDeleteConfirm(rack)} className="text-red-600 hover:underline text-xs">Delete</button>
+                    <button onClick={() => openEdit(rack)} className="text-blue-600 hover:underline text-xs mr-3">{t('common.edit')}</button>
+                    <button onClick={() => setDeleteConfirm(rack)} className="text-red-600 hover:underline text-xs">{t('common.delete')}</button>
                   </td>
                 </tr>
               ))}
@@ -197,33 +199,33 @@ export default function RacksPage() {
       )}
 
       {modal && (
-        <Modal title={modal === 'create' ? 'Add Rack' : 'Edit Rack'} onClose={closeModal}>
+        <Modal title={modal === 'create' ? t('racks.addModalTitle') : t('racks.editModalTitle')} onClose={closeModal}>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
-              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} className={inputClass} placeholder="e.g. Rack-A1" />
+              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} className={inputClass} placeholder={t('racks.namePlaceholder')} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Size (U)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('racks.sizeU')}</label>
               <input type="number" min="1" max="100" value={form.size_u} onChange={(e) => setForm((p) => ({ ...p, size_u: e.target.value }))} className={inputClass} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subnets.location')}</label>
               <select value={form.location_id} onChange={(e) => setForm((p) => ({ ...p, location_id: e.target.value }))} className={inputClass}>
-                <option value="">No location</option>
+                <option value="">{t('subnetForm.noLocation')}</option>
                 {locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-              <input type="text" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} className={inputClass} placeholder="Optional" />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
+              <input type="text" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} className={inputClass} placeholder={t('common.optional')} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={closeModal} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={closeModal} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">{t('common.cancel')}</button>
               <button onClick={handleSave} disabled={saving || !form.name.trim()} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition">
-                {saving ? 'Saving…' : modal === 'create' ? 'Create' : 'Save'}
+                {saving ? t('common.saving') : modal === 'create' ? t('vrfs.create') : t('common.save')}
               </button>
             </div>
           </div>
@@ -231,13 +233,13 @@ export default function RacksPage() {
       )}
 
       {deleteConfirm && (
-        <Modal title="Delete Rack" onClose={() => setDeleteConfirm(null)}>
+        <Modal title={t('racks.deleteModalTitle')} onClose={() => setDeleteConfirm(null)}>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            Delete rack <strong>{deleteConfirm.name}</strong>? This cannot be undone.
+            {t('racks.confirmDeletePrefix')}<strong>{deleteConfirm.name}</strong>{t('racks.confirmDeleteSuffix')}
           </p>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">Cancel</button>
-            <button onClick={() => handleDelete(deleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition">Delete</button>
+            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">{t('common.cancel')}</button>
+            <button onClick={() => handleDelete(deleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition">{t('common.delete')}</button>
           </div>
         </Modal>
       )}
