@@ -627,5 +627,21 @@
     "deleteVrfModalTitle": "Delete VRF",
     "confirmDeletePrefix": "Delete ",
     "confirmDeleteSuffix": "? This cannot be undone."
+  },
+  "vlanDomains": {
+    "loadError": "Failed to load VLAN domains",
+    "created": "VLAN domain created",
+    "updated": "VLAN domain updated",
+    "deleted": "VLAN domain deleted",
+    "saveError": "Failed to save VLAN domain",
+    "deleteError": "Failed to delete VLAN domain",
+    "accessDenied": "Access Denied",
+    "adminRequired": "You need admin privileges to manage VLAN domains.",
+    "loading": "Loading VLAN domains…",
+    "title": "VLAN Domains",
+    "newDomain": "+ New Domain",
+    "noDomainsYet": "No VLAN domains yet. Create your first L2 domain to get started.",
+    "newDomainModalTitle": "New VLAN Domain",
+    "editDomainModalTitle": "Edit VLAN Domain"
   }
 }
