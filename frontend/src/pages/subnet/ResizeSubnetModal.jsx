@@ -1,11 +1,13 @@
+import { useTranslation } from 'react-i18next'
 import Modal from '../../components/Modal'
 
 export default function ResizeSubnetModal({ resizeModal, resizePrefix, setResizePrefix, resizing, resizeError, setResizeError, resizeConfirmText, setResizeConfirmText, onResize, onClose }) {
+  const { t } = useTranslation()
   return (
-    <Modal title={`Resize ${resizeModal.subnet.networkAddress}/${resizeModal.subnet.prefixLength}`} onClose={onClose}>
+    <Modal title={t('subnetResize.title', { cidr: `${resizeModal.subnet.networkAddress}/${resizeModal.subnet.prefixLength}` })} onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New CIDR</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subnetResize.newCidr')}</label>
           <input
             className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             placeholder="192.168.0.0/23"
@@ -20,7 +22,7 @@ export default function ResizeSubnetModal({ resizeModal, resizePrefix, setResize
               <>
                 {resizeError.conflictingIps?.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-xs font-semibold">Conflicting IPs:</p>
+                    <p className="text-xs font-semibold">{t('subnetResize.conflictingIps')}</p>
                     <p className="font-mono text-xs">
                       {resizeError.conflictingIps.map(ip => ip.hostname ? `${ip.address} (${ip.hostname})` : ip.address).join(', ')}
                     </p>
@@ -28,14 +30,14 @@ export default function ResizeSubnetModal({ resizeModal, resizePrefix, setResize
                 )}
                 {resizeError.conflictingSubnets?.length > 0 && (
                   <div className="mt-2">
-                    <p className="text-xs font-semibold">Conflicting Subnets:</p>
+                    <p className="text-xs font-semibold">{t('subnetResize.conflictingSubnets')}</p>
                     <p className="font-mono text-xs">
                       {resizeError.conflictingSubnets.map(s => `${s.network_address}/${s.prefix_length}`).join(', ')}
                     </p>
                   </div>
                 )}
                 <div className="mt-3">
-                  <label className="block text-xs font-medium mb-1">Type CONFIRM to proceed anyway:</label>
+                  <label className="block text-xs font-medium mb-1">{t('subnetResize.typeConfirmPrompt')}</label>
                   <input
                     className="w-full border rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400 dark:bg-gray-700 dark:border-gray-600"
                     placeholder="CONFIRM"
@@ -48,13 +50,13 @@ export default function ResizeSubnetModal({ resizeModal, resizePrefix, setResize
           </div>
         )}
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
           <button
             onClick={onResize}
             disabled={resizing || !resizePrefix || (resizeError?.conflictingIps?.length > 0 && resizeConfirmText !== 'CONFIRM')}
             className="px-4 py-2 bg-teal-600 text-white rounded text-sm hover:bg-teal-700 disabled:opacity-50"
           >
-            {resizing ? 'Resizing...' : 'Resize'}
+            {resizing ? t('subnetResize.resizing') : t('subnetResize.resize')}
           </button>
         </div>
       </div>

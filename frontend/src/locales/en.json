@@ -432,5 +432,14 @@
     "selectPromptSuffix": ":",
     "mergingCount": "Merging {{count}} subnets with /{{prefix}} prefix",
     "merging": "Merging…"
+  },
+  "subnetResize": {
+    "title": "Resize {{cidr}}",
+    "newCidr": "New CIDR",
+    "conflictingIps": "Conflicting IPs:",
+    "conflictingSubnets": "Conflicting Subnets:",
+    "typeConfirmPrompt": "Type CONFIRM to proceed anyway:",
+    "resizing": "Resizing…",
+    "resize": "Resize"
   }
 }
