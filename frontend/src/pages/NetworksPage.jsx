@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { getNetworksPaginated, createNetwork, updateNetwork, deleteNetwork, searchNetworks } from '../api/ipam'
 import { submitSubnetRequest } from '../api/requests'
@@ -19,6 +20,7 @@ const SORT_KEY = STORAGE_KEYS.networkSort
 const SUBNET_REQUEST_EMPTY = { network_id: '', prefix_length: '24', purpose: '', parent_subnet_id: '' }
 
 export default function NetworksPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const user = getCachedUser()
   const canCreateSubnet = user?.role === 'admin'
@@ -71,7 +73,7 @@ export default function NetworksPage() {
     ? searchResults.total
     : (listData?.total ?? (Array.isArray(listData) ? listData.length : 0))
   const loading = listQuery.isLoading
-  const error = actionError ?? (listQuery.isError ? 'Failed to load networks' : null)
+  const error = actionError ?? (listQuery.isError ? t('networks.loadError') : null)
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['networks'] })
 
@@ -81,7 +83,7 @@ export default function NetworksPage() {
       setModal(null)
       invalidate()
     },
-    onError: () => setActionError('Failed to save network'),
+    onError: () => setActionError(t('networks.saveError')),
   })
 
   const deleteMutation = useMutation({
@@ -90,7 +92,7 @@ export default function NetworksPage() {
       setDeleteConfirm(null)
       invalidate()
     },
-    onError: () => setActionError('Failed to delete network'),
+    onError: () => setActionError(t('networks.deleteError')),
   })
 
   const saving = saveMutation.isPending || requestSubmitting
@@ -98,7 +100,7 @@ export default function NetworksPage() {
   async function handleExport() {
     setDownloading(true)
     try { await downloadFile('/api/v1/admin/reports/export/networks', 'networks.csv') }
-    catch { setActionError('Export failed') }
+    catch { setActionError(t('networks.exportError')) }
     finally { setDownloading(false) }
   }
 
@@ -120,7 +122,7 @@ export default function NetworksPage() {
       setSearchResults({ items, total: Array.isArray(data) ? data.length : (data.total ?? items.length) })
       setPage(1)
     } catch {
-      setActionError('Failed to search networks')
+      setActionError(t('networks.searchError'))
     } finally {
       setSearching(false)
     }
@@ -175,34 +177,34 @@ export default function NetworksPage() {
       setSubnetReqSuccess(true)
       setTimeout(() => setModal(null), 1500)
     } catch (err) {
-      setSubnetReqError(err.response?.data?.error || 'Failed to submit request')
+      setSubnetReqError(err.response?.data?.error || t('networks.requestError'))
     } finally {
       setRequestSubmitting(false)
     }
   }
 
-  if (loading) return <PageSpinner message="Loading networks..." />
+  if (loading) return <PageSpinner message={t('networks.loadingNetworks')} />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800">Networks</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{t('nav.networks')}</h1>
         <div className="flex items-center gap-2">
           {!canCreateSubnet && (
             <button
               onClick={() => openSubnetRequest(null)}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium"
             >
-              Request Subnet
+              {t('networks.requestSubnet')}
             </button>
           )}
           {canCreateSubnet && (
             <>
               <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
-                {downloading ? 'Exporting...' : 'Export CSV'}
+                {downloading ? t('networks.exporting') : t('networks.exportCsv')}
               </button>
               <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-                + New Network
+                {t('networks.newNetwork')}
               </button>
             </>
           )}
@@ -215,7 +217,7 @@ export default function NetworksPage() {
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
-            placeholder="Search networks..."
+            placeholder={t('networks.searchPlaceholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -225,7 +227,7 @@ export default function NetworksPage() {
             disabled={searching}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50"
           >
-            {searching ? 'Searching...' : 'Search'}
+            {searching ? t('networks.searching') : t('header.search')}
           </button>
           {isSearchActive && (
             <button
@@ -233,7 +235,7 @@ export default function NetworksPage() {
               onClick={handleClearSearch}
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm font-medium"
             >
-              Clear
+              {t('common.clear')}
             </button>
           )}
         </form>
@@ -241,7 +243,7 @@ export default function NetworksPage() {
 
       {!isSearchActive && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {total} network{total !== 1 ? 's' : ''}
+          {t('networks.count', { count: total })}
         </p>
       )}
 
@@ -250,14 +252,14 @@ export default function NetworksPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <SortTh label="Name" col="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
-              <SortTh label="Description" col="description" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortTh label={t('common.name')} col="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortTh label={t('common.description')} col="description" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {networks.length === 0 && (
-              <EmptyRow colSpan={3} message="No networks yet." />
+              <EmptyRow colSpan={3} message={t('networks.noNetworksYet')} />
             )}
             {networks.map(s => (
               <tr key={s.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -269,21 +271,21 @@ export default function NetworksPage() {
                 </td>
                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{s.description}</td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <Link to={`/networks/${s.id}/topology`} className="text-gray-400 hover:text-blue-600 text-xs">Topology</Link>
+                  <Link to={`/networks/${s.id}/topology`} className="text-gray-400 hover:text-blue-600 text-xs">{t('networks.topology')}</Link>
                   {!canCreateSubnet && (
-                    <button onClick={() => openSubnetRequest(s)} className="text-green-600 hover:text-green-800 text-xs font-medium">Request Subnet</button>
+                    <button onClick={() => openSubnetRequest(s)} className="text-green-600 hover:text-green-800 text-xs font-medium">{t('networks.requestSubnet')}</button>
                   )}
                   {canCreateSubnet && (
                     <>
-                      <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                      <button onClick={() => openEdit(s)} className="text-gray-400 hover:text-blue-600 text-xs">{t('common.edit')}</button>
                       {deleteConfirm === s.id ? (
                         <>
-                          <span className="text-red-600 text-xs">Confirm?</span>
-                          <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                          <span className="text-red-600 text-xs">{t('networks.confirmDelete')}</span>
+                          <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('common.yes')}</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">{t('common.no')}</button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(s.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                        <button onClick={() => setDeleteConfirm(s.id)} className="text-gray-400 hover:text-red-600 text-xs">{t('common.delete')}</button>
                       )}
                     </>
                   )}
@@ -305,10 +307,10 @@ export default function NetworksPage() {
       )}
 
       {(modal === 'create' || modal?.edit) && (
-        <Modal title={modal === 'create' ? 'New Network' : 'Edit Network'} onClose={() => setModal(null)}>
+        <Modal title={modal === 'create' ? t('networks.newNetworkModalTitle') : t('networks.editNetworkModalTitle')} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="network-name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label htmlFor="network-name" className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
               <input
                 id="network-name"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -318,7 +320,7 @@ export default function NetworksPage() {
               />
             </div>
             <div>
-              <label htmlFor="network-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label htmlFor="network-description" className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <input
                 id="network-description"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -327,9 +329,9 @@ export default function NetworksPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
@@ -337,9 +339,9 @@ export default function NetworksPage() {
       )}
 
       {modal?.requestSubnet !== undefined && (
-        <Modal title="Request Subnet" onClose={() => setModal(null)}>
+        <Modal title={t('networks.requestSubnetModalTitle')} onClose={() => setModal(null)}>
           {subnetReqSuccess ? (
-            <div className="py-4 text-center text-green-600 font-medium">Request submitted successfully!</div>
+            <div className="py-4 text-center text-green-600 font-medium">{t('networks.requestSubmittedSuccess')}</div>
           ) : (
             <form onSubmit={handleSubnetRequestSubmit} className="space-y-4">
               {subnetReqError && (
@@ -347,7 +349,7 @@ export default function NetworksPage() {
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Network <span className="text-red-500">*</span>
+                  {t('networks.networkRequired')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -355,7 +357,7 @@ export default function NetworksPage() {
                   onChange={e => setSubnetReqForm(f => ({ ...f, network_id: e.target.value }))}
                   required
                 >
-                  <option value="">Select a network...</option>
+                  <option value="">{t('networks.selectNetworkPlaceholder')}</option>
                   {networks.map(s => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -363,7 +365,7 @@ export default function NetworksPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Prefix Length <span className="text-red-500">*</span>
+                  {t('networks.prefixLength')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -375,38 +377,38 @@ export default function NetworksPage() {
                   onChange={e => setSubnetReqForm(f => ({ ...f, prefix_length: e.target.value }))}
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Between 8 and 30</p>
+                <p className="text-xs text-gray-500 mt-1">{t('networks.between8and30')}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Parent Subnet ID <span className="text-gray-400 font-normal">(optional)</span>
+                  {t('networks.parentSubnetId')} <span className="text-gray-400 font-normal">{t('networks.optional')}</span>
                 </label>
                 <input
                   type="number"
                   min="1"
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  placeholder="Parent subnet ID (if known)"
+                  placeholder={t('networks.parentSubnetPlaceholder')}
                   value={subnetReqForm.parent_subnet_id}
                   onChange={e => setSubnetReqForm(f => ({ ...f, parent_subnet_id: e.target.value }))}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Purpose <span className="text-red-500">*</span>
+                  {t('networks.purpose')} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   rows={3}
-                  placeholder="Describe why you need this subnet..."
+                  placeholder={t('networks.purposePlaceholder')}
                   value={subnetReqForm.purpose}
                   onChange={e => setSubnetReqForm(f => ({ ...f, purpose: e.target.value }))}
                   required
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
                 <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50">
-                  {saving ? 'Submitting...' : 'Submit Request'}
+                  {saving ? t('networks.submitting') : t('networks.submitRequest')}
                 </button>
               </div>
             </form>
