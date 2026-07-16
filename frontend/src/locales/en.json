@@ -660,5 +660,15 @@
     "newGroupModalTitle": "New VLAN Group",
     "editGroupModalTitle": "Edit VLAN Group",
     "preview": "Preview"
+  },
+  "vlanUsageReport": {
+    "loadError": "Failed to load VLAN usage report",
+    "loading": "Loading VLAN usage report…",
+    "title": "VLAN Usage Report",
+    "subtitle": "Subnet and IP utilization across all VLANs",
+    "noData": "No data available",
+    "noVlansConfigured": "No VLANs have been configured yet.",
+    "vlanId": "VLAN ID",
+    "ips": "IPs"
   }
 }
