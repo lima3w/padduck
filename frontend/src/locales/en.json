@@ -379,6 +379,18 @@
     "valuePlaceholder": "value",
     "loadingTree": "Loading tree…",
     "network": "Network",
-    "usedTotal": "Used/Total"
+    "usedTotal": "Used/Total",
+    "count_one": "{{count}} subnet",
+    "count_other": "{{count}} subnets",
+    "prefix": "Prefix",
+    "location": "Location",
+    "vlan": "VLAN",
+    "containerSubnet": "Container subnet",
+    "filterByValue": "Filter by this value",
+    "noSubnetsYet": "No subnets yet.",
+    "split": "Split",
+    "merge": "Merge",
+    "resize": "Resize",
+    "confirmDelete": "Confirm?"
   }
 }
