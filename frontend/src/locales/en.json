@@ -471,5 +471,14 @@
     "loading": "Loading history…",
     "noData": "No utilization history available for this period.",
     "tooltipLabel": "Utilization"
+  },
+  "deviceIp": {
+    "associateIp": "+ Associate IP",
+    "address": "Address",
+    "interface": "Interface",
+    "primary": "Primary",
+    "noIpsAssociated": "No IP addresses associated",
+    "remove": "Remove",
+    "removeConfirm": "Remove?"
   }
 }
