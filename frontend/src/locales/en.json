@@ -643,5 +643,22 @@
     "noDomainsYet": "No VLAN domains yet. Create your first L2 domain to get started.",
     "newDomainModalTitle": "New VLAN Domain",
     "editDomainModalTitle": "Edit VLAN Domain"
+  },
+  "vlanGroups": {
+    "loadError": "Failed to load VLAN groups",
+    "created": "VLAN group created",
+    "updated": "VLAN group updated",
+    "deleted": "VLAN group deleted",
+    "saveError": "Failed to save VLAN group",
+    "deleteError": "Failed to delete VLAN group",
+    "adminRequired": "You need admin privileges to manage VLAN groups.",
+    "loading": "Loading VLAN groups…",
+    "title": "VLAN Groups",
+    "newGroup": "+ New Group",
+    "colour": "Colour",
+    "noGroupsYet": "No VLAN groups yet. Create a group to categorise VLANs.",
+    "newGroupModalTitle": "New VLAN Group",
+    "editGroupModalTitle": "Edit VLAN Group",
+    "preview": "Preview"
   }
 }
