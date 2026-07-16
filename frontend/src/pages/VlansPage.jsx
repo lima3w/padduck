@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getVlans, createVlan, updateVlan, deleteVlan, getVlanDomains, getVlanGroups } from '../api/vlans'
 import PageSpinner from '../components/PageSpinner'
@@ -35,6 +36,7 @@ function GroupBadge({ group }) {
 }
 
 export default function VlansPage() {
+  const { t } = useTranslation()
   const [vlans, setVlans] = useState([])
   const [domains, setDomains] = useState([])
   const [groups, setGroups] = useState([])
@@ -52,7 +54,7 @@ export default function VlansPage() {
   async function handleExport() {
     setDownloading(true)
     try { await downloadFile('/api/v1/admin/reports/export/vlans', 'vlans.csv') }
-    catch { setError('Export failed') }
+    catch { setError(t('networks.exportError')) }
     finally { setDownloading(false) }
   }
 
@@ -71,7 +73,7 @@ export default function VlansPage() {
         const d = vlansRes.value.data
         setVlans(Array.isArray(d) ? d : (d?.vlans ?? []))
       } else {
-        setError('Failed to load VLANs')
+        setError(t('vlans.loadError'))
       }
       if (domainsRes.status === 'fulfilled') {
         const d = domainsRes.value.data
@@ -125,15 +127,15 @@ export default function VlansPage() {
       }
       if (modal === 'create') {
         await createVlan(payload)
-        showMsg('VLAN created')
+        showMsg(t('vlans.created'))
       } else {
         await updateVlan(modal.edit.id, payload)
-        showMsg('VLAN updated')
+        showMsg(t('vlans.updated'))
       }
       setModal(null)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save VLAN')
+      setError(err.response?.data?.error || t('vlans.saveError'))
     } finally {
       setSaving(false)
     }
@@ -143,31 +145,31 @@ export default function VlansPage() {
     try {
       await deleteVlan(id)
       setDeleteConfirm(null)
-      showMsg('VLAN deleted')
+      showMsg(t('vlans.deleted'))
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to delete VLAN')
+      setError(err.response?.data?.error || t('vlans.deleteError'))
       setDeleteConfirm(null)
     }
   }
 
-  if (loading) return <PageSpinner message="Loading VLANs..." />
+  if (loading) return <PageSpinner message={t('vlans.loading')} />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">VLANs</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('nav.vlans')}</h1>
         <div className="flex items-center gap-2">
           {isAdmin && (
             <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
-              {downloading ? 'Exporting...' : 'Export CSV'}
+              {downloading ? t('networks.exporting') : t('networks.exportCsv')}
             </button>
           )}
           <button
             onClick={openCreate}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
           >
-            + New VLAN
+            {t('vlans.newVlan')}
           </button>
         </div>
       </div>
@@ -184,16 +186,16 @@ export default function VlansPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">ID</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Domain</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Group</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlans.id')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlans.domain')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlans.group')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
-            {vlans.length === 0 && <EmptyRow colSpan={6} message="No VLANs yet. Add your first VLAN to get started." />}
+            {vlans.length === 0 && <EmptyRow colSpan={6} message={t('vlans.noVlansYet')} />}
             {vlans.map(vlan => {
               const domain = getDomain(vlan.domainId)
               const group = getGroup(vlan.groupId)
@@ -233,13 +235,13 @@ export default function VlansPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? 'New VLAN' : 'Edit VLAN'}
+          title={modal === 'create' ? t('vlans.newVlanModalTitle') : t('vlans.editVlanModalTitle')}
           onClose={() => setModal(null)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                VLAN ID <span className="text-red-500">*</span>
+                {t('vlans.vlanIdLabel')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -254,7 +256,7 @@ export default function VlansPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -265,7 +267,7 @@ export default function VlansPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={2}
@@ -275,13 +277,13 @@ export default function VlansPage() {
             </div>
             {domains.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Domain</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('vlans.domain')}</label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.domainId}
                   onChange={e => setForm(f => ({ ...f, domainId: e.target.value }))}
                 >
-                  <option value="">No domain</option>
+                  <option value="">{t('vlans.noDomain')}</option>
                   {domains.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
@@ -290,13 +292,13 @@ export default function VlansPage() {
             )}
             {groups.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('vlans.group')}</label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.groupId}
                   onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))}
                 >
-                  <option value="">No group</option>
+                  <option value="">{t('vlans.noGroup')}</option>
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -309,14 +311,14 @@ export default function VlansPage() {
                 onClick={() => setModal(null)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>

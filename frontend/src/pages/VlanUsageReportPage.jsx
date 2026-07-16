@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getVlanUsageReport } from '../api/vlans'
 
@@ -22,6 +23,7 @@ function UtilBar({ pct }) {
 }
 
 export default function VlanUsageReportPage() {
+  const { t } = useTranslation()
   const usageQuery = useQuery({
     queryKey: ['vlans', 'usage-report'],
     queryFn: () => getVlanUsageReport().then(r => {
@@ -32,18 +34,18 @@ export default function VlanUsageReportPage() {
   const rows = usageQuery.data ?? []
   const loading = usageQuery.isLoading
   const error = usageQuery.isError
-    ? (usageQuery.error?.response?.data?.error || 'Failed to load VLAN usage report')
+    ? (usageQuery.error?.response?.data?.error || t('vlanUsageReport.loadError'))
     : null
 
-  if (loading) return <p className="text-gray-500">Loading VLAN usage report...</p>
+  if (loading) return <p className="text-gray-500">{t('vlanUsageReport.loading')}</p>
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">VLAN Usage Report</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('vlanUsageReport.title')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Subnet and IP utilization across all VLANs
+            {t('vlanUsageReport.subtitle')}
           </p>
         </div>
       </div>
@@ -57,20 +59,20 @@ export default function VlanUsageReportPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         {rows.length === 0 && !error ? (
           <div className="px-6 py-12 text-center text-gray-400">
-            <p className="text-lg font-medium mb-1">No data available</p>
-            <p className="text-sm">No VLANs have been configured yet.</p>
+            <p className="text-lg font-medium mb-1">{t('vlanUsageReport.noData')}</p>
+            <p className="text-sm">{t('vlanUsageReport.noVlansConfigured')}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">VLAN ID</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Domain</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Group</th>
-                <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Subnets</th>
-                <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">IPs</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-48">Utilisation</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlanUsageReport.vlanId')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlans.domain')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlans.group')}</th>
+                <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.subnets')}</th>
+                <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlanUsageReport.ips')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-48">{t('dashboard.utilisation')}</th>
               </tr>
             </thead>
             <tbody>

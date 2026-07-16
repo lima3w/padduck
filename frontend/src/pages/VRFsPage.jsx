@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getVrfs, createVrf, updateVrf, deleteVrf } from '../api/vlans'
 import { downloadFile } from '../utils/download'
@@ -10,6 +11,7 @@ import { getCachedUser } from '../utils/storageKeys'
 const EMPTY_FORM = { Name: '', RouteDistinguisher: '', Description: '' }
 
 export default function VRFsPage() {
+  const { t } = useTranslation()
   const [vrfs, setVrfs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -25,7 +27,7 @@ export default function VRFsPage() {
   async function handleExport() {
     setDownloading(true)
     try { await downloadFile('/api/v1/admin/reports/export/vrfs', 'vrfs.csv') }
-    catch { setError('Export failed') }
+    catch { setError(t('networks.exportError')) }
     finally { setDownloading(false) }
   }
 
@@ -38,7 +40,7 @@ export default function VRFsPage() {
       const res = await getVrfs()
       setVrfs(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load VRFs.')
+      setError(err.response?.data?.error || t('vrfs.loadError'))
     } finally {
       setLoading(false)
     }
@@ -72,15 +74,15 @@ export default function VRFsPage() {
       }
       if (modal === 'create') {
         await createVrf(payload)
-        showMessage('VRF created.')
+        showMessage(t('vrfs.created'))
       } else {
         await updateVrf(modal.edit.ID, payload)
-        showMessage('VRF updated.')
+        showMessage(t('vrfs.updated'))
       }
       closeModal()
       await load()
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to save VRF.', 'error')
+      showMessage(err.response?.data?.error || t('vrfs.saveError'), 'error')
     } finally {
       setSaving(false)
     }
@@ -90,10 +92,10 @@ export default function VRFsPage() {
     try {
       await deleteVrf(vrf.ID)
       setDeleteConfirm(null)
-      showMessage('VRF deleted.')
+      showMessage(t('vrfs.deleted'))
       await load()
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to delete VRF.', 'error')
+      showMessage(err.response?.data?.error || t('vrfs.deleteError'), 'error')
     }
   }
 
@@ -102,18 +104,18 @@ export default function VRFsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">VRFs</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('nav.vrfs')}</h1>
         <div className="flex items-center gap-2">
           {isAdmin && (
             <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
-              {downloading ? 'Exporting...' : 'Export CSV'}
+              {downloading ? t('networks.exporting') : t('networks.exportCsv')}
             </button>
           )}
           <button
             onClick={openCreate}
             className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
           >
-            + Add VRF
+            {t('vrfs.addVrf')}
           </button>
         </div>
       </div>
@@ -125,23 +127,23 @@ export default function VRFsPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : error ? (
         <p className="text-sm text-red-600">{error}</p>
       ) : vrfs.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
-          <p className="text-lg font-medium mb-1">No VRFs</p>
-          <p className="text-sm">Create a VRF to separate routing domains.</p>
+          <p className="text-lg font-medium mb-1">{t('vrfs.noVrfs')}</p>
+          <p className="text-sm">{t('vrfs.createHint')}</p>
         </div>
       ) : (
         <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Name</th>
-                <th className="px-4 py-3 text-left font-medium">Route Distinguisher</th>
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-4 py-3 text-right font-medium">Actions</th>
+                <th className="px-4 py-3 text-left font-medium">{t('common.name')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('vrfs.routeDistinguisher')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('common.description')}</th>
+                <th className="px-4 py-3 text-right font-medium">{t('vrfs.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -159,13 +161,13 @@ export default function VRFsPage() {
                       onClick={() => openEdit(vrf)}
                       className="text-blue-600 hover:underline text-xs mr-3"
                     >
-                      Edit
+                      {t('common.edit')}
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(vrf)}
                       className="text-red-600 hover:underline text-xs"
                     >
-                      Delete
+                      {t('common.delete')}
                     </button>
                   </td>
                 </tr>
@@ -177,13 +179,13 @@ export default function VRFsPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? 'Add VRF' : 'Edit VRF'}
+          title={modal === 'create' ? t('vrfs.addVrf') : t('vrfs.editVrfModalTitle')}
           onClose={closeModal}
         >
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -195,7 +197,7 @@ export default function VRFsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Route Distinguisher
+                {t('vrfs.routeDistinguisher')}
               </label>
               <input
                 type="text"
@@ -207,7 +209,7 @@ export default function VRFsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description
+                {t('common.description')}
               </label>
               <input
                 type="text"
@@ -222,14 +224,14 @@ export default function VRFsPage() {
                 onClick={closeModal}
                 className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !form.Name.trim()}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
               >
-                {saving ? 'Saving…' : modal === 'create' ? 'Create' : 'Save'}
+                {saving ? t('common.saving') : modal === 'create' ? t('vrfs.create') : t('common.save')}
               </button>
             </div>
           </div>
@@ -237,22 +239,22 @@ export default function VRFsPage() {
       )}
 
       {deleteConfirm && (
-        <Modal title="Delete VRF" onClose={() => setDeleteConfirm(null)}>
+        <Modal title={t('vrfs.deleteVrfModalTitle')} onClose={() => setDeleteConfirm(null)}>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            Delete <strong>{deleteConfirm.Name}</strong>? This cannot be undone.
+            {t('vrfs.confirmDeletePrefix')}<strong>{deleteConfirm.Name}</strong>{t('vrfs.confirmDeleteSuffix')}
           </p>
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setDeleteConfirm(null)}
               className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               onClick={() => handleDelete(deleteConfirm)}
               className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition"
             >
-              Delete
+              {t('common.delete')}
             </button>
           </div>
         </Modal>

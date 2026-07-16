@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.5
+
+### Added
+- **i18n batch 5/15: VLAN & VRF pages** (issue #35): converted `VlansPage`, `VRFsPage`, `VlanDomainsPage`, `VlanGroupsPage`, `VlanUsageReportPage` to `t()` calls. Also converted the shared `TableActions` component (used across most list pages) to translated defaults for its Edit/Delete/Confirm?/Yes/No labels, benefiting every future batch that uses it. `VlanDetailPage.jsx` (520 lines) is deferred alongside the other large-file follow-ups.
+
 ## v1.34.4
 
 ### Added
