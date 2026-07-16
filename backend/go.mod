@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.19.0
 	github.com/crewjam/saml v0.5.1
 	github.com/go-ldap/ldap/v3 v3.4.13
-	github.com/gofiber/fiber/v2 v2.52.13
+	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/google/uuid v1.6.0
 	github.com/gosnmp/gosnmp v1.43.2
 	github.com/jackc/pgx/v5 v5.10.0

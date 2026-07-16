@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.33.32
+
+### Fixed
+- **`gofiber/fiber` bumped 2.52.13 → 2.52.14**: upstream fix for a `BalancerForward` proxy helper bug where the `X-Real-IP` header was appended via `Header.Add()` instead of replaced via `Header.Set()`, letting an attacker-supplied `X-Real-IP` value survive alongside the real client IP. padduck doesn't import `gofiber/fiber/v2/middleware/proxy` (only `logger` and `recover` are vendored), so the vulnerable code path was never reachable here — this bump is precautionary hygiene, not a fix for an exploitable issue in padduck itself.
+
 ## v1.33.31
 
 ### Fixed
