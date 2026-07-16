@@ -555,5 +555,17 @@
     "rackUnitSize": "Rack Unit Size",
     "snmp": "SNMP",
     "leaveBlankToKeep": "Leave blank to keep existing"
+  },
+  "nameservers": {
+    "noPermission": "You do not have permission to view nameservers.",
+    "loadError": "Failed to load nameservers",
+    "saveError": "Failed to save nameserver",
+    "deleteError": "Failed to delete nameserver",
+    "loading": "Loading nameservers…",
+    "addNameserver": "+ Add Nameserver",
+    "secondary": "Secondary",
+    "tertiary": "Tertiary",
+    "noNameserversYet": "No nameservers yet. Add your first nameserver to get started.",
+    "editNameserverModalTitle": "Edit Nameserver"
   }
 }
