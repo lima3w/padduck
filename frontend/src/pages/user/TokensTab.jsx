@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../../api/auth'
 
 export default function TokensTab() {
+  const { t } = useTranslation()
   const [tokens, setTokens] = useState([])
   const [loading, setLoading] = useState(true)
   const [tokenName, setTokenName] = useState('')
@@ -36,7 +38,7 @@ export default function TokensTab() {
       setTokenName('')
       await loadTokens()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create token')
+      setError(err.response?.data?.error || t('userTabs.tokens.createFailed'))
     } finally {
       setCreating(false)
     }
@@ -45,30 +47,30 @@ export default function TokensTab() {
   const handleRevoke = async (id) => {
     try {
       await client.revokeToken(id)
-      setTokens((prev) => prev.filter((t) => t.id !== id))
+      setTokens((prev) => prev.filter((tok) => tok.id !== id))
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to revoke token')
+      setError(err.response?.data?.error || t('userTabs.tokens.revokeFailed'))
     }
   }
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">API Tokens</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('settings.tabs.apiTokens')}</h2>
         <p className="text-sm text-gray-600 mb-4">
-          Tokens authenticate API requests. Treat them like passwords.
+          {t('userTabs.tokens.subtitle')}
         </p>
 
         {newToken && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
-            <p className="text-sm font-medium text-green-800 mb-2">Token created — copy it now, it won&apos;t be shown again:</p>
+            <p className="text-sm font-medium text-green-800 mb-2">{t('userTabs.tokens.createdCopyNow')}</p>
             <code className="block p-2 bg-white border border-green-200 rounded font-mono text-xs break-all text-gray-700">{newToken}</code>
             <button
               type="button"
               onClick={() => setNewToken(null)}
               className="mt-2 text-xs text-green-700 hover:underline"
             >
-              Dismiss
+              {t('common.dismiss')}
             </button>
           </div>
         )}
@@ -80,7 +82,7 @@ export default function TokensTab() {
             type="text"
             value={tokenName}
             onChange={(e) => setTokenName(e.target.value)}
-            placeholder="Token name (e.g. CLI, Terraform)"
+            placeholder={t('userTabs.tokens.namePlaceholder')}
             className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button
@@ -88,31 +90,31 @@ export default function TokensTab() {
             disabled={creating || !tokenName.trim()}
             className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition"
           >
-            {creating ? 'Creating…' : 'Create Token'}
+            {creating ? t('userTabs.tokens.creating') : t('userTabs.tokens.createToken')}
           </button>
         </form>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <p className="text-sm text-gray-500">{t('common.loading')}</p>
         ) : tokens.length === 0 ? (
-          <p className="text-sm text-gray-500">No tokens yet.</p>
+          <p className="text-sm text-gray-500">{t('userTabs.tokens.empty')}</p>
         ) : (
           <div className="divide-y divide-gray-200 border border-gray-200 rounded">
-            {tokens.map((t) => (
-              <div key={t.id} className="flex items-center justify-between px-4 py-3">
+            {tokens.map((tok) => (
+              <div key={tok.id} className="flex items-center justify-between px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                  <p className="text-sm font-medium text-gray-900">{tok.name}</p>
                   <p className="text-xs text-gray-500">
-                    Created {new Date(t.createdAt).toLocaleDateString()}
-                    {t.lastUsedAt ? ` · Last used ${new Date(t.lastUsedAt).toLocaleDateString()}` : ' · Never used'}
+                    {t('userTabs.tokens.created', { date: new Date(tok.createdAt).toLocaleDateString() })}
+                    {tok.lastUsedAt ? ` · ${t('userTabs.tokens.lastUsed', { date: new Date(tok.lastUsedAt).toLocaleDateString() })}` : ` · ${t('userTabs.tokens.neverUsed')}`}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleRevoke(t.id)}
+                  onClick={() => handleRevoke(tok.id)}
                   className="text-sm text-red-600 hover:text-red-800 transition"
                 >
-                  Revoke
+                  {t('common.revoke')}
                 </button>
               </div>
             ))}

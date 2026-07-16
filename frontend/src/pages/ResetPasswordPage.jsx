@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { resetPassword } from '../api/auth'
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
   const navigate = useNavigate()
@@ -17,10 +19,10 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <div className="w-full max-w-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center space-y-4">
           <p className="text-red-600 dark:text-red-400 text-sm">
-            Invalid or missing reset token. Please request a new password reset link.
+            {t('resetPassword.invalidToken')}
           </p>
           <Link to="/forgot-password" className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
-            Request new link
+            {t('resetPassword.requestNewLink')}
           </Link>
         </div>
       </div>
@@ -31,23 +33,23 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setError('')
     if (password !== confirm) {
-      setError('Passwords do not match.')
+      setError(t('resetPassword.passwordsMismatch'))
       return
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError(t('resetPassword.passwordTooShort'))
       return
     }
     setLoading(true)
     try {
       await resetPassword(token, password)
-      navigate('/login', { state: { message: 'Password reset successful. You can now log in.' } })
+      navigate('/login', { state: { message: t('resetPassword.successMessage') } })
     } catch (err) {
       const msg = err.response?.data?.error || ''
       if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')) {
-        setError('This reset link has expired or is invalid. Please request a new one.')
+        setError(t('resetPassword.linkExpiredOrInvalid'))
       } else {
-        setError(msg || 'Failed to reset password. Please try again.')
+        setError(msg || t('resetPassword.genericError'))
       }
     } finally {
       setLoading(false)
@@ -58,7 +60,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100 mb-6">
-          Set a new password
+          {t('resetPassword.title')}
         </h1>
 
         <form
@@ -70,7 +72,7 @@ export default function ResetPasswordPage() {
               {error}
               {error.includes('expired') && (
                 <> {' '}
-                  <Link to="/forgot-password" className="underline">Request new link</Link>
+                  <Link to="/forgot-password" className="underline">{t('resetPassword.requestNewLink')}</Link>
                 </>
               )}
             </p>
@@ -78,28 +80,28 @@ export default function ResetPasswordPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              New password
+              {t('resetPassword.newPassword')}
             </label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t('login.passwordPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Confirm password
+              {t('resetPassword.confirmPassword')}
             </label>
             <input
               type="password"
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              placeholder="••••••••"
+              placeholder={t('login.passwordPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -109,7 +111,7 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition"
           >
-            {loading ? 'Saving…' : 'Set new password'}
+            {loading ? t('common.saving') : t('resetPassword.setNewPassword')}
           </button>
         </form>
       </div>

@@ -1,6 +1,10 @@
 {
   "common": {
-    "skipToMainContent": "Passer au contenu principal"
+    "skipToMainContent": "Passer au contenu principal",
+    "loading": "Chargement…",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…"
   },
   "nav": {
     "navigation": "Navigation",
@@ -96,5 +100,34 @@
   "profile": {
     "language": "Langue",
     "languageSaved": "Langue mise à jour."
+  },
+  "register": {
+    "passwordsMismatch": "Les mots de passe ne correspondent pas",
+    "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+    "registrationFailed": "Échec de l'inscription",
+    "accountCreatedTitle": "Compte créé",
+    "goToLogin": "Aller à la connexion",
+    "createAccount": "Créer un compte",
+    "tagline": "Inscrivez-vous à Padduck",
+    "usernamePlaceholder": "jeandupont",
+    "usernameHint": "3 à 32 caractères : lettres, chiffres, tiret bas, tiret",
+    "email": "E-mail",
+    "emailPlaceholder": "jean@exemple.com",
+    "passwordHint": "Minimum 8 caractères",
+    "confirmPassword": "Confirmer le mot de passe",
+    "creatingAccount": "Création du compte...",
+    "alreadyHaveAccount": "Vous avez déjà un compte ? "
+  },
+  "forgotPassword": {
+    "title": "Réinitialiser votre mot de passe",
+    "sentPrefix": "Si un compte existe pour ",
+    "sentSuffix": ", un lien de réinitialisation a été envoyé. Vérifiez votre boîte de réception et suivez le lien dans l'heure qui suit.",
+    "backToLogin": "Retour à la connexion",
+    "instructions": "Entrez l'adresse e-mail associée à votre compte et nous vous enverrons un lien de réinitialisation.",
+    "emailAddress": "Adresse e-mail",
+    "emailPlaceholder": "vous@exemple.com",
+    "sendResetLink": "Envoyer le lien",
+    "sending": "Envoi…",
+    "genericError": "Échec de l'envoi de l'e-mail. Veuillez réessayer."
   }
 }

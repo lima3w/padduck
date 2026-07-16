@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../../api/auth'
 
 export default function LoginHistoryTab() {
+  const { t } = useTranslation()
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -17,7 +19,7 @@ export default function LoginHistoryTab() {
       const res = await client.getLoginHistory()
       setHistory(res.data)
     } catch {
-      setError('Failed to load login history.')
+      setError(t('userTabs.loginHistory.loadError'))
     } finally {
       setLoading(false)
     }
@@ -34,16 +36,16 @@ export default function LoginHistoryTab() {
   return (
     <div className="max-w-2xl space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Login History</h2>
-        <p className="text-sm text-gray-600 mb-4">Recent login attempts on your account (last 20).</p>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('userMenu.loginHistory')}</h2>
+        <p className="text-sm text-gray-600 mb-4">{t('userTabs.loginHistory.subtitle')}</p>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : history.length === 0 ? (
-        <p className="text-sm text-gray-500">No login history yet.</p>
+        <p className="text-sm text-gray-500">{t('userTabs.loginHistory.empty')}</p>
       ) : (
         <div className="divide-y divide-gray-200 border border-gray-200 rounded">
           {history.map((attempt) => {
@@ -54,10 +56,10 @@ export default function LoginHistoryTab() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-sm font-medium ${attempt.success ? 'text-green-800' : 'text-red-800'}`}>
-                      {attempt.success ? 'Successful login' : 'Failed login attempt'}
+                      {attempt.success ? t('userTabs.loginHistory.successful') : t('userTabs.loginHistory.failedAttempt')}
                     </span>
                     {isNew && (
-                      <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded">New IP</span>
+                      <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded">{t('userTabs.loginHistory.newIp')}</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">

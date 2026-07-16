@@ -1,6 +1,14 @@
 {
   "common": {
-    "skipToMainContent": "Skip to main content"
+    "skipToMainContent": "Skip to main content",
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "dismiss": "Dismiss",
+    "save": "Save",
+    "saving": "Saving…",
+    "revoke": "Revoke",
+    "saved": "Saved."
   },
   "nav": {
     "navigation": "Navigation",
@@ -116,5 +124,168 @@
   "profile": {
     "language": "Language",
     "languageSaved": "Language updated."
+  },
+  "register": {
+    "passwordsMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "registrationFailed": "Registration failed",
+    "accountCreatedTitle": "Account Created",
+    "goToLogin": "Go to Login",
+    "createAccount": "Create Account",
+    "tagline": "Register for Padduck",
+    "usernamePlaceholder": "johndoe",
+    "usernameHint": "3-32 characters: letters, numbers, underscore, hyphen",
+    "email": "Email",
+    "emailPlaceholder": "john@example.com",
+    "passwordHint": "Minimum 8 characters",
+    "confirmPassword": "Confirm Password",
+    "creatingAccount": "Creating Account...",
+    "alreadyHaveAccount": "Already have an account? "
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "sentPrefix": "If an account exists for ",
+    "sentSuffix": ", a password reset link has been sent. Check your inbox and follow the link within the next hour.",
+    "backToLogin": "Back to login",
+    "instructions": "Enter the email address associated with your account and we'll send you a reset link.",
+    "emailAddress": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "sendResetLink": "Send reset link",
+    "sending": "Sending…",
+    "genericError": "Failed to send reset email. Please try again."
+  },
+  "resetPassword": {
+    "invalidToken": "Invalid or missing reset token. Please request a new password reset link.",
+    "requestNewLink": "Request new link",
+    "title": "Set a new password",
+    "passwordsMismatch": "Passwords do not match.",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "linkExpiredOrInvalid": "This reset link has expired or is invalid. Please request a new one.",
+    "genericError": "Failed to reset password. Please try again.",
+    "successMessage": "Password reset successful. You can now log in.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "setNewPassword": "Set new password"
+  },
+  "verifyEmail": {
+    "noToken": "No verification token provided.",
+    "failed": "Verification failed.",
+    "verifying": "Verifying...",
+    "verifyingDescription": "Please wait while we verify your email.",
+    "successTitle": "Email Verified",
+    "errorTitle": "Verification Failed",
+    "backToLogin": "Back to Login"
+  },
+  "authCallback": {
+    "failed": "Sign in failed. Please try again.",
+    "title": "Sign In Failed",
+    "backToSignIn": "Back to Sign In",
+    "completing": "Completing sign in..."
+  },
+  "userTabs": {
+    "loginHistory": {
+      "subtitle": "Recent login attempts on your account (last 20).",
+      "loadError": "Failed to load login history.",
+      "empty": "No login history yet.",
+      "successful": "Successful login",
+      "failedAttempt": "Failed login attempt",
+      "newIp": "New IP"
+    },
+    "security": {
+      "passwordTitle": "Password",
+      "passwordSubtitle": "Change your account password.",
+      "passwordChangedSuccess": "Password changed successfully.",
+      "changePassword": "Change Password",
+      "currentPassword": "Current password",
+      "confirmNewPassword": "Confirm new password",
+      "updatePassword": "Update Password",
+      "passwordMismatch": "New passwords do not match",
+      "passwordTooShort": "New password must be at least 8 characters",
+      "changePasswordFailed": "Failed to change password",
+      "mfaSubtitle": "Protect your account with a TOTP authenticator app (e.g. Google Authenticator, Authy).",
+      "mfaEnabled": "MFA is enabled",
+      "backupCodesRemaining_one": "{{count}} backup code remaining",
+      "backupCodesRemaining_other": "{{count}} backup codes remaining",
+      "lowBackupCodesWarning": "You're running low on backup codes. Consider regenerating them.",
+      "newBackupCodesSaveNow": "New backup codes — save these now:",
+      "regenerateBackupCodes": "Regenerate Backup Codes",
+      "disableMfa": "Disable MFA",
+      "enterCodeToRegen": "Enter your current TOTP code to regenerate backup codes:",
+      "regenerating": "Regenerating…",
+      "enterCodeToDisable": "Enter your TOTP code or a backup code to disable MFA:",
+      "disabling": "Disabling…",
+      "mfaEnabledSaveBackupCodes": "MFA enabled! Save your backup codes:",
+      "codesNotShownAgain": "These codes will not be shown again.",
+      "scanQrCode": "Scan this QR code with your authenticator app:",
+      "cantScan": "Can't scan? Enter the secret manually",
+      "enterCodeToConfirm": "Then enter the 6-digit code to confirm:",
+      "enableMfa": "Enable MFA",
+      "mfaNotEnabled": "MFA is not enabled on your account.",
+      "settingUp": "Setting up…",
+      "setUpMfa": "Set Up MFA",
+      "invalidCode": "Invalid code",
+      "startSetupFailed": "Failed to start MFA setup",
+      "disableFailed": "Failed to disable MFA",
+      "regenFailed": "Failed to regenerate codes"
+    },
+    "notifications": {
+      "title": "Notification Preferences",
+      "subtitle": "Choose which security events send you an email.",
+      "loadError": "Failed to load preferences.",
+      "saveError": "Failed to save preferences.",
+      "savePreferences": "Save preferences",
+      "labels": {
+        "accountLocked": "Account locked",
+        "passwordChanged": "Password changed",
+        "mfaChanges": "MFA changes",
+        "apiTokenChanges": "API token changes",
+        "roleChanges": "Role changes",
+        "sessionRevoked": "Session revoked"
+      }
+    },
+    "privacy": {
+      "title": "Privacy",
+      "subtitle": "Review the privacy policy version recorded for your account.",
+      "loadError": "Failed to load the current privacy policy version.",
+      "currentVersion": "Current policy version",
+      "unknown": "Unknown",
+      "acceptedVersion": "Accepted version",
+      "notAccepted": "Not accepted",
+      "status": "Status",
+      "current": "Current",
+      "actionRequired": "Action required",
+      "acceptCurrentPolicy": "Accept current policy",
+      "accepting": "Accepting...",
+      "consentRecorded": "Privacy consent recorded.",
+      "recordError": "Failed to record privacy consent."
+    },
+    "sessions": {
+      "subtitle": "Devices currently signed in to your account.",
+      "signOutAllDevices": "Sign out all devices",
+      "signingOut": "Signing out…",
+      "confirmSignOutAll": "Sign out of all other devices?",
+      "signOutAllFailed": "Failed to sign out all devices.",
+      "loadError": "Failed to load sessions.",
+      "empty": "No active sessions.",
+      "unknownDevice": "Unknown device",
+      "unknownIp": "Unknown IP",
+      "lastActive": "Last active {{date}}",
+      "expires": "Expires {{date}}",
+      "revoking": "Revoking…",
+      "revokeFailed": "Failed to revoke session."
+    },
+    "tokens": {
+      "subtitle": "Tokens authenticate API requests. Treat them like passwords.",
+      "createdCopyNow": "Token created — copy it now, it won't be shown again:",
+      "namePlaceholder": "Token name (e.g. CLI, Terraform)",
+      "createToken": "Create Token",
+      "creating": "Creating…",
+      "empty": "No tokens yet.",
+      "created": "Created {{date}}",
+      "lastUsed": "Last used {{date}}",
+      "neverUsed": "Never used",
+      "createFailed": "Failed to create token",
+      "revokeFailed": "Failed to revoke token"
+    }
   }
 }

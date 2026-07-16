@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.1
+
+### Added
+- **i18n batch 1/15: auth & account pages** (issue #35): converted `RegisterPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `VerifyEmailPage`, `AuthCallbackPage`, and all `Account Settings` tabs (`LoginHistoryTab`, `SecurityTab`, `NotificationsTab`, `PrivacyTab`, `SessionsTab`, `TokensTab`) to `t()` calls. Adds i18next plural support (`backupCodesRemaining_one`/`_other`) as the first demonstration of that pattern. ~14 pages remain in this milestone; see `docs/i18n.md`.
+
 ## v1.34.0
 
 ### Added

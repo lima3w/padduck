@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../../api/auth'
 
 export default function SecurityTab() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
 
@@ -53,11 +55,11 @@ export default function SecurityTab() {
     setChangePwError('')
     setChangePwSuccess(false)
     if (changePwForm.next !== changePwForm.confirm) {
-      setChangePwError('New passwords do not match')
+      setChangePwError(t('userTabs.security.passwordMismatch'))
       return
     }
     if (changePwForm.next.length < 8) {
-      setChangePwError('New password must be at least 8 characters')
+      setChangePwError(t('userTabs.security.passwordTooShort'))
       return
     }
     setChangePwLoading(true)
@@ -67,7 +69,7 @@ export default function SecurityTab() {
       setChangePwForm({ current: '', next: '', confirm: '' })
       setShowChangePassword(false)
     } catch (err) {
-      setChangePwError(err.response?.data?.error || 'Failed to change password')
+      setChangePwError(err.response?.data?.error || t('userTabs.security.changePasswordFailed'))
     } finally {
       setChangePwLoading(false)
     }
@@ -82,7 +84,7 @@ export default function SecurityTab() {
       setBackupCodes(null)
       setConfirmCode('')
     } catch (err) {
-      setSetupError(err.response?.data?.error || 'Failed to start MFA setup')
+      setSetupError(err.response?.data?.error || t('userTabs.security.startSetupFailed'))
     } finally {
       setSetupLoading(false)
     }
@@ -98,7 +100,7 @@ export default function SecurityTab() {
       setSetupData(null)
       await loadStatus()
     } catch (err) {
-      setSetupError(err.response?.data?.error || 'Invalid code')
+      setSetupError(err.response?.data?.error || t('userTabs.security.invalidCode'))
     } finally {
       setSetupLoading(false)
     }
@@ -114,7 +116,7 @@ export default function SecurityTab() {
       setDisableCode('')
       setStatus({ totpEnabled: false, backupCodesLeft: 0 })
     } catch (err) {
-      setDisableError(err.response?.data?.error || 'Failed to disable MFA')
+      setDisableError(err.response?.data?.error || t('userTabs.security.disableFailed'))
     } finally {
       setDisableLoading(false)
     }
@@ -131,24 +133,24 @@ export default function SecurityTab() {
       setShowRegen(false)
       await loadStatus()
     } catch (err) {
-      setRegenError(err.response?.data?.error || 'Failed to regenerate codes')
+      setRegenError(err.response?.data?.error || t('userTabs.security.regenFailed'))
     } finally {
       setRegenLoading(false)
     }
   }
 
   if (loadingStatus) {
-    return <p className="text-sm text-gray-500">Loading…</p>
+    return <p className="text-sm text-gray-500">{t('common.loading')}</p>
   }
 
   return (
     <div className="max-w-lg space-y-8">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Password</h2>
-        <p className="text-sm text-gray-600 mb-4">Change your account password.</p>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('userTabs.security.passwordTitle')}</h2>
+        <p className="text-sm text-gray-600 mb-4">{t('userTabs.security.passwordSubtitle')}</p>
         {changePwSuccess && (
           <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-800">
-            Password changed successfully.
+            {t('userTabs.security.passwordChangedSuccess')}
           </div>
         )}
         {!showChangePassword ? (
@@ -157,13 +159,13 @@ export default function SecurityTab() {
             onClick={() => { setShowChangePassword(true); setChangePwError(''); setChangePwSuccess(false); }}
             className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
           >
-            Change Password
+            {t('userTabs.security.changePassword')}
           </button>
         ) : (
           <form onSubmit={handleChangePassword} className="space-y-3">
             {changePwError && <p className="text-sm text-red-600">{changePwError}</p>}
             <div>
-              <label className="block text-sm text-gray-700 mb-1">Current password</label>
+              <label className="block text-sm text-gray-700 mb-1">{t('userTabs.security.currentPassword')}</label>
               <input
                 type="password"
                 autoComplete="current-password"
@@ -174,7 +176,7 @@ export default function SecurityTab() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-1">New password</label>
+              <label className="block text-sm text-gray-700 mb-1">{t('resetPassword.newPassword')}</label>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -185,7 +187,7 @@ export default function SecurityTab() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-700 mb-1">Confirm new password</label>
+              <label className="block text-sm text-gray-700 mb-1">{t('userTabs.security.confirmNewPassword')}</label>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -201,14 +203,14 @@ export default function SecurityTab() {
                 disabled={changePwLoading}
                 className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition"
               >
-                {changePwLoading ? 'Saving…' : 'Update Password'}
+                {changePwLoading ? t('common.saving') : t('userTabs.security.updatePassword')}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowChangePassword(false); setChangePwForm({ current: '', next: '', confirm: '' }); setChangePwError(''); }}
                 className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </form>
@@ -216,9 +218,9 @@ export default function SecurityTab() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Two-Factor Authentication</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('login.mfa.title')}</h2>
         <p className="text-sm text-gray-600 mb-4">
-          Protect your account with a TOTP authenticator app (e.g. Google Authenticator, Authy).
+          {t('userTabs.security.mfaSubtitle')}
         </p>
 
         {status?.totpEnabled ? (
@@ -226,20 +228,20 @@ export default function SecurityTab() {
             <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded">
               <span className="text-green-600 text-lg">✓</span>
               <div>
-                <p className="text-sm font-medium text-green-800">MFA is enabled</p>
-                <p className="text-xs text-green-700">{status.backupCodesLeft} backup code{status.backupCodesLeft !== 1 ? 's' : ''} remaining</p>
+                <p className="text-sm font-medium text-green-800">{t('userTabs.security.mfaEnabled')}</p>
+                <p className="text-xs text-green-700">{t('userTabs.security.backupCodesRemaining', { count: status.backupCodesLeft })}</p>
               </div>
             </div>
 
             {status.backupCodesLeft <= 2 && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                You&apos;re running low on backup codes. Consider regenerating them.
+                {t('userTabs.security.lowBackupCodesWarning')}
               </div>
             )}
 
             {regenResult && (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded">
-                <p className="text-sm font-medium text-gray-800 mb-2">New backup codes — save these now:</p>
+                <p className="text-sm font-medium text-gray-800 mb-2">{t('userTabs.security.newBackupCodesSaveNow')}</p>
                 <ul className="space-y-1">
                   {regenResult.map((code) => (
                     <li key={code} className="font-mono text-sm text-gray-700">{code}</li>
@@ -255,21 +257,21 @@ export default function SecurityTab() {
                   onClick={() => setShowRegen(true)}
                   className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
                 >
-                  Regenerate Backup Codes
+                  {t('userTabs.security.regenerateBackupCodes')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDisable(true)}
                   className="px-4 py-2 text-sm border border-red-300 text-red-700 rounded hover:bg-red-50 transition"
                 >
-                  Disable MFA
+                  {t('userTabs.security.disableMfa')}
                 </button>
               </div>
             )}
 
             {showRegen && (
               <form onSubmit={handleRegen} className="space-y-3">
-                <p className="text-sm text-gray-700">Enter your current TOTP code to regenerate backup codes:</p>
+                <p className="text-sm text-gray-700">{t('userTabs.security.enterCodeToRegen')}</p>
                 {regenError && <p className="text-sm text-red-600">{regenError}</p>}
                 <div className="flex gap-2">
                   <input
@@ -285,14 +287,14 @@ export default function SecurityTab() {
                     disabled={regenLoading || !regenCode}
                     className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition"
                   >
-                    {regenLoading ? 'Regenerating…' : 'Confirm'}
+                    {regenLoading ? t('userTabs.security.regenerating') : t('common.confirm')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowRegen(false); setRegenCode(''); setRegenError(''); }}
                     className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -300,7 +302,7 @@ export default function SecurityTab() {
 
             {showDisable && (
               <form onSubmit={handleDisable} className="space-y-3">
-                <p className="text-sm text-gray-700">Enter your TOTP code or a backup code to disable MFA:</p>
+                <p className="text-sm text-gray-700">{t('userTabs.security.enterCodeToDisable')}</p>
                 {disableError && <p className="text-sm text-red-600">{disableError}</p>}
                 <div className="flex gap-2">
                   <input
@@ -316,14 +318,14 @@ export default function SecurityTab() {
                     disabled={disableLoading || !disableCode}
                     className="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 transition"
                   >
-                    {disableLoading ? 'Disabling…' : 'Disable MFA'}
+                    {disableLoading ? t('userTabs.security.disabling') : t('userTabs.security.disableMfa')}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowDisable(false); setDisableCode(''); setDisableError(''); }}
                     className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </form>
@@ -334,25 +336,25 @@ export default function SecurityTab() {
             {backupCodes ? (
               <div className="space-y-4">
                 <div className="p-4 bg-green-50 border border-green-200 rounded">
-                  <p className="text-sm font-medium text-green-800 mb-3">MFA enabled! Save your backup codes:</p>
+                  <p className="text-sm font-medium text-green-800 mb-3">{t('userTabs.security.mfaEnabledSaveBackupCodes')}</p>
                   <ul className="space-y-1">
                     {backupCodes.map((code) => (
                       <li key={code} className="font-mono text-sm text-gray-700">{code}</li>
                     ))}
                   </ul>
-                  <p className="text-xs text-gray-600 mt-3">These codes will not be shown again.</p>
+                  <p className="text-xs text-gray-600 mt-3">{t('userTabs.security.codesNotShownAgain')}</p>
                 </div>
               </div>
             ) : setupData ? (
               <div className="space-y-4">
-                <p className="text-sm text-gray-700">Scan this QR code with your authenticator app:</p>
+                <p className="text-sm text-gray-700">{t('userTabs.security.scanQrCode')}</p>
                 <img src={setupData.qrCode} alt="TOTP QR code" className="w-48 h-48 border border-gray-200 rounded bg-white" />
                 <details className="text-sm">
-                  <summary className="text-gray-500 cursor-pointer">Can&apos;t scan? Enter the secret manually</summary>
+                  <summary className="text-gray-500 cursor-pointer">{t('userTabs.security.cantScan')}</summary>
                   <code className="block mt-2 p-2 bg-gray-100 rounded font-mono text-xs break-all">{setupData.secret}</code>
                 </details>
                 <form onSubmit={handleConfirmTOTP} className="space-y-3">
-                  <p className="text-sm text-gray-700">Then enter the 6-digit code to confirm:</p>
+                  <p className="text-sm text-gray-700">{t('userTabs.security.enterCodeToConfirm')}</p>
                   {setupError && <p className="text-sm text-red-600">{setupError}</p>}
                   <div className="flex gap-2">
                     <input
@@ -369,7 +371,7 @@ export default function SecurityTab() {
                       disabled={setupLoading || confirmCode.length < 6}
                       className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition"
                     >
-                      {setupLoading ? 'Verifying…' : 'Enable MFA'}
+                      {setupLoading ? t('login.mfa.verifying') : t('userTabs.security.enableMfa')}
                     </button>
                   </div>
                 </form>
@@ -377,7 +379,7 @@ export default function SecurityTab() {
             ) : (
               <div className="space-y-3">
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
-                  MFA is not enabled on your account.
+                  {t('userTabs.security.mfaNotEnabled')}
                 </div>
                 {setupError && <p className="text-sm text-red-600">{setupError}</p>}
                 <button
@@ -386,7 +388,7 @@ export default function SecurityTab() {
                   disabled={setupLoading}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition"
                 >
-                  {setupLoading ? 'Setting up…' : 'Set Up MFA'}
+                  {setupLoading ? t('userTabs.security.settingUp') : t('userTabs.security.setUpMfa')}
                 </button>
               </div>
             )}
