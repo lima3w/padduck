@@ -101,7 +101,7 @@ gosec:
 
 ## govulncheck: run govulncheck on Go modules
 govulncheck:
-	@v=$$(go env GOVERSION); \
+	@v=$$(cd $(BACKEND_DIR) && go env GOVERSION); \
 	if [ "$$(printf '%s\n%s\n' "$(GOVULNCHECK_MIN_GO)" "$$v" | sort -V | head -n1)" != "$(GOVULNCHECK_MIN_GO)" ]; then \
 		echo "ERROR: govulncheck requires Go $(GOVULNCHECK_MIN_GO) or newer; found $$v"; \
 		exit 1; \
