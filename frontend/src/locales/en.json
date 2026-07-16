@@ -392,5 +392,31 @@
     "merge": "Merge",
     "resize": "Resize",
     "confirmDelete": "Confirm?"
+  },
+  "subnetForm": {
+    "newSubnetModalTitle": "New Subnet",
+    "editSubnetModalTitle": "Edit Subnet",
+    "networkAddress": "Network Address",
+    "gatewayOptional": "Gateway (optional)",
+    "locationOptional": "Location (optional)",
+    "noLocation": "No location",
+    "nameserverOptional": "Nameserver (optional)",
+    "noNameserver": "No nameserver",
+    "vlanOptional": "VLAN (optional)",
+    "noVlan": "No VLAN",
+    "autoReserveFirst": "Auto-reserve first IP (network address)",
+    "autoReserveLast": "Auto-reserve last IP (broadcast address)",
+    "technitiumDhcp": "Technitium DHCP",
+    "scopeNameOptional": "Scope name (optional)",
+    "scopeNamePlaceholder": "e.g. Office LAN",
+    "technitiumHint": "Links this subnet to a Technitium DHCP scope for lease sync and reservation push.",
+    "alertSettings": "Alert Settings",
+    "alertThresholdOptional": "Alert Threshold % (optional)",
+    "alertThresholdPlaceholder": "e.g. 80",
+    "alertThresholdHint": "Send alert when utilization exceeds this percentage",
+    "alertEmailOverride": "Alert Email Override (optional)",
+    "alertEmailPlaceholder": "alerts@example.com",
+    "alertEmailHint": "Override the default alert recipient for this subnet",
+    "customFields": "Custom Fields"
   }
 }
