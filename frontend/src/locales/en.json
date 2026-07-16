@@ -287,5 +287,37 @@
       "createFailed": "Failed to create token",
       "revokeFailed": "Failed to revoke token"
     }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "loadError": "Failed to load dashboard data",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "subnets": "Subnets",
+    "ipAddresses": "IP Addresses",
+    "assignedTotal": "assigned / total",
+    "utilisation": "Utilisation",
+    "assignedIps": "assigned IPs",
+    "pendingRequests": "Pending Requests",
+    "clickToReview": "Click to review",
+    "noPendingRequests": "No pending requests",
+    "subnetsNearCapacity": "Subnets Near Capacity",
+    "viewTrends": "View trends →",
+    "driftedIps": "Drifted IPs",
+    "inactiveDaysSuffix": "(30+ days inactive)",
+    "viewAll": "View all →",
+    "ipAddressColumn": "IP Address",
+    "hostname": "Hostname",
+    "subnet": "Subnet",
+    "daysInactive": "Days Inactive",
+    "topUtilisedSubnets": "Top Utilised Subnets",
+    "noUtilizationData": "No subnet utilization data yet",
+    "recentActivity": "Recent Activity",
+    "noRecentActivity": "No recent activity",
+    "byUser": "by {{username}}",
+    "justNow": "just now",
+    "minAgo": "{{count}} min ago",
+    "hrAgo": "{{count}} hr ago",
+    "daysAgo": "{{count}} days ago"
   }
 }

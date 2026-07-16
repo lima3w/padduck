@@ -1,20 +1,21 @@
 import { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getDashboardSummary, getDashboardRecentActivity } from '../api/app'
 import { getAdminConfig } from '../api/admin'
 import { getCachedUser } from '../utils/storageKeys'
 
-function formatRelativeTime(isoString) {
+function formatRelativeTime(isoString, t) {
   const now = Date.now()
   const then = new Date(isoString).getTime()
   const diff = Math.floor((now - then) / 1000)
 
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`
-  return `${Math.floor(diff / 86400)} days ago`
+  if (diff < 60) return t('dashboard.justNow')
+  if (diff < 3600) return t('dashboard.minAgo', { count: Math.floor(diff / 60) })
+  if (diff < 86400) return t('dashboard.hrAgo', { count: Math.floor(diff / 3600) })
+  return t('dashboard.daysAgo', { count: Math.floor(diff / 86400) })
 }
 
 function actionIcon(action) {
@@ -66,6 +67,7 @@ function SummaryCard({ label, value, sub, onClick, highlight }) {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
@@ -111,7 +113,7 @@ export default function DashboardPage() {
   const nearCapacity = nearCapacityQuery.data ?? []
   const driftedIPs = driftedQuery.data ?? []
   const loading = summaryQuery.isLoading || activityQuery.isLoading
-  const error = summaryQuery.isError || activityQuery.isError ? 'Failed to load dashboard data' : null
+  const error = summaryQuery.isError || activityQuery.isError ? t('dashboard.loadError') : null
 
   const load = () => {
     summaryQuery.refetch()
@@ -123,7 +125,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('dashboard.title')}</h1>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 h-24 animate-pulse bg-gray-100 dark:bg-gray-700" />
@@ -136,10 +138,10 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('dashboard.title')}</h1>
         <p className="text-red-600">{error}</p>
         <button onClick={load} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-          Retry
+          {t('dashboard.retry')}
         </button>
       </div>
     )
@@ -150,28 +152,28 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('dashboard.title')}</h1>
         <button
           onClick={load}
           className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
         >
-          Refresh
+          {t('dashboard.refresh')}
         </button>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard label="Networks" value={summary?.totalNetworks ?? 0} />
-        <SummaryCard label="Subnets" value={summary?.totalSubnets ?? 0} />
+        <SummaryCard label={t('nav.networks')} value={summary?.totalNetworks ?? 0} />
+        <SummaryCard label={t('dashboard.subnets')} value={summary?.totalSubnets ?? 0} />
         <SummaryCard
-          label="IP Addresses"
+          label={t('dashboard.ipAddresses')}
           value={`${summary?.usedIps ?? 0} / ${summary?.totalIps ?? 0}`}
-          sub="assigned / total"
+          sub={t('dashboard.assignedTotal')}
         />
         <SummaryCard
-          label="Utilisation"
+          label={t('dashboard.utilisation')}
           value={`${utilPct.toFixed(1)}%`}
-          sub="assigned IPs"
+          sub={t('dashboard.assignedIps')}
         />
       </div>
 
@@ -181,9 +183,9 @@ export default function DashboardPage() {
         return (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <SummaryCard
-              label="Pending Requests"
+              label={t('dashboard.pendingRequests')}
               value={pendingCount}
-              sub={pendingCount > 0 ? 'Click to review' : 'No pending requests'}
+              sub={pendingCount > 0 ? t('dashboard.clickToReview') : t('dashboard.noPendingRequests')}
               onClick={() => navigate('/admin/requests')}
               highlight={pendingCount > 0}
             />
@@ -196,10 +198,10 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-              Subnets Near Capacity
+              {t('dashboard.subnetsNearCapacity')}
             </h2>
             <Link to="/reports/utilization-trends" className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
-              View trends →
+              {t('dashboard.viewTrends')}
             </Link>
           </div>
           <div className="space-y-3">
@@ -234,20 +236,20 @@ export default function DashboardPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-              Drifted IPs <span className="ml-1 text-xs font-normal text-gray-400">(30+ days inactive)</span>
+              {t('dashboard.driftedIps')} <span className="ml-1 text-xs font-normal text-gray-400">{t('dashboard.inactiveDaysSuffix')}</span>
             </h2>
             <Link to="/reports/inactive-ips" className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
-              View all →
+              {t('dashboard.viewAll')}
             </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
-                  <th className="text-left pb-2 font-medium">IP Address</th>
-                  <th className="text-left pb-2 font-medium">Hostname</th>
-                  <th className="text-left pb-2 font-medium">Subnet</th>
-                  <th className="text-right pb-2 font-medium">Days Inactive</th>
+                  <th className="text-left pb-2 font-medium">{t('dashboard.ipAddressColumn')}</th>
+                  <th className="text-left pb-2 font-medium">{t('dashboard.hostname')}</th>
+                  <th className="text-left pb-2 font-medium">{t('dashboard.subnet')}</th>
+                  <th className="text-right pb-2 font-medium">{t('dashboard.daysInactive')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -273,10 +275,10 @@ export default function DashboardPage() {
         {/* Top subnets */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
           <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4">
-            Top Utilised Subnets
+            {t('dashboard.topUtilisedSubnets')}
           </h2>
           {summary?.topSubnets?.length === 0 ? (
-            <p className="text-sm text-gray-400">No subnet utilization data yet</p>
+            <p className="text-sm text-gray-400">{t('dashboard.noUtilizationData')}</p>
           ) : (
             <div className="space-y-3">
               {summary?.topSubnets?.map((s) => (
@@ -305,10 +307,10 @@ export default function DashboardPage() {
         {/* Recent activity */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
           <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4">
-            Recent Activity
+            {t('dashboard.recentActivity')}
           </h2>
           {activity.length === 0 ? (
-            <p className="text-sm text-gray-400">No recent activity</p>
+            <p className="text-sm text-gray-400">{t('dashboard.noRecentActivity')}</p>
           ) : (
             <div className="space-y-2">
               {activity.map((a) => (
@@ -328,11 +330,11 @@ export default function DashboardPage() {
                       }</span>
                     )}
                     {a.username && (
-                      <span className="text-gray-400 dark:text-gray-500"> by {a.username}</span>
+                      <span className="text-gray-400 dark:text-gray-500"> {t('dashboard.byUser', { username: a.username })}</span>
                     )}
                   </div>
                   <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
-                    {formatRelativeTime(a.createdAt)}
+                    {formatRelativeTime(a.createdAt, t)}
                   </span>
                 </div>
               ))}
