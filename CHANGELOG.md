@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.2
+
+### Added
+- **i18n batch 2/15: dashboard & core IPAM pages** (issue #35): converted `DashboardPage`, `NetworksPage`, `SubnetsPage`, and all `pages/subnet/*` and `pages/ip/*` components (`SubnetTable`, `SubnetFormModal`, `SplitSubnetModal`, `MergeSubnetModal`, `ResizeSubnetModal`, `DelegationsTab`, `UtilisationHistorySection`) to `t()` calls. Expands the shared `common` vocabulary (edit/delete/yes/no/clear/name/description) for reuse across future batches. `IPAddressesPage.jsx` (1275 lines) is deferred to its own follow-up PR given its size.
+
 ## v1.34.1
 
 ### Added

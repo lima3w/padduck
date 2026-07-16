@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import Modal from '../../components/Modal'
 
 function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
@@ -19,8 +20,9 @@ function splitCidrPreview(networkAddress, currentPrefix, newPrefix) {
 }
 
 export default function SplitSubnetModal({ splitModal, splitPrefix, setSplitPrefix, splitting, splitError, splitBlockingIPs, onSplit, onClose }) {
+  const { t } = useTranslation()
   return (
-    <Modal title={`Split ${splitModal.subnet.networkAddress}/${splitModal.subnet.prefixLength}`} onClose={onClose}>
+    <Modal title={t('subnetSplit.title', { cidr: `${splitModal.subnet.networkAddress}/${splitModal.subnet.prefixLength}` })} onClose={onClose}>
       <div className="space-y-4">
         {splitError && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
@@ -33,7 +35,7 @@ export default function SplitSubnetModal({ splitModal, splitPrefix, setSplitPref
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Prefix Length</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subnetSplit.newPrefixLength')}</label>
           <input
             type="number"
             min={splitModal.subnet.prefixLength + 1}
@@ -45,7 +47,7 @@ export default function SplitSubnetModal({ splitModal, splitPrefix, setSplitPref
         </div>
         {splitPrefix && !isNaN(parseInt(splitPrefix)) && parseInt(splitPrefix) > splitModal.subnet.prefixLength && (
           <div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Preview — child CIDRs to create:</p>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('subnetSplit.previewLabel')}</p>
             <div className="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto">
               {splitCidrPreview(splitModal.subnet.networkAddress, splitModal.subnet.prefixLength, parseInt(splitPrefix)).map((c, i) => (
                 <span key={i} className="font-mono text-xs bg-gray-50 dark:bg-gray-700 rounded px-2 py-1">{c}</span>
@@ -54,13 +56,13 @@ export default function SplitSubnetModal({ splitModal, splitPrefix, setSplitPref
           </div>
         )}
         <div className="flex justify-end gap-2 pt-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
           <button
             onClick={onSplit}
             disabled={splitting || !splitPrefix || isNaN(parseInt(splitPrefix)) || parseInt(splitPrefix) <= splitModal.subnet.prefixLength}
             className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50"
           >
-            {splitting ? 'Splitting...' : 'Split'}
+            {splitting ? t('subnetSplit.splitting') : t('subnets.split')}
           </button>
         </div>
       </div>
