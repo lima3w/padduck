@@ -68,6 +68,7 @@ type UserResponse struct {
 	State                  string  `json:"state"`
 	GravatarURL            string  `json:"gravatar_url"`
 	AvatarSource           string  `json:"avatar_source"`
+	Locale                 string  `json:"locale"`
 	PrivacyAcceptedVersion *string `json:"privacy_accepted_version,omitempty"`
 	CreatedAt              string  `json:"created_at"`
 	UpdatedAt              string  `json:"updated_at"`
@@ -134,6 +135,7 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 		State:                  user.State,
 		GravatarURL:            gravatarURL(user.Email, 80),
 		AvatarSource:           user.AvatarSource,
+		Locale:                 user.Locale,
 		PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
 		CreatedAt:              user.CreatedAt.String(),
 		UpdatedAt:              user.UpdatedAt.String(),
@@ -295,6 +297,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 			State:                  user.State,
 			GravatarURL:            gravatarURL(user.Email, 80),
 			AvatarSource:           user.AvatarSource,
+			Locale:                 user.Locale,
 			PrivacyAcceptedVersion: user.PrivacyAcceptedVersion,
 			CreatedAt:              user.CreatedAt.String(),
 			UpdatedAt:              user.UpdatedAt.String(),
@@ -521,4 +524,22 @@ func (h *Handler) UpdateMyAvatar(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.JSON(fiber.Map{"message": "avatar updated"})
+}
+
+// UpdateMyLocale handles PUT /api/v1/auth/me/locale
+func (h *Handler) UpdateMyLocale(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(*models.User)
+	if !ok {
+		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "unauthorized")
+	}
+	var req struct {
+		Locale string `json:"locale"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if err := h.ops.Identity.UpdateUserLocale(c.Context(), user.ID, req.Locale); err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
+	}
+	return c.JSON(fiber.Map{"message": "locale updated"})
 }

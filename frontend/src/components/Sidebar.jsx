@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getPendingRequestCount } from '../api/requests'
 import { listDriftItems } from '../api/discovery'
 import { getDnsZones } from '../api/dns'
@@ -11,6 +12,7 @@ import { getCachedUser } from '../utils/storageKeys'
 const SECTION_HEADER = 'mt-2 pt-3 mb-1 px-3 text-xs font-semibold text-[#a8b8cb]/50 uppercase tracking-wider border-t border-[#25364a]'
 
 export default function Sidebar({ open, onClose }) {
+  const { t } = useTranslation()
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
   const location = useLocation()
@@ -95,11 +97,11 @@ export default function Sidebar({ open, onClose }) {
   return (
     <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#07162b] text-[#f4f7fa] flex flex-col border-r border-[#25364a] transition-transform duration-200 ease-in-out lg:relative lg:inset-auto lg:z-auto lg:w-48 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex items-center justify-between px-4 pt-4 pb-2 lg:hidden shrink-0">
-        <span className="text-sm font-semibold text-[#a8b8cb]">Navigation</span>
+        <span className="text-sm font-semibold text-[#a8b8cb]">{t('nav.navigation')}</span>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close navigation"
+          aria-label={t('nav.closeNavigation')}
           className="p-1.5 rounded hover:bg-[#0d2848] text-[#a8b8cb] focus:outline-none focus:ring-2 focus:ring-[#f5b800]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +119,7 @@ export default function Sidebar({ open, onClose }) {
             }`
           }
         >
-          Dashboard
+          {t('nav.dashboard')}
         </NavLink>
         <NavLink
           to="/networks"
@@ -127,7 +129,7 @@ export default function Sidebar({ open, onClose }) {
             }`
           }
         >
-          Networks
+          {t('nav.networks')}
         </NavLink>
         {features?.devices && (
           <NavLink
@@ -138,7 +140,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            Devices
+            {t('nav.devices')}
           </NavLink>
         )}
         {!isAdmin && (
@@ -150,12 +152,12 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            My Requests
+            {t('nav.myRequests')}
           </NavLink>
         )}
 
         {(features?.locations || features?.racks) && (
-          <div className={SECTION_HEADER}>Physical</div>
+          <div className={SECTION_HEADER}>{t('nav.sections.physical')}</div>
         )}
         {features?.locations && (
           <NavLink
@@ -166,7 +168,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            Locations
+            {t('nav.locations')}
           </NavLink>
         )}
         {features?.racks && (
@@ -178,7 +180,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            Racks
+            {t('nav.racks')}
           </NavLink>
         )}
 
@@ -191,12 +193,12 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            BGP / AS Numbers
+            {t('nav.bgpAsNumbers')}
           </NavLink>
         )}
 
         {(features?.nat || features?.firewall || features?.dhcp || features?.circuits) && (
-          <div className={SECTION_HEADER}>Network Services</div>
+          <div className={SECTION_HEADER}>{t('nav.sections.networkServices')}</div>
         )}
         {features?.nat && (
           <NavLink
@@ -207,7 +209,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            NAT Rules
+            {t('nav.natRules')}
           </NavLink>
         )}
         {features?.firewall && (
@@ -219,7 +221,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            Firewall Zones
+            {t('nav.firewallZones')}
           </NavLink>
         )}
         {features?.dhcp && (
@@ -231,7 +233,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            DHCP
+            {t('nav.dhcp')}
           </NavLink>
         )}
         {features?.circuits && (
@@ -243,13 +245,13 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            Circuits
+            {t('nav.circuits')}
           </NavLink>
         )}
 
         {features?.customers && (
           <>
-            <div className={SECTION_HEADER}>Customers</div>
+            <div className={SECTION_HEADER}>{t('nav.sections.customers')}</div>
             <NavLink
               to="/customers"
               className={({ isActive }) =>
@@ -258,13 +260,13 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Customers
+              {t('nav.customers')}
             </NavLink>
           </>
         )}
 
         {(features?.vlans || features?.vrfs) && (
-          <div className={SECTION_HEADER}>VLANs &amp; VRFs</div>
+          <div className={SECTION_HEADER}>{t('nav.sections.vlansVrfs')}</div>
         )}
         {features?.vlans && (
           <NavLink
@@ -275,7 +277,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            VLANs
+            {t('nav.vlans')}
           </NavLink>
         )}
         {features?.vrfs && (
@@ -287,11 +289,11 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            VRFs
+            {t('nav.vrfs')}
           </NavLink>
         )}
 
-        <div className={SECTION_HEADER}>DNS</div>
+        <div className={SECTION_HEADER}>{t('nav.sections.dns')}</div>
         <NavLink
           to="/dns/nameservers"
           className={({ isActive }) =>
@@ -300,7 +302,7 @@ export default function Sidebar({ open, onClose }) {
             }`
           }
         >
-          Nameservers
+          {t('nav.nameservers')}
         </NavLink>
         {dnsConfigured && (
           <NavLink
@@ -311,7 +313,7 @@ export default function Sidebar({ open, onClose }) {
               }`
             }
           >
-            DNS Zones
+            {t('nav.dnsZones')}
           </NavLink>
         )}
 
@@ -323,11 +325,11 @@ export default function Sidebar({ open, onClose }) {
             }`
           }
         >
-          Reports
+          {t('nav.reports')}
         </NavLink>
         {isAdmin && (
           <>
-            <div className={SECTION_HEADER}>Admin</div>
+            <div className={SECTION_HEADER}>{t('nav.sections.admin')}</div>
             <NavLink
               to="/admin/requests"
               className={({ isActive }) =>
@@ -336,7 +338,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              <span>Requests</span>
+              <span>{t('nav.requests')}</span>
               {pendingCount > 0 && (
                 <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-yellow-500 rounded-full">
                   {pendingCount}
@@ -351,7 +353,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Users &amp; Roles
+              {t('nav.usersRoles')}
             </NavLink>
             <NavLink
               to="/admin/settings"
@@ -361,7 +363,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Settings
+              {t('nav.settings')}
             </NavLink>
             <NavLink
               to="/admin/audit"
@@ -371,7 +373,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Audit
+              {t('nav.audit')}
             </NavLink>
             <NavLink
               to="/admin/discovery"
@@ -381,14 +383,14 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              <span>Discovery</span>
+              <span>{t('nav.discovery')}</span>
               {driftCount > 0 && (
                 <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-yellow-500 rounded-full">
                   {driftCount}
                 </span>
               )}
             </NavLink>
-            <div className={`${SECTION_HEADER} mt-1`}>Automation</div>
+            <div className={`${SECTION_HEADER} mt-1`}>{t('nav.sections.automation')}</div>
             <NavLink
               to="/admin/automation/policies"
               className={({ isActive }) =>
@@ -397,7 +399,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Policies
+              {t('nav.policies')}
             </NavLink>
             <NavLink
               to="/admin/api-token-analytics"
@@ -407,7 +409,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Token Analytics
+              {t('nav.tokenAnalytics')}
             </NavLink>
             <NavLink
               to="/admin/system-health"
@@ -417,7 +419,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              System Health
+              {t('nav.systemHealth')}
             </NavLink>
             <NavLink
               to="/admin/backups"
@@ -427,7 +429,7 @@ export default function Sidebar({ open, onClose }) {
                 }`
               }
             >
-              Backups
+              {t('nav.backups')}
             </NavLink>
           </>
         )}

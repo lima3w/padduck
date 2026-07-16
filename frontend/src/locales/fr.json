@@ -1,0 +1,100 @@
+{
+  "common": {
+    "skipToMainContent": "Passer au contenu principal"
+  },
+  "nav": {
+    "navigation": "Navigation",
+    "closeNavigation": "Fermer la navigation",
+    "dashboard": "Tableau de bord",
+    "networks": "Réseaux",
+    "devices": "Appareils",
+    "myRequests": "Mes demandes",
+    "locations": "Emplacements",
+    "racks": "Baies",
+    "bgpAsNumbers": "BGP / Numéros AS",
+    "natRules": "Règles NAT",
+    "firewallZones": "Zones pare-feu",
+    "dhcp": "DHCP",
+    "circuits": "Circuits",
+    "customers": "Clients",
+    "vlans": "VLANs",
+    "vrfs": "VRFs",
+    "nameservers": "Serveurs de noms",
+    "dnsZones": "Zones DNS",
+    "reports": "Rapports",
+    "requests": "Demandes",
+    "usersRoles": "Utilisateurs & rôles",
+    "settings": "Paramètres",
+    "audit": "Audit",
+    "discovery": "Découverte",
+    "policies": "Politiques",
+    "sections": {
+      "physical": "Physique",
+      "networkServices": "Services réseau",
+      "customers": "Clients",
+      "vlansVrfs": "VLANs & VRFs",
+      "dns": "DNS",
+      "admin": "Admin"
+    }
+  },
+  "header": {
+    "toggleNavigation": "Basculer la navigation",
+    "tagline": "Gestion des adresses IP",
+    "search": "Rechercher",
+    "searchTitle": "Rechercher (Ctrl+K)",
+    "admin": "Admin"
+  },
+  "userMenu": {
+    "openMenu": "Ouvrir le menu utilisateur",
+    "menuLabel": "Menu utilisateur",
+    "mySettings": "Mes paramètres",
+    "activeSessions": "Sessions actives",
+    "loginHistory": "Historique de connexion",
+    "darkMode": "Mode sombre",
+    "privacyPolicy": "Politique de confidentialité",
+    "logout": "Déconnexion",
+    "modes": {
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    }
+  },
+  "login": {
+    "signInToContinue": "Connectez-vous pour continuer",
+    "username": "Nom d'utilisateur",
+    "usernamePlaceholder": "nom d'utilisateur",
+    "password": "Mot de passe",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion en cours…",
+    "ldapCheckbox": "Se connecter avec LDAP / Active Directory",
+    "noAccount": "Vous n'avez pas de compte ? ",
+    "register": "S'inscrire",
+    "forgotPassword": "Mot de passe oublié ?",
+    "orContinueWith": "Ou continuer avec",
+    "ssoButton": "Se connecter avec SSO",
+    "samlButton": "Se connecter avec SAML",
+    "securityNote": "Votre mot de passe est haché de façon sécurisée et n'est jamais transmis en texte clair.",
+    "mfa": {
+      "title": "Authentification à deux facteurs",
+      "description": "Entrez le code à 6 chiffres de votre application d'authentification, ou un code de secours.",
+      "codeLabel": "Code d'authentification",
+      "verify": "Vérifier",
+      "verifying": "Vérification…",
+      "backToSignIn": "Retour à la connexion"
+    }
+  },
+  "settings": {
+    "title": "Paramètres du compte",
+    "tabs": {
+      "profile": "Profil",
+      "security": "Sécurité",
+      "sessions": "Sessions",
+      "notifications": "Notifications",
+      "loginHistory": "Historique de connexion"
+    }
+  },
+  "profile": {
+    "language": "Langue",
+    "languageSaved": "Langue mise à jour."
+  }
+}

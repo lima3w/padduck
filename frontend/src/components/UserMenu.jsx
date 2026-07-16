@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import Avatar from './Avatar'
 
 export default function UserMenu({ darkMode }) {
+  const { t } = useTranslation()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -45,7 +47,7 @@ export default function UserMenu({ darkMode }) {
   }
 
   const modeLabel = darkMode
-    ? { system: 'System', light: 'Light', dark: 'Dark' }[darkMode.mode]
+    ? { system: t('userMenu.modes.system'), light: t('userMenu.modes.light'), dark: t('userMenu.modes.dark') }[darkMode.mode]
     : null
 
   const modeIcon = darkMode
@@ -60,7 +62,7 @@ export default function UserMenu({ darkMode }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded px-2 py-1 hover:bg-blue-600 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 dark:focus:ring-offset-gray-800"
-        aria-label="Open user menu"
+        aria-label={t('userMenu.openMenu')}
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -81,7 +83,7 @@ export default function UserMenu({ darkMode }) {
       {open && (
         <div
           role="menu"
-          aria-label="User menu"
+          aria-label={t('userMenu.menuLabel')}
           className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1"
         >
           <Link
@@ -90,7 +92,7 @@ export default function UserMenu({ darkMode }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
-            <span>My Settings</span>
+            <span>{t('userMenu.mySettings')}</span>
           </Link>
           <Link
             role="menuitem"
@@ -98,7 +100,7 @@ export default function UserMenu({ darkMode }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
-            <span>My Requests</span>
+            <span>{t('nav.myRequests')}</span>
           </Link>
           <Link
             role="menuitem"
@@ -106,7 +108,7 @@ export default function UserMenu({ darkMode }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
-            <span>Active Sessions</span>
+            <span>{t('userMenu.activeSessions')}</span>
           </Link>
           <Link
             role="menuitem"
@@ -114,7 +116,7 @@ export default function UserMenu({ darkMode }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
-            <span>Login History</span>
+            <span>{t('userMenu.loginHistory')}</span>
           </Link>
 
           {darkMode && (
@@ -124,7 +126,7 @@ export default function UserMenu({ darkMode }) {
               onClick={toggleDarkMode}
               className="w-full flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
             >
-              <span>Dark Mode</span>
+              <span>{t('userMenu.darkMode')}</span>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
                 {modeIcon} {modeLabel}
               </span>
@@ -139,7 +141,7 @@ export default function UserMenu({ darkMode }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
-            <span>Privacy Policy</span>
+            <span>{t('userMenu.privacyPolicy')}</span>
           </Link>
 
           <div className="my-1 border-t border-gray-200 dark:border-gray-600" />
@@ -150,7 +152,7 @@ export default function UserMenu({ darkMode }) {
             onClick={handleLogout}
             className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none dark:hover:bg-[#0d2848] dark:focus:bg-[#0d2848]"
           >
-            Logout
+            {t('userMenu.logout')}
           </button>
         </div>
       )}

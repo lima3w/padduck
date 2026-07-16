@@ -368,3 +368,12 @@ func TestUpdateUserAvatar_RejectsNonImage(t *testing.T) {
 	err := svc.Ops.Identity.UpdateUserAvatar(context.Background(), 1, "custom", &data)
 	assert.ErrorContains(t, err, "not a recognized image")
 }
+
+func TestUpdateUserLocale_RejectsInvalidFormat(t *testing.T) {
+	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
+
+	for _, locale := range []string{"", "english", "EN", "e", "en-us", "en_US", "en;DROP TABLE users"} {
+		err := svc.Ops.Identity.UpdateUserLocale(context.Background(), 1, locale)
+		assert.ErrorContains(t, err, "invalid locale", "locale %q should be rejected", locale)
+	}
+}

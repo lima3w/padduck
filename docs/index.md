@@ -55,3 +55,4 @@ All three services ship as Docker images and are wired together by the included 
 | [API Contract](api-contract.md) | Stability guarantees, idempotency, validation errors, v2 compatibility |
 | [API Client Examples](api-client-examples.md) | JavaScript and Python snippets for common automation workflows |
 | [OpenAPI spec](openapi.yaml) | Machine-readable API definition (also served live at `GET /api/openapi.yaml`) |
+| [Internationalization (i18n)](i18n.md) | Locale file structure, how to add a new language, translation coverage |

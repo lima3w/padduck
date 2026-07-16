@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import ProfileTab from './user/ProfileTab'
 import SecurityTab from './user/SecurityTab'
@@ -11,6 +12,7 @@ const TAB_PARAM_MAP = { history: 'login-history', notif: 'notifications' }
 const VALID_TABS = new Set(['profile', 'security', 'tokens', 'login-history', 'sessions', 'notifications'])
 
 export default function UserSettingsPage() {
+  const { t } = useTranslation()
   // setUser updates the shared auth context — header avatar updates immediately
   const { user, setUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -22,19 +24,19 @@ export default function UserSettingsPage() {
   const setTab = (id) => setSearchParams({ tab: id }, { replace: true })
 
   const tabs = [
-    { id: 'profile', label: 'Profile' },
-    { id: 'security', label: 'Security' },
-    { id: 'tokens', label: 'API Tokens' },
-    { id: 'sessions', label: 'Sessions' },
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'login-history', label: 'Login History' },
+    { id: 'profile', label: t('settings.tabs.profile') },
+    { id: 'security', label: t('settings.tabs.security') },
+    { id: 'tokens', label: t('settings.tabs.apiTokens') },
+    { id: 'sessions', label: t('settings.tabs.sessions') },
+    { id: 'notifications', label: t('settings.tabs.notifications') },
+    { id: 'login-history', label: t('settings.tabs.loginHistory') },
   ]
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('settings.title')}</h1>
 
-      <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label="Account settings networks">
+      <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 dark:border-gray-700" role="tablist" aria-label={t('settings.tablistLabel')}>
         {tabs.map((t) => (
           <button
             key={t.id}

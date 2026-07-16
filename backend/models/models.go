@@ -69,6 +69,7 @@ type User struct {
 	ExternalAuthProvider   *string
 	ExternalAuthID         *string
 	AvatarSource           string // "gravatar" or "custom"
+	Locale                 string // UI locale, e.g. "en", "fr"
 	OrganizationID         *int64
 	IsPlatformAdmin        bool
 	CreatedAt              time.Time

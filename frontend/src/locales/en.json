@@ -1,0 +1,120 @@
+{
+  "common": {
+    "skipToMainContent": "Skip to main content"
+  },
+  "nav": {
+    "navigation": "Navigation",
+    "closeNavigation": "Close navigation",
+    "dashboard": "Dashboard",
+    "networks": "Networks",
+    "devices": "Devices",
+    "myRequests": "My Requests",
+    "locations": "Locations",
+    "racks": "Racks",
+    "bgpAsNumbers": "BGP / AS Numbers",
+    "natRules": "NAT Rules",
+    "firewallZones": "Firewall Zones",
+    "dhcp": "DHCP",
+    "circuits": "Circuits",
+    "customers": "Customers",
+    "vlans": "VLANs",
+    "vrfs": "VRFs",
+    "nameservers": "Nameservers",
+    "dnsZones": "DNS Zones",
+    "reports": "Reports",
+    "requests": "Requests",
+    "usersRoles": "Users & Roles",
+    "settings": "Settings",
+    "audit": "Audit",
+    "discovery": "Discovery",
+    "policies": "Policies",
+    "tokenAnalytics": "Token Analytics",
+    "systemHealth": "System Health",
+    "backups": "Backups",
+    "sections": {
+      "physical": "Physical",
+      "networkServices": "Network Services",
+      "customers": "Customers",
+      "vlansVrfs": "VLANs & VRFs",
+      "dns": "DNS",
+      "admin": "Admin",
+      "automation": "Automation"
+    }
+  },
+  "header": {
+    "toggleNavigation": "Toggle navigation",
+    "tagline": "IP Address Management",
+    "search": "Search",
+    "searchTitle": "Search (Ctrl+K)",
+    "admin": "Admin"
+  },
+  "userMenu": {
+    "openMenu": "Open user menu",
+    "menuLabel": "User menu",
+    "mySettings": "My Settings",
+    "activeSessions": "Active Sessions",
+    "loginHistory": "Login History",
+    "darkMode": "Dark Mode",
+    "privacyPolicy": "Privacy Policy",
+    "logout": "Logout",
+    "modes": {
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
+  "login": {
+    "signInToContinue": "Sign in to continue",
+    "username": "Username",
+    "usernamePlaceholder": "username",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "signIn": "Sign In",
+    "signingIn": "Signing in…",
+    "ldapCheckbox": "Sign in with LDAP / Active Directory",
+    "noAccount": "Don't have an account? ",
+    "register": "Register",
+    "forgotPassword": "Forgot password?",
+    "orContinueWith": "Or continue with",
+    "ssoButton": "Sign in with SSO",
+    "samlButton": "Sign in with SAML",
+    "securityNote": "Your password is securely hashed and never transmitted in plain text.",
+    "mfa": {
+      "title": "Two-Factor Authentication",
+      "description": "Enter the 6-digit code from your authenticator app, or a backup code.",
+      "codeLabel": "Authentication Code",
+      "verify": "Verify",
+      "verifying": "Verifying…",
+      "backToSignIn": "Back to sign in"
+    },
+    "resend": {
+      "prompt": "Need a new verification link?",
+      "sent": "Verification email sent — check your inbox.",
+      "error": "Failed to send email. Try again later.",
+      "emailPlaceholder": "Your email address",
+      "resend": "Resend",
+      "sending": "Sending…"
+    },
+    "errors": {
+      "loginFailed": "Login failed",
+      "mfaFailed": "MFA verification failed",
+      "mfaExpired": "MFA session expired. Please sign in again."
+    }
+  },
+  "settings": {
+    "title": "Account Settings",
+    "tablistLabel": "Account settings networks",
+    "tabs": {
+      "profile": "Profile",
+      "security": "Security",
+      "apiTokens": "API Tokens",
+      "sessions": "Sessions",
+      "notifications": "Notifications",
+      "loginHistory": "Login History"
+    }
+  },
+  "profile": {
+    "language": "Language",
+    "languageSaved": "Language updated."
+  }
+}

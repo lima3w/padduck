@@ -3151,6 +3151,16 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api/v1/auth/me/locale:
+    put:
+      tags: [Auth]
+      summary: Update current user's preferred UI locale
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
   /api/grafana/:
     get:
       tags: [Grafana]

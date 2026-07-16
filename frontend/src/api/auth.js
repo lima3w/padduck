@@ -56,6 +56,8 @@ export const regenerateBackupCodes = (code) => api.post('/auth/me/mfa/backup-cod
 
 export const updateMyAvatar = (source, data) => api.put('/auth/me/avatar', { source, data })
 
+export const updateMyLocale = (locale) => api.put('/auth/me/locale', { locale })
+
 export const getNotificationPreferences = () => api.get('/user/notification-preferences')
 
 export const updateNotificationPreferences = (data) => api.put('/user/notification-preferences', data)
