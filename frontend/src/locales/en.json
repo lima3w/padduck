@@ -529,5 +529,20 @@
     "rack": "Rack",
     "rackHash": "Rack #{{id}}",
     "rackUnitRange": "(U{{start}}–U{{end}})"
+  },
+  "associateIp": {
+    "title": "Associate IP Address",
+    "ipAddress": "IP Address",
+    "clearSelection": "Clear selection",
+    "searchPlaceholder": "Type an IP address or hostname to search…",
+    "searching": "Searching…",
+    "noMatchingIps": "No matching IPs found",
+    "creating": "Creating…",
+    "createAndSelect": "+ Create {{value}} and select",
+    "interfaceName": "Interface Name",
+    "createInterface": "+ Create interface \"{{name}}\"",
+    "primaryAddress": "Primary address",
+    "associating": "Associating…",
+    "associate": "Associate"
   }
 }
