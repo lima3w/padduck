@@ -609,5 +609,23 @@
     "vlanIdLabel": "VLAN ID",
     "noDomain": "No domain",
     "noGroup": "No group"
+  },
+  "vrfs": {
+    "loadError": "Failed to load VRFs.",
+    "saveError": "Failed to save VRF.",
+    "deleteError": "Failed to delete VRF.",
+    "created": "VRF created.",
+    "updated": "VRF updated.",
+    "deleted": "VRF deleted.",
+    "addVrf": "+ Add VRF",
+    "noVrfs": "No VRFs",
+    "createHint": "Create a VRF to separate routing domains.",
+    "routeDistinguisher": "Route Distinguisher",
+    "actions": "Actions",
+    "editVrfModalTitle": "Edit VRF",
+    "create": "Create",
+    "deleteVrfModalTitle": "Delete VRF",
+    "confirmDeletePrefix": "Delete ",
+    "confirmDeleteSuffix": "? This cannot be undone."
   }
 }
