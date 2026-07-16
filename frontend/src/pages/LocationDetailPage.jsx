@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getLocation } from '../api/locations'
 import { getRacks, createRack, updateRack, deleteRack } from '../api/racks'
 import { api } from '../api/client'
@@ -9,6 +10,7 @@ import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 const RACK_EMPTY_FORM = { name: '', size_u: '42', description: '' }
 
 export default function LocationDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [location, setLocation] = useState(null)
   const [breadcrumb, setBreadcrumb] = useState([])
@@ -69,11 +71,11 @@ export default function LocationDetailPage() {
 
       await Promise.all([loadSubnets(), loadDevices(), loadRacks()])
     } catch (err) {
-      setError(err.message || 'Failed to load location')
+      setError(err.message || t('locationDetail.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [id, loadSubnets, loadDevices, loadRacks])
+  }, [id, loadSubnets, loadDevices, loadRacks, t])
 
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -109,7 +111,7 @@ export default function LocationDetailPage() {
       setRackModal(null)
       loadRacks()
     } catch (err) {
-      setError(err.message || 'Failed to save rack')
+      setError(err.message || t('locationDetail.saveRackFailed'))
     } finally {
       setSaving(false)
     }
@@ -121,38 +123,38 @@ export default function LocationDetailPage() {
       setDeleteConfirm(null)
       loadRacks()
     } catch (err) {
-      setError(err.message || 'Failed to delete rack')
+      setError(err.message || t('locationDetail.deleteRackFailed'))
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading location...</p>
+  if (loading) return <p className="text-gray-500">{t('locationDetail.loading')}</p>
   if (error && !location) return <p className="text-red-600">{error}</p>
 
   const parent = breadcrumb.length > 1 ? breadcrumb[breadcrumb.length - 2] : null
   const relationshipItems = [
     parent && {
-      label: 'Parent Location',
+      label: t('locationDetail.parentLocation'),
       value: parent.name,
       to: `/locations/${parent.id}`,
-      description: 'Immediate parent in the location hierarchy',
+      description: t('locationDetail.parentDescription'),
     },
     {
-      label: 'Racks',
-      value: 'Assigned racks',
+      label: t('locationDetail.racksLabel'),
+      value: t('locationDetail.assignedRacks'),
       count: racks.length,
-      description: `${racks.length} rack${racks.length === 1 ? '' : 's'} in this location`,
+      description: t('locationDetail.racksCount', { count: racks.length }),
     },
     {
-      label: 'Subnets',
-      value: 'Assigned subnets',
+      label: t('locationDetail.subnetsLabel'),
+      value: t('locationDetail.assignedSubnets'),
       count: subnets.length,
-      description: `${subnets.length} subnet${subnets.length === 1 ? '' : 's'} mapped to this location`,
+      description: t('locationDetail.subnetsCount', { count: subnets.length }),
     },
     {
-      label: 'Devices',
-      value: 'Assigned devices',
+      label: t('locationDetail.devicesLabel'),
+      value: t('locationDetail.assignedDevices'),
       count: devices.length,
-      description: `${devices.length} device${devices.length === 1 ? '' : 's'} mapped to this location`,
+      description: t('locationDetail.devicesCount', { count: devices.length }),
     },
   ]
 
@@ -160,7 +162,7 @@ export default function LocationDetailPage() {
     <div>
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1 flex-wrap">
-        <Link to="/locations" className="hover:text-blue-600">Locations</Link>
+        <Link to="/locations" className="hover:text-blue-600">{t('nav.locations')}</Link>
         {breadcrumb.map((crumb, i) => (
           <span key={crumb.id} className="flex items-center gap-1">
             <span>/</span>
@@ -190,12 +192,12 @@ export default function LocationDetailPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <div>
-            <dt className="text-gray-500 dark:text-gray-400">Type</dt>
+            <dt className="text-gray-500 dark:text-gray-400">{t('natRules.type')}</dt>
             <dd className="text-gray-800 dark:text-gray-200 font-medium capitalize">{location?.type}</dd>
           </div>
           {location?.address && (
             <div>
-              <dt className="text-gray-500 dark:text-gray-400">Address</dt>
+              <dt className="text-gray-500 dark:text-gray-400">{t('locations.address')}</dt>
               <dd className="text-gray-800 dark:text-gray-200">{location.address}</dd>
             </div>
           )}
@@ -205,22 +207,22 @@ export default function LocationDetailPage() {
       {/* Racks */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Racks</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('locationDetail.racksLabel')}</h2>
           <button onClick={openCreateRack} className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-            + Add Rack
+            {t('racks.addRack')}
           </button>
         </div>
         {racks.length === 0 ? (
-          <p className="text-sm text-gray-400">No racks in this location.</p>
+          <p className="text-sm text-gray-400">{t('locationDetail.noRacks')}</p>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Size</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Utilization</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('racks.sizeU')}</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('locationDetail.utilization')}</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -251,15 +253,15 @@ export default function LocationDetailPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right space-x-2">
-                        <button onClick={() => openEditRack(rack)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                        <button onClick={() => openEditRack(rack)} className="text-gray-400 hover:text-blue-600 text-xs">{t('common.edit')}</button>
                         {deleteConfirm === rack.id ? (
                           <>
-                            <span className="text-red-600 text-xs">Confirm?</span>
-                            <button onClick={() => handleDeleteRack(rack.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                            <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                            <span className="text-red-600 text-xs">{t('subnets.confirmDelete')}</span>
+                            <button onClick={() => handleDeleteRack(rack.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('common.yes')}</button>
+                            <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">{t('common.no')}</button>
                           </>
                         ) : (
-                          <button onClick={() => setDeleteConfirm(rack.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                          <button onClick={() => setDeleteConfirm(rack.id)} className="text-gray-400 hover:text-red-600 text-xs">{t('common.delete')}</button>
                         )}
                       </td>
                     </tr>
@@ -274,17 +276,17 @@ export default function LocationDetailPage() {
 
       {/* Subnets */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Subnets</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">{t('locationDetail.subnetsLabel')}</h2>
         {subnets.length === 0 ? (
-          <p className="text-sm text-gray-400">No subnets assigned to this location.</p>
+          <p className="text-sm text-gray-400">{t('locationDetail.noSubnets')}</p>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Network</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('locationDetail.network')}</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -310,18 +312,18 @@ export default function LocationDetailPage() {
 
       {/* Devices */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Devices</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">{t('locationDetail.devicesLabel')}</h2>
         {devices.length === 0 ? (
-          <p className="text-sm text-gray-400">No devices assigned to this location.</p>
+          <p className="text-sm text-gray-400">{t('locationDetail.noDevices')}</p>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.hostname')}</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('deviceInfo.type')}</th>
+                  <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('delegations.status')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -337,7 +339,7 @@ export default function LocationDetailPage() {
                       <span className="flex items-center gap-1.5 text-xs font-medium">
                         <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                         <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                          {d.isOnline ? 'Online' : 'Offline'}
+                          {d.isOnline ? t('deviceInfo.online') : t('deviceInfo.offline')}
                         </span>
                       </span>
                     </td>
@@ -353,24 +355,24 @@ export default function LocationDetailPage() {
       {/* Rack modal */}
       {rackModal && (
         <Modal
-          title={rackModal === 'create' ? 'Add Rack' : 'Edit Rack'}
+          title={rackModal === 'create' ? t('locationDetail.addRackModalTitle') : t('locationDetail.editRackModalTitle')}
           onClose={() => setRackModal(null)}
         >
           <form onSubmit={handleRackSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="Rack A1"
+                placeholder={t('locationDetail.rackNamePlaceholder')}
                 value={rackForm.name}
                 onChange={e => setRackForm(f => ({ ...f, name: e.target.value }))}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Size (U)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('racks.sizeU')}</label>
               <input
                 type="number"
                 min="1"
@@ -381,7 +383,7 @@ export default function LocationDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={2}
@@ -390,9 +392,9 @@ export default function LocationDetailPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setRackModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setRackModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>

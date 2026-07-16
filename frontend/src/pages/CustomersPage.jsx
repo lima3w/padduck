@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getDevices } from '../api/devices'
 import { getNetworks } from '../api/ipam'
 import { searchIPAddressesGlobal, globalSearch } from '../api/ipam'
@@ -12,22 +13,10 @@ import Modal from '../components/Modal'
 const EMPTY_FORM = { name: '', description: '', email: '', phone: '', notes: '' }
 const EMPTY_ASSOC = { customer_id: '', object_type: 'subnet', object_id: '', object_name: '', relationship: 'owner', notes: '' }
 
-const OBJECT_TYPES = [
-  { value: 'network',           label: 'Network' },
-  { value: 'subnet',            label: 'Subnet' },
-  { value: 'ip_address',        label: 'IP Address' },
-  { value: 'device',            label: 'Device' },
-  { value: 'rack',              label: 'Rack' },
-  { value: 'location',          label: 'Location' },
-  { value: 'vlan',              label: 'VLAN' },
-  { value: 'vrf',               label: 'VRF' },
-  { value: 'nat_rule',          label: 'NAT Rule' },
-  { value: 'dhcp_server',       label: 'DHCP Server' },
-  { value: 'physical_circuit',  label: 'Physical Circuit' },
-  { value: 'logical_circuit',   label: 'Logical Circuit' },
+const OBJECT_TYPE_VALUES = [
+  'network', 'subnet', 'ip_address', 'device', 'rack', 'location',
+  'vlan', 'vrf', 'nat_rule', 'dhcp_server', 'physical_circuit', 'logical_circuit',
 ]
-
-const OBJECT_TYPE_LABEL = Object.fromEntries(OBJECT_TYPES.map(t => [t.value, t.label]))
 
 const RELATIONSHIPS = ['owner', 'consumer', 'billing', 'technical', 'stakeholder']
 
@@ -72,6 +61,7 @@ async function fetchObjectList(type) {
 }
 
 function ObjectPicker({ type, _value, label, onChange }) {
+  const { t } = useTranslation()
   const [items, setItems] = useState(null)
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState(label || '')
@@ -150,15 +140,15 @@ function ObjectPicker({ type, _value, label, onChange }) {
         onChange={handleInput}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={loading ? 'Loading…' : isSearchType ? 'Type to search…' : 'Search or select…'}
+        placeholder={loading ? t('customers.picker.loading') : isSearchType ? t('customers.picker.typeToSearch') : t('customers.picker.searchOrSelect')}
         className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg max-h-52 overflow-y-auto">
-          {loading && <div className="px-3 py-2 text-sm text-gray-400">Loading…</div>}
+          {loading && <div className="px-3 py-2 text-sm text-gray-400">{t('customers.picker.loading')}</div>}
           {!loading && filtered.length === 0 && (
             <div className="px-3 py-2 text-sm text-gray-400">
-              {isSearchType && query.trim().length < 2 ? 'Type at least 2 characters' : 'No matches'}
+              {isSearchType && query.trim().length < 2 ? t('customers.picker.typeAtLeastTwoChars') : t('customers.picker.noMatches')}
             </div>
           )}
           {filtered.map(item => {
@@ -181,6 +171,8 @@ function ObjectPicker({ type, _value, label, onChange }) {
 }
 
 export default function CustomersPage() {
+  const { t } = useTranslation()
+  const OBJECT_TYPE_LABEL = Object.fromEntries(OBJECT_TYPE_VALUES.map(v => [v, t(`customers.objectTypes.${v}`)]))
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -203,7 +195,7 @@ export default function CustomersPage() {
       setCustomers(res.data || [])
       setAssociations(assocRes.data || [])
     } catch {
-      setError('Failed to load customers')
+      setError(t('customers.loadError'))
     } finally {
       setLoading(false)
     }
@@ -241,15 +233,15 @@ export default function CustomersPage() {
     try {
       if (modal === 'edit') {
         await updateCustomer(editing.id, form)
-        setMessage('Customer updated')
+        setMessage(t('customers.updated'))
       } else {
         await createCustomer(form)
-        setMessage('Customer created')
+        setMessage(t('customers.created'))
       }
       closeModal()
       await load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Save failed')
+      setError(err.response?.data?.error || t('customers.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -259,17 +251,17 @@ export default function CustomersPage() {
     try {
       await deleteCustomer(id)
       setDeleteConfirm(null)
-      setMessage('Customer deleted')
+      setMessage(t('customers.deleted'))
       await load()
     } catch {
-      setError('Delete failed')
+      setError(t('customers.deleteFailed'))
     }
   }
 
   async function handleAssociationSave(e) {
     e.preventDefault()
-    if (!assocForm.customer_id) { setError('Select a customer'); return }
-    if (!assocForm.object_id) { setError('Select an object'); return }
+    if (!assocForm.customer_id) { setError(t('customers.selectCustomer')); return }
+    if (!assocForm.object_id) { setError(t('customers.selectObject')); return }
     setError('')
     setSaving(true)
     try {
@@ -284,7 +276,7 @@ export default function CustomersPage() {
       closeModal()
       await load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save association')
+      setError(err.response?.data?.error || t('customers.saveAssociationFailed'))
     } finally {
       setSaving(false)
     }
@@ -293,15 +285,15 @@ export default function CustomersPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Customers</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('nav.customers')}</h1>
         {activeTab === 'customers' && (
           <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-            + New Customer
+            {t('customers.newCustomer')}
           </button>
         )}
         {activeTab === 'associations' && (
           <button onClick={openAssoc} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-            + Add Association
+            {t('customers.addAssociation')}
           </button>
         )}
       </div>
@@ -317,7 +309,7 @@ export default function CustomersPage() {
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'customers' ? t('nav.customers') : t('customers.associationsTab')}
           </button>
         ))}
       </div>
@@ -335,18 +327,18 @@ export default function CustomersPage() {
 
       {activeTab === 'customers' && (
         loading ? (
-          <div className="text-gray-500 text-sm">Loading…</div>
+          <div className="text-gray-500 text-sm">{t('common.loading')}</div>
         ) : customers.length === 0 ? (
-          <div className="text-gray-500 text-sm">No customers yet.</div>
+          <div className="text-gray-500 text-sm">{t('customers.noCustomersYet')}</div>
         ) : (
           <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-700">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Name</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Email</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Phone</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Description</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('common.name')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('customers.email')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('customers.phone')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('common.description')}</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -358,8 +350,8 @@ export default function CustomersPage() {
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{c.phone || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 max-w-xs truncate">{c.description || '—'}</td>
                     <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                      <button onClick={() => openEdit(c)} className="text-blue-600 hover:underline text-xs">Edit</button>
-                      <button onClick={() => setDeleteConfirm(c)} className="text-red-600 hover:underline text-xs">Delete</button>
+                      <button onClick={() => openEdit(c)} className="text-blue-600 hover:underline text-xs">{t('common.edit')}</button>
+                      <button onClick={() => setDeleteConfirm(c)} className="text-red-600 hover:underline text-xs">{t('common.delete')}</button>
                     </td>
                   </tr>
                 ))}
@@ -374,16 +366,16 @@ export default function CustomersPage() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Customer</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Type</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Object</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Relationship</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('customers.customer')}</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('natRules.type')}</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('customers.object')}</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('customers.relationship')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
               {associations.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No associations yet.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">{t('customers.noAssociationsYet')}</td></tr>
               )}
               {associations.map(a => (
                 <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -396,7 +388,7 @@ export default function CustomersPage() {
                       onClick={async () => { await deleteCustomerAssociation(a.id); load() }}
                       className="text-red-600 hover:underline text-xs"
                     >
-                      Remove
+                      {t('customers.remove')}
                     </button>
                   </td>
                 </tr>
@@ -408,33 +400,33 @@ export default function CustomersPage() {
 
       {modal === 'assoc' && (
         <Modal onClose={closeModal}>
-          <h2 className="text-lg font-semibold mb-5">Add Association</h2>
+          <h2 className="text-lg font-semibold mb-5">{t('customers.addAssociationModalTitle')}</h2>
           <form onSubmit={handleAssociationSave} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.customer')}</label>
               <select
                 required
                 value={assocForm.customer_id}
                 onChange={e => setAssocForm(f => ({ ...f, customer_id: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select customer…</option>
+                <option value="">{t('customers.selectCustomerPlaceholder')}</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Object Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.objectType')}</label>
               <select
                 value={assocForm.object_type}
                 onChange={e => setAssocForm(f => ({ ...f, object_type: e.target.value, object_id: '', object_name: '' }))}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {OBJECT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {OBJECT_TYPE_VALUES.map(v => <option key={v} value={v}>{OBJECT_TYPE_LABEL[v]}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {OBJECT_TYPE_LABEL[assocForm.object_type] || 'Object'}
+                {OBJECT_TYPE_LABEL[assocForm.object_type] || t('customers.objectGeneric')}
               </label>
               <ObjectPicker
                 key={assocForm.object_type}
@@ -445,32 +437,32 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.relationship')}</label>
               <select
                 value={assocForm.relationship}
                 onChange={e => setAssocForm(f => ({ ...f, relationship: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {RELATIONSHIPS.map(r => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+                {RELATIONSHIPS.map(r => <option key={r} value={r}>{t(`customers.relationships.${r}`)}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.notes')}</label>
               <input
                 type="text"
                 value={assocForm.notes}
                 onChange={e => setAssocForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="Optional"
+                placeholder={t('common.optional')}
                 className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={closeModal} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving…' : 'Add'}
+                {saving ? t('common.saving') : t('customers.add')}
               </button>
             </div>
           </form>
@@ -479,10 +471,10 @@ export default function CustomersPage() {
 
       {(modal === 'create' || modal === 'edit') && (
         <Modal onClose={closeModal}>
-          <h2 className="text-lg font-semibold mb-4">{modal === 'edit' ? 'Edit Customer' : 'New Customer'}</h2>
+          <h2 className="text-lg font-semibold mb-4">{modal === 'edit' ? t('customers.editModalTitle') : t('customers.newModalTitle')}</h2>
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.nameRequired')}</label>
               <input
                 type="text"
                 value={form.name}
@@ -492,7 +484,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.email')}</label>
               <input
                 type="email"
                 value={form.email}
@@ -501,7 +493,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.phone')}</label>
               <input
                 type="text"
                 value={form.phone}
@@ -510,7 +502,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <input
                 type="text"
                 value={form.description}
@@ -519,7 +511,7 @@ export default function CustomersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.notes')}</label>
               <textarea
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -530,10 +522,10 @@ export default function CustomersPage() {
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={closeModal} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
@@ -542,16 +534,16 @@ export default function CustomersPage() {
 
       {deleteConfirm && (
         <Modal onClose={() => setDeleteConfirm(null)}>
-          <h2 className="text-lg font-semibold mb-2">Delete Customer</h2>
+          <h2 className="text-lg font-semibold mb-2">{t('customers.deleteModalTitle')}</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Are you sure you want to delete <strong>{deleteConfirm.name}</strong>? This cannot be undone.
+            {t('customers.confirmDeletePrefix')}<strong>{deleteConfirm.name}</strong>{t('customers.confirmDeleteSuffix')}
           </p>
           <div className="flex justify-end gap-2">
             <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button onClick={() => handleDelete(deleteConfirm.id)} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-              Delete
+              {t('common.delete')}
             </button>
           </div>
         </Modal>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getRack, getRackDevices } from '../api/racks'
 import { getLocation } from '../api/locations'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
@@ -14,6 +15,7 @@ const DEVICE_COLORS = [
 ]
 
 export default function RackDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [rack, setRack] = useState(null)
   const [rackDevices, setRackDevices] = useState([])
@@ -48,15 +50,15 @@ export default function RackDetailPage() {
         setLocationBreadcrumb(crumbs)
       }
     } catch (err) {
-      setError(err.message || 'Failed to load rack')
+      setError(err.message || t('rackDetail.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, t])
 
   useEffect(() => { loadAll() }, [loadAll])
 
-  if (loading) return <p className="text-gray-500">Loading rack...</p>
+  if (loading) return <p className="text-gray-500">{t('rackDetail.loading')}</p>
   if (error && !rack) return <p className="text-red-600">{error}</p>
 
   const sizeU = rack?.sizeU ?? 42
@@ -82,22 +84,22 @@ export default function RackDetailPage() {
   const location = locationBreadcrumb[locationBreadcrumb.length - 1]
   const relationshipItems = [
     location && {
-      label: 'Location',
+      label: t('rackDetail.locationLabel'),
       value: location.name,
       to: `/locations/${location.id}`,
-      description: 'Rack parent location',
+      description: t('rackDetail.locationDescription'),
     },
     {
-      label: 'Devices',
-      value: 'Installed devices',
+      label: t('rackDetail.devicesLabel'),
+      value: t('rackDetail.installedDevices'),
       count: rackDevices.length,
-      description: `${rackDevices.length} device${rackDevices.length === 1 ? '' : 's'} mounted in this rack`,
+      description: t('rackDetail.devicesMounted', { count: rackDevices.length }),
     },
     {
-      label: 'Capacity',
-      value: `${usedU}U used`,
-      count: `${freeU}U free`,
-      description: `${sizeU}U total rack capacity`,
+      label: t('rackDetail.capacityLabel'),
+      value: t('rackDetail.usedShort', { count: usedU }),
+      count: t('rackDetail.freeShort', { count: freeU }),
+      description: t('rackDetail.totalCapacity', { count: sizeU }),
     },
   ]
 
@@ -105,7 +107,7 @@ export default function RackDetailPage() {
     <div>
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1 flex-wrap">
-        <Link to="/locations" className="hover:text-blue-600">Locations</Link>
+        <Link to="/locations" className="hover:text-blue-600">{t('nav.locations')}</Link>
         {locationBreadcrumb.map(crumb => (
           <span key={crumb.id} className="flex items-center gap-1">
             <span>/</span>
@@ -133,22 +135,22 @@ export default function RackDetailPage() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
           <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{sizeU}U</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('rackDetail.total')}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{usedU}U</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Used</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('rackDetail.used')}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">{freeU}U</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Free</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('rackDetail.free')}</p>
         </div>
       </div>
 
       <div className="flex gap-6 items-start">
         {/* Visual Rack Diagram */}
         <div className="flex-shrink-0">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Rack Layout</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">{t('rackDetail.rackLayout')}</h2>
           <div className="border-2 border-gray-400 dark:border-gray-500 rounded bg-gray-100 dark:bg-gray-900 overflow-hidden" style={{ width: 260 }}>
             {/* Rack header */}
             <div className="bg-gray-300 dark:bg-gray-700 text-center py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 border-b border-gray-400 dark:border-gray-500">
@@ -190,26 +192,26 @@ export default function RackDetailPage() {
             })}
             {/* Rack footer */}
             <div className="bg-gray-300 dark:bg-gray-700 text-center py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 border-t border-gray-400 dark:border-gray-500">
-              Bottom
+              {t('rackDetail.bottom')}
             </div>
           </div>
         </div>
 
         {/* Device list */}
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Devices in Rack</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">{t('rackDetail.devicesInRack')}</h2>
           {rackDevices.length === 0 ? (
-            <p className="text-sm text-gray-400">No devices installed in this rack.</p>
+            <p className="text-sm text-gray-400">{t('rackDetail.noDevicesInstalled')}</p>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
               <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
                   <tr>
-                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>
-                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Position</th>
-                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.hostname')}</th>
+                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('deviceInfo.type')}</th>
+                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('rackDetail.position')}</th>
+                    <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('delegations.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -228,7 +230,7 @@ export default function RackDetailPage() {
                         <span className="flex items-center gap-1.5 text-xs font-medium">
                           <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                           <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                            {d.isOnline ? 'Online' : 'Offline'}
+                            {d.isOnline ? t('deviceInfo.online') : t('deviceInfo.offline')}
                           </span>
                         </span>
                       </td>
