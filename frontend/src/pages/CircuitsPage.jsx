@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createCircuitProvider, createLogicalCircuit, createPhysicalCircuit, deleteCircuitProvider, deleteLogicalCircuit, deletePhysicalCircuit, getCircuitProviders, getCustomers, getLogicalCircuits, getPhysicalCircuits, updateCircuitProvider, updateLogicalCircuit, updatePhysicalCircuit } from '../api/modules'
 import { getLocations } from '../api/locations'
 import Modal from '../components/Modal'
@@ -8,6 +9,7 @@ const PHYSICAL_EMPTY = { provider_id: '', circuit_id: '', name: '', type: 'ether
 const LOGICAL_EMPTY = { physical_circuit_id: '', name: '', service_id: '', type: 'l2vpn', status: 'active', customer_id: '', bandwidth_mbps: '', notes: '' }
 
 export default function CircuitsPage() {
+  const { t } = useTranslation()
   const [providers, setProviders] = useState([])
   const [physical, setPhysical] = useState([])
   const [logical, setLogical] = useState([])
@@ -26,7 +28,7 @@ export default function CircuitsPage() {
       setPhysical(pc.data || [])
       setLogical(lc.data || [])
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load circuits')
+      setError(err.response?.data?.error || t('circuits.loadError'))
     }
     const [locs, cust] = await Promise.allSettled([getLocations(), getCustomers()])
     if (locs.status === 'fulfilled') setLocations(Array.isArray(locs.value) ? locs.value : [])
@@ -75,59 +77,59 @@ export default function CircuitsPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Circuits</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('nav.circuits')}</h1>
         <div className="flex gap-2">
-          <button onClick={() => { setForm(PROVIDER_EMPTY); setModal({ type: 'provider' }) }} className="px-4 py-2 bg-blue-600 text-white rounded text-sm">+ Provider</button>
-          <button onClick={() => { setForm(PHYSICAL_EMPTY); setModal({ type: 'physical' }) }} className="px-4 py-2 bg-blue-600 text-white rounded text-sm">+ Physical</button>
-          <button onClick={() => { setForm(LOGICAL_EMPTY); setModal({ type: 'logical' }) }} className="px-4 py-2 bg-blue-600 text-white rounded text-sm">+ Logical</button>
+          <button onClick={() => { setForm(PROVIDER_EMPTY); setModal({ type: 'provider' }) }} className="px-4 py-2 bg-blue-600 text-white rounded text-sm">{t('circuits.addProvider')}</button>
+          <button onClick={() => { setForm(PHYSICAL_EMPTY); setModal({ type: 'physical' }) }} className="px-4 py-2 bg-blue-600 text-white rounded text-sm">{t('circuits.addPhysical')}</button>
+          <button onClick={() => { setForm(LOGICAL_EMPTY); setModal({ type: 'logical' }) }} className="px-4 py-2 bg-blue-600 text-white rounded text-sm">{t('circuits.addLogical')}</button>
         </div>
       </div>
       {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">{error}</div>}
 
-      <Table title="Providers" cols={['Name', 'Account', 'Support', 'Portal']} empty="No providers yet." rows={providers.map(p => [p.name, p.accountNo || '-', p.supportEmail || p.supportPhone || '-', p.portalUrl || '-', <Actions key={p.id} onEdit={() => { setForm({ ...PROVIDER_EMPTY, ...p, account_no: p.accountNo, support_email: p.supportEmail, support_phone: p.supportPhone, portal_url: p.portalUrl }); setModal({ type: 'provider', item: p }) }} onDelete={async () => { await deleteCircuitProvider(p.id); load() }} />])} />
-      <Table title="Physical Circuits" cols={['Name', 'Circuit ID', 'Provider', 'Status', 'Customer']} empty="No physical circuits yet." rows={physical.map(p => [p.name, p.circuitId, p.providerName || p.providerId, p.status, p.customerName || '-', <Actions key={p.id} onEdit={() => { setForm({ ...PHYSICAL_EMPTY, provider_id: p.providerId, circuit_id: p.circuitId, name: p.name, type: p.type, status: p.status, bandwidth_mbps: p.bandwidthMbps || '', location_a_id: p.locationAId || '', location_b_id: p.locationBId || '', customer_id: p.customerId || '', notes: p.notes || '' }); setModal({ type: 'physical', item: p }) }} onDelete={async () => { await deletePhysicalCircuit(p.id); load() }} />])} />
-      <Table title="Logical Circuits" cols={['Name', 'Service ID', 'Type', 'Status', 'Customer']} empty="No logical circuits yet." rows={logical.map(l => [l.name, l.serviceId || '-', l.type, l.status, l.customerName || '-', <Actions key={l.id} onEdit={() => { setForm({ ...LOGICAL_EMPTY, physical_circuit_id: l.physicalCircuitId || '', name: l.name, service_id: l.serviceId || '', type: l.type, status: l.status, customer_id: l.customerId || '', bandwidth_mbps: l.bandwidthMbps || '', notes: l.notes || '' }); setModal({ type: 'logical', item: l }) }} onDelete={async () => { await deleteLogicalCircuit(l.id); load() }} />])} />
+      <Table title={t('circuits.providersTitle')} cols={[t('common.name'), t('circuits.account'), t('circuits.support'), t('circuits.portal')]} empty={t('circuits.noProvidersYet')} rows={providers.map(p => [p.name, p.accountNo || '-', p.supportEmail || p.supportPhone || '-', p.portalUrl || '-', <Actions key={p.id} onEdit={() => { setForm({ ...PROVIDER_EMPTY, ...p, account_no: p.accountNo, support_email: p.supportEmail, support_phone: p.supportPhone, portal_url: p.portalUrl }); setModal({ type: 'provider', item: p }) }} onDelete={async () => { await deleteCircuitProvider(p.id); load() }} />])} />
+      <Table title={t('circuits.physicalCircuitsTitle')} cols={[t('common.name'), t('circuits.circuitId'), t('circuits.provider'), t('userTabs.privacy.status'), t('natRules.customer')]} empty={t('circuits.noPhysicalYet')} rows={physical.map(p => [p.name, p.circuitId, p.providerName || p.providerId, p.status, p.customerName || '-', <Actions key={p.id} onEdit={() => { setForm({ ...PHYSICAL_EMPTY, provider_id: p.providerId, circuit_id: p.circuitId, name: p.name, type: p.type, status: p.status, bandwidth_mbps: p.bandwidthMbps || '', location_a_id: p.locationAId || '', location_b_id: p.locationBId || '', customer_id: p.customerId || '', notes: p.notes || '' }); setModal({ type: 'physical', item: p }) }} onDelete={async () => { await deletePhysicalCircuit(p.id); load() }} />])} />
+      <Table title={t('circuits.logicalCircuitsTitle')} cols={[t('common.name'), t('circuits.serviceId'), t('natRules.type'), t('userTabs.privacy.status'), t('natRules.customer')]} empty={t('circuits.noLogicalYet')} rows={logical.map(l => [l.name, l.serviceId || '-', l.type, l.status, l.customerName || '-', <Actions key={l.id} onEdit={() => { setForm({ ...LOGICAL_EMPTY, physical_circuit_id: l.physicalCircuitId || '', name: l.name, service_id: l.serviceId || '', type: l.type, status: l.status, customer_id: l.customerId || '', bandwidth_mbps: l.bandwidthMbps || '', notes: l.notes || '' }); setModal({ type: 'logical', item: l }) }} onDelete={async () => { await deleteLogicalCircuit(l.id); load() }} />])} />
 
-      {modal?.type === 'provider' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">Circuit Provider</h2><form onSubmit={saveProvider} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {modal?.type === 'provider' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">{t('circuits.providerModalTitle')}</h2><form onSubmit={saveProvider} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {['name', 'account_no', 'support_email', 'support_phone', 'portal_url', 'notes'].map(field => <input key={field} required={field === 'name'} placeholder={label(field)} value={form[field] || ''} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} className="border rounded px-3 py-2 text-sm" />)}
         <Submit />
       </form></Modal>}
 
-      {modal?.type === 'physical' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">Physical Circuit</h2><form onSubmit={savePhysical} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <select required value={form.provider_id || ''} onChange={e => setForm(f => ({ ...f, provider_id: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="">Provider</option>{providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <input required placeholder="Circuit ID" value={form.circuit_id || ''} onChange={e => setForm(f => ({ ...f, circuit_id: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
-        <input required placeholder="Name" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
-        <input placeholder="Type" value={form.type || ''} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+      {modal?.type === 'physical' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">{t('circuits.physicalModalTitle')}</h2><form onSubmit={savePhysical} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <select required value={form.provider_id || ''} onChange={e => setForm(f => ({ ...f, provider_id: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="">{t('circuits.provider')}</option>{providers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <input required placeholder={t('circuits.circuitId')} value={form.circuit_id || ''} onChange={e => setForm(f => ({ ...f, circuit_id: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <input required placeholder={t('natRules.namePlaceholder')} value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <input placeholder={t('natRules.type')} value={form.type || ''} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
         <StatusSelect />
-        <input type="number" placeholder="Bandwidth Mbps" value={form.bandwidth_mbps || ''} onChange={e => setForm(f => ({ ...f, bandwidth_mbps: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
-        <LocationSelect field="location_a_id" locations={locations} form={form} setForm={setForm} labelText="Location A" />
-        <LocationSelect field="location_b_id" locations={locations} form={form} setForm={setForm} labelText="Location B" />
+        <input type="number" placeholder={t('circuits.bandwidthMbpsPlaceholder')} value={form.bandwidth_mbps || ''} onChange={e => setForm(f => ({ ...f, bandwidth_mbps: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <LocationSelect field="location_a_id" locations={locations} form={form} setForm={setForm} labelText={t('circuits.locationA')} />
+        <LocationSelect field="location_b_id" locations={locations} form={form} setForm={setForm} labelText={t('circuits.locationB')} />
         <CustomerSelect customers={customers} form={form} setForm={setForm} />
         <input type="date" value={form.install_date || ''} onChange={e => setForm(f => ({ ...f, install_date: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
-        <input placeholder="Notes" value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="md:col-span-2 border rounded px-3 py-2 text-sm" />
+        <input placeholder={t('circuits.notesPlaceholder')} value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="md:col-span-2 border rounded px-3 py-2 text-sm" />
         <Submit />
       </form></Modal>}
 
-      {modal?.type === 'logical' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">Logical Circuit</h2><form onSubmit={saveLogical} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <select value={form.physical_circuit_id || ''} onChange={e => setForm(f => ({ ...f, physical_circuit_id: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="">No physical circuit</option>{physical.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <input required placeholder="Name" value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
-        <input placeholder="Service ID" value={form.service_id || ''} onChange={e => setForm(f => ({ ...f, service_id: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
-        <input placeholder="Type" value={form.type || ''} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+      {modal?.type === 'logical' && <Modal onClose={() => setModal(null)}><h2 className="text-lg font-semibold mb-4">{t('circuits.logicalModalTitle')}</h2><form onSubmit={saveLogical} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <select value={form.physical_circuit_id || ''} onChange={e => setForm(f => ({ ...f, physical_circuit_id: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="">{t('circuits.noPhysicalCircuit')}</option>{physical.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <input required placeholder={t('natRules.namePlaceholder')} value={form.name || ''} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <input placeholder={t('circuits.serviceId')} value={form.service_id || ''} onChange={e => setForm(f => ({ ...f, service_id: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <input placeholder={t('natRules.type')} value={form.type || ''} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
         <StatusSelect />
-        <input type="number" placeholder="Bandwidth Mbps" value={form.bandwidth_mbps || ''} onChange={e => setForm(f => ({ ...f, bandwidth_mbps: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <input type="number" placeholder={t('circuits.bandwidthMbpsPlaceholder')} value={form.bandwidth_mbps || ''} onChange={e => setForm(f => ({ ...f, bandwidth_mbps: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
         <CustomerSelect customers={customers} form={form} setForm={setForm} />
-        <input placeholder="Notes" value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
+        <input placeholder={t('circuits.notesPlaceholder')} value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="border rounded px-3 py-2 text-sm" />
         <Submit />
       </form></Modal>}
     </div>
   )
 
   function StatusSelect() {
-    return <select value={form.status || 'active'} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="active">Active</option><option value="planned">Planned</option><option value="down">Down</option><option value="retired">Retired</option></select>
+    return <select value={form.status || 'active'} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="active">{t('natRules.active')}</option><option value="planned">{t('natRules.planned')}</option><option value="down">{t('circuits.down')}</option><option value="retired">{t('natRules.retired')}</option></select>
   }
 
   function Submit() {
-    return <div className="md:col-span-2 flex justify-end gap-2"><button type="button" onClick={() => setModal(null)} className="px-4 py-2 border rounded text-sm">Cancel</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded text-sm">Save</button></div>
+    return <div className="md:col-span-2 flex justify-end gap-2"><button type="button" onClick={() => setModal(null)} className="px-4 py-2 border rounded text-sm">{t('common.cancel')}</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded text-sm">{t('common.save')}</button></div>
   }
 }
 
@@ -136,7 +138,8 @@ function Table({ title, cols, rows, empty }) {
 }
 
 function Actions({ onEdit, onDelete }) {
-  return <div className="text-right space-x-2"><button onClick={onEdit} className="text-blue-600 text-xs">Edit</button><button onClick={onDelete} className="text-red-600 text-xs">Delete</button></div>
+  const { t } = useTranslation()
+  return <div className="text-right space-x-2"><button onClick={onEdit} className="text-blue-600 text-xs">{t('common.edit')}</button><button onClick={onDelete} className="text-red-600 text-xs">{t('common.delete')}</button></div>
 }
 
 function LocationSelect({ field, locations, form, setForm, labelText }) {
@@ -144,7 +147,8 @@ function LocationSelect({ field, locations, form, setForm, labelText }) {
 }
 
 function CustomerSelect({ customers, form, setForm }) {
-  return <select value={form.customer_id || ''} onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="">No customer</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+  const { t } = useTranslation()
+  return <select value={form.customer_id || ''} onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))} className="border rounded px-3 py-2 text-sm"><option value="">{t('natRules.noCustomer')}</option>{customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
 }
 
 function label(field) {

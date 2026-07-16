@@ -745,5 +745,32 @@
     "released": "Released",
     "macAddressPlaceholder": "MAC address",
     "hostnamePlaceholder": "Hostname"
+  },
+  "circuits": {
+    "loadError": "Failed to load circuits",
+    "addProvider": "+ Provider",
+    "addPhysical": "+ Physical",
+    "addLogical": "+ Logical",
+    "providersTitle": "Providers",
+    "account": "Account",
+    "support": "Support",
+    "portal": "Portal",
+    "noProvidersYet": "No providers yet.",
+    "physicalCircuitsTitle": "Physical Circuits",
+    "circuitId": "Circuit ID",
+    "provider": "Provider",
+    "noPhysicalYet": "No physical circuits yet.",
+    "logicalCircuitsTitle": "Logical Circuits",
+    "serviceId": "Service ID",
+    "noLogicalYet": "No logical circuits yet.",
+    "providerModalTitle": "Circuit Provider",
+    "physicalModalTitle": "Physical Circuit",
+    "logicalModalTitle": "Logical Circuit",
+    "bandwidthMbpsPlaceholder": "Bandwidth Mbps",
+    "locationA": "Location A",
+    "locationB": "Location B",
+    "notesPlaceholder": "Notes",
+    "noPhysicalCircuit": "No physical circuit",
+    "down": "Down"
   }
 }
