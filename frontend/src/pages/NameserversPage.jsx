@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getNameservers, createNameserver, updateNameserver, deleteNameserver } from '../api/dns'
 import PageSpinner from '../components/PageSpinner'
@@ -8,6 +9,7 @@ import { getCachedUser } from '../utils/storageKeys'
 const EMPTY_FORM = { name: '', server1: '', server2: '', server3: '', description: '' }
 
 export default function NameserversPage() {
+  const { t } = useTranslation()
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
@@ -32,9 +34,9 @@ export default function NameserversPage() {
       setNameservers(Array.isArray(data) ? data : (data?.nameservers ?? []))
     } catch (err) {
       if (err.response?.status === 403) {
-        setError('You do not have permission to view nameservers.')
+        setError(t('nameservers.noPermission'))
       } else {
-        setError(err.response?.data?.error || 'Failed to load nameservers')
+        setError(err.response?.data?.error || t('nameservers.loadError'))
       }
     } finally {
       setLoading(false)
@@ -76,7 +78,7 @@ export default function NameserversPage() {
       setModal(null)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save nameserver')
+      setError(err.response?.data?.error || t('nameservers.saveError'))
     } finally {
       setSaving(false)
     }
@@ -88,22 +90,22 @@ export default function NameserversPage() {
       setDeleteConfirm(null)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to delete nameserver')
+      setError(err.response?.data?.error || t('nameservers.deleteError'))
     }
   }
 
-  if (loading) return <PageSpinner message="Loading nameservers..." />
+  if (loading) return <PageSpinner message={t('nameservers.loading')} />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Nameservers</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('nav.nameservers')}</h1>
         {isAdmin && (
           <button
             onClick={openCreate}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
           >
-            + Add Nameserver
+            {t('nameservers.addNameserver')}
           </button>
         )}
       </div>
@@ -115,11 +117,11 @@ export default function NameserversPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Primary</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Secondary</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tertiary</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('deviceIp.primary')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('nameservers.secondary')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('nameservers.tertiary')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
@@ -127,7 +129,7 @@ export default function NameserversPage() {
             {nameservers.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
-                  No nameservers yet. Add your first nameserver to get started.
+                  {t('nameservers.noNameserversYet')}
                 </td>
               </tr>
             )}
@@ -143,22 +145,22 @@ export default function NameserversPage() {
                     onClick={() => openEdit(ns)}
                     className="text-gray-400 hover:text-blue-600 text-xs"
                   >
-                    Edit
+                    {t('common.edit')}
                   </button>
                   {deleteConfirm === ns.id ? (
                     <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
+                      <span className="text-red-600 text-xs">{t('subnets.confirmDelete')}</span>
                       <button
                         onClick={() => handleDelete(ns.id)}
                         className="text-red-600 hover:text-red-800 text-xs font-medium"
                       >
-                        Yes
+                        {t('common.yes')}
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(null)}
                         className="text-gray-400 hover:text-gray-600 text-xs"
                       >
-                        No
+                        {t('common.no')}
                       </button>
                     </>
                   ) : (
@@ -166,7 +168,7 @@ export default function NameserversPage() {
                       onClick={() => setDeleteConfirm(ns.id)}
                       className="text-gray-400 hover:text-red-600 text-xs"
                     >
-                      Delete
+                      {t('common.delete')}
                     </button>
                   )}
                 </td>
@@ -179,13 +181,13 @@ export default function NameserversPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? 'Add Nameserver' : 'Edit Nameserver'}
+          title={modal === 'create' ? t('nameservers.addNameserver') : t('nameservers.editNameserverModalTitle')}
           onClose={() => setModal(null)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -197,7 +199,7 @@ export default function NameserversPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Primary <span className="text-red-500">*</span>
+                {t('deviceIp.primary')} <span className="text-red-500">*</span>
               </label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -208,7 +210,7 @@ export default function NameserversPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Secondary</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('nameservers.secondary')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder="8.8.4.4"
@@ -217,7 +219,7 @@ export default function NameserversPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tertiary</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('nameservers.tertiary')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder=""
@@ -226,7 +228,7 @@ export default function NameserversPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={2}
@@ -240,14 +242,14 @@ export default function NameserversPage() {
                 onClick={() => setModal(null)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>

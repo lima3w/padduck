@@ -555,5 +555,40 @@
     "rackUnitSize": "Rack Unit Size",
     "snmp": "SNMP",
     "leaveBlankToKeep": "Leave blank to keep existing"
+  },
+  "nameservers": {
+    "noPermission": "You do not have permission to view nameservers.",
+    "loadError": "Failed to load nameservers",
+    "saveError": "Failed to save nameserver",
+    "deleteError": "Failed to delete nameserver",
+    "loading": "Loading nameservers…",
+    "addNameserver": "+ Add Nameserver",
+    "secondary": "Secondary",
+    "tertiary": "Tertiary",
+    "noNameserversYet": "No nameservers yet. Add your first nameserver to get started.",
+    "editNameserverModalTitle": "Edit Nameserver"
+  },
+  "dnsZones": {
+    "loadError": "Failed to load DNS zones",
+    "loading": "Loading DNS zones…",
+    "noProviderConfigured": "No DNS provider is configured.",
+    "setupPrefix": "Set up PowerDNS or Technitium in ",
+    "adminSettingsDnsLink": "Admin Settings → DNS",
+    "setupSuffix": ".",
+    "zoneName": "Zone Name",
+    "kind": "Kind",
+    "serial": "Serial",
+    "noZonesFound": "No DNS zones found.",
+    "viewArrow": "View →"
+  },
+  "dnsZoneDetail": {
+    "loadError": "Failed to load zone records",
+    "filterByType": "Filter by type:",
+    "loading": "Loading records…",
+    "ttl": "TTL",
+    "contentValue": "Content / Value",
+    "noRecordsFound": "No records found",
+    "forType": " for type {{type}}",
+    "viewInIpam": "View this IP in IPAM"
   }
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.4
+
+### Added
+- **i18n batch 4/15: DNS pages** (issue #35): converted `NameserversPage`, `DnsZonesPage`, and `DnsZoneDetailPage` to `t()` calls.
+
 ## v1.34.3
 
 ### Added
