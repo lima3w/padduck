@@ -361,5 +361,24 @@
     "purposePlaceholder": "Describe why you need this subnet...",
     "submitting": "Submitting…",
     "submitRequest": "Submit Request"
+  },
+  "subnets": {
+    "loadError": "Failed to load subnets",
+    "loadTreeError": "Failed to load subnet tree",
+    "exportError": "Export failed",
+    "loadingSubnets": "Loading subnets…",
+    "list": "List",
+    "tree": "Tree",
+    "newSubnet": "+ New Subnet",
+    "searchPlaceholder": "Search subnets...",
+    "allLocations": "All Locations",
+    "addFilter": "+ Filter",
+    "is": "is",
+    "contains": "contains",
+    "isNot": "is not",
+    "valuePlaceholder": "value",
+    "loadingTree": "Loading tree…",
+    "network": "Network",
+    "usedTotal": "Used/Total"
   }
 }
