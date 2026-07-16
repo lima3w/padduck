@@ -869,5 +869,33 @@
       "cage": "Cage",
       "other": "Other"
     }
+  },
+  "locationDetail": {
+    "loadError": "Failed to load location",
+    "saveRackFailed": "Failed to save rack",
+    "deleteRackFailed": "Failed to delete rack",
+    "loading": "Loading location...",
+    "parentLocation": "Parent Location",
+    "parentDescription": "Immediate parent in the location hierarchy",
+    "racksLabel": "Racks",
+    "assignedRacks": "Assigned racks",
+    "racksCount_one": "{{count}} rack in this location",
+    "racksCount_other": "{{count}} racks in this location",
+    "subnetsLabel": "Subnets",
+    "assignedSubnets": "Assigned subnets",
+    "subnetsCount_one": "{{count}} subnet mapped to this location",
+    "subnetsCount_other": "{{count}} subnets mapped to this location",
+    "devicesLabel": "Devices",
+    "assignedDevices": "Assigned devices",
+    "devicesCount_one": "{{count}} device mapped to this location",
+    "devicesCount_other": "{{count}} devices mapped to this location",
+    "noRacks": "No racks in this location.",
+    "utilization": "Utilization",
+    "noSubnets": "No subnets assigned to this location.",
+    "network": "Network",
+    "noDevices": "No devices assigned to this location.",
+    "addRackModalTitle": "Add Rack",
+    "editRackModalTitle": "Edit Rack",
+    "rackNamePlaceholder": "Rack A1"
   }
 }
