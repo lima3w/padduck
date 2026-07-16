@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.7
+
+### Added
+- **i18n batch 7/15: locations, racks & customers pages** (issue #35): converted `RacksPage`, `RackDetailPage`, `LocationsPage`, `LocationDetailPage`, and `CustomersPage` (including its `ObjectPicker` sub-component) to `t()` calls.
+
 ## v1.34.6
 
 ### Added
