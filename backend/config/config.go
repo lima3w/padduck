@@ -29,7 +29,7 @@ func Load() *Config {
 	isProd := env != "development" && env != "test"
 
 	mfaKey := loadMFAEncryptionKey(getEnv("MFA_ENCRYPTION_KEY", ""), isProd)
-	dbURL := getEnv("DATABASE_URL", "postgres://ipam:ipam@localhost:5432/ipam")
+	dbURL := buildDatabaseURL()
 
 	if isProd {
 		warnWeakDBCredentials(dbURL)
@@ -197,6 +197,30 @@ func warnInsecureDBSSL(rawURL string) {
 		slog.Error("DATABASE_URL sets sslmode=disable — remove it or set sslmode=require before running in production")
 		os.Exit(1)
 	}
+}
+
+// buildDatabaseURL returns DATABASE_URL verbatim if it's explicitly set
+// (an escape hatch for deployments that need a fully custom connection
+// string). Otherwise it builds a postgres URL from the POSTGRES_* parts,
+// using url.UserPassword to percent-encode the user and password so
+// special characters (e.g. @, :, /, #, %) don't break URL parsing.
+func buildDatabaseURL() string {
+	if explicit := strings.TrimSpace(os.Getenv("DATABASE_URL")); explicit != "" {
+		return explicit
+	}
+
+	password := os.Getenv("POSTGRES_PASSWORD")
+	if password == "" {
+		return "postgres://ipam:ipam@localhost:5432/ipam"
+	}
+
+	u := url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(getEnv("POSTGRES_USER", "padduck"), password),
+		Host:   getEnv("POSTGRES_HOST", "db") + ":" + getEnv("POSTGRES_PORT", "5432"),
+		Path:   "/" + getEnv("POSTGRES_DB", "padduck"),
+	}
+	return u.String()
 }
 
 func getEnv(key, defaultVal string) string {
