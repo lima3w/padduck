@@ -720,5 +720,30 @@
     "both": "Both",
     "inbound": "Inbound",
     "outbound": "Outbound"
+  },
+  "dhcp": {
+    "loadError": "Failed to load DHCP data",
+    "addServer": "+ Server",
+    "addLease": "+ Lease",
+    "serversTitle": "Servers",
+    "address": "Address",
+    "noServersYet": "No DHCP servers yet.",
+    "leasesTitle": "Leases",
+    "mac": "MAC",
+    "server": "Server",
+    "state": "State",
+    "noLeasesYet": "No DHCP leases yet.",
+    "serverModalTitle": "DHCP Server",
+    "ipAddressPlaceholder": "IP address",
+    "vendorPlaceholder": "Vendor",
+    "versionPlaceholder": "Version",
+    "leaseModalTitle": "DHCP Lease",
+    "selectServer": "Select server",
+    "expired": "Expired",
+    "reserved": "Reserved",
+    "declined": "Declined",
+    "released": "Released",
+    "macAddressPlaceholder": "MAC address",
+    "hostnamePlaceholder": "Hostname"
   }
 }
