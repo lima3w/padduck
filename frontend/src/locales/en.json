@@ -517,5 +517,17 @@
     "hide": "Hide",
     "reveal": "Reveal",
     "clearFromView": "Clear credentials from view"
+  },
+  "deviceInfo": {
+    "type": "Type",
+    "online": "Online",
+    "offline": "Offline",
+    "vendor": "Vendor",
+    "model": "Model",
+    "osVersion": "OS Version",
+    "lastPing": "Last Ping",
+    "rack": "Rack",
+    "rackHash": "Rack #{{id}}",
+    "rackUnitRange": "(U{{start}}–U{{end}})"
   }
 }
