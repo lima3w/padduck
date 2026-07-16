@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../../api/auth'
 
-const NOTIF_LABELS = {
-  loginSuccess: 'Successful login',
-  loginFailed: 'Failed login attempt',
-  accountLocked: 'Account locked',
-  passwordChanged: 'Password changed',
-  mfaChanges: 'MFA changes',
-  apiTokenChanges: 'API token changes',
-  roleChanges: 'Role changes',
-  sessionRevoked: 'Session revoked',
-}
+const NOTIF_KEYS = [
+  'loginSuccess',
+  'loginFailed',
+  'accountLocked',
+  'passwordChanged',
+  'mfaChanges',
+  'apiTokenChanges',
+  'roleChanges',
+  'sessionRevoked',
+]
 
 export default function NotificationsTab() {
+  const { t } = useTranslation()
   const [prefs, setPrefs] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -34,7 +36,7 @@ export default function NotificationsTab() {
           sessionRevoked:  d.session_revoked,
         })
       })
-      .catch(() => setError('Failed to load preferences.'))
+      .catch(() => setError(t('userTabs.notifications.loadError')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -48,7 +50,7 @@ export default function NotificationsTab() {
     setError('')
     try {
       const updates = {}
-      Object.keys(NOTIF_LABELS).forEach((k) => {
+      NOTIF_KEYS.forEach((k) => {
         const snakeKey = k.replace(/([A-Z])/g, '_$1').toLowerCase()
         updates[snakeKey] = prefs[k]
       })
@@ -56,27 +58,33 @@ export default function NotificationsTab() {
       setPrefs(res.data)
       setSaved(true)
     } catch {
-      setError('Failed to save preferences.')
+      setError(t('userTabs.notifications.saveError'))
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>
+  const labelFor = (key) => {
+    if (key === 'loginSuccess') return t('userTabs.loginHistory.successful')
+    if (key === 'loginFailed') return t('userTabs.loginHistory.failedAttempt')
+    return t(`userTabs.notifications.labels.${key}`)
+  }
+
+  if (loading) return <p className="text-sm text-gray-500">{t('common.loading')}</p>
 
   return (
     <div className="max-w-lg space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Notification Preferences</h2>
-        <p className="text-sm text-gray-600">Choose which security events send you an email.</p>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('userTabs.notifications.title')}</h2>
+        <p className="text-sm text-gray-600">{t('userTabs.notifications.subtitle')}</p>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded">
-        {Object.entries(NOTIF_LABELS).map(([key, label]) => (
+        {NOTIF_KEYS.map((key) => (
           <label key={key} className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <span className="text-sm text-gray-800 dark:text-gray-100">{label}</span>
+            <span className="text-sm text-gray-800 dark:text-gray-100">{labelFor(key)}</span>
             <input
               type="checkbox"
               checked={prefs?.[key] ?? true}
@@ -93,9 +101,9 @@ export default function NotificationsTab() {
           disabled={saving}
           className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
         >
-          {saving ? 'Saving…' : 'Save preferences'}
+          {saving ? t('common.saving') : t('userTabs.notifications.savePreferences')}
         </button>
-        {saved && <span className="text-sm text-green-600">Saved.</span>}
+        {saved && <span className="text-sm text-green-600">{t('common.saved')}</span>}
       </div>
     </div>
   )
