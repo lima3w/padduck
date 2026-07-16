@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.6
+
+### Added
+- **i18n batch 6/15: network services pages** (issue #35): converted `NATRulesPage`, `FirewallZonesPage`, `DHCPPage`, `CircuitsPage`, and `AutonomousSystemsPage` to `t()` calls.
+
 ## v1.34.5
 
 ### Added
