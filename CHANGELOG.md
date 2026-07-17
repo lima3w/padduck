@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.10
+
+### Added
+- **i18n batch 10/15: reports pages** (issue #35): converted `ReportsPage`, `OverlapReportPage`, `DuplicatesPage`, `UtilizationTrendsPage`, `ReconciliationCenterPage`, `InactiveIPsPage`, and `ScheduledReportsPage` to `t()` calls. Also fixed a latent i18n bug in `InactiveIPsPage` where the bulk-release success/failure banner styling relied on `message.startsWith('Successfully')` — replaced with an explicit `releaseSuccess` boolean so styling doesn't break once the message text is translated.
+
 ## v1.34.9
 
 ### Added
