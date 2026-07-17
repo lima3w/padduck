@@ -1238,5 +1238,48 @@
     "confirmReleaseSuffix": " IP address(es)? This will mark them as available.",
     "releasing": "Releasing...",
     "release": "Release"
+  },
+  "scheduledReports": {
+    "loadError": "Failed to load scheduled reports",
+    "saveError": "Failed to save report",
+    "deleteError": "Failed to delete report",
+    "runError": "Failed to run report",
+    "filtersInvalidJson": "Filters must be valid JSON",
+    "loading": "Loading scheduled reports...",
+    "newReport": "+ New Report",
+    "schedule": "Schedule",
+    "recipients": "Recipients",
+    "format": "Format",
+    "lastRun": "Last Run",
+    "noScheduledReportsYet": "No scheduled reports yet",
+    "running": "Running...",
+    "runNow": "Run Now",
+    "newReportModalTitle": "New Scheduled Report",
+    "editReportModalTitle": "Edit Report",
+    "namePlaceholder": "Weekly Utilisation Report",
+    "reportType": "Report Type",
+    "scheduleCronLabel": "Schedule (cron expression)",
+    "scheduleCronHint": "e.g. '0 8 * * 1' for weekly Monday 8am",
+    "recipientsLabel": "Recipients (comma-separated emails)",
+    "recipientsPlaceholder": "admin@example.com, ops@example.com",
+    "filtersLabel": "Filters (JSON)",
+    "filtersHint": "Advanced: JSON object of filter parameters",
+    "reportTypes": {
+      "utilisation_summary": "Utilization Summary",
+      "inactive_ips": "Inactive IPs",
+      "new_allocations": "New Allocations",
+      "full_audit": "Full Audit",
+      "subnet_gaps": "Subnet Gaps",
+      "vlan_assignment": "VLAN Assignment",
+      "ip_age": "IP Age",
+      "dns_audit": "DNS Audit",
+      "stale_leases": "Stale Leases",
+      "inactive_devices": "Inactive Devices",
+      "failed_scans": "Failed Scans"
+    },
+    "formats": {
+      "csv": "CSV",
+      "pdf": "PDF"
+    }
   }
 }
