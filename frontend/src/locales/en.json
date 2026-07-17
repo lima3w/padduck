@@ -959,5 +959,11 @@
       "technical": "Technical",
       "stakeholder": "Stakeholder"
     }
+  },
+  "approvals": {
+    "noPendingApprovals": "No pending approvals",
+    "registeredOn": "Registered {{date}}",
+    "approve": "Approve",
+    "reject": "Reject"
   }
 }
