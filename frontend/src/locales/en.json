@@ -1030,5 +1030,23 @@
     "conflictsTab": "Conflicts",
     "driftTab": "Drift",
     "scanAgentsTab": "Scan Agents"
+  },
+  "scanRetention": {
+    "loadError": "Failed to load retention settings",
+    "saveError": "Failed to save",
+    "pruneConfirm": "Run prune now? This will delete scan data older than the configured retention period.",
+    "pruneSuccess": "Pruned {{count}} records",
+    "pruneError": "Prune failed",
+    "loadingSettings": "Loading retention settings...",
+    "title": "Scan Retention",
+    "subtitle": "Control how long raw scan history is retained before automatic cleanup.",
+    "settingsSaved": "Settings saved",
+    "rawHistoryRetentionDays": "Raw History Retention (days)",
+    "rawHistoryHint": "Scan results and run history older than this will be deleted nightly.",
+    "enableRollupCompression": "Enable rollup compression",
+    "rollupAfterDays": "Rollup after (days)",
+    "saveSettings": "Save Settings",
+    "pruning": "Pruning...",
+    "runPruneNow": "Run Prune Now"
   }
 }
