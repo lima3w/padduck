@@ -1048,5 +1048,25 @@
     "saveSettings": "Save Settings",
     "pruning": "Pruning...",
     "runPruneNow": "Run Prune Now"
+  },
+  "discoveryConflicts": {
+    "loadError": "Failed to load discovery conflicts",
+    "resolvedSuccess": "Conflict {{action}} successfully",
+    "resolveError": "Failed to resolve conflict",
+    "title": "Discovery Conflicts",
+    "statusLabel": "Status:",
+    "all": "All",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "noConflictsFound": "No conflicts found.",
+    "deviceId": "Device ID",
+    "field": "Field",
+    "currentValue": "Current Value",
+    "discoveredValue": "Discovered Value",
+    "confidence": "Confidence",
+    "source": "Source",
+    "none": "(none)",
+    "accept": "Accept"
   }
 }
