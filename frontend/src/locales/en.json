@@ -1198,5 +1198,25 @@
     "weekAgoPct": "Week Ago %",
     "delta": "Delta",
     "noTrendData": "No trend data available"
+  },
+  "reconciliation": {
+    "loadError": "Failed to load reconciliation data",
+    "subtitle": "Operational drift across stale IP assignments, DNS records, and subnet overlaps.",
+    "loading": "Loading...",
+    "issuesCount_one": "{{count}} issue",
+    "issuesCount_other": "{{count}} issues",
+    "clean": "Clean",
+    "noIssuesFound": "No issues found",
+    "staleIpAssignments": "Stale IP Assignments",
+    "lastSeen": "Last Seen",
+    "never": "Never",
+    "daysInactive": "Days Inactive",
+    "dnsDrift": "DNS Drift",
+    "ptrRecord": "PTR Record",
+    "lastChecked": "Last Checked",
+    "neverLower": "never",
+    "subnetOverlaps": "Subnet Overlaps",
+    "cidrA": "CIDR A",
+    "cidrB": "CIDR B"
   }
 }
