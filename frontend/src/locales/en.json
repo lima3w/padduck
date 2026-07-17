@@ -1004,5 +1004,23 @@
     "dnsNameLine": "DNS Name: ",
     "purposeLine": "Purpose: ",
     "close": "Close"
+  },
+  "adminRequests": {
+    "loadError": "Failed to load requests",
+    "actionFailed": "Action failed",
+    "title": "Request Management",
+    "allStatuses": "All Statuses",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled",
+    "searchByRequesterPlaceholder": "Search by requester...",
+    "allTab": "All ({{count}})",
+    "subnetRequestsTab": "Subnet Requests ({{count}})",
+    "ipRequestsTab": "IP Requests ({{count}})",
+    "noRequestsFound": "No requests found",
+    "requester": "Requester",
+    "approveRejectModalTitle": "{{action}} Request",
+    "reviewerNotePlaceholder": "Optional note for the requester..."
   }
 }

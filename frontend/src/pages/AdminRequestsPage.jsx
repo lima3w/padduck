@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   adminGetSubnetRequests,
   adminGetIPRequests,
@@ -31,6 +32,7 @@ function StatusBadge({ status }) {
 }
 
 export default function AdminRequestsPage() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('all') // 'all' | 'subnets' | 'ips'
   const [subnetRequests, setSubnetRequests] = useState([])
   const [ipRequests, setIPRequests] = useState([])
@@ -58,11 +60,11 @@ export default function AdminRequestsPage() {
       setSubnetRequests(Array.isArray(subRes.data) ? subRes.data : (subRes.data?.requests ?? []))
       setIPRequests(Array.isArray(ipRes.data) ? ipRes.data : (ipRes.data?.requests ?? []))
     } catch {
-      setError('Failed to load requests')
+      setError(t('adminRequests.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, searchRequester])
+  }, [statusFilter, searchRequester, t])
 
   useEffect(() => { load() }, [load])
 
@@ -88,7 +90,7 @@ export default function AdminRequestsPage() {
       setActionModal(null)
       load()
     } catch (err) {
-      setActionError(err.response?.data?.error || 'Action failed')
+      setActionError(err.response?.data?.error || t('adminRequests.actionFailed'))
     } finally {
       setActionSaving(false)
     }
@@ -110,12 +112,12 @@ export default function AdminRequestsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Request Management</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('adminRequests.title')}</h1>
         <button
           onClick={load}
           className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
         >
-          Refresh
+          {t('dashboard.refresh')}
         </button>
       </div>
 
@@ -128,15 +130,15 @@ export default function AdminRequestsPage() {
           onChange={e => setStatusFilter(e.target.value)}
           className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
         >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="">{t('adminRequests.allStatuses')}</option>
+          <option value="pending">{t('adminRequests.pending')}</option>
+          <option value="approved">{t('adminRequests.approved')}</option>
+          <option value="rejected">{t('adminRequests.rejected')}</option>
+          <option value="cancelled">{t('adminRequests.cancelled')}</option>
         </select>
         <input
           type="text"
-          placeholder="Search by requester..."
+          placeholder={t('adminRequests.searchByRequesterPlaceholder')}
           value={searchRequester}
           onChange={e => setSearchRequester(e.target.value)}
           className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
@@ -146,38 +148,38 @@ export default function AdminRequestsPage() {
       {/* Tabs */}
       <div className="flex border-b dark:border-gray-700 mb-4">
         {[
-          { key: 'all', label: `All (${allRequests.length})` },
-          { key: 'subnets', label: `Subnet Requests (${subnetRequests.length})` },
-          { key: 'ips', label: `IP Requests (${ipRequests.length})` },
-        ].map(t => (
+          { key: 'all', label: t('adminRequests.allTab', { count: allRequests.length }) },
+          { key: 'subnets', label: t('adminRequests.subnetRequestsTab', { count: subnetRequests.length }) },
+          { key: 'ips', label: t('adminRequests.ipRequestsTab', { count: ipRequests.length }) },
+        ].map(tabItem => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.key
+              tab === tabItem.key
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            {t.label}
+            {tabItem.label}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <p className="text-gray-500">Loading requests...</p>
+        <p className="text-gray-500">{t('myRequests.loadingRequests')}</p>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Requester</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Target</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Purpose</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Submitted</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('natRules.type')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminRequests.requester')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('firewallZones.target')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('networks.purpose')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('myRequests.submitted')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('delegations.status')}</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -185,7 +187,7 @@ export default function AdminRequestsPage() {
               {displayRequests.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                    No requests found
+                    {t('adminRequests.noRequestsFound')}
                   </td>
                 </tr>
               )}
@@ -201,14 +203,14 @@ export default function AdminRequestsPage() {
                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
                         : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
                     }`}>
-                      {r._type === 'subnets' ? 'Subnet' : 'IP'}
+                      {r._type === 'subnets' ? t('myRequests.subnetType') : t('myRequests.ipType')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-800 dark:text-gray-200">{r.requesterUsername || r.username || '—'}</td>
                   <td className="px-4 py-3 font-mono text-gray-600 dark:text-gray-300">
                     {r._type === 'subnets'
                       ? (r.prefixLength ? `/${r.prefixLength}` : '—')
-                      : (r.specificIp || 'auto-assign')}
+                      : (r.specificIp || t('myRequests.autoAssign'))}
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 max-w-xs truncate">{r.purpose || '—'}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
@@ -224,13 +226,13 @@ export default function AdminRequestsPage() {
                           onClick={() => openAction('approve', r._type, r.id)}
                           className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
                         >
-                          Approve
+                          {t('approvals.approve')}
                         </button>
                         <button
                           onClick={() => openAction('reject', r._type, r.id)}
                           className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
                         >
-                          Reject
+                          {t('approvals.reject')}
                         </button>
                       </>
                     )}
@@ -246,7 +248,7 @@ export default function AdminRequestsPage() {
       {/* Approve/Reject modal */}
       {actionModal && (
         <Modal
-          title={`${actionModal.type === 'approve' ? 'Approve' : 'Reject'} Request`}
+          title={t('adminRequests.approveRejectModalTitle', { action: actionModal.type === 'approve' ? t('approvals.approve') : t('approvals.reject') })}
           onClose={() => setActionModal(null)}
         >
           <form onSubmit={handleAction} className="space-y-4">
@@ -255,19 +257,19 @@ export default function AdminRequestsPage() {
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Reviewer Note <span className="text-gray-400 font-normal">(optional)</span>
+                {t('myRequests.reviewerNote')} <span className="text-gray-400 font-normal">{t('networks.optional')}</span>
               </label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={3}
-                placeholder="Optional note for the requester..."
+                placeholder={t('adminRequests.reviewerNotePlaceholder')}
                 value={reviewerNote}
                 onChange={e => setReviewerNote(e.target.value)}
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setActionModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
@@ -276,7 +278,7 @@ export default function AdminRequestsPage() {
                   actionModal.type === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
-                {actionSaving ? 'Saving...' : (actionModal.type === 'approve' ? 'Approve' : 'Reject')}
+                {actionSaving ? t('common.saving') : (actionModal.type === 'approve' ? t('approvals.approve') : t('approvals.reject'))}
               </button>
             </div>
           </form>
@@ -286,39 +288,39 @@ export default function AdminRequestsPage() {
       {/* Detail modal */}
       {detailModal && (
         <Modal
-          title={`${detailModal.requestType === 'subnets' ? 'Subnet' : 'IP'} Request Details`}
+          title={t('myRequests.requestDetailsTitle', { type: detailModal.requestType === 'subnets' ? t('myRequests.subnetType') : t('myRequests.ipType') })}
           onClose={() => setDetailModal(null)}
         >
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-2">
-              <span className="font-medium text-gray-600 dark:text-gray-400">Status</span>
+              <span className="font-medium text-gray-600 dark:text-gray-400">{t('delegations.status')}</span>
               <StatusBadge status={detailModal.request.status} />
-              <span className="font-medium text-gray-600 dark:text-gray-400">Requester</span>
+              <span className="font-medium text-gray-600 dark:text-gray-400">{t('adminRequests.requester')}</span>
               <span className="text-gray-800 dark:text-gray-200">{detailModal.request.requesterUsername || detailModal.request.username || '—'}</span>
               {detailModal.requestType === 'subnets' ? (
                 <>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">Prefix Length</span>
+                  <span className="font-medium text-gray-600 dark:text-gray-400">{t('networks.prefixLength')}</span>
                   <span className="font-mono text-gray-800 dark:text-gray-200">/{detailModal.request.prefixLength || '—'}</span>
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">Specific IP</span>
-                  <span className="font-mono text-gray-800 dark:text-gray-200">{detailModal.request.specificIp || 'auto-assign'}</span>
+                  <span className="font-medium text-gray-600 dark:text-gray-400">{t('myRequests.specificIp')}</span>
+                  <span className="font-mono text-gray-800 dark:text-gray-200">{detailModal.request.specificIp || t('myRequests.autoAssign')}</span>
                   {detailModal.request.dnsName && (
                     <>
-                      <span className="font-medium text-gray-600 dark:text-gray-400">DNS Name</span>
+                      <span className="font-medium text-gray-600 dark:text-gray-400">{t('myRequests.dnsName')}</span>
                       <span className="text-gray-800 dark:text-gray-200">{detailModal.request.dnsName}</span>
                     </>
                   )}
                 </>
               )}
-              <span className="font-medium text-gray-600 dark:text-gray-400">Purpose</span>
+              <span className="font-medium text-gray-600 dark:text-gray-400">{t('networks.purpose')}</span>
               <span className="text-gray-800 dark:text-gray-200">{detailModal.request.purpose || '—'}</span>
-              <span className="font-medium text-gray-600 dark:text-gray-400">Submitted</span>
+              <span className="font-medium text-gray-600 dark:text-gray-400">{t('myRequests.submitted')}</span>
               <span className="text-gray-500 dark:text-gray-400">{formatDate(detailModal.request.createdAt)}</span>
               {detailModal.request.reviewerNote && (
                 <>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">Reviewer Note</span>
+                  <span className="font-medium text-gray-600 dark:text-gray-400">{t('myRequests.reviewerNote')}</span>
                   <span className="text-gray-800 dark:text-gray-200">{detailModal.request.reviewerNote}</span>
                 </>
               )}
@@ -330,13 +332,13 @@ export default function AdminRequestsPage() {
                   onClick={() => { setDetailModal(null); openAction('approve', detailModal.requestType, detailModal.request.id) }}
                   className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
                 >
-                  Approve
+                  {t('approvals.approve')}
                 </button>
                 <button
                   onClick={() => { setDetailModal(null); openAction('reject', detailModal.requestType, detailModal.request.id) }}
                   className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
                 >
-                  Reject
+                  {t('approvals.reject')}
                 </button>
               </div>
             )}
