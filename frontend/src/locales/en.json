@@ -959,5 +959,68 @@
       "technical": "Technical",
       "stakeholder": "Stakeholder"
     }
+  },
+  "approvals": {
+    "noPendingApprovals": "No pending approvals",
+    "registeredOn": "Registered {{date}}",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "requestComments": {
+    "loadError": "Failed to load comments",
+    "postError": "Failed to post comment",
+    "title": "Comments",
+    "loading": "Loading comments...",
+    "noCommentsYet": "No comments yet.",
+    "addCommentPlaceholder": "Add a comment...",
+    "posting": "Posting...",
+    "postComment": "Post Comment"
+  },
+  "myRequests": {
+    "loadError": "Failed to load requests",
+    "cancelError": "Failed to cancel request",
+    "loadingRequests": "Loading requests...",
+    "noRequestsYet": "You haven't made any requests yet.",
+    "submitted": "Submitted",
+    "reviewer": "Reviewer",
+    "subnetType": "Subnet",
+    "ipType": "IP",
+    "autoAssign": "auto-assign",
+    "cancelConfirm": "Cancel?",
+    "cancel": "Cancel",
+    "reRequest": "Re-request",
+    "requestDetailsTitle": "{{type}} Request Details",
+    "specificIp": "Specific IP",
+    "dnsName": "DNS Name",
+    "reviewerNote": "Reviewer Note",
+    "reRequestModalTitle": "Re-request {{type}}",
+    "reRequestInstructionsPrefix": "To re-request, please use the ",
+    "reRequestInstructionsSuffix": " button on the {{page}} page.",
+    "requestSubnetButtonLabel": "\"Request Subnet\"",
+    "requestIpButtonLabel": "\"Request IP\"",
+    "previousValues": "Previous values",
+    "prefixLengthLine": "Prefix length: ",
+    "specificIpLine": "Specific IP: ",
+    "dnsNameLine": "DNS Name: ",
+    "purposeLine": "Purpose: ",
+    "close": "Close"
+  },
+  "adminRequests": {
+    "loadError": "Failed to load requests",
+    "actionFailed": "Action failed",
+    "title": "Request Management",
+    "allStatuses": "All Statuses",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled",
+    "searchByRequesterPlaceholder": "Search by requester...",
+    "allTab": "All ({{count}})",
+    "subnetRequestsTab": "Subnet Requests ({{count}})",
+    "ipRequestsTab": "IP Requests ({{count}})",
+    "noRequestsFound": "No requests found",
+    "requester": "Requester",
+    "approveRejectModalTitle": "{{action}} Request",
+    "reviewerNotePlaceholder": "Optional note for the requester..."
   }
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.8
+
+### Added
+- **i18n batch 8/15: requests & approvals pages** (issue #35): converted `ApprovalsTab`, `RequestComments`, `MyRequestsPage`, and `AdminRequestsPage` to `t()` calls.
+
 ## v1.34.7
 
 ### Added
