@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
 
@@ -13,6 +14,7 @@ function usePublicUrl() {
 }
 
 function StatusBadge({ status }) {
+  const { t } = useTranslation()
   const cfg = {
     healthy:  'bg-green-100 text-green-700',
     degraded: 'bg-yellow-100 text-yellow-700',
@@ -21,12 +23,13 @@ function StatusBadge({ status }) {
   }
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-medium ${cfg[status] || cfg.unknown}`}>
-      {status || 'unknown'}
+      {status || t('adminAgents.unknownStatus')}
     </span>
   )
 }
 
 export default function AdminAgentsPage() {
+  const { t } = useTranslation()
   const publicUrl = usePublicUrl()
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -52,7 +55,7 @@ export default function AdminAgentsPage() {
       const { data } = await api.get('/admin/scan-agents')
       setAgents(data || [])
     } catch {
-      setError('Failed to load scan agents')
+      setError(t('adminAgents.loadError'))
     } finally {
       setLoading(false)
     }
@@ -70,7 +73,7 @@ export default function AdminAgentsPage() {
       setNewTTLDays(0)
       await loadAgents()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create agent')
+      setError(err.response?.data?.error || t('adminAgents.createError'))
     } finally {
       setSaving(false)
     }
@@ -83,7 +86,7 @@ export default function AdminAgentsPage() {
       setNewToken(data.token)
       setNewTokenAgentName(agent.name)
     } catch {
-      setError('Failed to rotate token')
+      setError(t('adminAgents.rotateError'))
     } finally {
       setRotatingId(null)
     }
@@ -95,7 +98,7 @@ export default function AdminAgentsPage() {
       setDeleteConfirm(null)
       await loadAgents()
     } catch {
-      setError('Failed to delete agent')
+      setError(t('adminAgents.deleteError'))
     }
   }
 
@@ -142,19 +145,19 @@ export default function AdminAgentsPage() {
     document.body.removeChild(el)
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading…</div>
+  if (loading) return <div className="p-6 text-gray-500">{t('common.loading')}</div>
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Scan Agents</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('adminAgents.title')}</h1>
           {binaryInfo && (
             <p className="text-xs text-gray-500 mt-1">
-              Hosted binary:{' '}
+              {t('adminAgents.hostedBinaryLabel')}{' '}
               {binaryInfo.available
-                ? <span className="text-green-700 font-medium">{binaryInfo.version || 'available'}</span>
-                : <span className="text-amber-600">not available — place <code className="font-mono">padduck-agent</code> in <code className="font-mono">./data/agent/</code></span>
+                ? <span className="text-green-700 font-medium">{binaryInfo.version || t('adminAgents.available')}</span>
+                : <span className="text-amber-600">{t('adminAgents.notAvailablePrefix')}<code className="font-mono">padduck-agent</code>{t('adminAgents.notAvailableSuffix')}<code className="font-mono">./data/agent/</code></span>
               }
             </p>
           )}
@@ -163,48 +166,48 @@ export default function AdminAgentsPage() {
           onClick={() => { setNewName(''); setCreateModal(true) }}
           className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
         >
-          + New Agent
+          {t('adminAgents.newAgent')}
         </button>
       </div>
 
       {/* Download Agent network */}
       <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <p className="text-sm font-medium text-gray-700 mb-2">Download latest scan agent binary:</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">{t('adminAgents.downloadLabel')}</p>
         <div className="flex flex-wrap gap-2">
           <a
             href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-linux-amd64"
             className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
             download
           >
-            Linux x64
+            {t('adminAgents.linuxX64')}
           </a>
           <a
             href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-linux-arm64"
             className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
             download
           >
-            Linux ARM64
+            {t('adminAgents.linuxArm64')}
           </a>
           <a
             href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-darwin-amd64"
             className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
             download
           >
-            macOS x64
+            {t('adminAgents.macosX64')}
           </a>
           <a
             href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-darwin-arm64"
             className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
             download
           >
-            macOS ARM64
+            {t('adminAgents.macosArm64')}
           </a>
           <a
             href="https://github.com/lima3w/padduck/releases/latest/download/padduck-agent-windows-amd64.exe"
             className="inline-block px-3 py-1.5 bg-white border border-gray-300 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition"
             download
           >
-            Windows x64
+            {t('adminAgents.windowsX64')}
           </a>
         </div>
       </div>
@@ -216,12 +219,12 @@ export default function AdminAgentsPage() {
       {newToken && (
         <div className="mb-6 p-4 bg-amber-50 border border-amber-300 rounded-lg space-y-4">
           <p className="text-sm font-semibold text-amber-800">
-            Agent <span className="font-mono">{newTokenAgentName}</span> created — save the token now, it will not be shown again.
+            {t('adminAgents.agentCreatedPrefix')}<span className="font-mono">{newTokenAgentName}</span>{t('adminAgents.agentCreatedSuffix')}
           </p>
 
           {/* Raw token */}
           <div>
-            <p className="text-xs font-medium text-amber-700 mb-1">Agent token</p>
+            <p className="text-xs font-medium text-amber-700 mb-1">{t('adminAgents.agentTokenLabel')}</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-white border border-amber-200 rounded px-3 py-2 text-xs font-mono text-gray-800 break-all select-all">
                 {newToken}
@@ -230,14 +233,14 @@ export default function AdminAgentsPage() {
                 onClick={copyToken}
                 className="shrink-0 px-3 py-2 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition"
               >
-                {copied === 'token' ? '✓ Copied' : 'Copy'}
+                {copied === 'token' ? t('adminAgents.copied') : t('adminAgents.copy')}
               </button>
             </div>
           </div>
 
           {/* Install command */}
           <div>
-            <p className="text-xs font-medium text-amber-700 mb-1">One-line install command</p>
+            <p className="text-xs font-medium text-amber-700 mb-1">{t('adminAgents.installCommandLabel')}</p>
             <div className="flex items-start gap-2">
               <code className="flex-1 bg-white border border-amber-200 rounded px-3 py-2 text-xs font-mono text-gray-800 break-all select-all whitespace-pre-wrap">
                 {buildInstallCmd(newToken)}
@@ -246,11 +249,11 @@ export default function AdminAgentsPage() {
                 onClick={copyInstallCmd}
                 className="shrink-0 px-3 py-2 bg-amber-600 text-white text-xs rounded hover:bg-amber-700 transition"
               >
-                {copied === 'install' ? '✓ Copied' : 'Copy'}
+                {copied === 'install' ? t('adminAgents.copied') : t('adminAgents.copy')}
               </button>
             </div>
             <p className="text-xs text-amber-600 mt-1">
-              Downloads the agent binary from this Padduck instance and starts it with the token embedded.
+              {t('adminAgents.installCommandHint')}
             </p>
           </div>
 
@@ -258,7 +261,7 @@ export default function AdminAgentsPage() {
             onClick={() => setNewToken(null)}
             className="text-xs text-amber-600 hover:underline"
           >
-            Dismiss
+            {t('common.dismiss')}
           </button>
         </div>
       )}
@@ -267,19 +270,19 @@ export default function AdminAgentsPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Name</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Health Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Version</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Capabilities</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Last Seen</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Token Expires</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">{t('common.name')}</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">{t('adminAgents.healthStatus')}</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">{t('adminAgents.version')}</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">{t('adminAgents.capabilities')}</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">{t('adminAgents.lastSeen')}</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">{t('adminAgents.tokenExpires')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {agents.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">No scan agents configured.</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">{t('adminAgents.noAgentsConfigured')}</td>
               </tr>
             ) : (
               agents.map((agent) => (
@@ -309,7 +312,7 @@ export default function AdminAgentsPage() {
                       ? <span className={new Date(agent.expiresAt) < new Date() ? 'text-red-600 font-medium' : 'text-gray-500'}>
                           {new Date(agent.expiresAt).toLocaleDateString()}
                         </span>
-                      : <span className="text-gray-400">Never</span>
+                      : <span className="text-gray-400">{t('adminAgents.never')}</span>
                     }
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
@@ -318,20 +321,20 @@ export default function AdminAgentsPage() {
                       disabled={rotatingId === agent.id}
                       className="text-xs text-gray-500 hover:text-blue-600 disabled:opacity-50"
                     >
-                      {rotatingId === agent.id ? 'Rotating…' : 'Rotate Token'}
+                      {rotatingId === agent.id ? t('adminAgents.rotating') : t('adminAgents.rotateToken')}
                     </button>
                     {deleteConfirm === agent.id ? (
                       <span className="inline-flex items-center gap-1 text-xs">
-                        <span className="text-red-600">Delete?</span>
-                        <button onClick={() => handleDelete(agent.id)} className="text-red-600 font-medium hover:text-red-800">Yes</button>
-                        <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600">No</button>
+                        <span className="text-red-600">{t('adminAgents.deleteConfirm')}</span>
+                        <button onClick={() => handleDelete(agent.id)} className="text-red-600 font-medium hover:text-red-800">{t('common.yes')}</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600">{t('common.no')}</button>
                       </span>
                     ) : (
                       <button
                         onClick={() => setDeleteConfirm(agent.id)}
                         className="text-xs text-gray-500 hover:text-red-600"
                       >
-                        Delete
+                        {t('common.delete')}
                       </button>
                     )}
                   </td>
@@ -343,13 +346,13 @@ export default function AdminAgentsPage() {
       </div>
 
       {createModal && (
-        <Modal title="New Scan Agent" onClose={() => setCreateModal(false)}>
+        <Modal title={t('adminAgents.newScanAgentModalTitle')} onClose={() => setCreateModal(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Agent Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminAgents.agentNameRequired')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="branch-office"
+                placeholder={t('adminAgents.agentNamePlaceholder')}
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 autoFocus
@@ -357,7 +360,7 @@ export default function AdminAgentsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Token TTL (days)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminAgents.tokenTtlDays')}</label>
               <input
                 type="number"
                 min="0"
@@ -366,12 +369,12 @@ export default function AdminAgentsPage() {
                 value={newTTLDays}
                 onChange={e => setNewTTLDays(Math.max(0, parseInt(e.target.value) || 0))}
               />
-              <p className="text-xs text-gray-500 mt-1">Set to 0 for a token that never expires.</p>
+              <p className="text-xs text-gray-500 mt-1">{t('adminAgents.tokenTtlHint')}</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving || !newName.trim()} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Creating…' : 'Create'}
+                {saving ? t('adminAgents.creating') : t('vrfs.create')}
               </button>
             </div>
           </form>
