@@ -1164,5 +1164,18 @@
     "duplicateDetectionTab": "Duplicate Detection",
     "reconciliationCenterTab": "Reconciliation Center",
     "scheduledReportsTab": "Scheduled Reports"
+  },
+  "overlapReport": {
+    "loadError": "Failed to load overlap report",
+    "loading": "Loading overlap report...",
+    "title": "Subnet Overlap Report",
+    "subtitle": "All overlapping subnet pairs across the system",
+    "backToSettings": "Back to Settings",
+    "noOverlapsDetected": "No overlaps detected",
+    "allSubnetsSeparated": "All subnets are properly separated.",
+    "pairsFound_one": "{{count}} overlapping pair found",
+    "pairsFound_other": "{{count}} overlapping pairs found",
+    "subnetA": "Subnet A",
+    "subnetB": "Subnet B"
   }
 }
