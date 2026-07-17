@@ -114,7 +114,7 @@ export default function IPAddressesPage() {
     } catch {}
   }, [])
 
-  const load = useCallback(async (p, col, dir, full, limit) => {
+  const load = useCallback(async (p = page, col = sortCol, dir = sortDir, full = fullRange, limit = pageSize) => {
     try {
       setLoading(true)
       setSelected(new Set())
@@ -136,7 +136,7 @@ export default function IPAddressesPage() {
     } finally {
       setLoading(false)
     }
-  }, [subnetID])
+  }, [subnetID, page, sortCol, sortDir, fullRange, pageSize])
 
   useEffect(() => {
     setPage(1)
@@ -144,7 +144,11 @@ export default function IPAddressesPage() {
     load(1, sortCol, sortDir, fullRange, pageSize)
     loadCfDefs()
     loadDevices()
-  }, [subnetID, load, loadCfDefs, loadDevices]) // sortCol/dir/fullRange/pageSize are init-time values
+    // Intentionally keyed on subnetID only: load/loadCfDefs/loadDevices now change identity
+    // whenever page/sort/fullRange/pageSize change (load reads them as default params), and
+    // this effect must only reset to page 1 when navigating to a different subnet, not on
+    // every such change.
+  }, [subnetID])
 
   function handlePageChange(newPage) {
     setPage(newPage)
