@@ -1144,5 +1144,18 @@
     "tokenTtlDays": "Token TTL (days)",
     "tokenTtlHint": "Set to 0 for a token that never expires.",
     "creating": "Creating…"
+  },
+  "topology": {
+    "loadError": "Failed to load topology",
+    "exportPng": "Export PNG",
+    "loading": "Loading topology...",
+    "subnetDetail": "Subnet Detail",
+    "cidr": "CIDR",
+    "container": "Container",
+    "vlanId": "VLAN ID",
+    "utilisation": "Utilisation",
+    "under50Used": "<50% used",
+    "between50And80Used": "50–80% used",
+    "over80Used": ">80% used"
   }
 }
