@@ -1022,5 +1022,13 @@
     "requester": "Requester",
     "approveRejectModalTitle": "{{action}} Request",
     "reviewerNotePlaceholder": "Optional note for the requester..."
+  },
+  "discovery": {
+    "scanJobsTab": "Scan Jobs",
+    "scanRetentionTab": "Scan Retention",
+    "topologyHintsTab": "Topology Hints",
+    "conflictsTab": "Conflicts",
+    "driftTab": "Drift",
+    "scanAgentsTab": "Scan Agents"
   }
 }
