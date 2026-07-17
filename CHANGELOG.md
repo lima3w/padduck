@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.12
+
+### Fixed
+- **stale `IMAGE_TAG` default caused fresh deployments to fail DB connection**: `docker-compose.yml`'s pinned fallback default was stuck at `1.31.25`, which predates the v1.33.31 fix that made the backend assemble `DATABASE_URL` from split `POSTGRES_*` variables. Fresh stacks that don't explicitly set `IMAGE_TAG` in `.env` got the current compose file (which only passes split `POSTGRES_*` vars) paired with the old backend binary (which expects a prebuilt `DATABASE_URL` and has no assembly logic), so the backend crash-looped before it could even log a connection error. Bumped the pin to `1.34.10` in `docker-compose.yml`, `.env.example`, and `README.md`.
+
 ## v1.34.11
 
 ### Fixed
