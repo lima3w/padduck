@@ -1218,5 +1218,25 @@
     "subnetOverlaps": "Subnet Overlaps",
     "cidrA": "CIDR A",
     "cidrB": "CIDR B"
+  },
+  "inactiveIps": {
+    "loadError": "Failed to load inactive IPs",
+    "exportError": "Export failed",
+    "releaseSuccess": "Successfully released {{count}} IP address(es).",
+    "releaseError": "Failed to release IPs",
+    "subtitle": "IP addresses that have been inactive for the selected period",
+    "releaseSelected": "Release Selected ({{count}})",
+    "inactiveForAtLeast": "Inactive for at least",
+    "allNetworks": "All Networks",
+    "loading": "Loading...",
+    "inactiveIpsCount_one": "{{count}} inactive IP",
+    "inactiveIpsCount_other": "{{count}} inactive IPs",
+    "assignedTo": "Assigned To",
+    "noInactiveIpsFound": "No inactive IPs found for this period",
+    "confirmBulkReleaseTitle": "Confirm Bulk Release",
+    "confirmReleasePrefix": "Are you sure you want to release ",
+    "confirmReleaseSuffix": " IP address(es)? This will mark them as available.",
+    "releasing": "Releasing...",
+    "release": "Release"
   }
 }
