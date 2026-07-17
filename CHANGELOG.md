@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.11
+
+### Fixed
+- **IP Addresses page lost sort/full-range/page-size state after mutations** (#282): `load(p, col, dir, full, limit)` had no default parameter values, so nearly every mutation handler (create, assign, edit, release, delete, bulk release/delete, DHCP reservation push/remove) reloaded with `col`/`dir`/`full`/`limit` silently `undefined`, diverging from whatever the visible sort/"Show all IPs"/page-size controls actually showed — most visibly, a newly created IP wouldn't appear in the list until "Show all IPs" was toggled, since that was one of the few call sites passing the full parameter set explicitly. The missing params now default to current state.
+
 ## v1.34.10
 
 ### Added
