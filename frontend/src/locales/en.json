@@ -1157,5 +1157,12 @@
     "under50Used": "<50% used",
     "between50And80Used": "50–80% used",
     "over80Used": ">80% used"
+  },
+  "reports": {
+    "utilizationTrendsTab": "Utilization Trends",
+    "inactiveIpsTab": "Inactive IPs",
+    "duplicateDetectionTab": "Duplicate Detection",
+    "reconciliationCenterTab": "Reconciliation Center",
+    "scheduledReportsTab": "Scheduled Reports"
   }
 }

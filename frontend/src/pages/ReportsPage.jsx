@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import UtilizationTrendsPage from './UtilizationTrendsPage'
 import InactiveIPsPage from './InactiveIPsPage'
 import DuplicatesPage from './DuplicatesPage'
@@ -6,17 +7,17 @@ import ReconciliationCenterPage from './ReconciliationCenterPage'
 import ScheduledReportsPage from './ScheduledReportsPage'
 import { getCachedUser } from '../utils/storageKeys'
 
-const BASE_TABS = [
-  { id: 'utilization', label: 'Utilization Trends' },
-  { id: 'inactive', label: 'Inactive IPs' },
-  { id: 'duplicates', label: 'Duplicate Detection' },
-  { id: 'reconciliation', label: 'Reconciliation Center' },
-]
-
 export default function ReportsPage() {
+  const { t } = useTranslation()
+  const BASE_TABS = [
+    { id: 'utilization', label: t('reports.utilizationTrendsTab') },
+    { id: 'inactive', label: t('reports.inactiveIpsTab') },
+    { id: 'duplicates', label: t('reports.duplicateDetectionTab') },
+    { id: 'reconciliation', label: t('reports.reconciliationCenterTab') },
+  ]
   const [searchParams, setSearchParams] = useSearchParams()
   const isAdmin = getCachedUser()?.role === 'admin'
-  const tabs = isAdmin ? [...BASE_TABS, { id: 'scheduled', label: 'Scheduled Reports' }] : BASE_TABS
+  const tabs = isAdmin ? [...BASE_TABS, { id: 'scheduled', label: t('reports.scheduledReportsTab') }] : BASE_TABS
   const activeTab = searchParams.get('tab') || 'utilization'
 
   function setTab(id) {
