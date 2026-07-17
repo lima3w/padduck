@@ -965,5 +965,15 @@
     "registeredOn": "Registered {{date}}",
     "approve": "Approve",
     "reject": "Reject"
+  },
+  "requestComments": {
+    "loadError": "Failed to load comments",
+    "postError": "Failed to post comment",
+    "title": "Comments",
+    "loading": "Loading comments...",
+    "noCommentsYet": "No comments yet.",
+    "addCommentPlaceholder": "Add a comment...",
+    "posting": "Posting...",
+    "postComment": "Post Comment"
   }
 }
