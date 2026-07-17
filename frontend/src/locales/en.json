@@ -1085,5 +1085,22 @@
     "hintType": "Hint Type",
     "evidence": "Evidence",
     "confirm": "Confirm"
+  },
+  "driftReview": {
+    "loadError": "Failed to load drift items",
+    "resolveError": "Failed to resolve drift item",
+    "itemResolved": "Drift item {{action}}",
+    "escalated": "escalated",
+    "title": "Drift Review",
+    "open": "Open",
+    "escalatedOption": "Escalated",
+    "subtitle": "Differences between what the scanner last observed and Padduck's authoritative records.",
+    "noDriftItemsFound": "No drift items found.",
+    "authoritative": "Authoritative",
+    "observed": "Observed",
+    "escalationNotePrompt": "Escalation note (optional):",
+    "escalate": "Escalate",
+    "acceptedWord": "accepted",
+    "dismissedWord": "dismissed"
   }
 }

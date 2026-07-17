@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listDriftItems, acceptDrift, dismissDrift, escalateDrift } from '../api/discovery'
 import PageSpinner from '../components/PageSpinner'
@@ -12,6 +13,7 @@ const STATUS_STYLES = {
 }
 
 export default function DriftReviewPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('open')
   const [message, setMessage] = useState(null)
@@ -27,7 +29,7 @@ export default function DriftReviewPage() {
   })
   const items = driftQuery.data ?? []
   const loading = driftQuery.isLoading
-  const error = driftQuery.isError ? 'Failed to load drift items' : null
+  const error = driftQuery.isError ? t('driftReview.loadError') : null
 
   const resolveMutation = useMutation({
     mutationFn: ({ id, action, note }) => {
@@ -36,10 +38,11 @@ export default function DriftReviewPage() {
       return escalateDrift(id, note)
     },
     onSuccess: (_res, { action }) => {
-      showMsg(`Drift item ${action === 'accept' ? 'accepted' : action === 'dismiss' ? 'dismissed' : 'escalated'}`)
+      const actionWord = action === 'accept' ? t('driftReview.acceptedWord') : action === 'dismiss' ? t('driftReview.dismissedWord') : t('driftReview.escalated')
+      showMsg(t('driftReview.itemResolved', { action: actionWord }))
       queryClient.invalidateQueries({ queryKey: ['drift', 'items'] })
     },
-    onError: () => showMsg('Failed to resolve drift item', 'error'),
+    onError: () => showMsg(t('driftReview.resolveError'), 'error'),
   })
   const resolving = resolveMutation.isPending ? resolveMutation.variables?.id : null
 
@@ -52,7 +55,7 @@ export default function DriftReviewPage() {
   }
 
   function handleEscalate(id) {
-    const note = window.prompt('Escalation note (optional):') ?? ''
+    const note = window.prompt(t('driftReview.escalationNotePrompt')) ?? ''
     resolveMutation.mutate({ id, action: 'escalate', note })
   }
 
@@ -62,7 +65,7 @@ export default function DriftReviewPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Drift Review
+          {t('driftReview.title')}
           {statusFilter === 'open' && openCount > 0 && (
             <span className="ml-2 px-2 py-0.5 text-sm rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
               {openCount}
@@ -70,7 +73,7 @@ export default function DriftReviewPage() {
           )}
         </h1>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Status:</label>
+          <label className="text-sm text-gray-600 dark:text-gray-400">{t('discoveryConflicts.statusLabel')}</label>
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
@@ -79,16 +82,16 @@ export default function DriftReviewPage() {
             {/* No "All" option: the backend's status query param always defaults to
                 "open" when empty (fiber's Query(key, "open") treats "" as absent),
                 so there's no way to request every status through this endpoint. */}
-            <option value="open">Open</option>
-            <option value="accepted">Accepted</option>
-            <option value="dismissed">Dismissed</option>
-            <option value="escalated">Escalated</option>
+            <option value="open">{t('driftReview.open')}</option>
+            <option value="accepted">{t('discoveryConflicts.accepted')}</option>
+            <option value="dismissed">{t('topologyHints.dismissed')}</option>
+            <option value="escalated">{t('driftReview.escalatedOption')}</option>
           </select>
         </div>
       </div>
 
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-        Differences between what the scanner last observed and Padduck's authoritative records.
+        {t('driftReview.subtitle')}
       </p>
 
       {message && (
@@ -106,7 +109,7 @@ export default function DriftReviewPage() {
       {loading ? (
         <PageSpinner />
       ) : items.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No drift items found.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('driftReview.noDriftItemsFound')}</p>
       ) : (
         <div className="space-y-4">
           {items.map(item => (
@@ -124,9 +127,9 @@ export default function DriftReviewPage() {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800">
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Field</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Authoritative</th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">Observed</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">{t('discoveryConflicts.field')}</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">{t('driftReview.authoritative')}</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-600 dark:text-gray-300">{t('driftReview.observed')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -134,7 +137,7 @@ export default function DriftReviewPage() {
                     <tr key={i}>
                       <td className="px-4 py-2 font-mono text-gray-800 dark:text-gray-200">{diff.field}</td>
                       <td className="px-4 py-2 text-gray-600 dark:text-gray-400">
-                        {diff.authoritative || <span className="italic text-gray-400">(none)</span>}
+                        {diff.authoritative || <span className="italic text-gray-400">{t('discoveryConflicts.none')}</span>}
                       </td>
                       <td className="px-4 py-2 text-gray-900 dark:text-gray-100">{diff.observed}</td>
                     </tr>
@@ -149,21 +152,21 @@ export default function DriftReviewPage() {
                     disabled={resolving === item.id}
                     className="px-3 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                   >
-                    Accept
+                    {t('discoveryConflicts.accept')}
                   </button>
                   <button
                     onClick={() => handleDismiss(item.id)}
                     disabled={resolving === item.id}
                     className="px-3 py-1 text-xs rounded bg-gray-500 text-white hover:bg-gray-600 disabled:opacity-50"
                   >
-                    Dismiss
+                    {t('common.dismiss')}
                   </button>
                   <button
                     onClick={() => handleEscalate(item.id)}
                     disabled={resolving === item.id}
                     className="px-3 py-1 text-xs rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
                   >
-                    Escalate
+                    {t('driftReview.escalate')}
                   </button>
                 </div>
               )}
