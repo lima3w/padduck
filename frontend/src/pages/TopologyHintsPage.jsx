@@ -1,13 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listTopologyHints, updateTopologyHintStatus } from '../api/admin'
-
-const STATUS_FILTERS = [
-  { label: 'All', value: '' },
-  { label: 'Suggested', value: 'suggested' },
-  { label: 'Confirmed', value: 'confirmed' },
-  { label: 'Dismissed', value: 'dismissed' },
-]
 
 function confidenceBadge(score) {
   const pct = Math.round(score * 100)
@@ -35,6 +29,13 @@ function statusBadge(status) {
 }
 
 export default function TopologyHintsPage() {
+  const { t } = useTranslation()
+  const STATUS_FILTERS = [
+    { label: t('topologyHints.all'), value: '' },
+    { label: t('topologyHints.suggested'), value: 'suggested' },
+    { label: t('topologyHints.confirmed'), value: 'confirmed' },
+    { label: t('topologyHints.dismissed'), value: 'dismissed' },
+  ]
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
   const [actionError, setActionError] = useState(null)
@@ -45,7 +46,7 @@ export default function TopologyHintsPage() {
   })
   const hints = hintsQuery.data ?? []
   const loading = hintsQuery.isLoading
-  const error = hintsQuery.isError ? 'Failed to load topology hints' : null
+  const error = hintsQuery.isError ? t('topologyHints.loadError') : null
 
   const statusMutation = useMutation({
     mutationFn: ({ id, newStatus }) => updateTopologyHintStatus(id, newStatus),
@@ -54,7 +55,7 @@ export default function TopologyHintsPage() {
       queryClient.invalidateQueries({ queryKey: ['topology', 'hints'] })
     },
     onError: (err, { id }) => {
-      setActionError(err.response?.data?.error || `Failed to update hint #${id}`)
+      setActionError(err.response?.data?.error || t('topologyHints.updateError', { id }))
     },
   })
 
@@ -68,7 +69,7 @@ export default function TopologyHintsPage() {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            Topology Hints
+            {t('topologyHints.title')}
             {!loading && (
               <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">
                 ({hints.length})
@@ -76,7 +77,7 @@ export default function TopologyHintsPage() {
             )}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Suggested relationships inferred from discovery and inventory data
+            {t('topologyHints.subtitle')}
           </p>
         </div>
         <div className="flex gap-1">
@@ -104,7 +105,7 @@ export default function TopologyHintsPage() {
 
       {loading ? (
         <div className="flex min-h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-          Loading...
+          {t('topologyHints.loading')}
         </div>
       ) : error ? (
         <div className="rounded bg-red-50 dark:bg-red-900/30 px-4 py-6 text-center text-sm text-red-700 dark:text-red-300">
@@ -112,8 +113,8 @@ export default function TopologyHintsPage() {
         </div>
       ) : hints.length === 0 ? (
         <div className="rounded bg-white dark:bg-gray-800 shadow px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-          No topology hints found
-          {statusFilter ? ` with status "${statusFilter}"` : ''}.
+          {t('topologyHints.noHintsFound')}
+          {statusFilter ? t('topologyHints.withStatusSuffix', { status: statusFilter }) : ''}.
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -121,13 +122,13 @@ export default function TopologyHintsPage() {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Source</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Target</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Hint Type</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Confidence</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Evidence</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Actions</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('discoveryConflicts.source')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('topologyHints.target')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('topologyHints.hintType')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('discoveryConflicts.confidence')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('topologyHints.evidence')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('delegations.status')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('vrfs.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -158,13 +159,13 @@ export default function TopologyHintsPage() {
                             onClick={() => handleStatusUpdate(hint.id, 'confirmed')}
                             className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 dark:hover:bg-green-900/70 transition-colors"
                           >
-                            Confirm
+                            {t('topologyHints.confirm')}
                           </button>
                           <button
                             onClick={() => handleStatusUpdate(hint.id, 'dismissed')}
                             className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 transition-colors"
                           >
-                            Dismiss
+                            {t('common.dismiss')}
                           </button>
                         </div>
                       )}

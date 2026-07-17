@@ -1068,5 +1068,22 @@
     "source": "Source",
     "none": "(none)",
     "accept": "Accept"
+  },
+  "topologyHints": {
+    "loadError": "Failed to load topology hints",
+    "updateError": "Failed to update hint #{{id}}",
+    "all": "All",
+    "suggested": "Suggested",
+    "confirmed": "Confirmed",
+    "dismissed": "Dismissed",
+    "title": "Topology Hints",
+    "subtitle": "Suggested relationships inferred from discovery and inventory data",
+    "loading": "Loading...",
+    "noHintsFound": "No topology hints found",
+    "withStatusSuffix": " with status \"{{status}}\"",
+    "target": "Target",
+    "hintType": "Hint Type",
+    "evidence": "Evidence",
+    "confirm": "Confirm"
   }
 }
