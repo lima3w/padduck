@@ -1189,5 +1189,14 @@
     "conflictingIpsTitle": "Conflicting IP Assignments",
     "noConflictingIps": "No conflicting IP assignments found.",
     "assignedHostnames": "Assigned Hostnames"
+  },
+  "utilizationTrends": {
+    "loadError": "Failed to load utilization trends",
+    "loading": "Loading utilization trends...",
+    "subtitle": "Subnet utilization compared to 7 days ago",
+    "currentPct": "Current %",
+    "weekAgoPct": "Week Ago %",
+    "delta": "Delta",
+    "noTrendData": "No trend data available"
   }
 }
