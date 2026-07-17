@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.9
+
+### Added
+- **i18n batch 9/15: discovery, automation & topology pages** (issue #35): converted `DiscoveryPage`, `ScanRetentionPage`, `DiscoveryConflictsPage`, `TopologyHintsPage`, `DriftReviewPage`, `AdminAgentsPage`, and `TopologyPage` to `t()` calls. `ScanJobsPage.jsx` (813 lines) and `AutomationPoliciesPage.jsx` (609 lines) are deferred alongside the other large-file follow-ups.
+
 ## v1.34.8
 
 ### Added

@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import ScanJobsPage from './ScanJobsPage'
 import ScanRetentionPage from './ScanRetentionPage'
 import TopologyHintsPage from './TopologyHintsPage'
@@ -6,16 +7,16 @@ import DiscoveryConflictsPage from './DiscoveryConflictsPage'
 import DriftReviewPage from './DriftReviewPage'
 import AdminAgentsPage from './AdminAgentsPage'
 
-const TABS = [
-  { id: 'scan-jobs', label: 'Scan Jobs' },
-  { id: 'scan-retention', label: 'Scan Retention' },
-  { id: 'topology-hints', label: 'Topology Hints' },
-  { id: 'conflicts', label: 'Conflicts' },
-  { id: 'drift', label: 'Drift' },
-  { id: 'scan-agents', label: 'Scan Agents' },
-]
-
 export default function DiscoveryPage() {
+  const { t } = useTranslation()
+  const TABS = [
+    { id: 'scan-jobs', label: t('discovery.scanJobsTab') },
+    { id: 'scan-retention', label: t('discovery.scanRetentionTab') },
+    { id: 'topology-hints', label: t('discovery.topologyHintsTab') },
+    { id: 'conflicts', label: t('discovery.conflictsTab') },
+    { id: 'drift', label: t('discovery.driftTab') },
+    { id: 'scan-agents', label: t('discovery.scanAgentsTab') },
+  ]
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'scan-jobs'
 

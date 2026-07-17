@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getScanRetention, updateScanRetention, runScanRetentionPrune } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function ScanRetentionPage() {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pruning, setPruning] = useState(false)
@@ -25,9 +27,9 @@ export default function ScanRetentionPage() {
           rollupAfterDays: res.data.rollupAfterDays,
         })
       })
-      .catch(() => setError('Failed to load retention settings'))
+      .catch(() => setError(t('scanRetention.loadError')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   async function handleSave(e) {
     e.preventDefault()
@@ -38,35 +40,35 @@ export default function ScanRetentionPage() {
         rollup_enabled: form.rollupEnabled,
         rollup_after_days: form.rollupAfterDays,
       })
-      showMsg('Settings saved')
+      showMsg(t('scanRetention.settingsSaved'))
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save')
+      setError(err.response?.data?.error || t('scanRetention.saveError'))
     } finally {
       setSaving(false)
     }
   }
 
   async function handlePrune() {
-    if (!confirm('Run prune now? This will delete scan data older than the configured retention period.')) return
+    if (!confirm(t('scanRetention.pruneConfirm'))) return
     setPruning(true)
     try {
       const res = await runScanRetentionPrune()
-      showMsg(`Pruned ${res.data.pruned} records`)
+      showMsg(t('scanRetention.pruneSuccess', { count: res.data.pruned }))
     } catch {
-      setError('Prune failed')
+      setError(t('scanRetention.pruneError'))
     } finally {
       setPruning(false)
     }
   }
 
-  if (loading) return <PageSpinner message="Loading retention settings..." />
+  if (loading) return <PageSpinner message={t('scanRetention.loadingSettings')} />
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Scan Retention</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('scanRetention.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Control how long raw scan history is retained before automatic cleanup.
+          {t('scanRetention.subtitle')}
         </p>
       </div>
       <ErrorBanner error={error} onDismiss={() => setError(null)} />
@@ -79,7 +81,7 @@ export default function ScanRetentionPage() {
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Raw History Retention (days)
+              {t('scanRetention.rawHistoryRetentionDays')}
             </label>
             <input
               type="number" min="1" max="3650"
@@ -87,7 +89,7 @@ export default function ScanRetentionPage() {
               value={form.rawHistoryDays}
               onChange={e => setForm(f => ({ ...f, rawHistoryDays: parseInt(e.target.value) || 1 }))}
             />
-            <p className="text-xs text-gray-500 mt-1">Scan results and run history older than this will be deleted nightly.</p>
+            <p className="text-xs text-gray-500 mt-1">{t('scanRetention.rawHistoryHint')}</p>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -98,13 +100,13 @@ export default function ScanRetentionPage() {
               className="accent-blue-600"
             />
             <label htmlFor="rollupEnabled" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Enable rollup compression
+              {t('scanRetention.enableRollupCompression')}
             </label>
           </div>
           {form.rollupEnabled && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Rollup after (days)
+                {t('scanRetention.rollupAfterDays')}
               </label>
               <input
                 type="number" min="1"
@@ -116,10 +118,10 @@ export default function ScanRetentionPage() {
           )}
           <div className="flex items-center gap-3 pt-2">
             <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-              {saving ? 'Saving...' : 'Save Settings'}
+              {saving ? t('common.saving') : t('scanRetention.saveSettings')}
             </button>
             <button type="button" onClick={handlePrune} disabled={pruning} className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50">
-              {pruning ? 'Pruning...' : 'Run Prune Now'}
+              {pruning ? t('scanRetention.pruning') : t('scanRetention.runPruneNow')}
             </button>
           </div>
         </form>
