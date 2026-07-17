@@ -1177,5 +1177,17 @@
     "pairsFound_other": "{{count}} overlapping pairs found",
     "subnetA": "Subnet A",
     "subnetB": "Subnet B"
+  },
+  "duplicatesReport": {
+    "loadError": "Failed to load duplicates report",
+    "checking": "Checking for duplicates...",
+    "duplicateHostnamesTitle": "Duplicate Device Hostnames",
+    "foundCount": "{{count}} found",
+    "noDuplicateHostnames": "No duplicate hostnames found.",
+    "count": "Count",
+    "deviceIds": "Device IDs",
+    "conflictingIpsTitle": "Conflicting IP Assignments",
+    "noConflictingIps": "No conflicting IP assignments found.",
+    "assignedHostnames": "Assigned Hostnames"
   }
 }

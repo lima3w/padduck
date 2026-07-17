@@ -1,44 +1,46 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getDuplicates } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function DuplicatesPage() {
+  const { t } = useTranslation()
   const duplicatesQuery = useQuery({
     queryKey: ['reports', 'duplicates'],
     queryFn: () => getDuplicates().then(r => r.data),
   })
   const data = duplicatesQuery.data ?? null
   const loading = duplicatesQuery.isLoading
-  const error = duplicatesQuery.isError ? 'Failed to load duplicates report' : null
+  const error = duplicatesQuery.isError ? t('duplicatesReport.loadError') : null
 
-  if (loading) return <PageSpinner message="Checking for duplicates..." />
+  if (loading) return <PageSpinner message={t('duplicatesReport.checking')} />
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Duplicate Detection</h1>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('reports.duplicateDetectionTab')}</h1>
       <ErrorBanner error={error} />
 
       {/* Duplicate Hostnames */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
         <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4">
-          Duplicate Device Hostnames
+          {t('duplicatesReport.duplicateHostnamesTitle')}
           {data?.duplicateHostnames?.length > 0 && (
             <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-normal normal-case">
-              {data.duplicateHostnames.length} found
+              {t('duplicatesReport.foundCount', { count: data.duplicateHostnames.length })}
             </span>
           )}
         </h2>
         {!data?.duplicateHostnames?.length ? (
-          <p className="text-sm text-green-600 dark:text-green-400">No duplicate hostnames found.</p>
+          <p className="text-sm text-green-600 dark:text-green-400">{t('duplicatesReport.noDuplicateHostnames')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
               <tr>
-                <th className="pb-2 font-medium">Hostname</th>
-                <th className="pb-2 font-medium">Count</th>
-                <th className="pb-2 font-medium">Device IDs</th>
+                <th className="pb-2 font-medium">{t('dashboard.hostname')}</th>
+                <th className="pb-2 font-medium">{t('duplicatesReport.count')}</th>
+                <th className="pb-2 font-medium">{t('duplicatesReport.deviceIds')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -71,22 +73,22 @@ export default function DuplicatesPage() {
       {/* Conflicting IPs */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
         <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-4">
-          Conflicting IP Assignments
+          {t('duplicatesReport.conflictingIpsTitle')}
           {data?.conflictingIps?.length > 0 && (
             <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-normal normal-case">
-              {data.conflictingIps.length} found
+              {t('duplicatesReport.foundCount', { count: data.conflictingIps.length })}
             </span>
           )}
         </h2>
         {!data?.conflictingIps?.length ? (
-          <p className="text-sm text-green-600 dark:text-green-400">No conflicting IP assignments found.</p>
+          <p className="text-sm text-green-600 dark:text-green-400">{t('duplicatesReport.noConflictingIps')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-left text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
               <tr>
-                <th className="pb-2 font-medium">IP Address</th>
-                <th className="pb-2 font-medium">Subnet</th>
-                <th className="pb-2 font-medium">Assigned Hostnames</th>
+                <th className="pb-2 font-medium">{t('associateIp.ipAddress')}</th>
+                <th className="pb-2 font-medium">{t('dashboard.subnet')}</th>
+                <th className="pb-2 font-medium">{t('duplicatesReport.assignedHostnames')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
