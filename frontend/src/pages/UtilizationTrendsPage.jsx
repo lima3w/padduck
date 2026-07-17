@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 
@@ -26,6 +27,7 @@ function PctBar({ pct }) {
 }
 
 export default function UtilizationTrendsPage() {
+  const { t } = useTranslation()
   const [sortKey, setSortKey] = useState('currentPct')
   const [sortDir, setSortDir] = useState('desc')
 
@@ -36,7 +38,7 @@ export default function UtilizationTrendsPage() {
   })
   const rows = trendsQuery.data ?? []
   const loading = trendsQuery.isLoading
-  const error = trendsQuery.isError ? 'Failed to load utilization trends' : ''
+  const error = trendsQuery.isError ? t('utilizationTrends.loadError') : ''
   const load = () => trendsQuery.refetch()
 
   function toggleSort(key) {
@@ -66,17 +68,17 @@ export default function UtilizationTrendsPage() {
     )
   }
 
-  if (loading) return <p className="text-gray-500">Loading utilization trends...</p>
+  if (loading) return <p className="text-gray-500">{t('utilizationTrends.loading')}</p>
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Utilization Trends</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Subnet utilization compared to 7 days ago</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('reports.utilizationTrendsTab')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('utilizationTrends.subtitle')}</p>
         </div>
         <button onClick={load} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-          Refresh
+          {t('dashboard.refresh')}
         </button>
       </div>
 
@@ -87,17 +89,17 @@ export default function UtilizationTrendsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Subnet</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
-              <SortHeader col="currentPct" label="Current %" />
-              <SortHeader col="weekAgoPct" label="Week Ago %" />
-              <SortHeader col="deltaPct" label="Delta" />
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.subnet')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
+              <SortHeader col="currentPct" label={t('utilizationTrends.currentPct')} />
+              <SortHeader col="weekAgoPct" label={t('utilizationTrends.weekAgoPct')} />
+              <SortHeader col="deltaPct" label={t('utilizationTrends.delta')} />
             </tr>
           </thead>
           <tbody>
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">No trend data available</td>
+                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t('utilizationTrends.noTrendData')}</td>
               </tr>
             )}
             {sorted.map((row) => (

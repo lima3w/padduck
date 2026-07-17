@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
 import { downloadFile } from '../utils/download'
@@ -24,6 +25,7 @@ const SORT_KEYS = {
 }
 
 export default function InactiveIPsPage() {
+  const { t } = useTranslation()
   const [days, setDays] = useState(90)
   const [sectionId, setSectionId] = useState('')
   const [networks, setSections] = useState([])
@@ -36,6 +38,7 @@ export default function InactiveIPsPage() {
   const [confirmRelease, setConfirmRelease] = useState(false)
   const [releasing, setReleasing] = useState(false)
   const [releaseMsg, setReleaseMsg] = useState('')
+  const [releaseSuccess, setReleaseSuccess] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
   useEffect(() => { loadSections() }, [])
@@ -57,11 +60,11 @@ export default function InactiveIPsPage() {
       const { data } = await api.get('/admin/reports/inactive-ips', { params })
       setRows(Array.isArray(data) ? data : (data?.inactive ?? []))
     } catch {
-      setError('Failed to load inactive IPs')
+      setError(t('inactiveIps.loadError'))
     } finally {
       setLoading(false)
     }
-  }, [days, sectionId])
+  }, [days, sectionId, t])
 
   useEffect(() => { load() }, [load])
 
@@ -96,12 +99,14 @@ export default function InactiveIPsPage() {
     setReleaseMsg('')
     try {
       await api.post('/admin/ip-addresses/bulk-release', { ip_ids: selected })
-      setReleaseMsg(`Successfully released ${selected.length} IP address(es).`)
+      setReleaseMsg(t('inactiveIps.releaseSuccess', { count: selected.length }))
+      setReleaseSuccess(true)
       setConfirmRelease(false)
       setSelected([])
       load()
     } catch (err) {
-      setReleaseMsg(err.response?.data?.error || 'Failed to release IPs')
+      setReleaseMsg(err.response?.data?.error || t('inactiveIps.releaseError'))
+      setReleaseSuccess(false)
     } finally {
       setReleasing(false)
     }
@@ -114,7 +119,7 @@ export default function InactiveIPsPage() {
       if (sectionId) params.set('network_id', sectionId)
       await downloadFile(`/api/v1/admin/reports/export/inactive-ips?${params}`, `inactive-ips-${days}d.csv`)
     } catch {
-      setError('Export failed')
+      setError(t('inactiveIps.exportError'))
     } finally {
       setDownloading(false)
     }
@@ -136,8 +141,8 @@ export default function InactiveIPsPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Inactive IPs</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">IP addresses that have been inactive for the selected period</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('reports.inactiveIpsTab')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('inactiveIps.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -145,14 +150,14 @@ export default function InactiveIPsPage() {
             disabled={downloading}
             className="px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 disabled:opacity-50"
           >
-            {downloading ? 'Exporting...' : 'Export CSV'}
+            {downloading ? t('networks.exporting') : t('networks.exportCsv')}
           </button>
           {selected.length > 0 && (
             <button
               onClick={() => setConfirmRelease(true)}
               className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
             >
-              Release Selected ({selected.length})
+              {t('inactiveIps.releaseSelected', { count: selected.length })}
             </button>
           )}
         </div>
@@ -161,7 +166,7 @@ export default function InactiveIPsPage() {
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4 flex flex-wrap gap-4 items-center">
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Inactive for at least</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('inactiveIps.inactiveForAtLeast')}</label>
           <div className="flex gap-1">
             {DAYS_OPTIONS.map(d => (
               <button
@@ -175,13 +180,13 @@ export default function InactiveIPsPage() {
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Network</label>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('subnets.network')}</label>
           <select
             value={sectionId}
             onChange={e => setSectionId(e.target.value)}
             className="border rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           >
-            <option value="">All Networks</option>
+            <option value="">{t('inactiveIps.allNetworks')}</option>
             {networks.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
@@ -189,16 +194,16 @@ export default function InactiveIPsPage() {
 
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
       {releaseMsg && (
-        <div className={`mb-4 px-4 py-2 rounded text-sm ${releaseMsg.startsWith('Successfully') ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+        <div className={`mb-4 px-4 py-2 rounded text-sm ${releaseSuccess ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
           {releaseMsg}
         </div>
       )}
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading...</p>
+        <p className="text-gray-500 text-sm">{t('inactiveIps.loading')}</p>
       ) : (
         <>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{rows.length} inactive IP{rows.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t('inactiveIps.inactiveIpsCount', { count: rows.length })}</p>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -212,19 +217,19 @@ export default function InactiveIPsPage() {
                       className="w-4 h-4"
                     />
                   </th>
-                  <SortTh col="ipAddress" label="IP Address" />
-                  <SortTh col="hostname" label="Hostname" />
-                  <SortTh col="subnetCidr" label="Subnet" />
-                  <SortTh col="sectionName" label="Network" />
-                  <SortTh col="assignedTo" label="Assigned To" />
-                  <SortTh col="lastSeen" label="Last Seen" />
-                  <SortTh col="daysInactive" label="Days Inactive" />
+                  <SortTh col="ipAddress" label={t('associateIp.ipAddress')} />
+                  <SortTh col="hostname" label={t('dashboard.hostname')} />
+                  <SortTh col="subnetCidr" label={t('dashboard.subnet')} />
+                  <SortTh col="sectionName" label={t('subnets.network')} />
+                  <SortTh col="assignedTo" label={t('inactiveIps.assignedTo')} />
+                  <SortTh col="lastSeen" label={t('reconciliation.lastSeen')} />
+                  <SortTh col="daysInactive" label={t('reconciliation.daysInactive')} />
                 </tr>
               </thead>
               <tbody>
                 {sorted.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-400">No inactive IPs found for this period</td>
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-400">{t('inactiveIps.noInactiveIpsFound')}</td>
                   </tr>
                 )}
                 {sorted.map(row => (
@@ -243,7 +248,7 @@ export default function InactiveIPsPage() {
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{row.sectionName || '—'}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{row.assignedTo || '—'}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">
-                      {row.lastSeen ? new Date(row.lastSeen).toLocaleDateString() : 'Never'}
+                      {row.lastSeen ? new Date(row.lastSeen).toLocaleDateString() : t('reconciliation.never')}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`font-medium ${row.daysInactive > 90 ? 'text-red-600' : row.daysInactive > 30 ? 'text-yellow-600' : 'text-gray-600 dark:text-gray-400'}`}>
@@ -260,22 +265,22 @@ export default function InactiveIPsPage() {
       )}
 
       {confirmRelease && (
-        <Modal title="Confirm Bulk Release" onClose={() => setConfirmRelease(false)}>
+        <Modal title={t('inactiveIps.confirmBulkReleaseTitle')} onClose={() => setConfirmRelease(false)}>
           <div className="space-y-4">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Are you sure you want to release <strong>{selected.length}</strong> IP address(es)? This will mark them as available.
+              {t('inactiveIps.confirmReleasePrefix')}<strong>{selected.length}</strong>{t('inactiveIps.confirmReleaseSuffix')}
             </p>
-            {releaseMsg && !releaseMsg.startsWith('Successfully') && (
+            {releaseMsg && !releaseSuccess && (
               <p className="text-red-600 text-sm">{releaseMsg}</p>
             )}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setConfirmRelease(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button onClick={() => setConfirmRelease(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button
                 onClick={handleRelease}
                 disabled={releasing}
                 className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
               >
-                {releasing ? 'Releasing...' : 'Release'}
+                {releasing ? t('inactiveIps.releasing') : t('inactiveIps.release')}
               </button>
             </div>
           </div>

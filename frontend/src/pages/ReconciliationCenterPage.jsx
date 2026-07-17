@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { getReconciliationReport } from '../api/admin'
 
 function Panel({ title, count, children }) {
+  const { t } = useTranslation()
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-4">
       <div className="px-4 py-3 border-b dark:border-gray-700 flex items-center justify-between">
@@ -11,7 +13,7 @@ function Panel({ title, count, children }) {
             count > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
           }`}
         >
-          {count > 0 ? `${count} issue${count !== 1 ? 's' : ''}` : 'Clean'}
+          {count > 0 ? t('reconciliation.issuesCount', { count }) : t('reconciliation.clean')}
         </span>
       </div>
       {children}
@@ -20,16 +22,18 @@ function Panel({ title, count, children }) {
 }
 
 function EmptyState() {
+  const { t } = useTranslation()
   return (
     <p className="px-4 py-6 text-center text-sm text-green-600 dark:text-green-400">
-      No issues found
+      {t('reconciliation.noIssuesFound')}
     </p>
   )
 }
 
 function StaleIPsPanel({ items }) {
+  const { t } = useTranslation()
   return (
-    <Panel title="Stale IP Assignments" count={items.length}>
+    <Panel title={t('reconciliation.staleIpAssignments')} count={items.length}>
       {items.length === 0 ? (
         <EmptyState />
       ) : (
@@ -37,11 +41,11 @@ function StaleIPsPanel({ items }) {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">IP Address</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Hostname</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Subnet</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Last Seen</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Days Inactive</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('associateIp.ipAddress')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('dashboard.hostname')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('dashboard.subnet')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('reconciliation.lastSeen')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('reconciliation.daysInactive')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -51,7 +55,7 @@ function StaleIPsPanel({ items }) {
                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{ip.hostname || '—'}</td>
                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{ip.subnetCidr}</td>
                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">
-                    {ip.lastSeen ? new Date(ip.lastSeen).toLocaleDateString() : 'Never'}
+                    {ip.lastSeen ? new Date(ip.lastSeen).toLocaleDateString() : t('reconciliation.never')}
                   </td>
                   <td className="px-4 py-2 text-red-600 dark:text-red-400 font-medium">{ip.daysInactive}</td>
                 </tr>
@@ -65,8 +69,9 @@ function StaleIPsPanel({ items }) {
 }
 
 function DNSDriftPanel({ items }) {
+  const { t } = useTranslation()
   return (
-    <Panel title="DNS Drift" count={items.length}>
+    <Panel title={t('reconciliation.dnsDrift')} count={items.length}>
       {items.length === 0 ? (
         <EmptyState />
       ) : (
@@ -74,10 +79,10 @@ function DNSDriftPanel({ items }) {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">IP Address</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">DNS Name</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">PTR Record</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Last Checked</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('associateIp.ipAddress')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('myRequests.dnsName')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('reconciliation.ptrRecord')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('reconciliation.lastChecked')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -86,7 +91,7 @@ function DNSDriftPanel({ items }) {
                   <td className="px-4 py-2 font-mono text-gray-900 dark:text-gray-100">{entry.address}</td>
                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{entry.dnsName || '—'}</td>
                   <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{entry.ptrRecord || '—'}</td>
-                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{entry.dnsLastChecked || 'never'}</td>
+                  <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{entry.dnsLastChecked || t('reconciliation.neverLower')}</td>
                 </tr>
               ))}
             </tbody>
@@ -98,8 +103,9 @@ function DNSDriftPanel({ items }) {
 }
 
 function SubnetOverlapsPanel({ items }) {
+  const { t } = useTranslation()
   return (
-    <Panel title="Subnet Overlaps" count={items.length}>
+    <Panel title={t('reconciliation.subnetOverlaps')} count={items.length}>
       {items.length === 0 ? (
         <EmptyState />
       ) : (
@@ -107,10 +113,10 @@ function SubnetOverlapsPanel({ items }) {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Subnet A</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">CIDR A</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Subnet B</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">CIDR B</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('overlapReport.subnetA')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('reconciliation.cidrA')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('overlapReport.subnetB')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">{t('reconciliation.cidrB')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -139,6 +145,7 @@ function SubnetOverlapsPanel({ items }) {
 }
 
 export default function ReconciliationCenterPage() {
+  const { t } = useTranslation()
   const reportQuery = useQuery({
     queryKey: ['reports', 'reconciliation'],
     queryFn: () => getReconciliationReport().then(r => r.data),
@@ -146,20 +153,20 @@ export default function ReconciliationCenterPage() {
   const data = reportQuery.data ?? null
   const loading = reportQuery.isLoading
   const error = reportQuery.isError
-    ? (reportQuery.error?.response?.data?.error || 'Failed to load reconciliation data')
+    ? (reportQuery.error?.response?.data?.error || t('reconciliation.loadError'))
     : null
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reconciliation Center</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('reports.reconciliationCenterTab')}</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Operational drift across stale IP assignments, DNS records, and subnet overlaps.
+          {t('reconciliation.subtitle')}
         </p>
       </div>
 
       {loading && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('reconciliation.loading')}</p>
       )}
 
       {error && (

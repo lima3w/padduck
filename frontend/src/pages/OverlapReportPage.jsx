@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getOverlapReport } from '../api/admin'
 
 export default function OverlapReportPage() {
+  const { t } = useTranslation()
   const [overlaps, setOverlaps] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -13,43 +15,43 @@ export default function OverlapReportPage() {
         const res = await getOverlapReport()
         setOverlaps(res.data.overlaps || [])
       } catch {
-        setError('Failed to load overlap report')
+        setError(t('overlapReport.loadError'))
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [])
+  }, [t])
 
-  if (loading) return <p className="text-gray-500">Loading overlap report...</p>
+  if (loading) return <p className="text-gray-500">{t('overlapReport.loading')}</p>
 
   return (
     <div className="max-w-5xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subnet Overlap Report</h1>
-          <p className="text-sm text-gray-500 mt-1">All overlapping subnet pairs across the system</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('overlapReport.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('overlapReport.subtitle')}</p>
         </div>
-        <Link to="/admin/settings" className="text-sm text-blue-600 hover:underline">Back to Settings</Link>
+        <Link to="/admin/settings" className="text-sm text-blue-600 hover:underline">{t('overlapReport.backToSettings')}</Link>
       </div>
 
       {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
 
       {overlaps.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center text-gray-400">
-          <p className="text-lg font-medium text-green-600 mb-1">No overlaps detected</p>
-          <p className="text-sm">All subnets are properly separated.</p>
+          <p className="text-lg font-medium text-green-600 mb-1">{t('overlapReport.noOverlapsDetected')}</p>
+          <p className="text-sm">{t('overlapReport.allSubnetsSeparated')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-4 py-3 bg-red-50 border-b border-red-100 text-sm text-red-700 font-medium">
-            {overlaps.length} overlapping pair{overlaps.length !== 1 ? 's' : ''} found
+            {t('overlapReport.pairsFound', { count: overlaps.length })}
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-left px-4 py-3 text-gray-600 font-medium">Subnet A</th>
-                <th className="text-left px-4 py-3 text-gray-600 font-medium">Subnet B</th>
+                <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('overlapReport.subnetA')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('overlapReport.subnetB')}</th>
               </tr>
             </thead>
             <tbody>
