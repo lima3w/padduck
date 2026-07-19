@@ -1287,5 +1287,14 @@
     "retentionTab": "Retention",
     "exportTab": "Export",
     "tablistLabel": "Audit networks"
+  },
+  "privacyConsent": {
+    "acceptError": "Failed to record consent. Please try again.",
+    "title": "Privacy Policy",
+    "updatedNotice": "Our privacy policy has been updated to version {{version}}. Please review and accept it to continue.",
+    "acceptNotice": "Please accept our privacy policy (version {{version}}) to continue using this application.",
+    "agreementText": "By clicking \"Accept\", you agree to our privacy policy regarding the collection and use of your data within this IPAM system.",
+    "accepting": "Accepting…",
+    "acceptPrivacyPolicy": "Accept Privacy Policy"
   }
 }
