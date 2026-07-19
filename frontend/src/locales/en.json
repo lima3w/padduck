@@ -1424,5 +1424,10 @@
       "vlan_deleted": "VLAN Deleted",
       "audit_logs_purged": "Audit Logs Purged"
     }
+  },
+  "usersRoles": {
+    "usersTab": "Users",
+    "rolesTab": "Roles",
+    "presetsTab": "Permission Presets"
   }
 }
