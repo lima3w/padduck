@@ -1286,7 +1286,18 @@
     "logTab": "Audit Log",
     "retentionTab": "Retention",
     "exportTab": "Export",
-    "tablistLabel": "Audit networks"
+    "tablistLabel": "Audit networks",
+    "purgeConfirm": "Delete all audit log entries older than the configured retention period?",
+    "purgedDefault": "Audit logs purged",
+    "purgeFailedPrefix": "Purge failed: ",
+    "retentionTitle": "Audit Log Retention",
+    "retentionPeriodDays": "Retention Period (days)",
+    "retentionHint": "Audit logs older than this many days will be deleted when a purge is run. Default: 90 days.",
+    "purgeOldLogsTitle": "Purge Old Logs",
+    "purgeOldLogsSubtitle": "Permanently delete audit log entries older than the configured retention period.",
+    "purging": "Purging...",
+    "purgeOldLogs": "Purge Old Logs",
+    "viewAuditLog": "View Audit Log"
   },
   "privacyConsent": {
     "acceptError": "Failed to record consent. Please try again.",
