@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAdminRoles, listRolePresets, getRolePresetDiff } from '../api/admin'
 
 export default function RolePresetsPage() {
+  const { t } = useTranslation()
   const [presets, setPresets] = useState([])
   const [roles, setRoles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,13 +29,13 @@ export default function RolePresetsPage() {
         }
       })
       .catch(err => {
-        if (!cancelled) setError(err.response?.data?.message || err.message || 'Failed to load data.')
+        if (!cancelled) setError(err.response?.data?.message || err.message || t('rolePresets.loadDataFailed'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
     return () => { cancelled = true }
-  }, [])
+  }, [t])
 
   async function handleCompare() {
     if (!selectedRoleId || !selectedPresetId) return
@@ -44,7 +46,7 @@ export default function RolePresetsPage() {
       const res = await getRolePresetDiff(selectedRoleId, selectedPresetId)
       setDiff(res.data)
     } catch (err) {
-      setDiffError(err.response?.data?.message || err.message || 'Failed to load diff.')
+      setDiffError(err.response?.data?.message || err.message || t('rolePresets.loadDiffFailed'))
     } finally {
       setDiffLoading(false)
     }
@@ -52,7 +54,7 @@ export default function RolePresetsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+      <div className="p-6 text-sm text-gray-500 dark:text-gray-400">{t('reconciliation.loading')}</div>
     )
   }
 
@@ -64,12 +66,12 @@ export default function RolePresetsPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-10">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Permission Presets</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('usersRoles.presetsTab')}</h1>
 
       {/* Preset cards */}
       <network>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Built-in permission presets are read-only templates you can use as a baseline when configuring roles.
+          {t('rolePresets.subtitle')}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {presets.map(preset => (
@@ -98,15 +100,15 @@ export default function RolePresetsPage() {
 
       {/* Compare role with preset */}
       <network className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Compare Role with Preset</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('rolePresets.compareTitle')}</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Select a role and a preset to see which permissions would be added or removed if you applied the preset.
+          {t('rolePresets.compareSubtitle')}
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400" htmlFor="role-select">
-              Role
+              {t('rolePresets.role')}
             </label>
             <select
               id="role-select"
@@ -114,7 +116,7 @@ export default function RolePresetsPage() {
               onChange={e => { setSelectedRoleId(e.target.value); setDiff(null) }}
               className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">— select role —</option>
+              <option value="">{t('rolePresets.selectRolePlaceholder')}</option>
               {roles.map(r => (
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
@@ -123,7 +125,7 @@ export default function RolePresetsPage() {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600 dark:text-gray-400" htmlFor="preset-select">
-              Preset
+              {t('rolePresets.preset')}
             </label>
             <select
               id="preset-select"
@@ -131,7 +133,7 @@ export default function RolePresetsPage() {
               onChange={e => { setSelectedPresetId(e.target.value); setDiff(null) }}
               className="border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">— select preset —</option>
+              <option value="">{t('rolePresets.selectPresetPlaceholder')}</option>
               {presets.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -143,7 +145,7 @@ export default function RolePresetsPage() {
             disabled={!selectedRoleId || !selectedPresetId || diffLoading}
             className="px-4 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {diffLoading ? 'Comparing...' : 'Compare'}
+            {diffLoading ? t('rolePresets.comparing') : t('rolePresets.compare')}
           </button>
         </div>
 
@@ -154,14 +156,13 @@ export default function RolePresetsPage() {
         {diff && (
           <div className="mt-4 space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Comparing role <strong className="text-gray-900 dark:text-gray-100">{diff.role?.name}</strong> against
-              preset <strong className="text-gray-900 dark:text-gray-100">{diff.preset?.name}</strong>:
+              {t('rolePresets.comparingPrefix')}<strong className="text-gray-900 dark:text-gray-100">{diff.role?.name}</strong>{t('rolePresets.comparingMiddle')}<strong className="text-gray-900 dark:text-gray-100">{diff.preset?.name}</strong>{t('rolePresets.comparingSuffix')}
             </p>
 
             {diff.added?.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-green-700 dark:text-green-400 mb-1">
-                  Added ({diff.added.length}) — in preset, not in role
+                  {t('rolePresets.addedHeading', { count: diff.added.length })}
                 </h3>
                 <div className="flex flex-wrap gap-1">
                   {diff.added.map(p => (
@@ -179,7 +180,7 @@ export default function RolePresetsPage() {
             {diff.removed?.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">
-                  Removed ({diff.removed.length}) — in role, not in preset
+                  {t('rolePresets.removedHeading', { count: diff.removed.length })}
                 </h3>
                 <div className="flex flex-wrap gap-1">
                   {diff.removed.map(p => (
@@ -197,7 +198,7 @@ export default function RolePresetsPage() {
             {diff.unchanged?.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                  Unchanged ({diff.unchanged.length}) — in both role and preset
+                  {t('rolePresets.unchangedHeading', { count: diff.unchanged.length })}
                 </h3>
                 <div className="flex flex-wrap gap-1">
                   {diff.unchanged.map(p => (
@@ -214,7 +215,7 @@ export default function RolePresetsPage() {
 
             {diff.added?.length === 0 && diff.removed?.length === 0 && (
               <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                The role already matches this preset exactly.
+                {t('rolePresets.matchesExactly')}
               </p>
             )}
           </div>

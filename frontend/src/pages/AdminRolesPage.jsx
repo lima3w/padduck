@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getAdminRoles, createRole, updateRole, deleteRole, addPermissionToRole, removePermissionFromRole, listAvailablePermissions } from '../api/admin'
 
@@ -6,6 +7,7 @@ import { getAdminRoles, createRole, updateRole, deleteRole, addPermissionToRole,
 // RolePermission: ID, RoleID, Permission, ResourceType (*string), ResourceID (*int64), CreatedAt
 
 export default function AdminRolesPage() {
+  const { t } = useTranslation()
   const [roles, setRoles] = useState([])
   const [allPerms, setAllPerms] = useState([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +36,7 @@ export default function AdminRolesPage() {
       const res = await getAdminRoles()
       setRoles(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load roles.')
+      setError(err.response?.data?.error || t('adminRoles.loadRolesFailed'))
     } finally {
       setLoading(false)
     }
@@ -73,10 +75,10 @@ export default function AdminRolesPage() {
       const payload = { name: roleForm.Name.trim(), description: roleForm.Description.trim() }
       if (roleModal === 'create') {
         await createRole(payload)
-        showMessage('Role created.')
+        showMessage(t('adminRoles.created'))
       } else {
         await updateRole(roleModal.edit.ID, payload)
-        showMessage('Role updated.')
+        showMessage(t('adminRoles.updated'))
         if (editPermsFor?.ID === roleModal.edit.ID) {
           setEditPermsFor((prev) => ({ ...prev, Name: roleForm.Name.trim(), Description: roleForm.Description.trim() }))
         }
@@ -84,7 +86,7 @@ export default function AdminRolesPage() {
       closeRoleModal()
       await loadRoles()
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to save role.', 'error')
+      showMessage(err.response?.data?.error || t('adminRoles.saveFailed'), 'error')
     } finally {
       setRoleSaving(false)
     }
@@ -95,10 +97,10 @@ export default function AdminRolesPage() {
       await deleteRole(role.ID)
       setDeleteConfirm(null)
       if (editPermsFor?.ID === role.ID) setEditPermsFor(null)
-      showMessage('Role deleted.')
+      showMessage(t('adminRoles.deleted'))
       await loadRoles()
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to delete role.', 'error')
+      showMessage(err.response?.data?.error || t('adminRoles.deleteFailed'), 'error')
     }
   }
 
@@ -122,7 +124,7 @@ export default function AdminRolesPage() {
         )
       )
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to add permission.', 'error')
+      showMessage(err.response?.data?.error || t('adminRoles.addPermFailed'), 'error')
     } finally {
       setAddingPerm(null)
     }
@@ -143,7 +145,7 @@ export default function AdminRolesPage() {
         )
       )
     } catch (err) {
-      showMessage(err.response?.data?.error || 'Failed to remove permission.', 'error')
+      showMessage(err.response?.data?.error || t('adminRoles.removePermFailed'), 'error')
     }
   }
 
@@ -157,12 +159,12 @@ export default function AdminRolesPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Role Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('adminRoles.title')}</h1>
         <button
           onClick={openCreate}
           className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition"
         >
-          + Create Role
+          {t('adminRoles.createRole')}
         </button>
       </div>
 
@@ -173,7 +175,7 @@ export default function AdminRolesPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{t('common.loading')}</p>
       ) : error ? (
         <p className="text-sm text-red-600">{error}</p>
       ) : (
@@ -186,11 +188,11 @@ export default function AdminRolesPage() {
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{role.Name}</span>
                     {role.IsSystem && (
                       <span className="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded">
-                        system
+                        {t('adminRoles.systemBadge')}
                       </span>
                     )}
                     <span className="text-xs text-gray-500">
-                      {(role.Permissions || []).length} permission{(role.Permissions || []).length !== 1 ? 's' : ''}
+                      {t('adminRoles.permissionsCount', { count: (role.Permissions || []).length })}
                     </span>
                   </div>
                   {role.Description && (
@@ -204,7 +206,7 @@ export default function AdminRolesPage() {
                         </span>
                       ))}
                       {(role.Permissions || []).length > 8 && (
-                        <span className="text-xs text-gray-400">+{(role.Permissions || []).length - 8} more</span>
+                        <span className="text-xs text-gray-400">{t('adminRoles.moreCount', { count: (role.Permissions || []).length - 8 })}</span>
                       )}
                     </div>
                   )}
@@ -214,7 +216,7 @@ export default function AdminRolesPage() {
                     onClick={() => openPermEditor(role)}
                     className="text-xs text-blue-600 border border-blue-200 px-2.5 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition"
                   >
-                    Permissions
+                    {t('adminRoles.permissionsButton')}
                   </button>
                   {!role.IsSystem && (
                     <>
@@ -222,13 +224,13 @@ export default function AdminRolesPage() {
                         onClick={() => openEdit(role)}
                         className="text-xs text-gray-600 border border-gray-200 px-2.5 py-1 rounded hover:bg-gray-50 transition"
                       >
-                        Edit
+                        {t('common.edit')}
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(role)}
                         className="text-xs text-red-600 border border-red-200 px-2.5 py-1 rounded hover:bg-red-50 transition"
                       >
-                        Delete
+                        {t('common.delete')}
                       </button>
                     </>
                   )}
@@ -238,7 +240,7 @@ export default function AdminRolesPage() {
           ))}
 
           {roles.length === 0 && (
-            <div className="text-center py-12 text-gray-500">No roles found.</div>
+            <div className="text-center py-12 text-gray-500">{t('adminRoles.noRolesFound')}</div>
           )}
         </div>
       )}
@@ -246,42 +248,42 @@ export default function AdminRolesPage() {
       {/* Role create/edit modal */}
       {roleModal && (
         <Modal
-          title={roleModal === 'create' ? 'Create Role' : 'Edit Role'}
+          title={roleModal === 'create' ? t('adminRoles.createRoleModalTitle') : t('adminRoles.editRoleModalTitle')}
           onClose={closeRoleModal}
         >
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={roleForm.Name}
                 onChange={(e) => setRoleForm((p) => ({ ...p, Name: e.target.value }))}
                 className={inputClass}
-                placeholder="e.g. network-reader"
+                placeholder={t('adminRoles.namePlaceholder')}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description
+                {t('common.description')}
               </label>
               <input
                 type="text"
                 value={roleForm.Description}
                 onChange={(e) => setRoleForm((p) => ({ ...p, Description: e.target.value }))}
                 className={inputClass}
-                placeholder="Optional description"
+                placeholder={t('adminRoles.descriptionPlaceholder')}
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={closeRoleModal} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={closeRoleModal} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">{t('common.cancel')}</button>
               <button
                 onClick={handleSaveRole}
                 disabled={roleSaving || !roleForm.Name.trim()}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition"
               >
-                {roleSaving ? 'Saving…' : roleModal === 'create' ? 'Create' : 'Save'}
+                {roleSaving ? t('common.saving') : roleModal === 'create' ? t('vrfs.create') : t('common.save')}
               </button>
             </div>
           </div>
@@ -290,13 +292,13 @@ export default function AdminRolesPage() {
 
       {/* Delete confirmation */}
       {deleteConfirm && (
-        <Modal title="Delete Role" onClose={() => setDeleteConfirm(null)}>
+        <Modal title={t('adminRoles.deleteRoleModalTitle')} onClose={() => setDeleteConfirm(null)}>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            Delete role <strong>{deleteConfirm.Name}</strong>? This cannot be undone and will remove it from all assigned users.
+            {t('adminRoles.confirmDeletePrefix')}<strong>{deleteConfirm.Name}</strong>{t('adminRoles.confirmDeleteSuffix')}
           </p>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">Cancel</button>
-            <button onClick={() => handleDeleteRole(deleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition">Delete</button>
+            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">{t('common.cancel')}</button>
+            <button onClick={() => handleDeleteRole(deleteConfirm)} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition">{t('common.delete')}</button>
           </div>
         </Modal>
       )}
@@ -304,15 +306,15 @@ export default function AdminRolesPage() {
       {/* Permission editor panel */}
       {editPermsFor && (
         <Modal
-          title={`Permissions — ${editPermsFor.Name}`}
+          title={`${t('adminRoles.permissionsModalTitlePrefix')}${editPermsFor.Name}`}
           onClose={() => setEditPermsFor(null)}
         >
           <div className="space-y-4 min-h-[300px]">
             {/* Current permissions */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assigned</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('adminRoles.assignedLabel')}</p>
               {(editPermsFor.Permissions || []).length === 0 ? (
-                <p className="text-sm text-gray-400">No permissions assigned.</p>
+                <p className="text-sm text-gray-400">{t('adminRoles.noPermissionsAssigned')}</p>
               ) : (
                 <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
                   {(editPermsFor.Permissions || []).map((p) => (
@@ -322,7 +324,7 @@ export default function AdminRolesPage() {
                         <button
                           onClick={() => handleRemovePerm(p)}
                           className="text-blue-400 hover:text-red-500 ml-0.5 leading-none"
-                          title="Remove"
+                          title={t('adminRoles.removeTitle')}
                         >
                           ×
                         </button>
@@ -336,17 +338,17 @@ export default function AdminRolesPage() {
             {/* Add permissions */}
             {!editPermsFor.IsSystem && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Add Permission</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('adminRoles.addPermissionLabel')}</p>
                 <input
                   type="text"
                   value={permFilter}
                   onChange={(e) => setPermFilter(e.target.value)}
                   className={inputClass}
-                  placeholder="Filter permissions…"
+                  placeholder={t('adminRoles.filterPermissionsPlaceholder')}
                 />
                 <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded divide-y divide-gray-100 dark:divide-gray-700">
                   {filteredAvail.length === 0 ? (
-                    <p className="text-xs text-gray-400 p-3">{permFilter ? 'No matches.' : 'All permissions assigned.'}</p>
+                    <p className="text-xs text-gray-400 p-3">{permFilter ? t('adminRoles.noMatchesPeriod') : t('adminRoles.allPermissionsAssigned')}</p>
                   ) : (
                     filteredAvail.map((p) => (
                       <div key={p} className="flex items-center justify-between px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -356,7 +358,7 @@ export default function AdminRolesPage() {
                           disabled={addingPerm === p}
                           className="text-xs text-blue-600 hover:underline disabled:opacity-50"
                         >
-                          {addingPerm === p ? '…' : 'Add'}
+                          {addingPerm === p ? '…' : t('adminRoles.add')}
                         </button>
                       </div>
                     ))
@@ -366,7 +368,7 @@ export default function AdminRolesPage() {
             )}
 
             <div className="flex justify-end pt-2">
-              <button onClick={() => setEditPermsFor(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">Close</button>
+              <button onClick={() => setEditPermsFor(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition">{t('myRequests.close')}</button>
             </div>
           </div>
         </Modal>

@@ -1,15 +1,16 @@
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import AdminUsersPage from './AdminUsersPage'
 import AdminRolesPage from './AdminRolesPage'
 import RolePresetsPage from './RolePresetsPage'
 
-const TABS = [
-  { id: 'users', label: 'Users' },
-  { id: 'roles', label: 'Roles' },
-  { id: 'presets', label: 'Permission Presets' },
-]
-
 export default function UsersRolesPage() {
+  const { t } = useTranslation()
+  const TABS = [
+    { id: 'users', label: t('usersRoles.usersTab') },
+    { id: 'roles', label: t('usersRoles.rolesTab') },
+    { id: 'presets', label: t('usersRoles.presetsTab') },
+  ]
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'users'
 

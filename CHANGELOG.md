@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.14
+
+### Added
+- **i18n batch 12/15: admin users/roles pages** (issue #35): converted `UsersRolesPage`, `RolePresetsPage`, and `AdminRolesPage` to `t()` calls. `AdminUsersPage.jsx` (1148 lines) is deferred alongside the other large-file follow-ups.
+
 ## v1.34.13
 
 ### Added
