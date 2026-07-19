@@ -1662,5 +1662,17 @@
     "viewRelease": "View release",
     "checking": "Checking...",
     "checkNow": "Check Now"
+  },
+  "scannerTab": {
+    "title": "Discovery Scanner",
+    "resolveHostnames": "Resolve hostnames via reverse DNS",
+    "resolveHostnamesHint": "After a successful ping, the scanner performs a PTR lookup and stores the result in the IP address record. A forward lookup is also done to flag mismatches. Adds up to 2 s per alive host. Default: enabled.",
+    "snmpTitle": "SNMP",
+    "globalCommunityString": "Global community string",
+    "hideCommunityString": "Hide community string",
+    "showCommunityString": "Show community string",
+    "communityStringHint": "Used when no per-device community is configured. Default: public.",
+    "snmpVersion": "SNMP version",
+    "snmpVersionHint": "Global default version. Per-device credentials override this."
   }
 }

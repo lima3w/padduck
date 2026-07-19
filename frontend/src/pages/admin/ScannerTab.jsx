@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { revealAdminConfigValue } from '../../api/admin'
 
 export default function ScannerTab({ config, handleConfigChange }) {
+  const { t } = useTranslation()
   const [showSnmpCommunity, setShowSnmpCommunity] = useState(false)
   const [revealedCommunity, setRevealedCommunity] = useState(null)
 
@@ -35,7 +37,7 @@ export default function ScannerTab({ config, handleConfigChange }) {
   return (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Discovery Scanner</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('scannerTab.title')}</h2>
             <div className="space-y-4">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
@@ -47,11 +49,9 @@ export default function ScannerTab({ config, handleConfigChange }) {
                   className="w-4 h-4 text-blue-600"
                 />
                 <div>
-                  <span className="font-medium text-gray-900">Resolve hostnames via reverse DNS</span>
+                  <span className="font-medium text-gray-900">{t('scannerTab.resolveHostnames')}</span>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    After a successful ping, the scanner performs a PTR lookup and stores the result in the
-                    IP address record. A forward lookup is also done to flag mismatches. Adds up to 2 s per
-                    alive host. Default: enabled.
+                    {t('scannerTab.resolveHostnamesHint')}
                   </p>
                 </div>
               </label>
@@ -59,10 +59,10 @@ export default function ScannerTab({ config, handleConfigChange }) {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-base font-semibold mb-4">SNMP</h3>
+            <h3 className="text-base font-semibold mb-4">{t('scannerTab.snmpTitle')}</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Global community string</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('scannerTab.globalCommunityString')}</label>
                 <div className="relative">
                   <input
                     type={showSnmpCommunity ? 'text' : 'password'}
@@ -75,7 +75,7 @@ export default function ScannerTab({ config, handleConfigChange }) {
                     type="button"
                     onClick={toggleReveal}
                     className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
-                    aria-label={showSnmpCommunity ? 'Hide community string' : 'Show community string'}
+                    aria-label={showSnmpCommunity ? t('scannerTab.hideCommunityString') : t('scannerTab.showCommunityString')}
                   >
                     {showSnmpCommunity ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" /></svg>
@@ -84,10 +84,10 @@ export default function ScannerTab({ config, handleConfigChange }) {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Used when no per-device community is configured. Default: public.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('scannerTab.communityStringHint')}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SNMP version</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('scannerTab.snmpVersion')}</label>
                 <select
                   value={config.scanner_snmp_version ?? '2c'}
                   onChange={(e) => handleConfigChange('scanner_snmp_version', e.target.value)}
@@ -96,7 +96,7 @@ export default function ScannerTab({ config, handleConfigChange }) {
                   <option value="2c">v2c</option>
                   <option value="3">v3</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Global default version. Per-device credentials override this.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('scannerTab.snmpVersionHint')}</p>
               </div>
             </div>
           </div>
