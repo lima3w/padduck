@@ -1674,5 +1674,17 @@
     "communityStringHint": "Used when no per-device community is configured. Default: public.",
     "snmpVersion": "SNMP version",
     "snmpVersionHint": "Global default version. Per-device credentials override this."
+  },
+  "smtpTab": {
+    "enterEmailError": "Enter an email address to send test to",
+    "testEmailSentPrefix": "Test email sent to ",
+    "testFailedPrefix": "SMTP test failed: ",
+    "title": "SMTP Configuration",
+    "smtpHost": "SMTP Host",
+    "port": "Port",
+    "password": "Password",
+    "fromAddress": "From Address",
+    "useTls": "Use TLS",
+    "sendTestEmail": "Send Test Email"
   }
 }
