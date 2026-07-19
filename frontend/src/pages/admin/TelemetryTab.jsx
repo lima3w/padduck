@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { sendTelemetryNow } from '../../api/admin'
 
 export default function TelemetryTab({ config, handleConfigChange, handleSaveConfig, saving, showMessage }) {
+  const { t } = useTranslation()
   const [sending, setSending] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
@@ -9,9 +11,9 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
     setSending(true)
     try {
       await sendTelemetryNow()
-      showMessage('Telemetry snapshot sent successfully')
+      showMessage(t('telemetryTab.sentSuccess'))
     } catch (err) {
-      showMessage('Send failed: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('telemetryTab.sendFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setSending(false)
     }
@@ -22,11 +24,9 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
   return (
     <div className="space-y-4">
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-1">Telemetry</h2>
+        <h2 className="text-lg font-semibold mb-1">{t('telemetryTab.title')}</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Padduck can send periodic usage snapshots to a PocketBase instance you control.
-          No data leaves your infrastructure without your configuration — the destination URL and token
-          are set below and are never shared with third parties.
+          {t('telemetryTab.subtitle')}
         </p>
 
         <label className="flex items-center gap-3 mb-4 cursor-pointer">
@@ -37,8 +37,8 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
             className="w-4 h-4 text-blue-600 rounded"
           />
           <span className="text-sm text-gray-700">
-            <strong>Enable telemetry</strong>
-            <span className="block text-gray-500">Send usage snapshots on the configured schedule.</span>
+            <strong>{t('telemetryTab.enableTelemetry')}</strong>
+            <span className="block text-gray-500">{t('telemetryTab.enableTelemetryHint')}</span>
           </span>
         </label>
 
@@ -48,21 +48,21 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
             onClick={() => setDetailsOpen((o) => !o)}
             className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 text-sm font-medium text-gray-700 transition"
           >
-            <span>What is collected?</span>
+            <span>{t('telemetryTab.whatIsCollected')}</span>
             <span className="text-gray-400">{detailsOpen ? '▲' : '▼'}</span>
           </button>
           {detailsOpen && (
             <div className="px-4 py-3 text-sm text-gray-600 space-y-2 border-t border-gray-100">
               <ul className="list-disc list-inside space-y-1">
-                <li>Object counts: subnets, IP addresses, VLANs, devices, users (no names or IPs)</li>
-                <li>Active user counts over 7 and 30 days (count only)</li>
-                <li>Subnet utilization percentiles and threshold bucket counts (no addresses or hostnames)</li>
-                <li>Feature flag states (enabled/disabled per feature)</li>
-                <li>Version and instance identifier</li>
-                <li>Locale fields you configure below (UI locale, timezone, country/region codes)</li>
+                <li>{t('telemetryTab.collectedObjectCounts')}</li>
+                <li>{t('telemetryTab.collectedActiveUsers')}</li>
+                <li>{t('telemetryTab.collectedUtilization')}</li>
+                <li>{t('telemetryTab.collectedFeatureFlags')}</li>
+                <li>{t('telemetryTab.collectedVersion')}</li>
+                <li>{t('telemetryTab.collectedLocale')}</li>
               </ul>
               <p className="text-gray-500 text-xs mt-2">
-                No IP addresses, hostnames, user names, or any personally identifiable information is ever included.
+                {t('telemetryTab.noPiiNotice')}
               </p>
             </div>
           )}
@@ -70,64 +70,64 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-1">Schedule &amp; Deployment</h2>
+        <h2 className="text-lg font-semibold mb-1">{t('telemetryTab.scheduleDeploymentTitle')}</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Snapshots are sent to <span className="font-mono text-xs">base.lima3.dev</span>.
+          {t('telemetryTab.snapshotsSentToPrefix')}<span className="font-mono text-xs">base.lima3.dev</span>{t('telemetryTab.snapshotsSentToSuffix')}
         </p>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Snapshot Period</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.snapshotPeriod')}</label>
           <select
             value={config.telemetry_snapshot_period || 'daily'}
             onChange={(e) => handleConfigChange('telemetry_snapshot_period', e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
+            <option value="daily">{t('telemetryTab.daily')}</option>
+            <option value="weekly">{t('telemetryTab.weekly')}</option>
           </select>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deployment Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.deploymentType')}</label>
             <select
               value={config.telemetry_deployment_type || ''}
               onChange={(e) => handleConfigChange('telemetry_deployment_type', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
             >
-              <option value="">Unknown</option>
-              <option value="docker">Docker</option>
-              <option value="docker_compose">Docker Compose</option>
-              <option value="kubernetes">Kubernetes</option>
-              <option value="baremetal">Bare Metal</option>
+              <option value="">{t('telemetryTab.unknown')}</option>
+              <option value="docker">{t('telemetryTab.docker')}</option>
+              <option value="docker_compose">{t('telemetryTab.dockerCompose')}</option>
+              <option value="kubernetes">{t('telemetryTab.kubernetes')}</option>
+              <option value="baremetal">{t('telemetryTab.bareMetal')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Deployment Mode</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.deploymentMode')}</label>
             <select
               value={config.telemetry_deployment_mode || ''}
               onChange={(e) => handleConfigChange('telemetry_deployment_mode', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
             >
-              <option value="">Unknown</option>
-              <option value="self_hosted">Self-Hosted</option>
-              <option value="on_prem">On-Premises</option>
-              <option value="dev">Development</option>
-              <option value="test">Test / Staging</option>
+              <option value="">{t('telemetryTab.unknown')}</option>
+              <option value="self_hosted">{t('telemetryTab.selfHosted')}</option>
+              <option value="on_prem">{t('telemetryTab.onPrem')}</option>
+              <option value="dev">{t('telemetryTab.development')}</option>
+              <option value="test">{t('telemetryTab.testStaging')}</option>
             </select>
           </div>
         </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold mb-1">Locale (optional)</h2>
+        <h2 className="text-lg font-semibold mb-1">{t('telemetryTab.localeTitle')}</h2>
         <p className="text-sm text-gray-500 mb-4">
-          These values are included in snapshots to help aggregate data by region. All fields are optional.
+          {t('telemetryTab.localeSubtitle')}
         </p>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">UI Locale</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.uiLocale')}</label>
             <input
               type="text"
               value={config.telemetry_ui_locale || ''}
@@ -137,7 +137,7 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Timezone Region</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.timezoneRegion')}</label>
             <input
               type="text"
               value={config.telemetry_timezone_region || ''}
@@ -147,7 +147,7 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Country Code</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.countryCode')}</label>
             <input
               type="text"
               value={config.telemetry_country_code || ''}
@@ -158,7 +158,7 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Region Code</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('telemetryTab.regionCode')}</label>
             <input
               type="text"
               value={config.telemetry_region_code || ''}
@@ -177,14 +177,14 @@ export default function TelemetryTab({ config, handleConfigChange, handleSaveCon
           disabled={saving}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
         >
-          {saving ? 'Saving...' : 'Save'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
         <button
           onClick={handleSendNow}
           disabled={sending}
           className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
         >
-          {sending ? 'Sending...' : 'Send Test Snapshot Now'}
+          {sending ? t('telemetryTab.sending') : t('telemetryTab.sendTestSnapshotNow')}
         </button>
       </div>
     </div>
