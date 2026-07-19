@@ -1542,5 +1542,11 @@
         "description": "Allow unauthenticated read-only IP queries via GET /api/v1/query/ip. Additive — no existing behavior changes."
       }
     }
+  },
+  "notificationsTab": {
+    "title": "Notification Stats",
+    "subtitle": "Counts of notification emails sent by type. Users can control their preferences under Account Settings.",
+    "loadFailed": "Failed to load notification stats.",
+    "noneSent": "No notifications have been sent yet."
   }
 }
