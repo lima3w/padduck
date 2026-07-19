@@ -1633,5 +1633,19 @@
         }
       }
     }
+  },
+  "registrationTab": {
+    "appUrlTitle": "Application URL",
+    "publicUrlLabel": "Public URL",
+    "publicUrlHintPrefix": "Used in verification and notification emails. Include scheme and port if non-standard (e.g. ",
+    "publicUrlHintSuffix": ").",
+    "registrationSettingsTitle": "Registration Settings",
+    "enableSelfRegistration": "Enable self-registration",
+    "enableSelfRegistrationHint": "Allow anyone to create an account",
+    "smtpNotConfiguredWarning": "Email verification is enabled but SMTP is not configured — verification emails will not be sent and new users will be stuck. Configure SMTP on the Email tab first.",
+    "requireEmailVerification": "Require email verification",
+    "requireEmailVerificationHint": "Users must verify their email before logging in",
+    "requireAdminApproval": "Require admin approval",
+    "requireAdminApprovalHint": "New accounts must be approved by an admin"
   }
 }
