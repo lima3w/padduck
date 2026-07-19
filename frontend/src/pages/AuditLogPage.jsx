@@ -1,41 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../api/admin'
 
-const ACTION_LABELS = {
-  login: 'Login',
-  login_mfa: 'Login (MFA)',
-  logout: 'Logout',
-  token_created: 'Token Created',
-  token_revoked: 'Token Revoked',
-  mfa_enabled: 'MFA Enabled',
-  mfa_disabled: 'MFA Disabled',
-  backup_codes_regenerated: 'Backup Codes Regenerated',
-  user_created: 'User Created',
-  user_role_updated: 'Role Changed',
-  user_deleted: 'User Deleted',
-  user_approved: 'User Approved',
-  user_rejected: 'User Rejected',
-  account_unlocked: 'Account Unlocked',
-  config_updated: 'Config Updated',
-  section_created: 'Network Created',
-  section_updated: 'Network Updated',
-  section_deleted: 'Network Deleted',
-  subnet_created: 'Subnet Created',
-  subnet_updated: 'Subnet Updated',
-  subnet_deleted: 'Subnet Deleted',
-  ip_address_created: 'IP Created',
-  ip_address_deleted: 'IP Deleted',
-  ip_assigned: 'IP Assigned',
-  ip_released: 'IP Released',
-  ip_allocated: 'IP Allocated',
-  vrf_created: 'VRF Created',
-  vrf_updated: 'VRF Updated',
-  vrf_deleted: 'VRF Deleted',
-  vlan_created: 'VLAN Created',
-  vlan_updated: 'VLAN Updated',
-  vlan_deleted: 'VLAN Deleted',
-  audit_logs_purged: 'Audit Logs Purged',
-}
+const ACTION_KEYS = [
+  'login', 'login_mfa', 'logout', 'token_created', 'token_revoked', 'mfa_enabled',
+  'mfa_disabled', 'backup_codes_regenerated', 'user_created', 'user_role_updated',
+  'user_deleted', 'user_approved', 'user_rejected', 'account_unlocked', 'config_updated',
+  'section_created', 'section_updated', 'section_deleted', 'subnet_created',
+  'subnet_updated', 'subnet_deleted', 'ip_address_created', 'ip_address_deleted',
+  'ip_assigned', 'ip_released', 'ip_allocated', 'vrf_created', 'vrf_updated',
+  'vrf_deleted', 'vlan_created', 'vlan_updated', 'vlan_deleted', 'audit_logs_purged',
+]
 
 const ACTION_COLORS = {
   login: 'bg-green-100 text-green-800',
@@ -61,6 +36,8 @@ function formatTimestamp(ts) {
 }
 
 export default function AuditLogPage() {
+  const { t } = useTranslation()
+  const ACTION_LABELS = Object.fromEntries(ACTION_KEYS.map(k => [k, t(`auditLog.actions.${k}`)]))
   const [logs, setLogs] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -132,7 +109,7 @@ export default function AuditLogPage() {
       a.click()
       URL.revokeObjectURL(url)
     } catch (err) {
-      setError('Export failed: ' + (err.response?.data?.error || err.message))
+      setError(t('auditLog.exportFailedPrefix') + (err.response?.data?.error || err.message))
     } finally {
       setExporting(false)
     }
@@ -144,15 +121,15 @@ export default function AuditLogPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Audit Log</h1>
-          <p className="text-sm text-gray-500 mt-1">{total.toLocaleString()} total entries</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('audit.logTab')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('auditLog.totalEntries', { count: total, formattedCount: total.toLocaleString() })}</p>
         </div>
         <button
           onClick={handleExport}
           disabled={exporting}
           className="px-4 py-2 bg-gray-700 text-white text-sm rounded hover:bg-gray-800 disabled:opacity-50"
         >
-          {exporting ? 'Exporting…' : 'Export CSV'}
+          {exporting ? t('networks.exporting') : t('networks.exportCsv')}
         </button>
       </div>
 
@@ -160,65 +137,65 @@ export default function AuditLogPage() {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Action</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('auditLog.action')}</label>
             <select
               value={filters.action}
               onChange={(e) => handleFilterChange('action', e.target.value)}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
             >
-              <option value="">All actions</option>
+              <option value="">{t('auditLog.allActions')}</option>
               {Object.entries(ACTION_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Resource Type</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('auditLog.resourceType')}</label>
             <select
               value={filters.resource_type}
               onChange={(e) => handleFilterChange('resource_type', e.target.value)}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
             >
-              <option value="">All types</option>
-              {['session', 'api_token', 'user', 'user_approval', 'config', 'network', 'subnet', 'ip_address', 'vrf', 'vlan', 'audit_log'].map((t) => (
-                <option key={t} value={t}>{t}</option>
+              <option value="">{t('auditLog.allTypes')}</option>
+              {['session', 'api_token', 'user', 'user_approval', 'config', 'network', 'subnet', 'ip_address', 'vrf', 'vlan', 'audit_log'].map((rt) => (
+                <option key={rt} value={rt}>{rt}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('login.username')}</label>
             <input
               type="text"
               value={filters.username}
               onChange={(e) => handleFilterChange('username', e.target.value)}
-              placeholder="Search username…"
+              placeholder={t('auditLog.searchUsernamePlaceholder')}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('delegations.status')}</label>
             <select
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
             >
-              <option value="">All</option>
-              <option value="success">Success</option>
-              <option value="failure">Failure</option>
+              <option value="">{t('discoveryConflicts.all')}</option>
+              <option value="success">{t('auditLog.success')}</option>
+              <option value="failure">{t('auditLog.failure')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">IP Address</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('associateIp.ipAddress')}</label>
             <input
               type="text"
               value={filters.ip}
               onChange={(e) => handleFilterChange('ip', e.target.value)}
-              placeholder="e.g. 192.168.1.1"
+              placeholder={t('auditLog.ipAddressPlaceholder')}
               className="w-full text-sm border border-gray-300 rounded px-2 py-1.5"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('auditLog.from')}</label>
             <input
               type="datetime-local"
               value={filters.since}
@@ -227,7 +204,7 @@ export default function AuditLogPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Until</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('auditLog.until')}</label>
             <input
               type="datetime-local"
               value={filters.until}
@@ -240,7 +217,7 @@ export default function AuditLogPage() {
               onClick={() => { setFilters({ action: '', resource_type: '', username: '', ip: '', status: '', since: '', until: '' }); setPage(0) }}
               className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
             >
-              Clear Filters
+              {t('auditLog.clearFilters')}
             </button>
           </div>
         </div>
@@ -253,19 +230,19 @@ export default function AuditLogPage() {
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading…</div>
+          <div className="p-8 text-center text-gray-500">{t('common.loading')}</div>
         ) : logs.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">No audit log entries found</div>
+          <div className="p-8 text-center text-gray-400">{t('auditLog.noEntriesFound')}</div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Timestamp</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">User</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Resource</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">IP Address</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('auditLog.timestamp')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('auditLog.user')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('auditLog.action')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('auditLog.resource')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('associateIp.ipAddress')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('delegations.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -276,7 +253,7 @@ export default function AuditLogPage() {
                   onClick={() => setSelectedLog(log)}
                 >
                   <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{formatTimestamp(log.timestamp)}</td>
-                  <td className="px-4 py-2.5 font-medium text-gray-900">{log.username || <span className="text-gray-400 italic">system</span>}</td>
+                  <td className="px-4 py-2.5 font-medium text-gray-900">{log.username || <span className="text-gray-400 italic">{t('auditLog.systemUser')}</span>}</td>
                   <td className="px-4 py-2.5">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getActionColor(log.action)}`}>
                       {ACTION_LABELS[log.action] || log.action}
@@ -309,7 +286,7 @@ export default function AuditLogPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
             <span className="text-sm text-gray-600">
-              Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total.toLocaleString()}
+              {t('auditLog.showingRange', { start: page * limit + 1, end: Math.min((page + 1) * limit, total), total: total.toLocaleString() })}
             </span>
             <div className="flex gap-2">
               <button
@@ -317,17 +294,17 @@ export default function AuditLogPage() {
                 disabled={page === 0}
                 className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-100"
               >
-                Previous
+                {t('auditLog.previous')}
               </button>
               <span className="px-3 py-1 text-sm text-gray-600">
-                Page {page + 1} of {totalPages}
+                {t('auditLog.pageOf', { page: page + 1, totalPages })}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
                 className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-100"
               >
-                Next
+                {t('auditLog.next')}
               </button>
             </div>
           </div>
@@ -351,18 +328,18 @@ export default function AuditLogPage() {
               <button onClick={() => setSelectedLog(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
             </div>
             <div className="px-5 py-4 space-y-3 text-sm">
-              <Row label="Timestamp" value={formatTimestamp(selectedLog.timestamp)} />
-              <Row label="User" value={selectedLog.username || '(system)'} />
-              <Row label="Action" value={selectedLog.action} />
-              <Row label="Resource Type" value={selectedLog.resourceType} />
-              {selectedLog.resourceId && <Row label="Resource ID" value={selectedLog.resourceId} />}
-              {selectedLog.resourceName && <Row label="Resource Name" value={selectedLog.resourceName} />}
-              <Row label="IP Address" value={selectedLog.ipAddress} mono />
-              <Row label="Status" value={selectedLog.status} />
-              {selectedLog.errorMessage && <Row label="Error" value={selectedLog.errorMessage} />}
+              <Row label={t('auditLog.timestamp')} value={formatTimestamp(selectedLog.timestamp)} />
+              <Row label={t('auditLog.user')} value={selectedLog.username || t('auditLog.systemParens')} />
+              <Row label={t('auditLog.action')} value={selectedLog.action} />
+              <Row label={t('auditLog.resourceType')} value={selectedLog.resourceType} />
+              {selectedLog.resourceId && <Row label={t('auditLog.resourceIdLabel')} value={selectedLog.resourceId} />}
+              {selectedLog.resourceName && <Row label={t('auditLog.resourceNameLabel')} value={selectedLog.resourceName} />}
+              <Row label={t('associateIp.ipAddress')} value={selectedLog.ipAddress} mono />
+              <Row label={t('delegations.status')} value={selectedLog.status} />
+              {selectedLog.errorMessage && <Row label={t('auditLog.errorLabel')} value={selectedLog.errorMessage} />}
               {selectedLog.newValues && (
                 <div>
-                  <span className="font-medium text-gray-600">New Values</span>
+                  <span className="font-medium text-gray-600">{t('auditLog.newValues')}</span>
                   <pre className="mt-1 bg-gray-50 rounded p-2 text-xs overflow-auto">
                     {JSON.stringify(JSON.parse(selectedLog.newValues), null, 2)}
                   </pre>
@@ -370,7 +347,7 @@ export default function AuditLogPage() {
               )}
               {selectedLog.oldValues && (
                 <div>
-                  <span className="font-medium text-gray-600">Old Values</span>
+                  <span className="font-medium text-gray-600">{t('auditLog.oldValues')}</span>
                   <pre className="mt-1 bg-gray-50 rounded p-2 text-xs overflow-auto">
                     {JSON.stringify(JSON.parse(selectedLog.oldValues), null, 2)}
                   </pre>

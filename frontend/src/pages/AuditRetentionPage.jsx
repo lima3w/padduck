@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAuditRetention, updateAuditRetention, pruneAuditLogs } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function AuditRetentionPage() {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [pruning, setPruning] = useState(false)
@@ -24,14 +26,14 @@ export default function AuditRetentionPage() {
           archiveEnabled: res.data.archive_enabled ?? false,
         })
       })
-      .catch(() => setError('Failed to load audit retention settings'))
+      .catch(() => setError(t('auditRetention.loadError')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   async function handleSave(e) {
     e.preventDefault()
     if (form.retentionDays < 30) {
-      setError('Retention period must be at least 30 days')
+      setError(t('auditRetention.retentionMinError'))
       return
     }
     setSaving(true)
@@ -40,22 +42,22 @@ export default function AuditRetentionPage() {
         retention_days: form.retentionDays,
         archive_enabled: form.archiveEnabled,
       })
-      showMsg('Retention settings saved')
+      showMsg(t('auditRetention.settingsSaved'))
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to save settings')
+      setError(err.response?.data?.error || t('auditRetention.saveError'))
     } finally {
       setSaving(false)
     }
   }
 
   async function handlePrune() {
-    if (!confirm('Run prune now? This will delete audit log entries older than the configured retention period.')) return
+    if (!confirm(t('auditRetention.pruneConfirm'))) return
     setPruning(true)
     try {
       const res = await pruneAuditLogs()
-      showMsg(`Pruned ${res.data.deleted} audit log entries`)
+      showMsg(t('auditRetention.pruneSuccess', { count: res.data.deleted }))
     } catch {
-      setError('Prune failed')
+      setError(t('scanRetention.pruneError'))
     } finally {
       setPruning(false)
     }
@@ -63,14 +65,14 @@ export default function AuditRetentionPage() {
 
 
 
-  if (loading) return <PageSpinner message="Loading audit retention settings..." />
+  if (loading) return <PageSpinner message={t('auditRetention.loadingSettings')} />
 
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Audit Retention</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('auditRetention.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Configure audit log retention policy and export audit log data.
+          {t('auditRetention.subtitle')}
         </p>
       </div>
 
@@ -83,11 +85,11 @@ export default function AuditRetentionPage() {
 
       {/* Retention Settings Panel */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-lg mb-6">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Retention Settings</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('auditRetention.retentionSettingsTitle')}</h2>
         <form onSubmit={handleSave} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Retention period (days)
+              {t('auditRetention.retentionPeriodDaysLower')}
             </label>
             <input
               type="number"
@@ -96,7 +98,7 @@ export default function AuditRetentionPage() {
               value={form.retentionDays}
               onChange={e => setForm(f => ({ ...f, retentionDays: parseInt(e.target.value) || 1 }))}
             />
-            <p className="text-xs text-gray-500 mt-1">Audit log entries older than this will be deleted when pruning. Minimum 30 days.</p>
+            <p className="text-xs text-gray-500 mt-1">{t('auditRetention.retentionHint')}</p>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -107,7 +109,7 @@ export default function AuditRetentionPage() {
               className="accent-blue-600"
             />
             <label htmlFor="archiveEnabled" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Archive enabled
+              {t('auditRetention.archiveEnabled')}
             </label>
           </div>
           <div className="flex items-center gap-3 pt-2">
@@ -116,7 +118,7 @@ export default function AuditRetentionPage() {
               disabled={saving}
               className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Save Settings'}
+              {saving ? t('common.saving') : t('scanRetention.saveSettings')}
             </button>
             <button
               type="button"
@@ -124,7 +126,7 @@ export default function AuditRetentionPage() {
               disabled={pruning}
               className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
             >
-              {pruning ? 'Pruning...' : 'Run Prune Now'}
+              {pruning ? t('scanRetention.pruning') : t('scanRetention.runPruneNow')}
             </button>
           </div>
         </form>

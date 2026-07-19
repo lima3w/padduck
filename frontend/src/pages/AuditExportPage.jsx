@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { exportAuditLog } from '../api/admin'
 import ErrorBanner from '../components/ErrorBanner'
 
 export default function AuditExportPage() {
+  const { t } = useTranslation()
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState(null)
   const [exportForm, setExportForm] = useState({ since: '', until: '', format: 'json' })
@@ -29,7 +31,7 @@ export default function AuditExportPage() {
       a.remove()
       URL.revokeObjectURL(url)
     } catch {
-      setError('Export failed. Please try again.')
+      setError(t('auditExport.exportFailed'))
     } finally {
       setExporting(false)
     }
@@ -38,9 +40,9 @@ export default function AuditExportPage() {
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Export Audit Log</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('auditExport.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Download audit log entries filtered by date range and format.
+          {t('auditExport.subtitle')}
         </p>
       </div>
 
@@ -51,7 +53,7 @@ export default function AuditExportPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Since (optional)
+                {t('auditExport.since')}
               </label>
               <input
                 type="date"
@@ -62,7 +64,7 @@ export default function AuditExportPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Until (optional)
+                {t('auditExport.until')}
               </label>
               <input
                 type="date"
@@ -74,7 +76,7 @@ export default function AuditExportPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Format
+              {t('scheduledReports.format')}
             </label>
             <select
               className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -91,7 +93,7 @@ export default function AuditExportPage() {
               disabled={exporting}
               className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
             >
-              {exporting ? 'Exporting…' : 'Export'}
+              {exporting ? t('networks.exporting') : t('audit.exportTab')}
             </button>
           </div>
         </form>
