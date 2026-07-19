@@ -1307,5 +1307,12 @@
     "agreementText": "By clicking \"Accept\", you agree to our privacy policy regarding the collection and use of your data within this IPAM system.",
     "accepting": "Accepting…",
     "acceptPrivacyPolicy": "Accept Privacy Policy"
+  },
+  "auditExport": {
+    "exportFailed": "Export failed. Please try again.",
+    "title": "Export Audit Log",
+    "subtitle": "Download audit log entries filtered by date range and format.",
+    "since": "Since (optional)",
+    "until": "Until (optional)"
   }
 }
