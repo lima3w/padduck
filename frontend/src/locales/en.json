@@ -1429,5 +1429,25 @@
     "usersTab": "Users",
     "rolesTab": "Roles",
     "presetsTab": "Permission Presets"
+  },
+  "rolePresets": {
+    "loadDataFailed": "Failed to load data.",
+    "loadDiffFailed": "Failed to load diff.",
+    "subtitle": "Built-in permission presets are read-only templates you can use as a baseline when configuring roles.",
+    "compareTitle": "Compare Role with Preset",
+    "compareSubtitle": "Select a role and a preset to see which permissions would be added or removed if you applied the preset.",
+    "role": "Role",
+    "selectRolePlaceholder": "— select role —",
+    "preset": "Preset",
+    "selectPresetPlaceholder": "— select preset —",
+    "comparing": "Comparing...",
+    "compare": "Compare",
+    "comparingPrefix": "Comparing role ",
+    "comparingMiddle": " against preset ",
+    "comparingSuffix": ":",
+    "addedHeading": "Added ({{count}}) — in preset, not in role",
+    "removedHeading": "Removed ({{count}}) — in role, not in preset",
+    "unchangedHeading": "Unchanged ({{count}}) — in both role and preset",
+    "matchesExactly": "The role already matches this preset exactly."
   }
 }
