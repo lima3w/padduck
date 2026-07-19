@@ -1281,5 +1281,11 @@
       "csv": "CSV",
       "pdf": "PDF"
     }
+  },
+  "audit": {
+    "logTab": "Audit Log",
+    "retentionTab": "Retention",
+    "exportTab": "Export",
+    "tablistLabel": "Audit networks"
   }
 }
