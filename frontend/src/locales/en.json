@@ -1727,5 +1727,26 @@
     "regionCode": "Region Code",
     "sending": "Sending...",
     "sendTestSnapshotNow": "Send Test Snapshot Now"
+  },
+  "adminSettingsPage": {
+    "loadFailedPrefix": "Failed to load settings: ",
+    "settingsSavedSuccess": "Settings saved successfully",
+    "saveFailedPrefix": "Failed to save: ",
+    "userApproved": "User approved",
+    "approveFailedPrefix": "Failed to approve: ",
+    "rejectionReasonPrompt": "Rejection reason (optional):",
+    "userRejected": "User rejected",
+    "rejectFailedPrefix": "Failed to reject: ",
+    "loadingSettings": "Loading settings...",
+    "registrationTabLabel": "Registration",
+    "smtpTabLabel": "SMTP / Email",
+    "approvalsTabLabel": "Approvals{{suffix}}",
+    "alertsTabLabel": "Alerts",
+    "scannerTabLabel": "Scanner",
+    "featuresTabLabel": "Features",
+    "updatesTabLabel": "Updates",
+    "notificationsTabLabel": "Notifications",
+    "toolsTabLabel": "Tools",
+    "title": "Admin Settings"
   }
 }
