@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.13
+
+### Added
+- **i18n batch 11/15: audit, privacy & compliance pages** (issue #35): converted `AuditPage`, `PrivacyConsentBanner`, `AuditTab`, `AuditExportPage`, `AuditRetentionPage`, `PrivacyConsentReportPage`, and `AuditLogPage` to `t()` calls.
+
 ## v1.34.12
 
 ### Fixed
