@@ -1314,5 +1314,20 @@
     "subtitle": "Download audit log entries filtered by date range and format.",
     "since": "Since (optional)",
     "until": "Until (optional)"
+  },
+  "auditRetention": {
+    "loadError": "Failed to load audit retention settings",
+    "retentionMinError": "Retention period must be at least 30 days",
+    "saveError": "Failed to save settings",
+    "settingsSaved": "Retention settings saved",
+    "pruneConfirm": "Run prune now? This will delete audit log entries older than the configured retention period.",
+    "pruneSuccess": "Pruned {{count}} audit log entries",
+    "loadingSettings": "Loading audit retention settings...",
+    "title": "Audit Retention",
+    "subtitle": "Configure audit log retention policy and export audit log data.",
+    "retentionSettingsTitle": "Retention Settings",
+    "retentionPeriodDaysLower": "Retention period (days)",
+    "retentionHint": "Audit log entries older than this will be deleted when pruning. Minimum 30 days.",
+    "archiveEnabled": "Archive enabled"
   }
 }
