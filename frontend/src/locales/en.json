@@ -1488,5 +1488,59 @@
     "title": "Utilisation Alerts",
     "thresholdLabel": "Default Alert Threshold (%)",
     "thresholdHint": "Send an alert when a subnet's utilization exceeds this percentage. Individual subnets can override this value."
+  },
+  "featuresTab": {
+    "title": "Enabled Modules",
+    "subtitle": "Disabled modules are removed from navigation and their API routes reject direct access.",
+    "toggles": {
+      "feature_customers_enabled": {
+        "title": "Customers",
+        "description": "Customer records and customer navigation."
+      },
+      "feature_vlans_enabled": {
+        "title": "VLANs",
+        "description": "VLANs, VLAN domains, VLAN groups, and VLAN usage reports."
+      },
+      "feature_vrfs_enabled": {
+        "title": "VRFs",
+        "description": "VRF records and VRF navigation."
+      },
+      "feature_racks_enabled": {
+        "title": "Racks",
+        "description": "Rack records, rack details, and rack device lists."
+      },
+      "feature_locations_enabled": {
+        "title": "Locations",
+        "description": "Location records, location hierarchy, and location details."
+      },
+      "feature_bgp_enabled": {
+        "title": "BGP / AS Numbers",
+        "description": "Autonomous system records and BGP navigation."
+      },
+      "feature_devices_enabled": {
+        "title": "Devices",
+        "description": "Device inventory, device types, interfaces, and device IP associations."
+      },
+      "feature_nat_enabled": {
+        "title": "NAT Rules",
+        "description": "NAT mapping records and NAT navigation."
+      },
+      "feature_firewall_enabled": {
+        "title": "Firewall Zones",
+        "description": "Firewall zone records, zone mappings, and firewall navigation."
+      },
+      "feature_dhcp_enabled": {
+        "title": "DHCP",
+        "description": "DHCP server and lease records."
+      },
+      "feature_circuits_enabled": {
+        "title": "Circuits",
+        "description": "Circuit providers, physical circuits, and logical circuits."
+      },
+      "anonymous_api_enabled": {
+        "title": "Anonymous API Access",
+        "description": "Allow unauthenticated read-only IP queries via GET /api/v1/query/ip. Additive — no existing behavior changes."
+      }
+    }
   }
 }

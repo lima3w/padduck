@@ -68,65 +68,17 @@ export const CONFIG_KEYS_BY_TAB = {
   ],
 }
 
-export const FEATURE_TOGGLES = [
-  {
-    key: 'feature_customers_enabled',
-    title: 'Customers',
-    description: 'Customer records and customer navigation.',
-  },
-  {
-    key: 'feature_vlans_enabled',
-    title: 'VLANs',
-    description: 'VLANs, VLAN domains, VLAN groups, and VLAN usage reports.',
-  },
-  {
-    key: 'feature_vrfs_enabled',
-    title: 'VRFs',
-    description: 'VRF records and VRF navigation.',
-  },
-  {
-    key: 'feature_racks_enabled',
-    title: 'Racks',
-    description: 'Rack records, rack details, and rack device lists.',
-  },
-  {
-    key: 'feature_locations_enabled',
-    title: 'Locations',
-    description: 'Location records, location hierarchy, and location details.',
-  },
-  {
-    key: 'feature_bgp_enabled',
-    title: 'BGP / AS Numbers',
-    description: 'Autonomous system records and BGP navigation.',
-  },
-  {
-    key: 'feature_devices_enabled',
-    title: 'Devices',
-    description: 'Device inventory, device types, interfaces, and device IP associations.',
-  },
-  {
-    key: 'feature_nat_enabled',
-    title: 'NAT Rules',
-    description: 'NAT mapping records and NAT navigation.',
-  },
-  {
-    key: 'feature_firewall_enabled',
-    title: 'Firewall Zones',
-    description: 'Firewall zone records, zone mappings, and firewall navigation.',
-  },
-  {
-    key: 'feature_dhcp_enabled',
-    title: 'DHCP',
-    description: 'DHCP server and lease records.',
-  },
-  {
-    key: 'feature_circuits_enabled',
-    title: 'Circuits',
-    description: 'Circuit providers, physical circuits, and logical circuits.',
-  },
-  {
-    key: 'anonymous_api_enabled',
-    title: 'Anonymous API Access',
-    description: 'Allow unauthenticated read-only IP queries via GET /api/v1/query/ip. Additive — no existing behavior changes.',
-  },
+export const FEATURE_TOGGLE_KEYS = [
+  'feature_customers_enabled',
+  'feature_vlans_enabled',
+  'feature_vrfs_enabled',
+  'feature_racks_enabled',
+  'feature_locations_enabled',
+  'feature_bgp_enabled',
+  'feature_devices_enabled',
+  'feature_nat_enabled',
+  'feature_firewall_enabled',
+  'feature_dhcp_enabled',
+  'feature_circuits_enabled',
+  'anonymous_api_enabled',
 ]
