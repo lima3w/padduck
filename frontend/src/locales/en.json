@@ -1647,5 +1647,20 @@
     "requireEmailVerificationHint": "Users must verify their email before logging in",
     "requireAdminApproval": "Require admin approval",
     "requireAdminApprovalHint": "New accounts must be approved by an admin"
+  },
+  "updatesTab": {
+    "checkFailed": "Update check failed",
+    "title": "Update Check",
+    "enableUpdateChecks": "Enable update checks",
+    "enableUpdateChecksHint": "Checks the GitHub releases API for new versions of Padduck.",
+    "checksDisabled": "Update checks are disabled.",
+    "updateAvailable": "Update available: {{version}}",
+    "noUpdateAvailable": "No update available.",
+    "currentPrefix": "Current: ",
+    "unknown": "unknown",
+    "latestSuffix": " · Latest: {{version}}",
+    "viewRelease": "View release",
+    "checking": "Checking...",
+    "checkNow": "Check Now"
   }
 }

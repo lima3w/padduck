@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { checkForUpdates } from '../../api/admin'
 
 export default function UpdatesTab({ config, handleConfigChange, handleSaveConfig, saving }) {
+  const { t } = useTranslation()
   const [updateStatus, setUpdateStatus] = useState(null)
   const [checkingUpdates, setCheckingUpdates] = useState(false)
 
@@ -14,7 +16,7 @@ export default function UpdatesTab({ config, handleConfigChange, handleSaveConfi
     } catch (err) {
       setUpdateStatus({
         ok: false,
-        message: err.response?.data?.error || err.message || 'Update check failed',
+        message: err.response?.data?.error || err.message || t('updatesTab.checkFailed'),
       })
     } finally {
       setCheckingUpdates(false)
@@ -24,7 +26,7 @@ export default function UpdatesTab({ config, handleConfigChange, handleSaveConfi
   return (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Update Check</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('updatesTab.title')}</h2>
 
             <label className="flex items-center gap-3 mb-4 cursor-pointer">
               <input
@@ -34,8 +36,8 @@ export default function UpdatesTab({ config, handleConfigChange, handleSaveConfi
                 className="w-4 h-4 text-blue-600 rounded"
               />
               <span className="text-sm text-gray-700">
-                <strong>Enable update checks</strong>
-                <span className="block text-gray-500">Checks the GitHub releases API for new versions of Padduck.</span>
+                <strong>{t('updatesTab.enableUpdateChecks')}</strong>
+                <span className="block text-gray-500">{t('updatesTab.enableUpdateChecksHint')}</span>
               </span>
             </label>
           </div>
@@ -54,14 +56,14 @@ export default function UpdatesTab({ config, handleConfigChange, handleSaveConfi
                 <div className="space-y-1">
                   <p className="font-medium">
                     {updateStatus.data?.enabled === false
-                      ? 'Update checks are disabled.'
+                      ? t('updatesTab.checksDisabled')
                       : updateStatus.data?.updateAvailable
-                      ? `Update available: ${updateStatus.data.latestVersion}`
-                      : 'No update available.'}
+                      ? t('updatesTab.updateAvailable', { version: updateStatus.data.latestVersion })
+                      : t('updatesTab.noUpdateAvailable')}
                   </p>
                   <p>
-                    Current: {updateStatus.data?.currentVersion || 'unknown'}
-                    {updateStatus.data?.latestVersion ? ` · Latest: ${updateStatus.data.latestVersion}` : ''}
+                    {t('updatesTab.currentPrefix')}{updateStatus.data?.currentVersion || t('updatesTab.unknown')}
+                    {updateStatus.data?.latestVersion ? t('updatesTab.latestSuffix', { version: updateStatus.data.latestVersion }) : ''}
                   </p>
                   {updateStatus.data?.releaseUrl && (
                     <a
@@ -70,7 +72,7 @@ export default function UpdatesTab({ config, handleConfigChange, handleSaveConfi
                       target="_blank"
                       rel="noreferrer"
                     >
-                      View release
+                      {t('updatesTab.viewRelease')}
                     </a>
                   )}
                 </div>
@@ -86,14 +88,14 @@ export default function UpdatesTab({ config, handleConfigChange, handleSaveConfi
               disabled={saving}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             <button
               onClick={handleUpdateCheck}
               disabled={checkingUpdates}
               className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
             >
-              {checkingUpdates ? 'Checking...' : 'Check Now'}
+              {checkingUpdates ? t('updatesTab.checking') : t('updatesTab.checkNow')}
             </button>
           </div>
         </div>
