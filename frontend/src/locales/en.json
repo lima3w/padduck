@@ -1548,5 +1548,90 @@
     "subtitle": "Counts of notification emails sent by type. Users can control their preferences under Account Settings.",
     "loadFailed": "Failed to load notification stats.",
     "noneSent": "No notifications have been sent yet."
+  },
+  "toolsTab": {
+    "openArrow": "Open →",
+    "sections": {
+      "dataTools": {
+        "title": "Data Tools",
+        "links": {
+          "overlapReport": {
+            "title": "Subnet Overlap Check",
+            "description": "Find overlapping subnets across all networks"
+          },
+          "dataImport": {
+            "title": "Data Import",
+            "description": "Import subnets, IP addresses, or phpIPAM data"
+          },
+          "dataExport": {
+            "title": "Data Export",
+            "description": "Export a full data backup"
+          }
+        }
+      },
+      "schemaTaxonomy": {
+        "title": "Schema & Taxonomy",
+        "links": {
+          "customFields": {
+            "title": "Custom Fields",
+            "description": "Manage extra fields for subnets, IPs, and devices"
+          },
+          "ipTags": {
+            "title": "IP Tags",
+            "description": "Create and manage IP address tags"
+          },
+          "vlanDomains": {
+            "title": "VLAN Domains",
+            "description": "Manage VLAN namespace boundaries"
+          },
+          "vlanGroups": {
+            "title": "VLAN Groups",
+            "description": "Group VLANs for organization and reporting"
+          },
+          "vlanUsage": {
+            "title": "VLAN Usage",
+            "description": "Review VLAN allocation and utilization"
+          }
+        }
+      },
+      "discoveryAutomation": {
+        "title": "Discovery & Automation",
+        "links": {
+          "webhooks": {
+            "title": "Webhooks",
+            "description": "Configure outbound event delivery"
+          },
+          "integrations": {
+            "title": "Integrations",
+            "description": "Integration setup notes and connection checks"
+          },
+          "grafana": {
+            "title": "Grafana",
+            "description": "Configure the Grafana datasource integration"
+          }
+        }
+      },
+      "authentication": {
+        "title": "Authentication",
+        "links": {
+          "ldap": {
+            "title": "LDAP / AD",
+            "description": "Configure LDAP authentication and group mappings"
+          },
+          "oauth2": {
+            "title": "OAuth2 / OIDC",
+            "description": "Configure OAuth2 or OpenID Connect login"
+          },
+          "saml": {
+            "title": "SAML SSO",
+            "description": "Configure SAML single sign-on"
+          },
+          "identityPolicies": {
+            "title": "Identity Policies",
+            "description": "Manage IP-based access control and identity rules"
+          }
+        }
+      }
+    }
   }
 }

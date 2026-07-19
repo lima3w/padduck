@@ -1,41 +1,43 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 export default function ToolsTab({ config }) {
+  const { t } = useTranslation()
   const featureEnabled = (key) => config?.[key] !== 'false'
   const toolSections = [
     {
-      title: 'Data Tools',
+      title: t('toolsTab.sections.dataTools.title'),
       links: [
-        { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all networks' },
-        { to: '/admin/import', title: 'Data Import', description: 'Import subnets, IP addresses, or phpIPAM data' },
-        { to: '/admin/export', title: 'Data Export', description: 'Export a full data backup' },
+        { to: '/admin/overlap-report', title: t('toolsTab.sections.dataTools.links.overlapReport.title'), description: t('toolsTab.sections.dataTools.links.overlapReport.description') },
+        { to: '/admin/import', title: t('toolsTab.sections.dataTools.links.dataImport.title'), description: t('toolsTab.sections.dataTools.links.dataImport.description') },
+        { to: '/admin/export', title: t('toolsTab.sections.dataTools.links.dataExport.title'), description: t('toolsTab.sections.dataTools.links.dataExport.description') },
       ],
     },
     {
-      title: 'Schema & Taxonomy',
+      title: t('toolsTab.sections.schemaTaxonomy.title'),
       links: [
-        { to: '/admin/custom-fields', title: 'Custom Fields', description: 'Manage extra fields for subnets, IPs, and devices' },
-        { to: '/admin/tags', title: 'IP Tags', description: 'Create and manage IP address tags' },
-        { to: '/admin/vlan-domains', title: 'VLAN Domains', description: 'Manage VLAN namespace boundaries', visible: featureEnabled('feature_vlans_enabled') },
-        { to: '/admin/vlan-groups', title: 'VLAN Groups', description: 'Group VLANs for organization and reporting', visible: featureEnabled('feature_vlans_enabled') },
-        { to: '/admin/vlans/usage-report', title: 'VLAN Usage', description: 'Review VLAN allocation and utilization', visible: featureEnabled('feature_vlans_enabled') },
+        { to: '/admin/custom-fields', title: t('toolsTab.sections.schemaTaxonomy.links.customFields.title'), description: t('toolsTab.sections.schemaTaxonomy.links.customFields.description') },
+        { to: '/admin/tags', title: t('toolsTab.sections.schemaTaxonomy.links.ipTags.title'), description: t('toolsTab.sections.schemaTaxonomy.links.ipTags.description') },
+        { to: '/admin/vlan-domains', title: t('toolsTab.sections.schemaTaxonomy.links.vlanDomains.title'), description: t('toolsTab.sections.schemaTaxonomy.links.vlanDomains.description'), visible: featureEnabled('feature_vlans_enabled') },
+        { to: '/admin/vlan-groups', title: t('toolsTab.sections.schemaTaxonomy.links.vlanGroups.title'), description: t('toolsTab.sections.schemaTaxonomy.links.vlanGroups.description'), visible: featureEnabled('feature_vlans_enabled') },
+        { to: '/admin/vlans/usage-report', title: t('toolsTab.sections.schemaTaxonomy.links.vlanUsage.title'), description: t('toolsTab.sections.schemaTaxonomy.links.vlanUsage.description'), visible: featureEnabled('feature_vlans_enabled') },
       ],
     },
     {
-      title: 'Discovery & Automation',
+      title: t('toolsTab.sections.discoveryAutomation.title'),
       links: [
-        { to: '/admin/webhooks', title: 'Webhooks', description: 'Configure outbound event delivery' },
-        { to: '/admin/integrations', title: 'Integrations', description: 'Integration setup notes and connection checks' },
-        { to: '/admin/grafana', title: 'Grafana', description: 'Configure the Grafana datasource integration' },
+        { to: '/admin/webhooks', title: t('toolsTab.sections.discoveryAutomation.links.webhooks.title'), description: t('toolsTab.sections.discoveryAutomation.links.webhooks.description') },
+        { to: '/admin/integrations', title: t('toolsTab.sections.discoveryAutomation.links.integrations.title'), description: t('toolsTab.sections.discoveryAutomation.links.integrations.description') },
+        { to: '/admin/grafana', title: t('toolsTab.sections.discoveryAutomation.links.grafana.title'), description: t('toolsTab.sections.discoveryAutomation.links.grafana.description') },
       ],
     },
     {
-      title: 'Authentication',
+      title: t('toolsTab.sections.authentication.title'),
       links: [
-        { to: '/admin/auth/ldap', title: 'LDAP / AD', description: 'Configure LDAP authentication and group mappings' },
-        { to: '/admin/auth/oauth2', title: 'OAuth2 / OIDC', description: 'Configure OAuth2 or OpenID Connect login' },
-        { to: '/admin/auth/saml', title: 'SAML SSO', description: 'Configure SAML single sign-on' },
-        { to: '/admin/identity-policies', title: 'Identity Policies', description: 'Manage IP-based access control and identity rules' },
+        { to: '/admin/auth/ldap', title: t('toolsTab.sections.authentication.links.ldap.title'), description: t('toolsTab.sections.authentication.links.ldap.description') },
+        { to: '/admin/auth/oauth2', title: t('toolsTab.sections.authentication.links.oauth2.title'), description: t('toolsTab.sections.authentication.links.oauth2.description') },
+        { to: '/admin/auth/saml', title: t('toolsTab.sections.authentication.links.saml.title'), description: t('toolsTab.sections.authentication.links.saml.description') },
+        { to: '/admin/identity-policies', title: t('toolsTab.sections.authentication.links.identityPolicies.title'), description: t('toolsTab.sections.authentication.links.identityPolicies.description') },
       ],
     },
   ]
@@ -61,7 +63,7 @@ export default function ToolsTab({ config }) {
                       <p className="font-medium text-gray-900 dark:text-gray-100">{link.title}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{link.description}</p>
                     </div>
-                    <span className="ml-auto shrink-0 text-blue-600 dark:text-blue-400 text-sm">Open →</span>
+                    <span className="ml-auto shrink-0 text-blue-600 dark:text-blue-400 text-sm">{t('toolsTab.openArrow')}</span>
                   </Link>
                 ))}
               </div>
