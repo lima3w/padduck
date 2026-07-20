@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.24
+
+### Added
+- **i18n: convert IPAddressesPage** (issue #35): converted `IPAddressesPage.jsx` (1275 lines, the largest file in the app) to `t()` calls, including search/advanced filters, bulk release/delete, the column picker, the IP table, and all four modals (new IP, assign, request IP, edit metadata). This is the final large-deferred-file follow-up — issue #35 is now fully closed with every page converted.
+
 ## v1.34.23
 
 ### Added
