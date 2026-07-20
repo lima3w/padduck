@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.21
+
+### Added
+- **i18n: convert DevicesPage** (issue #35): converted `DevicesPage.jsx` (809 lines) to `t()` calls, reusing the `editDevice.*`/`deviceInfo.*`/`credentials.*`/`subnetForm.*` keys already established by `EditDeviceModal.jsx`'s conversion for the shared create/edit device form fields. Fourth of the remaining large-deferred-file follow-ups.
+
 ## v1.34.20
 
 ### Added
