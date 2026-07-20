@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { getSystemHealth } from '../api/admin'
 
 function StatusBadge({ status }) {
@@ -31,6 +32,7 @@ function Card({ children, className = '' }) {
 }
 
 export default function DeploymentHealthPage() {
+  const { t } = useTranslation()
   const healthQuery = useQuery({
     queryKey: ['admin', 'system-health'],
     queryFn: () => getSystemHealth().then(r => r.data),
@@ -38,7 +40,7 @@ export default function DeploymentHealthPage() {
   const health = healthQuery.data ?? null
   const loading = healthQuery.isLoading || healthQuery.isFetching
   const error = healthQuery.isError
-    ? (healthQuery.error?.response?.data?.error || healthQuery.error?.message || 'Failed to load system health')
+    ? (healthQuery.error?.response?.data?.error || healthQuery.error?.message || t('deploymentHealth.loadFailed'))
     : null
   const fetchHealth = () => healthQuery.refetch()
 
@@ -46,14 +48,14 @@ export default function DeploymentHealthPage() {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Deployment Health
+          {t('deploymentHealth.title')}
         </h1>
         <button
           onClick={fetchHealth}
           disabled={loading}
           className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          {loading ? 'Refreshing...' : 'Refresh'}
+          {loading ? t('identityPolicies.refreshing') : t('dashboard.refresh')}
         </button>
       </div>
 
@@ -65,15 +67,15 @@ export default function DeploymentHealthPage() {
 
       {/* Panel 1: System Health */}
       <network>
-        <SectionHeading>System Health</SectionHeading>
+        <SectionHeading>{t('deploymentHealth.systemHealthTitle')}</SectionHeading>
         {loading && !health ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{t('deploymentHealth.loading')}</div>
         ) : health ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Database */}
             <Card>
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                Database
+                {t('deploymentHealth.databaseLabel')}
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={health.database?.status || 'unknown'} />
@@ -88,20 +90,20 @@ export default function DeploymentHealthPage() {
             {/* Scan Agents */}
             <Card>
               <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-                Scan Agents
+                {t('deploymentHealth.scanAgentsLabel')}
               </div>
               {health.scanAgents?.total != null ? (
                 health.scanAgents.total === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No agents registered.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('deploymentHealth.noAgentsRegistered')}</p>
                 ) : (
                   <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                    <div>Total: <span className="font-medium">{health.scanAgents.total}</span></div>
+                    <div>{t('deploymentHealth.totalLabel')} <span className="font-medium">{health.scanAgents.total}</span></div>
                     <div className="flex items-center gap-1">
-                      Healthy: <StatusBadge status={health.scanAgents.healthy > 0 ? 'healthy' : 'ok'} />
+                      {t('deploymentHealth.healthyLabel')} <StatusBadge status={health.scanAgents.healthy > 0 ? 'healthy' : 'ok'} />
                       <span className="font-medium ml-1">{health.scanAgents.healthy}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      Offline:
+                      {t('deploymentHealth.offlineLabel')}
                       <span className={`ml-1 font-medium ${health.scanAgents.offline > 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
                         {health.scanAgents.offline}
                       </span>
@@ -109,7 +111,7 @@ export default function DeploymentHealthPage() {
                   </div>
                 )
               ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No agents registered.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('deploymentHealth.noAgentsRegistered')}</p>
               )}
             </Card>
           </div>

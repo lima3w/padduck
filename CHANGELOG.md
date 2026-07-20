@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.17
+
+### Added
+- **i18n batch 15/15: backups, export, import & deployment** (issue #35): converted `DeploymentHealthPage`, `ExportDataPage`, `AdminCompatibilityPage`, `BackupsPage`, and `ImportDataPage` to `t()` calls. This is the final planned batch of issue #35; remaining large deferred files (`AdminUsersPage`, `IPAddressesPage`, `DevicesPage`, `DeviceDetailPage`, `VlanDetailPage`, `ScanJobsPage`, `AutomationPoliciesPage`) continue to be tracked individually.
+
 ## v1.34.16
 
 ### Added

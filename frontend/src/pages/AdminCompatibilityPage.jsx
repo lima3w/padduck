@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getV2CompatibilityWarnings, getV2DeprecationReport, getV2MigrationReadiness } from '../api/admin'
 import { downloadFile } from '../utils/download'
 
@@ -32,6 +33,7 @@ function SummaryTile({ label, value }) {
 }
 
 export default function AdminCompatibilityPage() {
+  const { t } = useTranslation()
   const [readiness, setReadiness] = useState(null)
   const [warnings, setWarnings] = useState(null)
   const [deprecations, setDeprecations] = useState(null)
@@ -54,12 +56,12 @@ export default function AdminCompatibilityPage() {
           setDeprecations(deprecationsRes.data)
         }
       } catch (err) {
-        if (!cancelled) setError(err.response?.data?.error || err.message || 'Compatibility report failed')
+        if (!cancelled) setError(err.response?.data?.error || err.message || t('adminCompatibility.loadFailed'))
       }
     }
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [t])
 
   const statusCounts = readiness?.summary?.byStatus || {}
   const severityCounts = warnings?.summary?.bySeverity || {}
@@ -74,7 +76,7 @@ export default function AdminCompatibilityPage() {
     try {
       await downloadFile('/api/v1/admin/export/v2-migration-bundle', 'ipam-v2-migration-bundle.zip')
     } catch (err) {
-      setError(err.message || 'Migration bundle download failed')
+      setError(err.message || t('adminCompatibility.downloadFailed'))
     } finally {
       setDownloading(false)
     }
@@ -84,9 +86,9 @@ export default function AdminCompatibilityPage() {
     <div className="w-full max-w-7xl mx-auto p-6">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">V2 Compatibility</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('adminCompatibility.title')}</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Migration readiness, deprecation reporting, and v2 export preparation.
+            {t('adminCompatibility.subtitle')}
           </p>
         </div>
         <button
@@ -102,7 +104,7 @@ export default function AdminCompatibilityPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
             </svg>
           )}
-          Migration Bundle
+          {t('adminCompatibility.migrationBundle')}
         </button>
       </div>
 
@@ -113,15 +115,15 @@ export default function AdminCompatibilityPage() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryTile label="Checks" value={readiness?.summary?.total} />
-        <SummaryTile label="Warnings" value={(statusCounts.warn || 0) + (severityCounts.warning || 0)} />
-        <SummaryTile label="Failures" value={statusCounts.fail} />
-        <SummaryTile label="Deprecations" value={deprecations?.summary?.total} />
+        <SummaryTile label={t('adminCompatibility.checksLabel')} value={readiness?.summary?.total} />
+        <SummaryTile label={t('adminCompatibility.warningsLabel')} value={(statusCounts.warn || 0) + (severityCounts.warning || 0)} />
+        <SummaryTile label={t('adminCompatibility.failuresLabel')} value={statusCounts.fail} />
+        <SummaryTile label={t('adminCompatibility.deprecationsLabel')} value={deprecations?.summary?.total} />
       </div>
 
       <network className="mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase text-gray-500 dark:text-gray-400">Migration Readiness</h2>
+          <h2 className="text-sm font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.migrationReadinessTitle')}</h2>
           {readiness?.summary && (
             <Badge value={readiness.summary.ready ? 'pass' : 'fail'} styles={STATUS_STYLES} />
           )}
@@ -130,10 +132,10 @@ export default function AdminCompatibilityPage() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-900/40">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Area</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Check</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Action</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.statusColumn')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.areaColumn')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.checkColumn')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.actionColumn')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -152,7 +154,7 @@ export default function AdminCompatibilityPage() {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">{check.recommendedWork || 'No action required.'}</td>
+                  <td className="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">{check.recommendedWork || t('adminCompatibility.noActionRequired')}</td>
                 </tr>
               ))}
             </tbody>
@@ -161,7 +163,7 @@ export default function AdminCompatibilityPage() {
       </network>
 
       <network className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500 dark:text-gray-400">Deprecation Report</h2>
+        <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.deprecationReportTitle')}</h2>
         <div className="grid gap-3 lg:grid-cols-2">
           {(deprecations?.deprecations || []).map((item) => (
             <article key={item.id} className="rounded border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -174,15 +176,15 @@ export default function AdminCompatibilityPage() {
               </div>
               <dl className="mt-4 grid gap-3 text-sm">
                 <div>
-                  <dt className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">V1 Surface</dt>
+                  <dt className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.v1SurfaceLabel')}</dt>
                   <dd className="mt-1 text-gray-800 dark:text-gray-200">{item.v1Surface}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">V2 Change</dt>
+                  <dt className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.v2ChangeLabel')}</dt>
                   <dd className="mt-1 text-gray-800 dark:text-gray-200">{item.v2Change}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Recommended Work</dt>
+                  <dt className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">{t('adminCompatibility.recommendedWorkLabel')}</dt>
                   <dd className="mt-1 text-gray-800 dark:text-gray-200">{item.recommendedWork}</dd>
                 </div>
               </dl>
