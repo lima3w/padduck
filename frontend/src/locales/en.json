@@ -2065,6 +2065,19 @@
     "healthyLabel": "Healthy:",
     "offlineLabel": "Offline:"
   },
+  "exportData": {
+    "title": "Data Export",
+    "subtitle": "Download a full export of all IPAM data in your preferred format.",
+    "exportFailed": "Export failed",
+    "fullExportTitle": "Full Data Export",
+    "fullExportSubtitle": "Exports all networks, subnets, and IP addresses. Large datasets may take a moment to generate.",
+    "generating": "Generating...",
+    "exportCsv": "Export All Data (CSV)",
+    "exportJson": "Export All Data (JSON)",
+    "migrationBundleTitle": "V2 Migration Bundle",
+    "migrationBundleSubtitle": "Exports the canonical JSON migration input, CSV fallback, manifest checksums, and bundle README.",
+    "exportMigrationBundle": "Export Migration Bundle"
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
