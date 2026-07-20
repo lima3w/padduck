@@ -1,13 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { generateTokenForMe } from '../api/auth'
 
-const METRICS = [
-  { name: 'subnet_utilization', desc: 'All subnets with CIDR, network, used/total IPs, and utilization %' },
-  { name: 'ip_by_status', desc: 'IP address counts grouped by status (assigned, available, reserved, …)' },
-  { name: 'section_summary', desc: 'Per-network subnet count, total IPs, and used IPs' },
-]
+const METRIC_NAMES = ['subnet_utilization', 'ip_by_status', 'section_summary']
 
 export default function AdminGrafanaPage() {
+  const { t } = useTranslation()
+  const METRICS = METRIC_NAMES.map(name => ({ name, desc: t(`adminGrafana.metrics.${name}`) }))
   const [token, setToken] = useState('')
   const [tokenName, setTokenName] = useState('grafana-datasource')
   const [generating, setGenerating] = useState(false)
@@ -23,7 +22,7 @@ export default function AdminGrafanaPage() {
       const res = await generateTokenForMe(tokenName)
       setToken(res.data?.token || res.data?.rawToken || '')
     } catch {
-      setError('Failed to generate token')
+      setError(t('adminGrafana.generateFailed'))
     } finally {
       setGenerating(false)
     }
@@ -32,27 +31,27 @@ export default function AdminGrafanaPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Grafana Data Source</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('adminGrafana.title')}</h1>
         <p className="text-sm text-gray-500">
-          Configure Grafana to query IPAM data using the built-in SimpleJSON datasource endpoint.
+          {t('adminGrafana.subtitle')}
         </p>
       </div>
 
       <network className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-800">1. Datasource URL</h2>
+        <h2 className="text-base font-semibold text-gray-800">{t('adminGrafana.step1Title')}</h2>
         <div className="bg-gray-50 border border-gray-200 rounded px-4 py-3 font-mono text-sm text-gray-800 select-all">
           {baseUrl}
         </div>
         <p className="text-xs text-gray-500">
-          Use the <strong>JSON API</strong> or <strong>SimpleJSON</strong> Grafana plugin and set this as the base URL.
+          {t('adminGrafana.step1HintPrefix')}<strong>{t('adminGrafana.jsonApiLabel')}</strong>{t('adminGrafana.step1HintMiddle')}<strong>{t('adminGrafana.simpleJsonLabel')}</strong>{t('adminGrafana.step1HintSuffix')}
         </p>
       </network>
 
       <network className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-800">2. Generate an API Token</h2>
+        <h2 className="text-base font-semibold text-gray-800">{t('adminGrafana.step2Title')}</h2>
         <form onSubmit={handleGenerate} className="flex gap-2 items-end">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Token name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{t('adminGrafana.tokenNameLabel')}</label>
             <input
               type="text"
               value={tokenName}
@@ -65,18 +64,18 @@ export default function AdminGrafanaPage() {
             disabled={generating}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {generating ? 'Generating…' : 'Generate'}
+            {generating ? t('adminGrafana.generating') : t('adminGrafana.generate')}
           </button>
         </form>
         {error && <p className="text-red-600 text-sm">{error}</p>}
         {token && (
           <div>
-            <p className="text-xs text-amber-600 font-medium mb-1">Copy this token now — it will not be shown again.</p>
+            <p className="text-xs text-amber-600 font-medium mb-1">{t('adminGrafana.copyTokenNotice')}</p>
             <div className="bg-yellow-50 border border-yellow-200 rounded px-4 py-3 font-mono text-sm break-all select-all">
               {token}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Add this as a <strong>Bearer</strong> token in the Grafana datasource HTTP Headers:{' '}
+              {t('adminGrafana.bearerHintPrefix')}<strong>{t('adminGrafana.bearerLabel')}</strong>{t('adminGrafana.bearerHintSuffix')}{' '}
               <code className="bg-gray-100 px-1 rounded">Authorization: Bearer {'<token>'}</code>
             </p>
           </div>
@@ -84,13 +83,13 @@ export default function AdminGrafanaPage() {
       </network>
 
       <network className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-800">3. Available Metrics</h2>
+        <h2 className="text-base font-semibold text-gray-800">{t('adminGrafana.step3Title')}</h2>
         <div className="rounded border border-gray-200 overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Metric</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Description</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">{t('adminGrafana.metricColumn')}</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">{t('common.description')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
@@ -106,13 +105,13 @@ export default function AdminGrafanaPage() {
       </network>
 
       <network className="space-y-2">
-        <h2 className="text-base font-semibold text-gray-800">4. Grafana Plugin Setup</h2>
+        <h2 className="text-base font-semibold text-gray-800">{t('adminGrafana.step4Title')}</h2>
         <ol className="list-decimal list-inside space-y-1 text-sm text-gray-700">
-          <li>Install the <strong>Marcusolsson JSON API</strong> or <strong>SimpleJSON</strong> plugin in Grafana.</li>
-          <li>Add a new datasource using the URL above.</li>
-          <li>Under <em>Custom HTTP Headers</em>, add <code className="bg-gray-100 px-1 rounded">Authorization</code> with value <code className="bg-gray-100 px-1 rounded">Bearer &lt;your-token&gt;</code>.</li>
-          <li>Save &amp; test the connection (the health check endpoint should return <code className="bg-gray-100 px-1 rounded">ok</code>).</li>
-          <li>In a panel, select a metric from the table above and render as a Table or Stat visualization.</li>
+          <li>{t('adminGrafana.step4Item1Prefix')}<strong>{t('adminGrafana.marcussonPlugin')}</strong>{t('adminGrafana.step4Item1Middle')}<strong>{t('adminGrafana.simpleJsonLabel')}</strong>{t('adminGrafana.step4Item1Suffix')}</li>
+          <li>{t('adminGrafana.step4Item2')}</li>
+          <li>{t('adminGrafana.step4Item3Prefix')}<em>{t('adminGrafana.customHttpHeaders')}</em>{t('adminGrafana.step4Item3Middle')}<code className="bg-gray-100 px-1 rounded">Authorization</code>{t('adminGrafana.step4Item3ThenValue')}<code className="bg-gray-100 px-1 rounded">Bearer &lt;your-token&gt;</code>{t('adminGrafana.step4Item3End')}</li>
+          <li>{t('adminGrafana.step4Item4Prefix')}<code className="bg-gray-100 px-1 rounded">ok</code>{t('adminGrafana.step4Item4Suffix')}</li>
+          <li>{t('adminGrafana.step4Item5')}</li>
         </ol>
       </network>
     </div>
