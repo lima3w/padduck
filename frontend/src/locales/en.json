@@ -2175,6 +2175,28 @@
     "actionSkip": "Skip",
     "actionWarning": "Warning"
   },
+  "deviceDetail": {
+    "loadFailed": "Failed to load device",
+    "updateFailed": "Failed to update device",
+    "createIpFailed": "Failed to create IP address",
+    "associateIpFailed": "Failed to associate IP",
+    "disassociateIpFailed": "Failed to remove IP association",
+    "saveInterfaceFailed": "Failed to save interface",
+    "deleteInterfaceFailed": "Failed to delete interface",
+    "loadingDevice": "Loading device...",
+    "interfacesTab": "Interfaces",
+    "physicalAssignment": "Physical assignment",
+    "rackAssignment": "Rack assignment",
+    "mountedAt": "Mounted at U{{start}}-U{{end}}",
+    "associatedIps": "Associated IPs",
+    "addressesLinkedToDevice_one": "{{count}} address linked to this device",
+    "addressesLinkedToDevice_other": "{{count}} addresses linked to this device",
+    "deviceInterfacesValue": "Device interfaces",
+    "interfacesDefined_one": "{{count}} interface defined",
+    "interfacesDefined_other": "{{count}} interfaces defined",
+    "snmpPermissionDenied": "You do not have permission to view SNMP credentials.",
+    "loadCredentialsFailed": "Failed to load credentials."
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
