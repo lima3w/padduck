@@ -1925,6 +1925,92 @@
     "required": "Required",
     "searchable": "Searchable"
   },
+  "adminIntegrations": {
+    "title": "Automation Integrations",
+    "subtitle": "Connect IPAM to n8n, Zapier, Make, or any HTTP-capable automation platform using API tokens and webhooks.",
+    "healthTitle": "Integration Health",
+    "connected": "Connected",
+    "connectionFailed": "Connection failed",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "notConfigured": "Not configured",
+    "testing": "Testing…",
+    "testConnection": "Test Connection",
+    "controlPlaneTitle": "Automation Control Plane",
+    "integrationTemplates": "Integration templates",
+    "apiTokensTracked": "API tokens tracked",
+    "activePolicies": "Active policies",
+    "tokenColumn": "Token",
+    "ownerColumn": "Owner",
+    "scopeColumn": "Scope",
+    "usageColumn": "Usage",
+    "rateLimitColumn": "Rate Limit",
+    "step1Title": "1. Generate an API Token",
+    "tokenNameLabel": "Token name",
+    "generating": "Generating…",
+    "generate": "Generate",
+    "generateFailed": "Failed to generate token",
+    "copyTokenNotice": "Copy this token now — it will not be shown again.",
+    "step2Title": "2. Key API Endpoints",
+    "methodColumn": "Method",
+    "endpointColumn": "Endpoint",
+    "baseUrlLabel": "Base URL: ",
+    "baseUrlSuffix": ".",
+    "allRequestsRequirePrefix": "All requests require ",
+    "allRequestsRequireSuffix": ".",
+    "step3Title": "3. Platform Setup",
+    "step4Title": "4. Webhook Events",
+    "webhookEventsPrefix": "Configure outbound webhooks in ",
+    "webhookEventsLinkText": "Admin → Webhooks",
+    "webhookEventsSuffix": ". IPAM will POST a JSON payload to your automation platform URL on every IP, subnet, or network change.",
+    "webhookEventsN8nPrefix": "In n8n, use a ",
+    "webhookEventsN8nStrong": "Webhook",
+    "webhookEventsN8nSuffix": " trigger node. ",
+    "webhookEventsZapierPrefix": "In Zapier, use ",
+    "webhookEventsZapierStrong": "Webhooks by Zapier",
+    "webhookEventsZapierSuffix": ". ",
+    "webhookEventsMakePrefix": "In Make, use the ",
+    "webhookEventsMakeStrong": "Webhooks",
+    "webhookEventsMakeSuffix": " module.",
+    "platforms": {
+      "n8n": {
+        "description": "Self-hosted workflow automation",
+        "steps": {
+          "0": "In n8n, create an HTTP Request node and set the URL to your IPAM instance.",
+          "1": "Under Authentication, choose \"Header Auth\" and add the header Authorization: Bearer <your-token>.",
+          "2": "Use the Webhook Trigger node to receive IPAM events (configure the webhook URL in IPAM → Admin → Webhooks).",
+          "3": "Pair trigger nodes with HTTP Request action nodes to read/write IPAM data."
+        }
+      },
+      "zapier": {
+        "description": "Cloud workflow automation",
+        "steps": {
+          "0": "In Zapier, create a Zap with a \"Webhook by Zapier\" trigger to receive IPAM events.",
+          "1": "Copy the Zapier webhook URL into IPAM → Admin → Webhooks to push events.",
+          "2": "For action steps, use the \"HTTP by Zapier\" action with your IPAM API URL.",
+          "3": "Set the Authorization header to Bearer <your-token> in the HTTP action settings."
+        }
+      },
+      "make": {
+        "description": "Visual automation platform",
+        "steps": {
+          "0": "In Make, add a \"Webhooks\" module as a trigger and copy the URL into IPAM → Admin → Webhooks.",
+          "1": "Add an \"HTTP\" module for actions, set the URL to your IPAM API endpoint.",
+          "2": "Under Headers, add Authorization: Bearer <your-token>.",
+          "3": "Map the response fields to downstream modules in your scenario."
+        }
+      }
+    },
+    "endpoints": {
+      "previewNextAvailable": "Preview the next free IP without allocating it",
+      "allocateNextAvailable": "Allocate the next available IP address",
+      "assignIp": "Assign an IP to a host",
+      "releaseIp": "Release an IP address",
+      "listNetworks": "List all networks",
+      "listSubnetsInNetwork": "List subnets in a network",
+      "listIpsInSubnet": "List IPs in a subnet"
+    }
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
