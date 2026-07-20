@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAutomationPolicies, createAutomationPolicy, updateAutomationPolicy, deleteAutomationPolicy, simulateAutomation } from '../api/admin'
 
-const OPERATORS = [
-  { value: 'eq', label: 'equals' },
-  { value: 'neq', label: 'not equals' },
-  { value: 'contains', label: 'contains' },
-  { value: 'starts_with', label: 'starts with' },
-  { value: 'ends_with', label: 'ends with' },
-  { value: 'gt', label: 'greater than' },
-  { value: 'lt', label: 'less than' },
-  { value: 'glob', label: 'glob (wildcard *)' },
+const OPERATOR_KEYS = [
+  { value: 'eq', labelKey: 'operatorEquals' },
+  { value: 'neq', labelKey: 'operatorNotEquals' },
+  { value: 'contains', labelKey: 'operatorContains' },
+  { value: 'starts_with', labelKey: 'operatorStartsWith' },
+  { value: 'ends_with', labelKey: 'operatorEndsWith' },
+  { value: 'gt', labelKey: 'operatorGreaterThan' },
+  { value: 'lt', labelKey: 'operatorLessThan' },
+  { value: 'glob', labelKey: 'operatorGlob' },
 ]
 
 const KNOWN_FIELDS = [
@@ -17,12 +18,12 @@ const KNOWN_FIELDS = [
   'subnet_id', 'tag_id', 'location_id', 'device_type',
 ]
 
-const ACTION_TYPES = [
-  { value: 'notify', label: 'Notify user(s)' },
-  { value: 'webhook', label: 'Fire webhook' },
-  { value: 'audit_annotation', label: 'Audit annotation' },
-  { value: 'scan', label: 'Trigger scan' },
-  { value: 'tag', label: 'Apply tag' },
+const ACTION_TYPE_KEYS = [
+  { value: 'notify', labelKey: 'actionTypeNotify' },
+  { value: 'webhook', labelKey: 'actionTypeWebhook' },
+  { value: 'audit_annotation', labelKey: 'actionTypeAuditAnnotation' },
+  { value: 'scan', labelKey: 'actionTypeScan' },
+  { value: 'tag', labelKey: 'actionTypeTag' },
 ]
 
 const EMPTY_CONDITION = { field: 'hostname', operator: 'eq', value: '' }
@@ -44,6 +45,7 @@ function effectBadge(effect) {
 }
 
 function ConditionRow({ cond, index, onChange, onRemove }) {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center gap-2">
       <select
@@ -59,11 +61,11 @@ function ConditionRow({ cond, index, onChange, onRemove }) {
         value={cond.operator}
         onChange={e => onChange(index, 'operator', e.target.value)}
       >
-        {OPERATORS.map(op => <option key={op.value} value={op.value}>{op.label}</option>)}
+        {OPERATOR_KEYS.map(op => <option key={op.value} value={op.value}>{t(`automationPolicies.${op.labelKey}`)}</option>)}
       </select>
       <input
         className="flex-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder="value"
+        placeholder={t('adminCustomFields.valuePlaceholder')}
         value={cond.value}
         onChange={e => onChange(index, 'value', e.target.value)}
       />
@@ -71,7 +73,7 @@ function ConditionRow({ cond, index, onChange, onRemove }) {
         type="button"
         onClick={() => onRemove(index)}
         className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-lg leading-none px-1"
-        title="Remove condition"
+        title={t('automationPolicies.removeConditionTitle')}
       >×</button>
     </div>
   )
@@ -89,6 +91,7 @@ function ActionParamField({ label, paramKey, action, onChange }) {
 }
 
 function ActionRow({ action, index, onChange, onRemove }) {
+  const { t } = useTranslation()
   function handleTypeChange(type) {
     onChange(index, { type, params: {} })
   }
@@ -102,39 +105,40 @@ function ActionRow({ action, index, onChange, onRemove }) {
         value={action.type}
         onChange={e => handleTypeChange(e.target.value)}
       >
-        {ACTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+        {ACTION_TYPE_KEYS.map(at => <option key={at.value} value={at.value}>{t(`automationPolicies.${at.labelKey}`)}</option>)}
       </select>
       <div className="flex-1 flex flex-wrap gap-2">
         {action.type === 'notify' && (
           <>
-            <ActionParamField label="user_id (or leave blank)" paramKey="user_id" action={action} onChange={handleChange} />
-            <ActionParamField label="role (e.g. admin)" paramKey="role" action={action} onChange={handleChange} />
+            <ActionParamField label={t('automationPolicies.paramUserIdOrBlank')} paramKey="user_id" action={action} onChange={handleChange} />
+            <ActionParamField label={t('automationPolicies.paramRole')} paramKey="role" action={action} onChange={handleChange} />
           </>
         )}
         {action.type === 'webhook' && (
-          <ActionParamField label="webhook_id" paramKey="webhook_id" action={action} onChange={handleChange} />
+          <ActionParamField label={t('automationPolicies.paramWebhookId')} paramKey="webhook_id" action={action} onChange={handleChange} />
         )}
         {action.type === 'audit_annotation' && (
-          <ActionParamField label="message" paramKey="message" action={action} onChange={handleChange} />
+          <ActionParamField label={t('automationPolicies.paramMessage')} paramKey="message" action={action} onChange={handleChange} />
         )}
         {action.type === 'scan' && (
-          <ActionParamField label="profile_id (optional)" paramKey="profile_id" action={action} onChange={handleChange} />
+          <ActionParamField label={t('automationPolicies.paramProfileIdOptional')} paramKey="profile_id" action={action} onChange={handleChange} />
         )}
         {action.type === 'tag' && (
-          <ActionParamField label="tag_id" paramKey="tag_id" action={action} onChange={handleChange} />
+          <ActionParamField label={t('automationPolicies.paramTagId')} paramKey="tag_id" action={action} onChange={handleChange} />
         )}
       </div>
       <button
         type="button"
         onClick={() => onRemove(index)}
         className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-lg leading-none px-1 mt-0.5"
-        title="Remove action"
+        title={t('automationPolicies.removeActionTitle')}
       >×</button>
     </div>
   )
 }
 
 export default function AutomationPoliciesPage() {
+  const { t } = useTranslation()
   const [policies, setPolicies] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -154,7 +158,7 @@ export default function AutomationPoliciesPage() {
     setLoading(true)
     getAutomationPolicies()
       .then(res => setPolicies(res.data || []))
-      .catch(err => setError(err.response?.data?.error || 'Failed to load policies'))
+      .catch(err => setError(err.response?.data?.error || t('automationPolicies.loadFailed')))
       .finally(() => setLoading(false))
   }
 
@@ -235,19 +239,19 @@ export default function AutomationPoliciesPage() {
       setShowModal(false)
       load()
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save policy')
+      setFormError(err.response?.data?.error || t('automationPolicies.saveFailed'))
     } finally {
       setSaving(false)
     }
   }
 
   async function handleDelete(id) {
-    if (!window.confirm('Delete this policy?')) return
+    if (!window.confirm(t('automationPolicies.deleteConfirm'))) return
     try {
       await deleteAutomationPolicy(id)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to delete policy')
+      setError(err.response?.data?.error || t('automationPolicies.deleteFailed'))
     }
   }
 
@@ -270,7 +274,7 @@ export default function AutomationPoliciesPage() {
       const res = await simulateAutomation({ workflow: simForm.workflow.trim(), action: simForm.action.trim(), context })
       setSimResult(res.data)
     } catch (err) {
-      setSimError(err.response?.data?.error || 'Simulation failed')
+      setSimError(err.response?.data?.error || t('automationPolicies.simulationFailed'))
     } finally {
       setSimRunning(false)
     }
@@ -290,9 +294,9 @@ export default function AutomationPoliciesPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Automation Policies</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('automationPolicies.title')}</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Rules that allow, deny, or require manual review before automation actions are applied.
+            {t('automationPolicies.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -300,18 +304,18 @@ export default function AutomationPoliciesPage() {
             onClick={openSimulate}
             className="px-4 py-2 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            Simulate
+            {t('automationPolicies.simulate')}
           </button>
           <button
             onClick={openCreate}
             className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
           >
-            New Policy
+            {t('automationPolicies.newPolicy')}
           </button>
         </div>
       </div>
 
-      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</p>}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {!loading && !error && (
@@ -319,14 +323,14 @@ export default function AutomationPoliciesPage() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {['Name', 'Workflow', 'Action', 'Effect', 'Conditions', 'Enabled', ''].map(h => (
+                {[t('common.name'), t('automationPolicies.workflow'), t('auditLog.action'), t('automationPolicies.effect'), t('automationPolicies.conditions'), t('dnsTab.enabled'), ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
               {policies.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No policies configured.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">{t('automationPolicies.noPoliciesConfigured')}</td></tr>
               ) : policies.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{p.name}</td>
@@ -346,12 +350,12 @@ export default function AutomationPoliciesPage() {
                   </td>
                   <td className="px-4 py-3">
                     {p.enabled
-                      ? <span className="text-green-600 dark:text-green-400">Yes</span>
-                      : <span className="text-gray-400">No</span>}
+                      ? <span className="text-green-600 dark:text-green-400">{t('common.yes')}</span>
+                      : <span className="text-gray-400">{t('common.no')}</span>}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-xs">Edit</button>
-                    <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:text-red-800 dark:text-red-400 text-xs">Delete</button>
+                    <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-xs">{t('common.edit')}</button>
+                    <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:text-red-800 dark:text-red-400 text-xs">{t('common.delete')}</button>
                   </td>
                 </tr>
               ))}
@@ -365,8 +369,8 @@ export default function AutomationPoliciesPage() {
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Simulate Policy</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Read-only — no writes, webhooks, or notifications are triggered.</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('automationPolicies.simulatePolicyTitle')}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('automationPolicies.simulateReadOnlyHint')}</p>
               </div>
               <button onClick={() => setShowSimulate(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">×</button>
             </div>
@@ -374,20 +378,20 @@ export default function AutomationPoliciesPage() {
               {simError && <p className="text-sm text-red-600 dark:text-red-400">{simError}</p>}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Workflow</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('automationPolicies.workflow')}</label>
                   <input
                     className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. subnet, ip_address, *"
+                    placeholder={t('automationPolicies.workflowPlaceholder')}
                     value={simForm.workflow}
                     onChange={e => setSimForm(f => ({ ...f, workflow: e.target.value }))}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('auditLog.action')}</label>
                   <input
                     className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g. create, allocate, *"
+                    placeholder={t('automationPolicies.actionPlaceholder')}
                     value={simForm.action}
                     onChange={e => setSimForm(f => ({ ...f, action: e.target.value }))}
                     required
@@ -397,30 +401,30 @@ export default function AutomationPoliciesPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Context values</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('automationPolicies.contextValuesLabel')}</label>
                   <button
                     type="button"
                     onClick={() => setSimForm(f => ({ ...f, rows: [...f.rows, { ...EMPTY_SIM_ROW }] }))}
                     className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium"
                   >
-                    + Add value
+                    {t('automationPolicies.addValue')}
                   </button>
                 </div>
                 {simForm.rows.length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No context values — all condition checks will fail for field-based conditions.</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">{t('automationPolicies.noContextValues')}</p>
                 ) : (
                   <div className="space-y-2">
                     {simForm.rows.map((row, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <input
                           className="flex-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="key (e.g. prefix_len)"
+                          placeholder={t('automationPolicies.keyPlaceholder')}
                           value={row.key}
                           onChange={e => setSimForm(f => ({ ...f, rows: f.rows.map((r, j) => j === i ? { ...r, key: e.target.value } : r) }))}
                         />
                         <input
                           className="flex-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="value"
+                          placeholder={t('adminCustomFields.valuePlaceholder')}
                           value={row.value}
                           onChange={e => setSimForm(f => ({ ...f, rows: f.rows.map((r, j) => j === i ? { ...r, value: e.target.value } : r) }))}
                         />
@@ -439,13 +443,13 @@ export default function AutomationPoliciesPage() {
                 <div className={`rounded-lg border p-4 space-y-3 ${decisionColors(simResult.effectiveDecision)}`}>
                   <div className="flex items-center gap-3">
                     <span className="text-base font-semibold capitalize">{simResult.effectiveDecision.replace('_', ' ')}</span>
-                    {simResult.reviewNeeded && <span className="text-xs font-medium px-2 py-0.5 rounded bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100">Review required</span>}
-                    {simResult.allowed && !simResult.reviewNeeded && <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100">Allowed</span>}
-                    {!simResult.allowed && <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100">Blocked</span>}
+                    {simResult.reviewNeeded && <span className="text-xs font-medium px-2 py-0.5 rounded bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100">{t('automationPolicies.reviewRequired')}</span>}
+                    {simResult.allowed && !simResult.reviewNeeded && <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100">{t('automationPolicies.allowedBadge')}</span>}
+                    {!simResult.allowed && <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100">{t('automationPolicies.blockedBadge')}</span>}
                   </div>
                   {simResult.matchedPolicies && simResult.matchedPolicies.length > 0 ? (
                     <div className="space-y-2">
-                      <p className="text-xs font-medium opacity-70">{simResult.matchedPolicies.length} policy/policies matched:</p>
+                      <p className="text-xs font-medium opacity-70">{t('automationPolicies.policiesMatched', { count: simResult.matchedPolicies.length })}</p>
                       {simResult.matchedPolicies.map((mp, i) => (
                         <div key={i} className="rounded bg-white/50 dark:bg-black/20 px-3 py-2 text-xs space-y-1">
                           <div className="flex items-center gap-2">
@@ -461,15 +465,15 @@ export default function AutomationPoliciesPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs opacity-70">No policies matched — default allow applies.</p>
+                    <p className="text-xs opacity-70">{t('automationPolicies.noPoliciesMatched')}</p>
                   )}
                 </div>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowSimulate(false)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">Close</button>
+                <button type="button" onClick={() => setShowSimulate(false)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">{t('myRequests.close')}</button>
                 <button type="submit" disabled={simRunning} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                  {simRunning ? 'Running…' : 'Run Simulation'}
+                  {simRunning ? t('automationPolicies.running') : t('automationPolicies.runSimulation')}
                 </button>
               </div>
             </form>
@@ -482,17 +486,17 @@ export default function AutomationPoliciesPage() {
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {editingID ? 'Edit Policy' : 'New Policy'}
+                {editingID ? t('automationPolicies.editPolicyTitle') : t('automationPolicies.newPolicy')}
               </h2>
             </div>
             <form onSubmit={handleSave} className="px-6 py-4 space-y-4">
               {formError && <p className="text-sm text-red-600 dark:text-red-400">{formError}</p>}
 
               {[
-                { label: 'Name', key: 'name', required: true },
-                { label: 'Workflow (use * for all)', key: 'workflow' },
-                { label: 'Action (use * for all)', key: 'action' },
-                { label: 'Message (shown when denied or reviewed)', key: 'message' },
+                { label: t('common.name'), key: 'name', required: true },
+                { label: t('automationPolicies.workflowFieldLabel'), key: 'workflow' },
+                { label: t('automationPolicies.actionFieldLabel'), key: 'action' },
+                { label: t('automationPolicies.messageFieldLabel'), key: 'message' },
               ].map(({ label, key, required }) => (
                 <div key={key}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
@@ -506,7 +510,7 @@ export default function AutomationPoliciesPage() {
               ))}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Effect</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('automationPolicies.effect')}</label>
                 <select
                   className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={form.effect}
@@ -520,17 +524,17 @@ export default function AutomationPoliciesPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Conditions</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('automationPolicies.conditions')}</label>
                   <button
                     type="button"
                     onClick={addCondition}
                     className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium"
                   >
-                    + Add Condition
+                    {t('automationPolicies.addCondition')}
                   </button>
                 </div>
                 {form.conditions.length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No conditions — this policy matches all requests for the given workflow/action.</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">{t('automationPolicies.noConditionsHint')}</p>
                 ) : (
                   <div className="space-y-2">
                     {form.conditions.map((cond, i) => (
@@ -548,17 +552,17 @@ export default function AutomationPoliciesPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Actions <span className="font-normal text-gray-400">(run after allow)</span></label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('automationPolicies.actionsLabel')} <span className="font-normal text-gray-400">{t('automationPolicies.actionsHintSuffix')}</span></label>
                   <button
                     type="button"
                     onClick={addAction}
                     className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium"
                   >
-                    + Add Action
+                    {t('automationPolicies.addAction')}
                   </button>
                 </div>
                 {(form.actions || []).length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">No actions — policy only gates the operation.</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic">{t('automationPolicies.noActionsHint')}</p>
                 ) : (
                   <div className="space-y-2">
                     {(form.actions || []).map((action, i) => (
@@ -576,7 +580,7 @@ export default function AutomationPoliciesPage() {
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.enabled} onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))} />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Enabled</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t('dnsTab.enabled')}</span>
               </label>
 
               <div>
@@ -585,7 +589,7 @@ export default function AutomationPoliciesPage() {
                   onClick={() => setShowPreview(p => !p)}
                   className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
                 >
-                  {showPreview ? 'Hide' : 'Preview'} JSON
+                  {showPreview ? t('automationPolicies.hideJson') : t('automationPolicies.previewJson')}{t('automationPolicies.jsonSuffix')}
                 </button>
                 {showPreview && (
                   <pre className="mt-2 p-3 rounded bg-gray-50 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 overflow-x-auto border border-gray-200 dark:border-gray-700">
@@ -595,9 +599,9 @@ export default function AutomationPoliciesPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">{t('common.cancel')}</button>
                 <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? t('common.saving') : t('common.save')}
                 </button>
               </div>
             </form>
