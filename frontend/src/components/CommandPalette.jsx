@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { globalSearch } from '../api/ipam'
 
-function buildItems(data) {
+function buildItems(data, t) {
   const items = []
   for (const s of data.networks || []) {
     items.push({
@@ -16,7 +17,7 @@ function buildItems(data) {
     items.push({
       type: 'subnet',
       label: `${s.networkAddress}/${s.prefixLength}`,
-      sub: s.description || `Network ${s.sectionId}`,
+      sub: s.description || t('commandPalette.networkFallback', { id: s.sectionId }),
       url: `/networks/${s.sectionId}/subnets`,
     })
   }
@@ -31,7 +32,7 @@ function buildItems(data) {
   return items
 }
 
-const TYPE_LABEL = { network: 'Network', subnet: 'Subnet', device: 'Device' }
+const TYPE_LABEL_KEYS = { network: 'subnets.network', subnet: 'dashboard.subnet', device: 'ipAddressesPage.columnDevice' }
 const TYPE_COLOR = {
   network: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   subnet:  'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
@@ -39,6 +40,7 @@ const TYPE_COLOR = {
 }
 
 export default function CommandPalette({ open, onClose }) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [items, setItems] = useState([])
@@ -61,12 +63,12 @@ export default function CommandPalette({ open, onClose }) {
     setLoading(true)
     globalSearch(q)
       .then((res) => {
-        setItems(buildItems(res.data))
+        setItems(buildItems(res.data, t))
         setCursor(0)
       })
       .catch(() => setItems([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   function handleInput(e) {
     const q = e.target.value
@@ -100,7 +102,7 @@ export default function CommandPalette({ open, onClose }) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Command palette"
+      aria-label={t('commandPalette.dialogLabel')}
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/40 dark:bg-black/60"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
@@ -115,13 +117,13 @@ export default function CommandPalette({ open, onClose }) {
             value={query}
             onChange={handleInput}
             onKeyDown={handleKey}
-            aria-label="Search networks, subnets, and devices"
+            aria-label={t('commandPalette.searchAriaLabel')}
             aria-controls="command-palette-results"
             aria-activedescendant={items[cursor] ? `command-palette-item-${cursor}` : undefined}
             role="combobox"
             aria-expanded={items.length > 0}
             aria-autocomplete="list"
-            placeholder="Search networks, subnets, devices…"
+            placeholder={t('commandPalette.searchPlaceholder')}
             className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400"
           />
           {loading && (
@@ -146,7 +148,7 @@ export default function CommandPalette({ open, onClose }) {
                   }`}
                 >
                   <span className={`shrink-0 text-xs font-medium px-1.5 py-0.5 rounded ${TYPE_COLOR[item.type]}`}>
-                    {TYPE_LABEL[item.type]}
+                    {t(TYPE_LABEL_KEYS[item.type])}
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{item.label}</span>
@@ -164,19 +166,19 @@ export default function CommandPalette({ open, onClose }) {
         )}
 
         {query && !loading && items.length === 0 && (
-          <p className="px-4 py-6 text-sm text-center text-gray-400">No results for &ldquo;{query}&rdquo;</p>
+          <p className="px-4 py-6 text-sm text-center text-gray-400">{t('commandPalette.noResultsFor', { query })}</p>
         )}
 
         {!query && (
           <p className="px-4 py-4 text-xs text-center text-gray-400">
-            Type to search across networks, subnets, and devices
+            {t('commandPalette.typeToSearch')}
           </p>
         )}
 
         <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-400">
-          <span><kbd className="font-mono">↑↓</kbd> navigate</span>
-          <span><kbd className="font-mono">↵</kbd> open</span>
-          <span><kbd className="font-mono">Esc</kbd> close</span>
+          <span><kbd className="font-mono">↑↓</kbd> {t('commandPalette.navigateHint')}</span>
+          <span><kbd className="font-mono">↵</kbd> {t('commandPalette.openHint')}</span>
+          <span><kbd className="font-mono">Esc</kbd> {t('commandPalette.closeHint')}</span>
         </div>
       </div>
     </div>

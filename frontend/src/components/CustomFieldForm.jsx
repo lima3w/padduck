@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import SafeUrlLink from './SafeUrlLink'
 
 export default function CustomFieldForm({ definitions, values, onChange, readOnly }) {
+  const { t } = useTranslation()
   if (!definitions || definitions.length === 0) return null
 
   const today = new Date().toISOString().split('T')[0]
@@ -23,7 +25,7 @@ export default function CustomFieldForm({ definitions, values, onChange, readOnl
                 {def.fieldType === 'url' && val ? (
                   <SafeUrlLink value={val} />
                 ) : def.fieldType === 'checkbox' ? (
-                  val === 'true' || val === true ? 'Yes' : 'No'
+                  val === 'true' || val === true ? t('common.yes') : t('common.no')
                 ) : (
                   val || <span className="text-gray-400">—</span>
                 )}
@@ -67,7 +69,7 @@ export default function CustomFieldForm({ definitions, values, onChange, readOnl
                     required={def.isRequired}
                     onChange={e => onChange(def.name, e.target.value)}
                   >
-                    <option value="">Select...</option>
+                    <option value="">{t('customFieldForm.selectOption')}</option>
                     {(def.options || []).map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label || opt.value}</option>
                     ))}

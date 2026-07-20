@@ -1,7 +1,9 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 // Full-page fallback rendered by the top-level boundary.
 function AppErrorFallback({ error, componentStack }) {
+  const { t } = useTranslation()
   const isDev = import.meta.env.DEV
 
   return (
@@ -23,19 +25,19 @@ function AppErrorFallback({ error, componentStack }) {
             />
           </svg>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Something went wrong
+            {t('errorBoundary.somethingWentWrong')}
           </h1>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          An unexpected error occurred. Try{' '}
+          {t('errorBoundary.unexpectedErrorPrefix')}{' '}
           <button
             type="button"
             onClick={() => window.location.reload()}
             className="text-blue-600 dark:text-blue-400 underline hover:no-underline"
           >
-            reloading the page
+            {t('errorBoundary.reloadingThePage')}
           </button>
-          . If the problem persists, contact your administrator.
+          {t('errorBoundary.unexpectedErrorSuffix')}
         </p>
         {error?.message && (
           <div className="rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 mb-4">
@@ -47,7 +49,7 @@ function AppErrorFallback({ error, componentStack }) {
         {isDev && componentStack && (
           <details className="mt-2">
             <summary className="cursor-pointer text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 select-none">
-              Component stack (dev only)
+              {t('errorBoundary.componentStackDevOnly')}
             </summary>
             <pre className="mt-2 overflow-auto rounded bg-gray-100 dark:bg-gray-900 p-3 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
               {componentStack}
@@ -61,6 +63,7 @@ function AppErrorFallback({ error, componentStack }) {
 
 // Inline fallback rendered by the per-route boundary inside the layout.
 function RouteErrorFallback({ error, componentStack, onReset }) {
+  const { t } = useTranslation()
   const isDev = import.meta.env.DEV
 
   return (
@@ -83,10 +86,10 @@ function RouteErrorFallback({ error, componentStack, onReset }) {
           </svg>
           <div>
             <h2 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">
-              This page failed to load
+              {t('errorBoundary.pageFailedToLoad')}
             </h2>
             <p className="text-sm text-red-700 dark:text-red-400">
-              {error?.message || 'An unexpected error occurred.'}
+              {error?.message || t('errorBoundary.unexpectedErrorOccurred')}
             </p>
           </div>
         </div>
@@ -96,20 +99,20 @@ function RouteErrorFallback({ error, componentStack, onReset }) {
             onClick={onReset}
             className="rounded px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-400"
           >
-            Try again
+            {t('errorBoundary.tryAgain')}
           </button>
           <button
             type="button"
             onClick={() => window.location.reload()}
             className="rounded px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 focus:outline-none"
           >
-            Reload page
+            {t('errorBoundary.reloadPage')}
           </button>
         </div>
         {isDev && componentStack && (
           <details className="mt-3">
             <summary className="cursor-pointer text-xs text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-300 select-none">
-              Component stack (dev only)
+              {t('errorBoundary.componentStackDevOnly')}
             </summary>
             <pre className="mt-2 overflow-auto rounded bg-white dark:bg-gray-900 p-3 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
               {componentStack}

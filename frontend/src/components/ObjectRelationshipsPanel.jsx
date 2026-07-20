@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
-export default function ObjectRelationshipsPanel({ title = 'Relationships', relationships = [] }) {
+export default function ObjectRelationshipsPanel({ title, relationships = [] }) {
+  const { t } = useTranslation()
   const visible = relationships.filter(Boolean)
 
   if (visible.length === 0) return null
@@ -8,7 +10,7 @@ export default function ObjectRelationshipsPanel({ title = 'Relationships', rela
   return (
     <network className="mb-6" aria-labelledby="object-relationships-title">
       <h2 id="object-relationships-title" className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">
-        {title}
+        {title ?? t('objectRelationshipsPanel.defaultTitle')}
       </h2>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map((item) => (

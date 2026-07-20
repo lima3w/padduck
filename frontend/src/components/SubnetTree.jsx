@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import TableActions from './TableActions'
 
 function UtilBar({ pct }) {
@@ -20,6 +21,7 @@ function UtilBar({ pct }) {
 }
 
 function SubnetRow({ node, depth, onEdit, onDelete, deleteConfirm, setDeleteConfirm, navigate }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(depth === 0)
   const hasChildren = node.children && node.children.length > 0
   const indent = depth * 20
@@ -33,7 +35,7 @@ function SubnetRow({ node, depth, onEdit, onDelete, deleteConfirm, setDeleteConf
               <button
                 onClick={() => setExpanded(v => !v)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 w-4 h-4 flex items-center justify-center flex-shrink-0"
-                aria-label={expanded ? 'Collapse' : 'Expand'}
+                aria-label={expanded ? t('subnetTree.collapse') : t('subnetTree.expand')}
               >
                 {expanded ? '▼' : '▶'}
               </button>
@@ -92,13 +94,14 @@ function SubnetRow({ node, depth, onEdit, onDelete, deleteConfirm, setDeleteConf
  *   navigate    {Function} — react-router navigate fn
  */
 export default function SubnetTree({ nodes, onEdit, onDelete, navigate }) {
+  const { t } = useTranslation()
   const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   if (!nodes || nodes.length === 0) {
     return (
       <tr>
         <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-          No subnets yet
+          {t('subnetTree.noSubnetsYet')}
         </td>
       </tr>
     )
