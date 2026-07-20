@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.23
+
+### Added
+- **i18n: convert AdminUsersPage** (issue #35): converted `AdminUsersPage.jsx` (1148 lines) to `t()` calls, including the embedded Break-Glass emergency access tab, the users table with bulk actions, role/grant management, and all six modals (create user, suspend, update email, GDPR delete, assign role, add grant). Sixth of the remaining large-deferred-file follow-ups; only `IPAddressesPage.jsx` remains.
+
 ## v1.34.22
 
 ### Added

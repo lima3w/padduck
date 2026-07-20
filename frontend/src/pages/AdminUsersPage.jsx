@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getLocations } from '../api/locations'
 import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserRole, createUser, adminUnlockUser, suspendUser, unsuspendUser, impersonateUser, sendPasswordResetEmail, updateUserEmail, gdprDeleteUser, bulkSuspendUsers, bulkActivateUsers, bulkDeleteUsers, getBreakGlassStatus, activateBreakGlass, endBreakGlass, listUserGrants, createGrant, revokeGrant } from '../api/admin'
@@ -17,8 +18,8 @@ function bgFormatDatetime(str) {
   })
 }
 
-function bgFormatDuration(startStr, endStr) {
-  if (!endStr) return 'Active'
+function bgFormatDuration(startStr, endStr, activeLabel) {
+  if (!endStr) return activeLabel
   const ms = new Date(endStr) - new Date(startStr)
   if (ms < 0) return '—'
   const totalSecs = Math.floor(ms / 1000)
@@ -31,34 +32,36 @@ function bgFormatDuration(startStr, endStr) {
 }
 
 function BgSessionStatus({ session }) {
+  const { t } = useTranslation()
   if (session.isActive) {
     return (
       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-        Active
+        {t('adminWebhooks.active')}
       </span>
     )
   }
   if (session.endedAt) {
     return (
       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-        Ended
+        {t('breakGlass.ended')}
       </span>
     )
   }
   return (
     <span className="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
-      Expired
+      {t('breakGlass.expired')}
     </span>
   )
 }
 
 function BgTimeRemaining({ expiresAt }) {
+  const { t } = useTranslation()
   const [remaining, setRemaining] = useState('')
 
   useEffect(() => {
     function calc() {
       const diff = new Date(expiresAt) - Date.now()
-      if (diff <= 0) { setRemaining('Expired'); return }
+      if (diff <= 0) { setRemaining(t('breakGlass.expired')); return }
       const totalSecs = Math.floor(diff / 1000)
       const h = Math.floor(totalSecs / 3600)
       const m = Math.floor((totalSecs % 3600) / 60)
@@ -70,12 +73,13 @@ function BgTimeRemaining({ expiresAt }) {
     calc()
     const id = setInterval(calc, 1000)
     return () => clearInterval(id)
-  }, [expiresAt])
+  }, [expiresAt, t])
 
   return <span className="font-mono font-semibold">{remaining}</span>
 }
 
 function BreakGlassTab() {
+  const { t } = useTranslation()
   const [active, setActive] = useState(null)
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -93,9 +97,9 @@ function BreakGlassTab() {
         setActive(res.data?.active ?? null)
         setHistory(res.data?.history ?? [])
       })
-      .catch(() => setError('Failed to load break-glass status'))
+      .catch(() => setError(t('breakGlass.loadStatusFailed')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchStatus()
@@ -105,10 +109,10 @@ function BreakGlassTab() {
     e.preventDefault()
     setActionError(null)
     if (justification.trim().length < 10) {
-      setActionError('Justification must be at least 10 characters')
+      setActionError(t('breakGlass.justificationTooShort'))
       return
     }
-    if (!window.confirm('This action is fully audited. A break-glass session will be recorded and visible to all administrators. Continue?')) {
+    if (!window.confirm(t('breakGlass.confirmActivate'))) {
       return
     }
     setActivating(true)
@@ -117,7 +121,7 @@ function BreakGlassTab() {
       setJustification('')
       fetchStatus()
     } catch (err) {
-      setActionError(err.response?.data?.error || 'Failed to activate break-glass session')
+      setActionError(err.response?.data?.error || t('breakGlass.activateFailed'))
     } finally {
       setActivating(false)
     }
@@ -125,13 +129,13 @@ function BreakGlassTab() {
 
   async function handleEnd() {
     setActionError(null)
-    if (!window.confirm('End the current break-glass session?')) return
+    if (!window.confirm(t('breakGlass.confirmEnd'))) return
     setEnding(true)
     try {
       await endBreakGlass()
       fetchStatus()
     } catch (err) {
-      setActionError(err.response?.data?.error || 'Failed to end break-glass session')
+      setActionError(err.response?.data?.error || t('breakGlass.endFailed'))
     } finally {
       setEnding(false)
     }
@@ -140,7 +144,7 @@ function BreakGlassTab() {
   if (loading) {
     return (
       <div className="flex min-h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-        Loading...
+        {t('deploymentHealth.loading')}
       </div>
     )
   }
@@ -156,9 +160,9 @@ function BreakGlassTab() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Break-Glass Emergency Access</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('breakGlass.title')}</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Enable a temporary emergency access session. All actions are fully audited.
+          {t('breakGlass.subtitle')}
         </p>
       </div>
 
@@ -170,29 +174,29 @@ function BreakGlassTab() {
 
       {/* Current Status */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Current Status</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('breakGlass.currentStatusTitle')}</h3>
         {active ? (
           <div className="rounded-lg border-2 border-red-500 bg-red-50 dark:bg-red-900/20 p-4 space-y-3">
             <div className="flex items-center gap-3">
               <span className="text-lg font-bold text-red-700 dark:text-red-300 uppercase tracking-wide">
-                BREAK-GLASS ACTIVE
+                {t('breakGlass.activeBanner')}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Activated by user ID:</span>{' '}
+                <span className="font-medium text-gray-700 dark:text-gray-300">{t('breakGlass.activatedByPrefix')}</span>{' '}
                 <span className="text-gray-900 dark:text-gray-100">{active.initiatedByUserId}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Started:</span>{' '}
+                <span className="font-medium text-gray-700 dark:text-gray-300">{t('breakGlass.startedPrefix')}</span>{' '}
                 <span className="text-gray-900 dark:text-gray-100">{bgFormatDatetime(active.createdAt)}</span>
               </div>
               <div className="sm:col-span-2">
-                <span className="font-medium text-gray-700 dark:text-gray-300">Justification:</span>{' '}
+                <span className="font-medium text-gray-700 dark:text-gray-300">{t('breakGlass.justificationPrefix')}</span>{' '}
                 <span className="text-gray-900 dark:text-gray-100">{active.justification}</span>
               </div>
               <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Time remaining:</span>{' '}
+                <span className="font-medium text-gray-700 dark:text-gray-300">{t('breakGlass.timeRemainingPrefix')}</span>{' '}
                 <BgTimeRemaining expiresAt={active.expiresAt} />
               </div>
             </div>
@@ -202,13 +206,13 @@ function BreakGlassTab() {
                 disabled={ending}
                 className="px-4 py-2 rounded text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {ending ? 'Ending...' : 'End Session'}
+                {ending ? t('breakGlass.ending') : t('breakGlass.endSession')}
               </button>
             </div>
           </div>
         ) : (
           <div className="rounded-lg border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-800 dark:text-green-300 font-medium">
-            No active break-glass session.
+            {t('breakGlass.noActiveSession')}
           </div>
         )}
       </div>
@@ -216,21 +220,21 @@ function BreakGlassTab() {
       {/* Activate Form (only shown when no active session) */}
       {!active && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Activate Break-Glass</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('breakGlass.activateTitle')}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            The session will last 1 hour. Provide a justification explaining why emergency access is required.
+            {t('breakGlass.activateSubtitle')}
           </p>
           <form onSubmit={handleActivate} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Justification <span className="text-red-500">*</span>
-                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">(minimum 10 characters)</span>
+                {t('breakGlass.justificationLabel')} <span className="text-red-500">*</span>
+                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">{t('breakGlass.minCharsHint')}</span>
               </label>
               <textarea
                 value={justification}
                 onChange={e => setJustification(e.target.value)}
                 rows={4}
-                placeholder="Describe the emergency requiring break-glass access..."
+                placeholder={t('breakGlass.justificationPlaceholder')}
                 className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
@@ -239,7 +243,7 @@ function BreakGlassTab() {
               disabled={activating}
               className="px-4 py-2 rounded text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
             >
-              {activating ? 'Activating...' : 'Activate Break-Glass'}
+              {activating ? t('breakGlass.activating') : t('breakGlass.activateButton')}
             </button>
           </form>
         </div>
@@ -247,10 +251,10 @@ function BreakGlassTab() {
 
       {/* Session History */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Session History</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('breakGlass.sessionHistoryTitle')}</h3>
         {history.length === 0 ? (
           <div className="rounded bg-white dark:bg-gray-800 shadow px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
-            No break-glass sessions recorded.
+            {t('breakGlass.noSessionsRecorded')}
           </div>
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -258,11 +262,11 @@ function BreakGlassTab() {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Date</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Initiated By</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Justification</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Duration</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Status</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('breakGlass.dateColumn')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('breakGlass.initiatedByColumn')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('breakGlass.justificationColumn')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('breakGlass.durationColumn')}</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('delegations.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -272,13 +276,13 @@ function BreakGlassTab() {
                         {bgFormatDatetime(s.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        User {s.initiatedByUserId}
+                        {t('breakGlass.userIdLabel', { id: s.initiatedByUserId })}
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-xs truncate" title={s.justification}>
                         {s.justification}
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                        {bgFormatDuration(s.createdAt, s.endedAt || (s.isActive ? null : s.expiresAt))}
+                        {bgFormatDuration(s.createdAt, s.endedAt || (s.isActive ? null : s.expiresAt), t('adminWebhooks.active'))}
                       </td>
                       <td className="px-4 py-3">
                         <BgSessionStatus session={s} />
@@ -313,6 +317,7 @@ function normalizeRoles(data) {
 }
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('users')
   const [users, setUsers] = useState([])
   const [roles, setRoles] = useState([])
@@ -371,7 +376,7 @@ export default function AdminUsersPage() {
       if (err.response?.status === 403) {
         setPermissionDenied(true)
       } else {
-        setError(err.response?.data?.error || err.message || 'Failed to load data')
+        setError(err.response?.data?.error || err.message || t('adminUsersPage.loadDataFailed'))
       }
     } finally {
       setLoading(false)
@@ -415,7 +420,7 @@ export default function AdminUsersPage() {
   async function handleGrantSubmit(e) {
     e.preventDefault()
     setGrantError('')
-    if (!grantForm.permission) { setGrantError('Permission is required'); return }
+    if (!grantForm.permission) { setGrantError(t('adminUsersPage.permissionRequired')); return }
     setSaving(true)
     try {
       const body = { user_id: grantModal, permission: grantForm.permission }
@@ -425,7 +430,7 @@ export default function AdminUsersPage() {
       setGrantModal(null)
       await loadUserGrants(grantModal)
     } catch (err) {
-      setGrantError(err.response?.data?.error || err.message || 'Failed to create grant')
+      setGrantError(err.response?.data?.error || err.message || t('adminUsersPage.createGrantFailed'))
     } finally {
       setSaving(false)
     }
@@ -437,7 +442,7 @@ export default function AdminUsersPage() {
       setRevokeConfirm(null)
       await loadUserGrants(userId)
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to revoke grant')
+      setError(err.response?.data?.error || err.message || t('adminUsersPage.revokeGrantFailed'))
     }
   }
 
@@ -457,7 +462,7 @@ export default function AdminUsersPage() {
       setAssignModal(null)
       await loadUserRoles(assignModal)
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to assign role')
+      setError(err.response?.data?.error || err.message || t('adminUsersPage.assignRoleFailed'))
     } finally {
       setSaving(false)
     }
@@ -469,7 +474,7 @@ export default function AdminUsersPage() {
       setRemoveConfirm(null)
       await loadUserRoles(userId)
     } catch {
-      setError('Failed to remove role')
+      setError(t('adminUsersPage.removeRoleFailed'))
     }
   }
 
@@ -483,7 +488,7 @@ export default function AdminUsersPage() {
       setCreateForm(CREATE_EMPTY_FORM)
       await loadAll()
     } catch (err) {
-      setCreateError(err.response?.data?.error || err.message || 'Failed to create user')
+      setCreateError(err.response?.data?.error || err.message || t('adminUsersPage.createUserFailed'))
     } finally {
       setSaving(false)
     }
@@ -498,10 +503,10 @@ export default function AdminUsersPage() {
     setActionLoading(`${userId}-${key}`)
     try {
       await fn()
-      showMsg(`Done.`)
+      showMsg(t('adminUsersPage.actionDone'))
       await loadAll()
     } catch (err) {
-      showMsg(err.response?.data?.error || 'Action failed.', 'error')
+      showMsg(err.response?.data?.error || t('adminUsersPage.actionFailed'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -514,10 +519,10 @@ export default function AdminUsersPage() {
       await suspendUser(suspendModal.id, suspendReason)
       setSuspendModal(null)
       setSuspendReason('')
-      showMsg(`${suspendModal.username} suspended.`)
+      showMsg(t('adminUsersPage.suspendedMsg', { username: suspendModal.username }))
       await loadAll()
     } catch (err) {
-      showMsg(err.response?.data?.error || 'Failed to suspend user.', 'error')
+      showMsg(err.response?.data?.error || t('adminUsersPage.suspendFailed'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -530,10 +535,10 @@ export default function AdminUsersPage() {
       await updateUserEmail(emailModal.id, emailValue.trim())
       setEmailModal(null)
       setEmailValue('')
-      showMsg('Email updated.')
+      showMsg(t('adminUsersPage.emailUpdated'))
       await loadAll()
     } catch (err) {
-      showMsg(err.response?.data?.error || 'Failed to update email.', 'error')
+      showMsg(err.response?.data?.error || t('adminUsersPage.updateEmailFailed'), 'error')
     } finally {
       setActionLoading(null)
     }
@@ -544,10 +549,10 @@ export default function AdminUsersPage() {
     try {
       await gdprDeleteUser(gdprConfirm.id)
       setGdprConfirm(null)
-      showMsg(`${gdprConfirm.username} deleted (GDPR).`)
+      showMsg(t('adminUsersPage.gdprDeletedMsg', { username: gdprConfirm.username }))
       await loadAll()
     } catch (err) {
-      showMsg(err.response?.data?.error || 'GDPR delete failed.', 'error')
+      showMsg(err.response?.data?.error || t('adminUsersPage.gdprDeleteFailed'), 'error')
     }
   }
 
@@ -558,16 +563,16 @@ export default function AdminUsersPage() {
       if (bulkAction === 'suspend') await bulkSuspendUsers(ids, bulkSuspendReason)
       else if (bulkAction === 'activate') await bulkActivateUsers(ids)
       else if (bulkAction === 'delete') {
-        if (!confirm(`Delete ${ids.length} user(s)? This cannot be undone.`)) return
+        if (!confirm(t('adminUsersPage.bulkDeleteConfirm', { count: ids.length }))) return
         await bulkDeleteUsers(ids)
       }
       setSelected(new Set())
       setBulkAction('')
       setBulkSuspendReason('')
-      showMsg(`Bulk ${bulkAction} applied to ${ids.length} user(s).`)
+      showMsg(t('adminUsersPage.bulkAppliedMsg', { action: bulkAction, count: ids.length }))
       await loadAll()
     } catch (err) {
-      showMsg(err.response?.data?.error || 'Bulk action failed.', 'error')
+      showMsg(err.response?.data?.error || t('adminUsersPage.bulkActionFailed'), 'error')
     }
   }
 
@@ -588,19 +593,19 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (loading) return <PageSpinner message="Loading users..." />
+  if (loading) return <PageSpinner message={t('adminUsersPage.loadingUsers')} />
   if (permissionDenied) return <PermissionDenied />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Users &amp; Roles</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('adminUsersPage.title')}</h1>
         {activeTab === 'users' && (
           <button
             onClick={() => { setCreateForm(CREATE_EMPTY_FORM); setCreateError(''); setCreateModal(true) }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
           >
-            + Create User
+            {t('adminUsersPage.createUser')}
           </button>
         )}
       </div>
@@ -615,7 +620,7 @@ export default function AdminUsersPage() {
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
           }`}
         >
-          Users
+          {t('adminUsersPage.usersTab')}
         </button>
         <button
           onClick={() => setActiveTab('break-glass')}
@@ -625,7 +630,7 @@ export default function AdminUsersPage() {
               : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
           }`}
         >
-          Break-Glass
+          {t('adminUsersPage.breakGlassTab')}
         </button>
       </div>
 
@@ -642,23 +647,23 @@ export default function AdminUsersPage() {
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="mb-4 flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
-          <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">{selected.size} selected</span>
+          <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">{t('adminUsersPage.selectedCount', { count: selected.size })}</span>
           <select
             value={bulkAction}
             onChange={(e) => setBulkAction(e.target.value)}
             className="text-sm border border-gray-300 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600"
           >
-            <option value="">Choose action…</option>
-            <option value="suspend">Suspend</option>
-            <option value="activate">Activate</option>
-            <option value="delete">Delete</option>
+            <option value="">{t('adminUsersPage.chooseAction')}</option>
+            <option value="suspend">{t('adminUsersPage.suspendOption')}</option>
+            <option value="activate">{t('adminUsersPage.activateOption')}</option>
+            <option value="delete">{t('adminUsersPage.deleteOption')}</option>
           </select>
           {bulkAction === 'suspend' && (
             <input
               type="text"
               value={bulkSuspendReason}
               onChange={(e) => setBulkSuspendReason(e.target.value)}
-              placeholder="Reason (optional)"
+              placeholder={t('adminUsersPage.reasonOptionalPlaceholder')}
               className="text-sm border border-gray-300 rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             />
           )}
@@ -667,9 +672,9 @@ export default function AdminUsersPage() {
             disabled={!bulkAction}
             className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            Apply
+            {t('adminUsersPage.apply')}
           </button>
-          <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:text-gray-700">Clear</button>
+          <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:text-gray-700">{t('common.clear')}</button>
         </div>
       )}
 
@@ -682,16 +687,16 @@ export default function AdminUsersPage() {
                 <input type="checkbox" checked={selected.size === users.length && users.length > 0} onChange={toggleSelectAll} className="rounded" />
               </th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-6"></th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Username</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Email</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">System Role</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('login.username')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('register.email')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminUsersPage.systemRoleColumn')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('delegations.status')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
-              <EmptyRow colSpan={7} message="No users found." />
+              <EmptyRow colSpan={7} message={t('adminUsersPage.noUsersFound')} />
             )}
             {users.map(user => (
               <Fragment key={user.id}>
@@ -718,11 +723,11 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-4 py-3">
                     {user.state === 'suspended' ? (
-                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">Suspended</span>
+                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">{t('adminUsersPage.suspended')}</span>
                     ) : user.state === 'active' ? (
-                      <span className="text-xs text-green-600 dark:text-green-400 font-medium">Active</span>
+                      <span className="text-xs text-green-600 dark:text-green-400 font-medium">{t('adminWebhooks.active')}</span>
                     ) : (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{user.state || 'Inactive'}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{user.state || t('scanJobs.inactive')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
@@ -731,7 +736,7 @@ export default function AdminUsersPage() {
                         onClick={() => openAssign(user.id)}
                         className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
                       >
-                        + Role
+                        {t('adminUsersPage.addRole')}
                       </button>
                       {user.state === 'suspended' ? (
                         <button
@@ -739,14 +744,14 @@ export default function AdminUsersPage() {
                           disabled={actionLoading === `${user.id}-unsuspend`}
                           className="px-2 py-1 text-xs border border-green-300 text-green-700 rounded hover:bg-green-50 disabled:opacity-50"
                         >
-                          Unsuspend
+                          {t('adminUsersPage.unsuspend')}
                         </button>
                       ) : (
                         <button
                           onClick={() => { setSuspendModal(user); setSuspendReason('') }}
                           className="px-2 py-1 text-xs border border-orange-300 text-orange-700 rounded hover:bg-orange-50"
                         >
-                          Suspend
+                          {t('adminUsersPage.suspend')}
                         </button>
                       )}
                       {user.locked && (
@@ -755,7 +760,7 @@ export default function AdminUsersPage() {
                           disabled={actionLoading === `${user.id}-unlock`}
                           className="px-2 py-1 text-xs border border-yellow-300 text-yellow-700 rounded hover:bg-yellow-50 disabled:opacity-50"
                         >
-                          Unlock
+                          {t('adminUsersPage.unlock')}
                         </button>
                       )}
                       <button
@@ -763,13 +768,13 @@ export default function AdminUsersPage() {
                         disabled={actionLoading === `${user.id}-pwreset`}
                         className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 disabled:opacity-50"
                       >
-                        Reset PW
+                        {t('adminUsersPage.resetPw')}
                       </button>
                       <button
                         onClick={() => { setEmailModal(user); setEmailValue(user.email || '') }}
                         className="px-2 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50"
                       >
-                        Email
+                        {t('register.email')}
                       </button>
                       <button
                         onClick={() => runAction(user.id, 'impersonate', async () => {
@@ -779,13 +784,13 @@ export default function AdminUsersPage() {
                         disabled={actionLoading === `${user.id}-impersonate`}
                         className="px-2 py-1 text-xs border border-purple-300 text-purple-700 rounded hover:bg-purple-50 disabled:opacity-50"
                       >
-                        Impersonate
+                        {t('adminUsersPage.impersonate')}
                       </button>
                       <button
                         onClick={() => setGdprConfirm(user)}
                         className="px-2 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50"
                       >
-                        GDPR Delete
+                        {t('adminUsersPage.gdprDelete')}
                       </button>
                     </div>
                   </td>
@@ -795,18 +800,18 @@ export default function AdminUsersPage() {
                     <td colSpan={7} className="px-8 py-3 space-y-4">
                       <div>
                         <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-                          Assigned Custom Roles
+                          {t('adminUsersPage.assignedCustomRolesTitle')}
                         </div>
                         {!userRoles[user.id] ? (
-                          <p className="text-sm text-gray-400">Loading...</p>
+                          <p className="text-sm text-gray-400">{t('deploymentHealth.loading')}</p>
                         ) : userRoles[user.id].length === 0 ? (
-                          <p className="text-sm text-gray-400">No custom roles assigned.</p>
+                          <p className="text-sm text-gray-400">{t('adminUsersPage.noCustomRolesAssigned')}</p>
                         ) : (
                           <div className="space-y-1">
                             {userRoles[user.id].map(ur => (
                               <div key={ur.id} className="flex items-center justify-between gap-3 py-1.5 px-3 bg-white dark:bg-gray-800 rounded border dark:border-gray-700">
                                 <div>
-                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{ur.name || `Role #${ur.id}`}</span>
+                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{ur.name || t('adminUsersPage.roleHashLabel', { id: ur.id })}</span>
                                   {ur.description && (
                                     <span className="ml-2 text-xs text-gray-400">{ur.description}</span>
                                   )}
@@ -814,21 +819,21 @@ export default function AdminUsersPage() {
                                 <div>
                                   {removeConfirm?.userId === user.id && removeConfirm?.roleId === ur.id ? (
                                     <span className="space-x-2">
-                                      <span className="text-red-600 text-xs">Remove?</span>
+                                      <span className="text-red-600 text-xs">{t('deviceIp.removeConfirm')}</span>
                                       <button
                                         onClick={() => handleRemoveRole(user.id, ur.id)}
                                         className="text-red-600 hover:text-red-800 text-xs font-medium"
-                                      >Yes</button>
+                                      >{t('common.yes')}</button>
                                       <button
                                         onClick={() => setRemoveConfirm(null)}
                                         className="text-gray-400 hover:text-gray-600 text-xs"
-                                      >No</button>
+                                      >{t('common.no')}</button>
                                     </span>
                                   ) : (
                                     <button
                                       onClick={() => setRemoveConfirm({ userId: user.id, roleId: ur.id })}
                                       className="text-gray-400 hover:text-red-600 text-xs"
-                                    >Remove</button>
+                                    >{t('adminUsersPage.remove')}</button>
                                   )}
                                 </div>
                               </div>
@@ -840,17 +845,17 @@ export default function AdminUsersPage() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Direct Permission Grants
+                            {t('adminUsersPage.directPermissionGrantsTitle')}
                           </div>
                           <button
                             onClick={() => openGrantModal(user.id)}
                             className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                          >+ Add Grant</button>
+                          >{t('adminUsersPage.addGrant')}</button>
                         </div>
                         {!userGrants[user.id] ? (
-                          <p className="text-sm text-gray-400">Loading...</p>
+                          <p className="text-sm text-gray-400">{t('deploymentHealth.loading')}</p>
                         ) : userGrants[user.id].length === 0 ? (
-                          <p className="text-sm text-gray-400">No direct grants.</p>
+                          <p className="text-sm text-gray-400">{t('adminUsersPage.noDirectGrants')}</p>
                         ) : (
                           <div className="space-y-1">
                             {userGrants[user.id].map(g => (
@@ -866,21 +871,21 @@ export default function AdminUsersPage() {
                                 <div>
                                   {revokeConfirm?.userId === user.id && revokeConfirm?.grantId === g.id ? (
                                     <span className="space-x-2">
-                                      <span className="text-red-600 text-xs">Revoke?</span>
+                                      <span className="text-red-600 text-xs">{t('adminUsersPage.revokeConfirmQuestion')}</span>
                                       <button
                                         onClick={() => handleRevokeGrant(user.id, g.id)}
                                         className="text-red-600 hover:text-red-800 text-xs font-medium"
-                                      >Yes</button>
+                                      >{t('common.yes')}</button>
                                       <button
                                         onClick={() => setRevokeConfirm(null)}
                                         className="text-gray-400 hover:text-gray-600 text-xs"
-                                      >No</button>
+                                      >{t('common.no')}</button>
                                     </span>
                                   ) : (
                                     <button
                                       onClick={() => setRevokeConfirm({ userId: user.id, grantId: g.id })}
                                       className="text-gray-400 hover:text-red-600 text-xs"
-                                    >Revoke</button>
+                                    >{t('adminUsersPage.revoke')}</button>
                                   )}
                                 </div>
                               </div>
@@ -899,11 +904,11 @@ export default function AdminUsersPage() {
       </div>
 
       {createModal && (
-        <Modal title="Create User" onClose={() => setCreateModal(false)}>
+        <Modal title={t('adminUsersPage.createUserModalTitle')} onClose={() => setCreateModal(false)}>
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             {createError && <p className="text-red-600 text-sm">{createError}</p>}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.username')} <span className="text-red-500">*</span></label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={createForm.username}
@@ -913,7 +918,7 @@ export default function AdminUsersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('register.email')} <span className="text-red-500">*</span></label>
               <input
                 type="email"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -923,7 +928,7 @@ export default function AdminUsersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
               <input
                 type="password"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -934,21 +939,21 @@ export default function AdminUsersPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('rolePresets.role')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={createForm.role}
                 onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}
               >
-                <option value="user">User</option>
-                <option value="viewer">Viewer</option>
-                <option value="admin">Admin</option>
+                <option value="user">{t('adminUsersPage.roleUser')}</option>
+                <option value="viewer">{t('adminUsersPage.roleViewer')}</option>
+                <option value="admin">{t('header.admin')}</option>
               </select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Creating...' : 'Create User'}
+                {saving ? t('adminUsersPage.creating') : t('adminUsersPage.createUserButton')}
               </button>
             </div>
           </form>
@@ -957,27 +962,27 @@ export default function AdminUsersPage() {
 
       {/* Suspend modal */}
       {suspendModal && (
-        <Modal title={`Suspend ${suspendModal.username}`} onClose={() => setSuspendModal(null)}>
+        <Modal title={t('adminUsersPage.suspendModalTitle', { username: suspendModal.username })} onClose={() => setSuspendModal(null)}>
           <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">The user will be unable to log in while suspended.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{t('adminUsersPage.suspendHint')}</p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminUsersPage.reasonOptionalLabel')}</label>
               <input
                 type="text"
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 className="w-full border rounded px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                placeholder="e.g. Policy violation"
+                placeholder={t('adminUsersPage.suspendReasonPlaceholder')}
               />
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setSuspendModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setSuspendModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">{t('common.cancel')}</button>
               <button
                 onClick={handleSuspend}
                 disabled={actionLoading === `${suspendModal.id}-suspend`}
                 className="px-4 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
               >
-                {actionLoading === `${suspendModal.id}-suspend` ? 'Suspending…' : 'Suspend User'}
+                {actionLoading === `${suspendModal.id}-suspend` ? t('adminUsersPage.suspending') : t('adminUsersPage.suspendUserButton')}
               </button>
             </div>
           </div>
@@ -986,10 +991,10 @@ export default function AdminUsersPage() {
 
       {/* Update email modal */}
       {emailModal && (
-        <Modal title={`Update Email — ${emailModal.username}`} onClose={() => setEmailModal(null)}>
+        <Modal title={t('adminUsersPage.updateEmailModalTitle', { username: emailModal.username })} onClose={() => setEmailModal(null)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New email address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminUsersPage.newEmailLabel')}</label>
               <input
                 type="email"
                 value={emailValue}
@@ -998,13 +1003,13 @@ export default function AdminUsersPage() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEmailModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setEmailModal(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">{t('common.cancel')}</button>
               <button
                 onClick={handleUpdateEmail}
                 disabled={!emailValue.trim() || actionLoading === `${emailModal.id}-email`}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {actionLoading === `${emailModal.id}-email` ? 'Saving…' : 'Update Email'}
+                {actionLoading === `${emailModal.id}-email` ? t('common.saving') : t('adminUsersPage.updateEmailButton')}
               </button>
             </div>
           </div>
@@ -1013,26 +1018,25 @@ export default function AdminUsersPage() {
 
       {/* GDPR delete confirmation */}
       {gdprConfirm && (
-        <Modal title="GDPR Delete User" onClose={() => setGdprConfirm(null)}>
+        <Modal title={t('adminUsersPage.gdprDeleteModalTitle')} onClose={() => setGdprConfirm(null)}>
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-            Permanently anonymise and delete all personal data for <strong>{gdprConfirm.username}</strong>?
-            This cannot be undone.
+            {t('adminUsersPage.gdprDeleteConfirmPrefix')}<strong>{gdprConfirm.username}</strong>{t('adminUsersPage.gdprDeleteConfirmSuffix')}
           </p>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setGdprConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">Cancel</button>
+            <button onClick={() => setGdprConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50">{t('common.cancel')}</button>
             <button onClick={handleGdprDelete} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700">
-              GDPR Delete
+              {t('adminUsersPage.gdprDelete')}
             </button>
           </div>
         </Modal>
       )}
 
       {assignModal && (
-        <Modal title="Assign Role to User" onClose={() => setAssignModal(null)}>
+        <Modal title={t('adminUsersPage.assignRoleModalTitle')} onClose={() => setAssignModal(null)}>
           <form onSubmit={handleAssignSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Role <span className="text-red-500">*</span>
+                {t('rolePresets.role')} <span className="text-red-500">*</span>
               </label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -1040,7 +1044,7 @@ export default function AdminUsersPage() {
                 onChange={e => setAssignForm(f => ({ ...f, role_id: e.target.value }))}
                 required
               >
-                <option value="">Select a role...</option>
+                <option value="">{t('adminUsersPage.selectARole')}</option>
                 {roles.map(r => (
                   <option key={r.id} value={r.id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>
                 ))}
@@ -1048,20 +1052,20 @@ export default function AdminUsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Scope to Location <span className="text-gray-400 font-normal">(optional)</span>
+                {t('adminUsersPage.scopeToLocationLabel')} <span className="text-gray-400 font-normal">{t('adminUsersPage.optionalParenthetical')}</span>
               </label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={assignForm.location_id}
                 onChange={e => setAssignForm(f => ({ ...f, location_id: e.target.value }))}
               >
-                <option value="">All locations (global)</option>
+                <option value="">{t('adminUsersPage.allLocationsGlobal')}</option>
                 {locations.map(l => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
               </select>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Restrict this role assignment to a specific location.
+                {t('adminUsersPage.scopeHint')}
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -1070,26 +1074,26 @@ export default function AdminUsersPage() {
                 onClick={() => setAssignModal(null)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving || !assignForm.role_id}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? 'Assigning...' : 'Assign Role'}
+                {saving ? t('adminUsersPage.assigning') : t('adminUsersPage.assignRoleButton')}
               </button>
             </div>
           </form>
         </Modal>
       )}
       {grantModal && (
-        <Modal title="Add Direct Permission Grant" onClose={() => setGrantModal(null)}>
+        <Modal title={t('adminUsersPage.addGrantModalTitle')} onClose={() => setGrantModal(null)}>
           <form onSubmit={handleGrantSubmit} className="space-y-4">
             {grantError && <p className="text-red-600 text-sm">{grantError}</p>}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Permission <span className="text-red-500">*</span>
+                {t('adminUsersPage.permissionFieldLabel')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -1102,7 +1106,7 @@ export default function AdminUsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Scope type <span className="text-gray-400 font-normal">(optional)</span>
+                {t('adminUsersPage.scopeTypeLabel')} <span className="text-gray-400 font-normal">{t('adminUsersPage.optionalParenthetical')}</span>
               </label>
               <input
                 type="text"
@@ -1114,7 +1118,7 @@ export default function AdminUsersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Scope ID <span className="text-gray-400 font-normal">(optional)</span>
+                {t('adminUsersPage.scopeIdLabel')} <span className="text-gray-400 font-normal">{t('adminUsersPage.optionalParenthetical')}</span>
               </label>
               <input
                 type="number"
@@ -1124,7 +1128,7 @@ export default function AdminUsersPage() {
                 onChange={e => setGrantForm(f => ({ ...f, scope_id: e.target.value }))}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Leave scope blank for a global grant. Scoped grants only apply to the specified resource.
+                {t('adminUsersPage.scopeGrantHint')}
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -1132,12 +1136,12 @@ export default function AdminUsersPage() {
                 type="button"
                 onClick={() => setGrantModal(null)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-              >Cancel</button>
+              >{t('common.cancel')}</button>
               <button
                 type="submit"
                 disabled={saving || !grantForm.permission}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-              >{saving ? 'Granting...' : 'Grant Permission'}</button>
+              >{saving ? t('adminUsersPage.granting') : t('adminUsersPage.grantPermissionButton')}</button>
             </div>
           </form>
         </Modal>
