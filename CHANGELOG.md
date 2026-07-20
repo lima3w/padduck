@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.26
+
+### Added
+- **i18n audit: convert 4 pages missed by the original batch sweep** (issue #35 follow-up): a post-closure audit found `AdminOverviewPage.jsx`, `APITokenAnalyticsPage.jsx`, `ScanProfilesPage.jsx`, and `TelemetrySetupPage.jsx` were never converted. All four now use `t()` calls. `AdminOverviewPage.jsx`'s exported `ADMIN_SURFACE_SECTIONS` constant became `buildAdminSurfaceSections(t)` since translated strings can no longer live in a static module-level export; its test was updated to call the builder with the app's real `i18n` instance.
+
 ## v1.34.25
 
 ### Removed
