@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import ChangeHistory from '../components/ChangeHistory'
 import FingerprintPanel from '../components/FingerprintPanel'
 import ObservedStatePanel from '../components/ObservedStatePanel'
@@ -22,6 +23,7 @@ import InterfaceModal from './device/InterfaceModal'
 const EMPTY_IFACE_FORM = { name: '', description: '', speed_mbps: '', media_type: '', vlan_id: '' }
 
 export default function DeviceDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [device, setDevice] = useState(null)
   const [deviceTypes, setDeviceTypes] = useState([])
@@ -99,7 +101,7 @@ export default function DeviceDetailPage() {
       setDeviceTypes(Array.isArray(typesRes.data) ? typesRes.data : [])
       await Promise.all([loadIPs(), loadInterfaces()])
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to load device')
+      setError(err.response?.data?.error || err.message || t('deviceDetail.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -173,7 +175,7 @@ export default function DeviceDetailPage() {
       setDevice(res.data)
       setModal(null)
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to update device')
+      setError(err.response?.data?.error || err.message || t('deviceDetail.updateFailed'))
     } finally {
       setSaving(false)
     }
@@ -216,7 +218,7 @@ export default function DeviceDetailPage() {
       const res = await quickCreateIPAddress(address)
       selectIpResult(res.data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create IP address')
+      setError(err.response?.data?.error || t('deviceDetail.createIpFailed'))
     } finally {
       setIpCreating(false)
     }
@@ -233,7 +235,7 @@ export default function DeviceDetailPage() {
       setModal(null)
       await loadIPs()
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to associate IP')
+      setError(err.response?.data?.error || err.message || t('deviceDetail.associateIpFailed'))
     } finally {
       setSaving(false)
     }
@@ -245,7 +247,7 @@ export default function DeviceDetailPage() {
       setDeleteIpConfirm(null)
       await loadIPs()
     } catch {
-      setError('Failed to remove IP association')
+      setError(t('deviceDetail.disassociateIpFailed'))
     }
   }
 
@@ -284,7 +286,7 @@ export default function DeviceDetailPage() {
       setModal(null)
       await loadInterfaces()
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to save interface')
+      setError(err.response?.data?.error || err.message || t('deviceDetail.saveInterfaceFailed'))
     } finally {
       setSaving(false)
     }
@@ -301,47 +303,49 @@ export default function DeviceDetailPage() {
       setDeleteIfaceConfirm(null)
       await loadInterfaces()
     } catch {
-      setError('Failed to delete interface')
+      setError(t('deviceDetail.deleteInterfaceFailed'))
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading device...</p>
+  if (loading) return <p className="text-gray-500">{t('deviceDetail.loadingDevice')}</p>
   if (error && !device) return <p className="text-red-600">{error}</p>
 
   const isAdmin = getCachedUser()?.role === 'admin'
-  const typeObj = deviceTypes.find(t => t.id === device?.typeId)
+  const typeObj = deviceTypes.find(dt => dt.id === device?.typeId)
   const locationName = locations.find(l => l.id === device?.locationId)?.name
   const relationshipItems = [
     device?.locationId && {
-      label: 'Location',
+      label: t('subnets.location'),
       value: locationName || `Location #${device.locationId}`,
       to: `/locations/${device.locationId}`,
-      description: 'Physical assignment',
+      description: t('deviceDetail.physicalAssignment'),
     },
     device?.rackId && {
-      label: 'Rack',
-      value: `Rack #${device.rackId}`,
+      label: t('deviceInfo.rack'),
+      value: t('deviceInfo.rackHash', { id: device.rackId }),
       to: `/racks/${device.rackId}`,
-      description: device.rackUnitStart != null ? `Mounted at U${device.rackUnitStart}-U${device.rackUnitStart + (device.rackUnitSize ?? 1) - 1}` : 'Rack assignment',
+      description: device.rackUnitStart != null
+        ? t('deviceDetail.mountedAt', { start: device.rackUnitStart, end: device.rackUnitStart + (device.rackUnitSize ?? 1) - 1 })
+        : t('deviceDetail.rackAssignment'),
     },
     {
-      label: 'IP Addresses',
-      value: 'Associated IPs',
+      label: t('dashboard.ipAddresses'),
+      value: t('deviceDetail.associatedIps'),
       count: ipAddresses.length,
-      description: `${ipAddresses.length} address${ipAddresses.length === 1 ? '' : 'es'} linked to this device`,
+      description: t('deviceDetail.addressesLinkedToDevice', { count: ipAddresses.length }),
     },
     {
-      label: 'Interfaces',
-      value: 'Device interfaces',
+      label: t('deviceDetail.interfacesTab'),
+      value: t('deviceDetail.deviceInterfacesValue'),
       count: interfaces.length,
-      description: `${interfaces.length} interface${interfaces.length === 1 ? '' : 's'} defined`,
+      description: t('deviceDetail.interfacesDefined', { count: interfaces.length }),
     },
   ]
 
   return (
     <div>
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1">
-        <Link to="/devices" className="hover:text-blue-600">Devices</Link>
+        <Link to="/devices" className="hover:text-blue-600">{t('nav.devices')}</Link>
         <span>/</span>
         <span className="text-gray-800 dark:text-gray-200 font-medium">{device?.hostname}</span>
       </nav>
@@ -357,7 +361,7 @@ export default function DeviceDetailPage() {
           </div>
         </div>
         <button onClick={openEdit} className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium">
-          Edit
+          {t('common.edit')}
         </button>
       </div>
 
@@ -383,7 +387,7 @@ export default function DeviceDetailPage() {
               : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
-          IP Addresses
+          {t('dashboard.ipAddresses')}
         </button>
         <button
           onClick={() => setTab('interfaces')}
@@ -393,7 +397,7 @@ export default function DeviceDetailPage() {
               : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
-          Interfaces
+          {t('deviceDetail.interfacesTab')}
         </button>
         <button
           onClick={() => setTab('credentials')}
@@ -403,7 +407,7 @@ export default function DeviceDetailPage() {
               : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
           }`}
         >
-          Credentials
+          {t('adminOAuth2.credentialsTitle')}
         </button>
       </div>
 
@@ -444,9 +448,9 @@ export default function DeviceDetailPage() {
               setSnmpRevealed({})
             } catch (err) {
               const status = err.response?.status
-              if (status === 403) setSnmpError('You do not have permission to view SNMP credentials.')
+              if (status === 403) setSnmpError(t('deviceDetail.snmpPermissionDenied'))
               else if (status === 404) setSnmpCreds(false)
-              else setSnmpError('Failed to load credentials.')
+              else setSnmpError(t('deviceDetail.loadCredentialsFailed'))
             } finally {
               setSnmpLoading(false)
             }

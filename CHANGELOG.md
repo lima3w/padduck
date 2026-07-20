@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.18
+
+### Added
+- **i18n: convert DeviceDetailPage** (issue #35): converted `DeviceDetailPage.jsx` to `t()` calls; its `device/` sub-components (`DeviceInfoPanel`, `IPAddressesTab`, `InterfacesTab`, `CredentialsTab`, `EditDeviceModal`, `AssociateIPModal`, `InterfaceModal`) were already converted in earlier batches. First of the remaining large-deferred-file follow-ups.
+
 ## v1.34.17
 
 ### Added
