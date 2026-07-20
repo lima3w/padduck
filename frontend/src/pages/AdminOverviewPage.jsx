@@ -1,77 +1,92 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
-export const ADMIN_SURFACE_SECTIONS = [
+export const ADMIN_SURFACE_SECTION_KEYS = [
   {
-    title: 'Identity & Access',
+    titleKey: 'identityAccessTitle',
     links: [
-      { to: '/admin/users', title: 'Users', description: 'Manage accounts, states, and user roles.' },
-      { to: '/admin/roles', title: 'Roles', description: 'Create and maintain custom role permissions.' },
-      { to: '/admin/roles/presets', title: 'Permission Presets', description: 'Review role preset changes before applying them.' },
-      { to: '/admin/requests', title: 'Approvals', description: 'Review pending subnet and IP address requests.' },
-      { to: '/admin/identity-policies', title: 'Identity Policies', description: 'Set MFA, token, session, and inactive-user policies.' },
-      { to: '/admin/break-glass', title: 'Break-Glass', description: 'Start and audit emergency administrator access.' },
+      { to: '/admin/users', titleKey: 'usersTitle', descriptionKey: 'usersDescription' },
+      { to: '/admin/roles', titleKey: 'rolesTitle', descriptionKey: 'rolesDescription' },
+      { to: '/admin/roles/presets', titleKey: 'permissionPresetsTitle', descriptionKey: 'permissionPresetsDescription' },
+      { to: '/admin/requests', titleKey: 'approvalsTitle', descriptionKey: 'approvalsDescription' },
+      { to: '/admin/identity-policies', titleKey: 'identityPoliciesTitle', descriptionKey: 'identityPoliciesDescription' },
+      { to: '/admin/break-glass', titleKey: 'breakGlassTitle', descriptionKey: 'breakGlassDescription' },
     ],
   },
   {
-    title: 'Configuration',
+    titleKey: 'configurationTitle',
     links: [
-      { to: '/admin/settings', title: 'Application Settings', description: 'Configure registration, email, DNS, scanner, features, and updates.' },
-      { to: '/admin/auth/ldap', title: 'LDAP / AD', description: 'Configure LDAP authentication and group mappings.' },
-      { to: '/admin/auth/oauth2', title: 'OAuth2 / OIDC', description: 'Configure OAuth2 or OpenID Connect login.' },
-      { to: '/admin/auth/saml', title: 'SAML SSO', description: 'Configure SAML single sign-on.' },
-      { to: '/admin/custom-fields', title: 'Custom Fields', description: 'Manage extra fields for subnets, IPs, and devices.' },
-      { to: '/admin/tags', title: 'IP Tags', description: 'Create and maintain IP address tags.' },
+      { to: '/admin/settings', titleKey: 'applicationSettingsTitle', descriptionKey: 'applicationSettingsDescription' },
+      { to: '/admin/auth/ldap', titleKey: 'ldapAdTitle', descriptionKey: 'ldapAdDescription' },
+      { to: '/admin/auth/oauth2', titleKey: 'oauth2Title', descriptionKey: 'oauth2Description' },
+      { to: '/admin/auth/saml', titleKey: 'samlSsoTitle', descriptionKey: 'samlSsoDescription' },
+      { to: '/admin/custom-fields', titleKey: 'customFieldsTitle', descriptionKey: 'customFieldsDescription' },
+      { to: '/admin/tags', titleKey: 'ipTagsTitle', descriptionKey: 'ipTagsDescription' },
     ],
   },
   {
-    title: 'Integrations & Automation',
+    titleKey: 'integrationsAutomationTitle',
     links: [
-      { to: '/admin/integrations', title: 'Integrations', description: 'Review integration setup notes and connection checks.' },
-      { to: '/admin/webhooks', title: 'Webhooks', description: 'Configure outbound event delivery.' },
-      { to: '/admin/integration-templates', title: 'Integration Templates', description: 'Use common automation platform templates.' },
-      { to: '/admin/automation/policies', title: 'Automation Policies', description: 'Evaluate approval and validation rules.' },
-      { to: '/admin/api-token-analytics', title: 'Token Analytics', description: 'Review API token usage and rate-limit visibility.' },
-      { to: '/admin/grafana', title: 'Grafana', description: 'Configure the Grafana datasource integration.' },
+      { to: '/admin/integrations', titleKey: 'integrationsTitle', descriptionKey: 'integrationsDescription' },
+      { to: '/admin/webhooks', titleKey: 'webhooksTitle', descriptionKey: 'webhooksDescription' },
+      { to: '/admin/integration-templates', titleKey: 'integrationTemplatesTitle', descriptionKey: 'integrationTemplatesDescription' },
+      { to: '/admin/automation/policies', titleKey: 'automationPoliciesTitle', descriptionKey: 'automationPoliciesDescription' },
+      { to: '/admin/api-token-analytics', titleKey: 'tokenAnalyticsTitle', descriptionKey: 'tokenAnalyticsDescription' },
+      { to: '/admin/grafana', titleKey: 'grafanaTitle', descriptionKey: 'grafanaDescription' },
     ],
   },
   {
-    title: 'Discovery & Operations',
+    titleKey: 'discoveryOperationsTitle',
     links: [
-      { to: '/admin/scan-jobs', title: 'Scan Jobs', description: 'Schedule and run network discovery scans.' },
-      { to: '/admin/scan-agents', title: 'Scan Agents', description: 'Manage remote discovery agents and tokens.' },
-      { to: '/admin/scan-profiles', title: 'Scan Profiles', description: 'Maintain reusable scan configurations.' },
-      { to: '/admin/scan-retention', title: 'Scan Retention', description: 'Configure scan result retention and pruning.' },
-      { to: '/admin/discovery/conflicts', title: 'Discovery Conflicts', description: 'Review observed data conflicts.' },
-      { to: '/admin/topology/hints', title: 'Topology Hints', description: 'Manage topology relationships discovered from scans.' },
+      { to: '/admin/scan-jobs', titleKey: 'scanJobsTitle', descriptionKey: 'scanJobsDescription' },
+      { to: '/admin/scan-agents', titleKey: 'scanAgentsTitle', descriptionKey: 'scanAgentsDescription' },
+      { to: '/admin/scan-profiles', titleKey: 'scanProfilesTitle', descriptionKey: 'scanProfilesDescription' },
+      { to: '/admin/scan-retention', titleKey: 'scanRetentionTitle', descriptionKey: 'scanRetentionDescription' },
+      { to: '/admin/discovery/conflicts', titleKey: 'discoveryConflictsTitle', descriptionKey: 'discoveryConflictsDescription' },
+      { to: '/admin/topology/hints', titleKey: 'topologyHintsTitle', descriptionKey: 'topologyHintsDescription' },
     ],
   },
   {
-    title: 'Audit, Reports & Data',
+    titleKey: 'auditReportsDataTitle',
     links: [
-      { to: '/admin/audit-log', title: 'Audit Log', description: 'Search and export administrative activity.' },
-      { to: '/admin/audit/retention', title: 'Audit Retention', description: 'Configure audit retention, pruning, and archive exports.' },
-      { to: '/admin/privacy/consent-report', title: 'Privacy Consent', description: 'Track privacy versions and user consent status.' },
-      { to: '/admin/reports/scheduled', title: 'Scheduled Reports', description: 'Manage recurring emailed reports.' },
-      { to: '/admin/backups', title: 'Backups', description: 'Download a complete backup or restore data from a previous backup.' },
-      { to: '/admin/compatibility', title: 'V2 Compatibility', description: 'Review migration readiness and deprecation reporting.' },
-      { to: '/admin/overlap-report', title: 'Subnet Overlap Check', description: 'Find overlapping subnets across all networks.' },
-      { to: '/admin/system-health', title: 'System Health', description: 'Review deployment, backup, and dependency health.' },
+      { to: '/admin/audit-log', titleKey: 'auditLogTitle', descriptionKey: 'auditLogDescription' },
+      { to: '/admin/audit/retention', titleKey: 'auditRetentionTitle', descriptionKey: 'auditRetentionDescription' },
+      { to: '/admin/privacy/consent-report', titleKey: 'privacyConsentTitle', descriptionKey: 'privacyConsentDescription' },
+      { to: '/admin/reports/scheduled', titleKey: 'scheduledReportsTitle', descriptionKey: 'scheduledReportsDescription' },
+      { to: '/admin/backups', titleKey: 'backupsTitle', descriptionKey: 'backupsDescription' },
+      { to: '/admin/compatibility', titleKey: 'compatibilityTitle', descriptionKey: 'compatibilityDescription' },
+      { to: '/admin/overlap-report', titleKey: 'subnetOverlapCheckTitle', descriptionKey: 'subnetOverlapCheckDescription' },
+      { to: '/admin/system-health', titleKey: 'systemHealthTitle', descriptionKey: 'systemHealthDescription' },
     ],
   },
 ]
 
+export function buildAdminSurfaceSections(t) {
+  return ADMIN_SURFACE_SECTION_KEYS.map((section) => ({
+    title: t(`adminOverviewPage.${section.titleKey}`),
+    links: section.links.map((link) => ({
+      to: link.to,
+      title: t(`adminOverviewPage.${link.titleKey}`),
+      description: t(`adminOverviewPage.${link.descriptionKey}`),
+    })),
+  }))
+}
+
 export default function AdminOverviewPage() {
+  const { t } = useTranslation()
+  const sections = buildAdminSurfaceSections(t)
+
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('adminOverviewPage.title')}</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          Central access to administrative workflows.
+          {t('adminOverviewPage.subtitle')}
         </p>
       </div>
 
       <div className="space-y-8">
-        {ADMIN_SURFACE_SECTIONS.map((network) => (
+        {sections.map((network) => (
           <network key={network.title} aria-labelledby={`admin-network-${network.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
             <h2 id={`admin-network-${network.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               {network.title}
