@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.20
+
+### Added
+- **i18n: convert AutomationPoliciesPage** (issue #35): converted `AutomationPoliciesPage.jsx` (609 lines) to `t()` calls, including the policy simulate flow, condition/action builder rows, and the operator/action-type option lists. Third of the remaining large-deferred-file follow-ups.
+
 ## v1.34.19
 
 ### Added
