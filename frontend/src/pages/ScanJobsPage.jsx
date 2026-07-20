@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import Modal from '../components/Modal'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 
-const SCAN_TYPE_LABELS = { ping: 'Ping', snmp: 'SNMP', 'ping+snmp': 'Ping + SNMP' }
+const SCAN_TYPE_LABEL_KEYS = { ping: 'scanTypePing', snmp: 'scanTypeSnmp', 'ping+snmp': 'scanTypePingSnmp' }
 
-const CRON_PRESETS = [
-  { label: 'Manual only', value: '' },
-  { label: 'Every 15 minutes', value: '*/15 * * * *' },
-  { label: 'Every hour', value: '0 * * * *' },
-  { label: 'Every 6 hours', value: '0 */6 * * *' },
-  { label: 'Daily at midnight', value: '0 0 * * *' },
-  { label: 'Weekly (Sunday)', value: '0 0 * * 0' },
-  { label: 'Custom', value: '__custom__' },
+const CRON_PRESET_KEYS = [
+  { labelKey: 'cronManualOnly', value: '' },
+  { labelKey: 'cronEvery15Min', value: '*/15 * * * *' },
+  { labelKey: 'cronEveryHour', value: '0 * * * *' },
+  { labelKey: 'cronEvery6Hours', value: '0 */6 * * *' },
+  { labelKey: 'cronDailyMidnight', value: '0 0 * * *' },
+  { labelKey: 'cronWeeklySunday', value: '0 0 * * 0' },
+  { labelKey: 'custom', value: '__custom__' },
 ]
 
 function formatDate(val) {
@@ -25,7 +26,7 @@ function formatDate(val) {
 
 function cronPresetValue(cron) {
   if (!cron) return ''
-  const match = CRON_PRESETS.find(p => p.value === cron && p.value !== '__custom__')
+  const match = CRON_PRESET_KEYS.find(p => p.value === cron && p.value !== '__custom__')
   return match ? cron : '__custom__'
 }
 
@@ -56,6 +57,9 @@ function jobToSettingsForm(job) {
 }
 
 export default function ScanJobsPage() {
+  const { t } = useTranslation()
+  const cronLabel = (labelKey) => labelKey === 'custom' ? t('adminTags.custom') : t(`scanJobs.${labelKey}`)
+  const CRON_PRESETS = CRON_PRESET_KEYS.map(p => ({ label: cronLabel(p.labelKey), value: p.value }))
   const [jobs, setJobs] = useState([])
   const [selectedJob, setSelectedJob] = useState(null)
   const [results, setResults] = useState([])
@@ -89,7 +93,7 @@ export default function ScanJobsPage() {
       const { data } = await api.get('/admin/scan-jobs')
       setJobs(data || [])
     } catch {
-      setError('Failed to load scan jobs')
+      setError(t('scanJobs.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -224,7 +228,7 @@ export default function ScanJobsPage() {
       setSettingsDirty(false)
       await loadJobs()
     } catch (err) {
-      setSettingsError(err.response?.data?.error || 'Failed to save settings')
+      setSettingsError(err.response?.data?.error || t('scanJobs.saveSettingsFailed'))
     } finally {
       setSettingsSaving(false)
     }
@@ -250,7 +254,7 @@ export default function ScanJobsPage() {
       setCreateForm(EMPTY_CREATE_FORM)
       await loadJobs()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create scan job')
+      setError(err.response?.data?.error || t('scanJobs.createFailed'))
     } finally {
       setCreating(false)
     }
@@ -266,21 +270,21 @@ export default function ScanJobsPage() {
       }
       await loadJobs()
     } catch {
-      setError('Failed to delete scan job')
+      setError(t('scanJobs.deleteFailed'))
     }
   }
 
-  if (loading) return <PageSpinner message="Loading scan jobs..." />
+  if (loading) return <PageSpinner message={t('scanJobs.loadingScanJobs')} />
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Discovery Scan Jobs</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('scanJobs.title')}</h1>
         <button
           onClick={() => { setCreateForm(EMPTY_CREATE_FORM); setCreateModal(true) }}
           className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition"
         >
-          + New Job
+          {t('scanJobs.newJob')}
         </button>
       </div>
 
@@ -291,10 +295,10 @@ export default function ScanJobsPage() {
         <div className="lg:col-span-1">
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <h2 className="font-semibold text-gray-700 text-sm">Jobs</h2>
+              <h2 className="font-semibold text-gray-700 text-sm">{t('scanJobs.jobsListTitle')}</h2>
             </div>
             {jobs.length === 0 ? (
-              <div className="p-4 text-sm text-gray-500">No scan jobs configured.</div>
+              <div className="p-4 text-sm text-gray-500">{t('scanJobs.noScanJobsConfigured')}</div>
             ) : (
               <ul className="divide-y divide-gray-100">
                 {jobs.map((job) => (
@@ -310,19 +314,19 @@ export default function ScanJobsPage() {
                       <p className="font-medium text-gray-900 text-sm truncate">{job.name}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         <span className={`font-medium ${job.isActive ? 'text-green-600' : 'text-gray-400'}`}>
-                          {job.isActive ? 'Active' : 'Inactive'}
+                          {job.isActive ? t('adminWebhooks.active') : t('scanJobs.inactive')}
                         </span>
                         {job.scheduleCron
                           ? <span className="ml-1">&middot; {job.scheduleCron}</span>
-                          : <span className="ml-1 text-gray-400">&middot; Manual only</span>}
+                          : <span className="ml-1 text-gray-400">&middot; {t('scanJobs.cronManualOnly')}</span>}
                         {job.nextRunAt && (
                           <span className="ml-1 text-blue-500">&middot; next {formatDate(job.nextRunAt)}</span>
                         )}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {SCAN_TYPE_LABELS[job.scanType] || 'Ping'}
+                        {t(`scanJobs.${SCAN_TYPE_LABEL_KEYS[job.scanType] || 'scanTypePing'}`)}
                         {job.pingConcurrency && job.pingConcurrency !== 20 && (
-                          <span> &middot; {job.pingConcurrency} workers</span>
+                          <span> &middot; {job.pingConcurrency} {t('scanJobs.workersSuffix')}</span>
                         )}
                       </p>
                     </button>
@@ -337,7 +341,7 @@ export default function ScanJobsPage() {
         <div className="lg:col-span-2">
           {!selectedJob ? (
             <div className="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-400 text-sm">
-              Select a job to view details
+              {t('scanJobs.selectJobToViewDetails')}
             </div>
           ) : (
             <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -352,7 +356,7 @@ export default function ScanJobsPage() {
                         onClick={() => handleTabChange(tab)}
                         className={`px-3 py-1 capitalize transition ${activeTab === tab ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
                       >
-                        {tab}
+                        {t(`scanJobs.tab${tab.charAt(0).toUpperCase()}${tab.slice(1)}`)}
                       </button>
                     ))}
                   </div>
@@ -360,16 +364,16 @@ export default function ScanJobsPage() {
                 <div className="flex gap-2">
                   {deleteConfirm === selectedJob.id ? (
                     <span className="flex items-center gap-1 text-xs">
-                      <span className="text-red-600">Delete?</span>
-                      <button onClick={() => handleDelete(selectedJob.id)} className="text-red-600 font-medium hover:text-red-800">Yes</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600">No</button>
+                      <span className="text-red-600">{t('adminAgents.deleteConfirm')}</span>
+                      <button onClick={() => handleDelete(selectedJob.id)} className="text-red-600 font-medium hover:text-red-800">{t('common.yes')}</button>
+                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600">{t('common.no')}</button>
                     </span>
                   ) : (
                     <button
                       onClick={() => setDeleteConfirm(selectedJob.id)}
                       className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded hover:bg-red-50 hover:text-red-700 transition"
                     >
-                      Delete
+                      {t('common.delete')}
                     </button>
                   )}
                   <button
@@ -377,7 +381,7 @@ export default function ScanJobsPage() {
                     disabled={running === selectedJob.id}
                     className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 disabled:bg-blue-400 transition"
                   >
-                    {running === selectedJob.id ? 'Running…' : 'Run Now'}
+                    {running === selectedJob.id ? t('scanJobs.running') : t('scanJobs.runNow')}
                   </button>
                 </div>
               </div>
@@ -388,8 +392,8 @@ export default function ScanJobsPage() {
                   <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                     <span className="text-xs text-gray-500">
                       {hideDown
-                        ? `${results.filter(r => r.isAlive).length} alive`
-                        : `${results.length} total · ${results.filter(r => r.isAlive).length} alive · ${results.filter(r => !r.isAlive).length} down`}
+                        ? t('scanJobs.resultsAliveOnly', { count: results.filter(r => r.isAlive).length })
+                        : t('scanJobs.resultsSummary', { total: results.length, alive: results.filter(r => r.isAlive).length, down: results.filter(r => !r.isAlive).length })}
                     </span>
                     <label className="flex items-center gap-2 cursor-pointer select-none">
                       <input
@@ -398,34 +402,34 @@ export default function ScanJobsPage() {
                         onChange={e => setHideDown(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-xs text-gray-600">Hide down</span>
+                      <span className="text-xs text-gray-600">{t('scanJobs.hideDown')}</span>
                     </label>
                   </div>
                   <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">IP Address</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">RTT (ms)</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">PTR Record</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Scanned At</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.ipAddressColumn')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('devicesPage.statusColumn')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.rttColumn')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.ptrRecordColumn')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.scannedAtColumn')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {results.length === 0 ? (
-                        <EmptyRow colSpan={5} message="No results yet." />
+                        <EmptyRow colSpan={5} message={t('scanJobs.noResultsYet')} />
                       ) : (
                         results.filter(r => !hideDown || r.isAlive).map((r) => (
                           <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                             <td className="px-4 py-2 font-mono text-xs text-gray-900">{r.ipAddress}</td>
                             <td className="px-4 py-2">
                               {r.isAlive ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Alive</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">{t('scanJobs.aliveBadge')}</span>
                               ) : goneIPs.has(r.ipAddress) ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700" title="Was alive in the previous scan">Gone</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700" title={t('scanJobs.wasAliveTooltip')}>{t('scanJobs.goneBadge')}</span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">Down</span>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">{t('scanJobs.downBadge')}</span>
                               )}
                             </td>
                             <td className="px-4 py-2 text-gray-600 text-xs">{r.responseTimeMs ?? '—'}</td>
@@ -434,7 +438,7 @@ export default function ScanJobsPage() {
                                 <span className={r.fwdRevMismatch ? 'text-amber-600' : 'text-gray-700'}>
                                   {r.ptrRecord}
                                   {r.fwdRevMismatch && (
-                                    <span className="ml-1 text-amber-500" title="Forward/reverse DNS mismatch">⚠</span>
+                                    <span className="ml-1 text-amber-500" title={t('scanJobs.dnsMismatchTooltip')}>⚠</span>
                                   )}
                                 </span>
                               ) : (
@@ -459,16 +463,16 @@ export default function ScanJobsPage() {
                       <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 border-b border-gray-100">
                           <tr>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Started</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Finished</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">New</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Gone</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Changed</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.startedColumn')}</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.finishedColumn')}</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.newColumn')}</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.goneColumn')}</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.changedColumn')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {history.length === 0 ? (
-                            <EmptyRow colSpan={5} message="No scan history yet." />
+                            <EmptyRow colSpan={5} message={t('scanJobs.noScanHistoryYet')} />
                           ) : (
                             history.map((run) => (
                               <tr key={run.id} onClick={() => selectRun(run)} className="hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer">
@@ -489,24 +493,24 @@ export default function ScanJobsPage() {
                     <div>
                       <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
                         <button onClick={() => setRunDetail(null)} className="text-xs text-blue-600 hover:underline">
-                          ← Back to history
+                          {t('scanJobs.backToHistory')}
                         </button>
-                        <span className="text-xs text-gray-500">Run {formatDate(runDetail.startedAt)}</span>
-                        <span className="text-xs text-green-700 font-medium">+{runDetail.newCount} new</span>
-                        <span className="text-xs text-red-700 font-medium">-{runDetail.goneCount} gone</span>
-                        <span className="text-xs text-yellow-700 font-medium">~{runDetail.changedCount} changed</span>
+                        <span className="text-xs text-gray-500">{t('scanJobs.runLabel', { date: formatDate(runDetail.startedAt) })}</span>
+                        <span className="text-xs text-green-700 font-medium">{t('scanJobs.newCount', { count: runDetail.newCount })}</span>
+                        <span className="text-xs text-red-700 font-medium">{t('scanJobs.goneCount', { count: runDetail.goneCount })}</span>
+                        <span className="text-xs text-yellow-700 font-medium">{t('scanJobs.changedCount', { count: runDetail.changedCount })}</span>
                       </div>
                       <div className="overflow-x-auto">
                         <table className="min-w-full text-sm">
                           <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">IP Address</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Change</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.ipAddressColumn')}</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">{t('scanJobs.changeColumn')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-50">
                             {(!runDetail.changes || runDetail.changes.length === 0) ? (
-                              <tr><td colSpan={2} className="px-4 py-6 text-center text-gray-400">No changes in this run</td></tr>
+                              <tr><td colSpan={2} className="px-4 py-6 text-center text-gray-400">{t('scanJobs.noChangesInRun')}</td></tr>
                             ) : (
                               runDetail.changes.map((c, i) => (
                                 <tr key={i} className={CHANGE_COLORS[c.changeType] || ''}>
@@ -532,10 +536,10 @@ export default function ScanJobsPage() {
 
                   {/* Basic */}
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">General</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('scanJobs.generalSectionTitle')}</h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
                         <input
                           className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           value={settingsForm.name}
@@ -551,7 +555,7 @@ export default function ScanJobsPage() {
                             onChange={e => updateSettings({ is_active: e.target.checked })}
                             className="w-4 h-4"
                           />
-                          <span className="text-sm text-gray-700">Active</span>
+                          <span className="text-sm text-gray-700">{t('adminWebhooks.active')}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -560,7 +564,7 @@ export default function ScanJobsPage() {
                             onChange={e => updateSettings({ notify_on_change: e.target.checked })}
                             className="w-4 h-4"
                           />
-                          <span className="text-sm text-gray-700">Notify on change</span>
+                          <span className="text-sm text-gray-700">{t('scanJobs.notifyOnChange')}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -569,7 +573,7 @@ export default function ScanJobsPage() {
                             onChange={e => updateSettings({ auto_add_ips: e.target.checked })}
                             className="w-4 h-4"
                           />
-                          <span className="text-sm text-gray-700">Auto-add active IPs to subnet</span>
+                          <span className="text-sm text-gray-700">{t('scanJobs.autoAddIpsToSubnet')}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -578,7 +582,7 @@ export default function ScanJobsPage() {
                             onChange={e => updateSettings({ discover_dns: e.target.checked })}
                             className="w-4 h-4"
                           />
-                          <span className="text-sm text-gray-700">Discover reverse DNS name</span>
+                          <span className="text-sm text-gray-700">{t('scanJobs.discoverReverseDnsName')}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer col-span-2">
                           <input
@@ -589,7 +593,7 @@ export default function ScanJobsPage() {
                             disabled={!settingsForm.discover_dns}
                           />
                           <span className={`text-sm ${settingsForm.discover_dns ? 'text-gray-700' : 'text-gray-400'}`}>
-                            Overwrite existing DNS name when resolved
+                            {t('scanJobs.overwriteExistingDns')}
                           </span>
                         </label>
                       </div>
@@ -598,7 +602,7 @@ export default function ScanJobsPage() {
 
                   {/* Schedule */}
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Schedule</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('scanJobs.scheduleSectionTitle')}</h3>
                     <div className="space-y-3">
                       <div className="flex flex-wrap gap-2">
                         {CRON_PRESETS.map(p => {
@@ -634,45 +638,45 @@ export default function ScanJobsPage() {
                         <div>
                           <input
                             className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="* * * * * (minute hour day month weekday)"
+                            placeholder={t('scanJobs.cronPlaceholder')}
                             value={settingsForm.schedule_cron}
                             onChange={e => updateSettings({ schedule_cron: e.target.value })}
                           />
-                          <p className="text-xs text-gray-400 mt-1">Standard 5-field cron expression</p>
+                          <p className="text-xs text-gray-400 mt-1">{t('scanJobs.standardCronHint')}</p>
                         </div>
                       )}
                       {selectedJob.nextRunAt && (
-                        <p className="text-xs text-gray-500">Next scheduled run: <span className="font-medium">{formatDate(selectedJob.nextRunAt)}</span></p>
+                        <p className="text-xs text-gray-500">{t('scanJobs.nextScheduledRunPrefix')}<span className="font-medium">{formatDate(selectedJob.nextRunAt)}</span></p>
                       )}
                       {selectedJob.lastRunAt && (
-                        <p className="text-xs text-gray-500">Last run: <span className="font-medium">{formatDate(selectedJob.lastRunAt)}</span></p>
+                        <p className="text-xs text-gray-500">{t('scanJobs.lastRunPrefix')}<span className="font-medium">{formatDate(selectedJob.lastRunAt)}</span></p>
                       )}
                     </div>
                   </div>
 
                   {/* Scan settings */}
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Scan Settings</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('scanJobs.scanSettingsSectionTitle')}</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Scan Type</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('scanJobs.scanTypeLabel')}</label>
                         <select
                           className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           value={settingsForm.scan_type}
                           onChange={e => updateSettings({ scan_type: e.target.value })}
                         >
-                          <option value="ping">Ping</option>
-                          <option value="snmp">SNMP</option>
-                          <option value="ping+snmp">Ping + SNMP</option>
+                          <option value="ping">{t('scanJobs.scanTypePing')}</option>
+                          <option value="snmp">{t('scanJobs.scanTypeSnmp')}</option>
+                          <option value="ping+snmp">{t('scanJobs.scanTypePingSnmp')}</option>
                         </select>
                         {(settingsForm.scan_type === 'snmp' || settingsForm.scan_type === 'ping+snmp') && (
                           <p className="text-xs text-gray-400 mt-1">
-                            SNMP community string is set in <a href="/admin/settings?tab=scanner" className="underline hover:text-gray-600">Admin Settings → Scanner</a>. Per-subnet overrides can be configured in <a href="/scan-profiles" className="underline hover:text-gray-600">Scan Profiles</a>.
+                            {t('scanJobs.snmpHintPrefix')}<a href="/admin/settings?tab=scanner" className="underline hover:text-gray-600">{t('scanJobs.adminSettingsScannerLink')}</a>{t('scanJobs.snmpHintMiddle')}<a href="/scan-profiles" className="underline hover:text-gray-600">{t('scanJobs.scanProfilesLink')}</a>{t('scanJobs.snmpHintSuffix')}
                           </p>
                         )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Concurrency</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t('scanJobs.concurrencyLabel')}</label>
                         <input
                           type="number"
                           min={1}
@@ -681,7 +685,7 @@ export default function ScanJobsPage() {
                           value={settingsForm.ping_concurrency}
                           onChange={e => updateSettings({ ping_concurrency: parseInt(e.target.value, 10) || 20 })}
                         />
-                        <p className="text-xs text-gray-400 mt-1">Parallel ping workers (1–100)</p>
+                        <p className="text-xs text-gray-400 mt-1">{t('scanJobs.concurrencyHint')}</p>
                       </div>
                     </div>
                   </div>
@@ -693,7 +697,7 @@ export default function ScanJobsPage() {
                         onClick={() => { setSettingsForm(jobToSettingsForm(selectedJob)); setSettingsDirty(false); setSettingsError('') }}
                         className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
                       >
-                        Discard
+                        {t('scanJobs.discard')}
                       </button>
                     )}
                     <button
@@ -701,7 +705,7 @@ export default function ScanJobsPage() {
                       disabled={settingsSaving || !settingsDirty}
                       className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {settingsSaving ? 'Saving…' : 'Save Changes'}
+                      {settingsSaving ? t('common.saving') : t('scanJobs.saveChanges')}
                     </button>
                   </div>
                 </form>
@@ -713,10 +717,10 @@ export default function ScanJobsPage() {
 
       {/* Create modal */}
       {createModal && (
-        <Modal title="New Scan Job" onClose={() => setCreateModal(false)}>
+        <Modal title={t('scanJobs.newScanJobModalTitle')} onClose={() => setCreateModal(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} <span className="text-red-500">*</span></label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Office subnet scan"
@@ -726,7 +730,7 @@ export default function ScanJobsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subnet / Target <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('scanJobs.subnetTargetLabel')} <span className="text-red-500">*</span></label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="192.168.1.0/24"
@@ -736,24 +740,24 @@ export default function ScanJobsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Scan Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('scanJobs.scanTypeLabel')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={createForm.scan_type}
                 onChange={e => setCreateForm(f => ({ ...f, scan_type: e.target.value }))}
               >
-                <option value="ping">Ping</option>
-                <option value="snmp">SNMP</option>
-                <option value="ping+snmp">Ping + SNMP</option>
+                <option value="ping">{t('scanJobs.scanTypePing')}</option>
+                <option value="snmp">{t('scanJobs.scanTypeSnmp')}</option>
+                <option value="ping+snmp">{t('scanJobs.scanTypePingSnmp')}</option>
               </select>
               {(createForm.scan_type === 'snmp' || createForm.scan_type === 'ping+snmp') && (
                 <p className="text-xs text-gray-400 mt-1">
-                  SNMP community string is set in <a href="/admin/settings?tab=scanner" className="underline hover:text-gray-600">Admin Settings → Scanner</a>. Per-subnet overrides can be configured in <a href="/scan-profiles" className="underline hover:text-gray-600">Scan Profiles</a>.
+                  {t('scanJobs.snmpHintPrefix')}<a href="/admin/settings?tab=scanner" className="underline hover:text-gray-600">{t('scanJobs.adminSettingsScannerLink')}</a>{t('scanJobs.snmpHintMiddle')}<a href="/scan-profiles" className="underline hover:text-gray-600">{t('scanJobs.scanProfilesLink')}</a>{t('scanJobs.snmpHintSuffix')}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Schedule (cron)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('scanJobs.scheduleCronLabel')}</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {CRON_PRESETS.filter(p => p.value !== '__custom__').map(p => (
                   <button
@@ -772,7 +776,7 @@ export default function ScanJobsPage() {
               </div>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Custom cron expression"
+                placeholder={t('scanJobs.customCronPlaceholder')}
                 value={createForm.schedule_cron}
                 onChange={e => setCreateForm(f => ({ ...f, schedule_cron: e.target.value }))}
               />
@@ -780,29 +784,29 @@ export default function ScanJobsPage() {
             <div className="grid grid-cols-2 gap-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={createForm.is_active} onChange={e => setCreateForm(f => ({ ...f, is_active: e.target.checked }))} className="w-4 h-4" />
-                <span className="text-sm text-gray-700">Active</span>
+                <span className="text-sm text-gray-700">{t('adminWebhooks.active')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={createForm.notify_on_change} onChange={e => setCreateForm(f => ({ ...f, notify_on_change: e.target.checked }))} className="w-4 h-4" />
-                <span className="text-sm text-gray-700">Notify on change</span>
+                <span className="text-sm text-gray-700">{t('scanJobs.notifyOnChange')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={createForm.auto_add_ips !== false} onChange={e => setCreateForm(f => ({ ...f, auto_add_ips: e.target.checked }))} className="w-4 h-4" />
-                <span className="text-sm text-gray-700">Auto-add active IPs</span>
+                <span className="text-sm text-gray-700">{t('scanJobs.autoAddActiveIps')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={createForm.discover_dns !== false} onChange={e => setCreateForm(f => ({ ...f, discover_dns: e.target.checked }))} className="w-4 h-4" />
-                <span className="text-sm text-gray-700">Discover reverse DNS</span>
+                <span className="text-sm text-gray-700">{t('scanJobs.discoverReverseDns')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer col-span-2">
                 <input type="checkbox" checked={createForm.dns_overwrite || false} onChange={e => setCreateForm(f => ({ ...f, dns_overwrite: e.target.checked }))} className="w-4 h-4" disabled={!createForm.discover_dns} />
-                <span className={`text-sm ${createForm.discover_dns ? 'text-gray-700' : 'text-gray-400'}`}>Overwrite existing DNS name when resolved</span>
+                <span className={`text-sm ${createForm.discover_dns ? 'text-gray-700' : 'text-gray-400'}`}>{t('scanJobs.overwriteExistingDns')}</span>
               </label>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setCreateModal(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={creating} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {creating ? 'Creating…' : 'Create'}
+                {creating ? t('scanJobs.creating') : t('vrfs.create')}
               </button>
             </div>
           </form>

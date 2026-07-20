@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.22
+
+### Added
+- **i18n: convert ScanJobsPage** (issue #35): converted `ScanJobsPage.jsx` (813 lines) to `t()` calls, including the results/history/settings detail tabs and the New Scan Job modal. Fifth of the remaining large-deferred-file follow-ups; only `AdminUsersPage.jsx` and `IPAddressesPage.jsx` remain.
+
 ## v1.34.21
 
 ### Added
