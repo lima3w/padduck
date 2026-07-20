@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs, pushDHCPReservation, removeDHCPReservation } from '../api/ipam'
 import { getCustomFields } from '../api/admin'
 import { submitIPRequest } from '../api/requests'
@@ -29,17 +30,17 @@ const STATUS_COLORS = {
 }
 
 const COLUMN_KEYS = ['address', 'hostname', 'status', 'tag', 'device', 'mac_address', 'dns_name', 'ptr_record', 'last_seen', 'services']
-const COLUMN_LABELS = {
-  address: 'Address',
-  hostname: 'Hostname',
-  status: 'Status',
-  tag: 'Tag',
-  device: 'Device',
-  mac_address: 'MAC Address',
-  dns_name: 'DNS Name',
-  ptr_record: 'Hostname/PTR',
-  last_seen: 'Last Seen',
-  services: 'Services',
+const COLUMN_LABEL_KEYS = {
+  address: 'deviceIp.address',
+  hostname: 'dashboard.hostname',
+  status: 'delegations.status',
+  tag: 'adminTags.tagColumn',
+  device: 'ipAddressesPage.columnDevice',
+  mac_address: 'ipAddressesPage.columnMacAddress',
+  dns_name: 'myRequests.dnsName',
+  ptr_record: 'ipAddressesPage.columnPickerPtrRecord',
+  last_seen: 'adminAgents.lastSeen',
+  services: 'ipAddressesPage.columnServices',
 }
 const DEFAULT_VISIBLE = ['address', 'hostname', 'status', 'tag', 'device']
 
@@ -57,6 +58,8 @@ function loadColumnVisibility() {
 const IP_REQUEST_EMPTY = { specific_ip: '', dns_name: '', purpose: '' }
 
 export default function IPAddressesPage() {
+  const { t } = useTranslation()
+  const COLUMN_LABELS = Object.fromEntries(Object.entries(COLUMN_LABEL_KEYS).map(([k, key]) => [k, t(key)]))
   const { subnetID } = useParams()
   const user = getCachedUser()
   const canAssignIP = user?.role === 'admin'
@@ -132,11 +135,11 @@ export default function IPAddressesPage() {
       setTotal(data.total ?? (Array.isArray(data) ? data.length : 0))
       setTags(tagRes.data || [])
     } catch {
-      setError('Failed to load IP addresses')
+      setError(t('ipAddressesPage.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [subnetID, page, sortCol, sortDir, fullRange, pageSize])
+  }, [subnetID, page, sortCol, sortDir, fullRange, pageSize, t])
 
   useEffect(() => {
     setPage(1)
@@ -236,7 +239,7 @@ export default function IPAddressesPage() {
       setTotal(Array.isArray(data) ? data.length : (data.total ?? 0))
       setPage(1)
     } catch {
-      setError('Failed to search IP addresses')
+      setError(t('ipAddressesPage.searchFailed'))
     } finally {
       setSearching(false)
     }
@@ -311,7 +314,7 @@ export default function IPAddressesPage() {
   async function handleCreate(e) {
     e.preventDefault()
     if (subnet && !form.address.includes(':') && !ipInSubnet(form.address, subnet.networkAddress, subnet.prefixLength)) {
-      setCreateError(`IP address must be within ${subnet.networkAddress}/${subnet.prefixLength}`)
+      setCreateError(t('ipAddressesPage.ipMustBeWithin', { network: subnet.networkAddress, prefix: subnet.prefixLength }))
       return
     }
     setCreateError(null)
@@ -330,7 +333,7 @@ export default function IPAddressesPage() {
       setModal(null)
       load(page)
     } catch(err) {
-      setCreateError(err.response?.data?.error || 'Failed to create IP address')
+      setCreateError(err.response?.data?.error || t('ipAddressesPage.createFailed'))
     } finally {
       setSaving(false)
     }
@@ -350,7 +353,7 @@ export default function IPAddressesPage() {
       setModal(null)
       load(page)
     } catch {
-      setError('Failed to assign IP address')
+      setError(t('ipAddressesPage.assignFailed'))
     } finally {
       setSaving(false)
     }
@@ -361,7 +364,7 @@ export default function IPAddressesPage() {
       await releaseExpiredLease(id)
       load(page)
     } catch {
-      setError('Failed to release expired lease')
+      setError(t('ipAddressesPage.releaseExpiredFailed'))
     }
   }
 
@@ -389,7 +392,7 @@ export default function IPAddressesPage() {
       setModal(null)
       load(page)
     } catch(err) {
-      setError(err.response?.data?.error || 'Failed to update IP')
+      setError(err.response?.data?.error || t('ipAddressesPage.updateFailed'))
     } finally {
       setSaving(false)
     }
@@ -400,7 +403,7 @@ export default function IPAddressesPage() {
       await pushDHCPReservation(id)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to push DHCP reservation')
+      setError(err.response?.data?.error || t('ipAddressesPage.pushReservationFailed'))
     }
   }
 
@@ -409,7 +412,7 @@ export default function IPAddressesPage() {
       await removeDHCPReservation(id)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to remove DHCP reservation')
+      setError(err.response?.data?.error || t('ipAddressesPage.removeReservationFailed'))
     }
   }
 
@@ -418,7 +421,7 @@ export default function IPAddressesPage() {
       await releaseIPAddress(id)
       load(page)
     } catch {
-      setError('Failed to release IP address')
+      setError(t('ipAddressesPage.releaseFailed'))
     }
   }
 
@@ -428,7 +431,7 @@ export default function IPAddressesPage() {
       setDeleteConfirm(null)
       load(page)
     } catch {
-      setError('Failed to delete IP address')
+      setError(t('ipAddressesPage.deleteFailed'))
     }
   }
 
@@ -454,9 +457,9 @@ export default function IPAddressesPage() {
       setTimeout(() => setModal(null), 1500)
     } catch (err) {
       if (err.response?.status === 409) {
-        setIPReqError('That IP address is already taken. Please choose a different one or leave blank for auto-assign.')
+        setIPReqError(t('ipAddressesPage.ipTakenError'))
       } else {
-        setIPReqError(err.response?.data?.error || 'Failed to submit request')
+        setIPReqError(err.response?.data?.error || t('ipAddressesPage.submitRequestFailed'))
       }
     } finally {
       setSaving(false)
@@ -468,7 +471,7 @@ export default function IPAddressesPage() {
     try {
       await downloadFile(`/api/v1/admin/reports/export/ips?format=csv&subnet_id=${subnetID}`, `ips-subnet-${subnetID}.csv`)
     } catch {
-      setError('Export failed')
+      setError(t('exportData.exportFailed'))
     } finally {
       setDownloading(false)
     }
@@ -494,7 +497,7 @@ export default function IPAddressesPage() {
       setSelected(new Set())
       load(page)
     } catch {
-      setError('Failed to bulk release IP addresses')
+      setError(t('ipAddressesPage.bulkReleaseFailed'))
     } finally {
       setBulkReleasing(false)
     }
@@ -509,23 +512,23 @@ export default function IPAddressesPage() {
       setSelected(new Set())
       load(page)
     } catch {
-      setError('Failed to bulk delete IP addresses')
+      setError(t('ipAddressesPage.bulkDeleteFailed'))
     } finally {
       setBulkDeleting(false)
     }
   }
 
-  if (loading) return <PageSpinner message="Loading IP addresses..." />
+  if (loading) return <PageSpinner message={t('ipAddressesPage.loadingIPs')} />
 
   const col = (key) => visibleCols.includes(key)
 
   return (
     <div>
       <nav className="text-sm text-gray-500 mb-4 flex items-center gap-1">
-        <Link to="/networks" className="hover:text-blue-600">Networks</Link>
+        <Link to="/networks" className="hover:text-blue-600">{t('nav.networks')}</Link>
         <span>/</span>
         {subnet && (
-          <Link to={`/networks/${subnet.networkId}/subnets`} className="hover:text-blue-600">Subnets</Link>
+          <Link to={`/networks/${subnet.networkId}/subnets`} className="hover:text-blue-600">{t('dashboard.subnets')}</Link>
         )}
         <span>/</span>
         <span className="text-gray-800 font-medium font-mono">{subnet?.networkAddress}/{subnet?.prefixLength}</span>
@@ -533,19 +536,19 @@ export default function IPAddressesPage() {
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">IP Addresses</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('ipAddressesPage.title')}</h1>
           <div className="flex border border-gray-200 dark:border-gray-600 rounded overflow-hidden text-xs">
             <button
               onClick={() => setActiveTab('ips')}
               className={`px-3 py-1.5 transition ${activeTab === 'ips' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
             >
-              IPs
+              {t('ipAddressesPage.ipsTab')}
             </button>
             <button
               onClick={() => setActiveTab('delegations')}
               className={`px-3 py-1.5 transition border-l border-gray-200 dark:border-gray-600 ${activeTab === 'delegations' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
             >
-              Delegations
+              {t('ipAddressesPage.delegationsTab')}
             </button>
           </div>
         </div>
@@ -554,13 +557,13 @@ export default function IPAddressesPage() {
             <button
               onClick={() => setShowColPicker(v => !v)}
               className="px-3 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm"
-              title="Toggle columns"
+              title={t('ipAddressesPage.toggleColumnsTitle')}
             >
-              Columns
+              {t('devicesPage.columns')}
             </button>
             {showColPicker && (
               <div className="absolute right-0 top-9 bg-white border rounded shadow-lg z-10 p-3 min-w-max">
-                <p className="text-xs font-medium text-gray-500 mb-2">Show/hide columns</p>
+                <p className="text-xs font-medium text-gray-500 mb-2">{t('ipAddressesPage.showHideColumns')}</p>
                 {COLUMN_KEYS.filter(k => k !== 'address').map(k => (
                   <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
                     <input
@@ -579,18 +582,18 @@ export default function IPAddressesPage() {
             onClick={handleExportIPs}
             disabled={downloading}
             className="px-3 py-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 text-sm disabled:opacity-50"
-            title="Export IP list as CSV"
+            title={t('ipAddressesPage.exportCsvTitle')}
           >
-            {downloading ? 'Exporting...' : 'Export CSV'}
+            {downloading ? t('devicesPage.exporting') : t('devicesPage.exportCsv')}
           </button>
           {!canAssignIP && (
             <button onClick={openIPRequest} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-medium">
-              Request IP
+              {t('ipAddressesPage.requestIp')}
             </button>
           )}
           {canAssignIP && (
             <button onClick={() => openCreate()} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-              + New IP
+              {t('ipAddressesPage.newIp')}
             </button>
           )}
         </div>
@@ -605,7 +608,7 @@ export default function IPAddressesPage() {
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
-            placeholder="Search IP addresses..."
+            placeholder={t('ipAddressesPage.searchPlaceholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="flex-1 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -615,17 +618,17 @@ export default function IPAddressesPage() {
             onChange={e => setSearchStatus(e.target.value)}
             className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">All Statuses</option>
-            <option value="available">Available</option>
-            <option value="assigned">Assigned</option>
-            <option value="reserved">Reserved</option>
+            <option value="">{t('adminRequests.allStatuses')}</option>
+            <option value="available">{t('ipAddressesPage.available')}</option>
+            <option value="assigned">{t('adminRoles.assignedLabel')}</option>
+            <option value="reserved">{t('dhcp.reserved')}</option>
           </select>
           <button
             type="button"
             onClick={() => setShowAdvanced(v => !v)}
             className="px-3 py-2 text-sm border rounded hover:bg-gray-50 text-gray-600"
           >
-            {showAdvanced ? 'Hide Filters' : 'More Filters'}
+            {showAdvanced ? t('ipAddressesPage.hideFilters') : t('ipAddressesPage.moreFilters')}
           </button>
           {searchableFields.length > 0 && (
             <button
@@ -633,7 +636,7 @@ export default function IPAddressesPage() {
               onClick={addCfFilterRow}
               className="px-3 py-2 text-sm border rounded hover:bg-gray-50 text-gray-600"
             >
-              + Filter
+              {t('devicesPage.addFilter')}
             </button>
           )}
           <button
@@ -641,7 +644,7 @@ export default function IPAddressesPage() {
             disabled={searching}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50"
           >
-            {searching ? 'Searching...' : 'Search'}
+            {searching ? t('ipAddressesPage.searching') : t('devicesPage.search')}
           </button>
           {(isSearchActive || searchQuery || searchStatus || Object.values(advFilters).some(Boolean) || cfFilterRows.length > 0) && (
             <button
@@ -649,7 +652,7 @@ export default function IPAddressesPage() {
               onClick={handleClearSearch}
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm font-medium"
             >
-              Clear
+              {t('common.clear')}
             </button>
           )}
         </form>
@@ -667,15 +670,15 @@ export default function IPAddressesPage() {
               onChange={e => updateCfFilterRow(idx, { op: e.target.value })}
               className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="is">is</option>
-              <option value="contains">contains</option>
-              <option value="is not">is not</option>
+              <option value="is">{t('devicesPage.operatorIs')}</option>
+              <option value="contains">{t('devicesPage.operatorContains')}</option>
+              <option value="is not">{t('devicesPage.operatorIsNot')}</option>
             </select>
             <input
               type="text"
               value={row.value}
               onChange={e => updateCfFilterRow(idx, { value: e.target.value })}
-              placeholder="value"
+              placeholder={t('adminCustomFields.valuePlaceholder')}
               className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
@@ -691,43 +694,43 @@ export default function IPAddressesPage() {
         {showAdvanced && (
           <div className="border rounded p-4 bg-gray-50 grid grid-cols-2 gap-4 text-sm">
             <div>
-              <label className="block text-gray-600 mb-1">Tag</label>
+              <label className="block text-gray-600 mb-1">{t('adminTags.tagColumn')}</label>
               <select
                 value={advFilters.tag_id}
                 onChange={e => setAdvFilters(f => ({ ...f, tag_id: e.target.value }))}
                 className="w-full border rounded px-3 py-1.5 text-sm"
               >
-                <option value="">Any tag</option>
-                {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                <option value="">{t('ipAddressesPage.anyTag')}</option>
+                {tags.map(tag => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-gray-600 mb-1">Assigned Status</label>
+              <label className="block text-gray-600 mb-1">{t('ipAddressesPage.assignedStatusLabel')}</label>
               <select
                 value={advFilters.is_assigned}
                 onChange={e => setAdvFilters(f => ({ ...f, is_assigned: e.target.value }))}
                 className="w-full border rounded px-3 py-1.5 text-sm"
               >
-                <option value="">Any</option>
-                <option value="true">Assigned only</option>
-                <option value="false">Not assigned</option>
+                <option value="">{t('ipAddressesPage.any')}</option>
+                <option value="true">{t('ipAddressesPage.assignedOnly')}</option>
+                <option value="false">{t('ipAddressesPage.notAssigned')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-gray-600 mb-1">MAC Address</label>
+              <label className="block text-gray-600 mb-1">{t('ipAddressesPage.columnMacAddress')}</label>
               <input
                 type="text"
-                placeholder="partial match"
+                placeholder={t('ipAddressesPage.partialMatchPlaceholder')}
                 value={advFilters.mac_address}
                 onChange={e => setAdvFilters(f => ({ ...f, mac_address: e.target.value }))}
                 className="w-full border rounded px-3 py-1.5 text-sm font-mono"
               />
             </div>
             <div>
-              <label className="block text-gray-600 mb-1">Hostname / PTR</label>
+              <label className="block text-gray-600 mb-1">{t('ipAddressesPage.hostnamePtrLabel')}</label>
               <input
                 type="text"
-                placeholder="partial match"
+                placeholder={t('ipAddressesPage.partialMatchPlaceholder')}
                 value={advFilters.ptr_record}
                 onChange={e => setAdvFilters(f => ({ ...f, ptr_record: e.target.value }))}
                 className="w-full border rounded px-3 py-1.5 text-sm"
@@ -739,38 +742,38 @@ export default function IPAddressesPage() {
 
       {selected.size > 0 && isAdmin && (
         <div className="mb-3 flex items-center gap-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800 text-sm">
-          <span className="text-blue-700 dark:text-blue-300 font-medium">{selected.size} selected</span>
+          <span className="text-blue-700 dark:text-blue-300 font-medium">{t('adminUsersPage.selectedCount', { count: selected.size })}</span>
           <button onClick={handleBulkRelease} disabled={bulkReleasing || bulkDeleting} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50">
-            {bulkReleasing ? 'Releasing...' : 'Release selected'}
+            {bulkReleasing ? t('ipAddressesPage.releasing') : t('ipAddressesPage.releaseSelected')}
           </button>
           {bulkDeleteConfirm ? (
             <>
-              <span className="text-red-600 dark:text-red-400 text-xs font-medium">Delete {selected.size} IP{selected.size !== 1 ? 's' : ''}?</span>
+              <span className="text-red-600 dark:text-red-400 text-xs font-medium">{t('ipAddressesPage.deleteCount', { count: selected.size })}</span>
               <button onClick={handleBulkDelete} disabled={bulkDeleting} className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50">
-                {bulkDeleting ? 'Deleting...' : 'Confirm delete'}
+                {bulkDeleting ? t('ipAddressesPage.deleting') : t('ipAddressesPage.confirmDeleteButton')}
               </button>
-              <button onClick={() => setBulkDeleteConfirm(false)} className="px-3 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs">Cancel</button>
+              <button onClick={() => setBulkDeleteConfirm(false)} className="px-3 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs">{t('common.cancel')}</button>
             </>
           ) : (
             <button onClick={() => setBulkDeleteConfirm(true)} disabled={bulkDeleting} className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50">
-              Delete selected
+              {t('ipAddressesPage.deleteSelected')}
             </button>
           )}
-          <button onClick={() => { setSelected(new Set()); setBulkDeleteConfirm(false) }} className="px-3 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs">Clear</button>
+          <button onClick={() => { setSelected(new Set()); setBulkDeleteConfirm(false) }} className="px-3 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs">{t('common.clear')}</button>
         </div>
       )}
 
       {!isSearchActive && (
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {total} address{total !== 1 ? 'es' : ''}
+            {t('ipAddressesPage.addressesCount', { count: total })}
             {fullRange && subnet && !subnet.networkAddress?.includes(':') && (
-              <span className="ml-2 text-xs text-blue-500 dark:text-blue-400">full range</span>
+              <span className="ml-2 text-xs text-blue-500 dark:text-blue-400">{t('ipAddressesPage.fullRangeLabel')}</span>
             )}
           </p>
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <span>Per page</span>
+              <span>{t('ipAddressesPage.perPage')}</span>
               <select
                 value={pageSize}
                 onChange={e => handlePageSize(Number(e.target.value))}
@@ -781,7 +784,7 @@ export default function IPAddressesPage() {
             </label>
             {subnet && !subnet.networkAddress?.includes(':') && (
               <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <span>Show all IPs</span>
+                <span>{t('ipAddressesPage.showAllIPs')}</span>
                 <button
                   role="switch"
                   aria-checked={fullRange}
@@ -806,16 +809,16 @@ export default function IPAddressesPage() {
                   <input type="checkbox" checked={ips.length > 0 && ips.every(ip => selected.has(ip.id))} onChange={e => e.target.checked ? setSelected(new Set(ips.map(ip => ip.id))) : setSelected(new Set())} />
                 </th>
               )}
-              {col('address') && <SortTh col="address" label="Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('hostname') && <SortTh col="hostname" label="Hostname" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('status') && <SortTh col="status" label="Status" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Tag</th>}
-              {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Device</th>}
-              {col('mac_address') && <SortTh col="mac_address" label="MAC Address" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">DNS Name</th>}
-              {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">PTR / Hostname</th>}
-              {col('last_seen') && <SortTh col="last_seen" label="Last Seen" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
-              {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Services</th>}
+              {col('address') && <SortTh col="address" label={t('deviceIp.address')} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('hostname') && <SortTh col="hostname" label={t('dashboard.hostname')} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('status') && <SortTh col="status" label={t('delegations.status')} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('tag') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminTags.tagColumn')}</th>}
+              {col('device') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('ipAddressesPage.columnDevice')}</th>}
+              {col('mac_address') && <SortTh col="mac_address" label={t('ipAddressesPage.columnMacAddress')} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('dns_name') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('myRequests.dnsName')}</th>}
+              {col('ptr_record') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('ipAddressesPage.ptrHostnameColumn')}</th>}
+              {col('last_seen') && <SortTh col="last_seen" label={t('adminAgents.lastSeen')} sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />}
+              {col('services') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('ipAddressesPage.columnServices')}</th>}
               {searchableFields.map(d => (
                 <th key={d.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{d.label}</th>
               ))}
@@ -824,7 +827,7 @@ export default function IPAddressesPage() {
           </thead>
           <tbody>
             {ips.length === 0 && (
-              <EmptyRow colSpan={visibleCols.length + searchableFields.length + 1} message="No IP addresses yet." />
+              <EmptyRow colSpan={visibleCols.length + searchableFields.length + 1} message={t('ipAddressesPage.noIpAddressesYet')} />
             )}
             {ips.map(ip => (
               <tr key={ip.virtual ? `v-${ip.address}` : ip.id} className={`border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30 ${ip.virtual ? 'opacity-50' : ''}`}>
@@ -852,7 +855,7 @@ export default function IPAddressesPage() {
                     ) : '—'}
                     {ip.expiresAt && (
                       <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded ${new Date(ip.expiresAt) < new Date() ? 'bg-red-100 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
-                        {new Date(ip.expiresAt) < new Date() ? 'Expired' : `Expires ${new Date(ip.expiresAt).toLocaleDateString()}`}
+                        {new Date(ip.expiresAt) < new Date() ? t('ipAddressesPage.expired') : `${t('ipAddressesPage.expiresPrefix')}${new Date(ip.expiresAt).toLocaleDateString()}`}
                       </span>
                     )}
                   </td>
@@ -864,7 +867,7 @@ export default function IPAddressesPage() {
                       {ip.dnsName || '—'}
                       {ip.dnsName && ip.dnsRecords && !ip.dnsRecords.includes(ip.address) && (
                         <span
-                          title="DNS mismatch: DNS records do not include this IP's address"
+                          title={t('ipAddressesPage.dnsMismatchTooltip')}
                           className="text-yellow-500 cursor-help"
                         >
                           &#9888;
@@ -892,7 +895,7 @@ export default function IPAddressesPage() {
                         <button
                           className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-dotted text-left"
                           onClick={() => addCfFilterFromValue(d.name, val)}
-                          title="Filter by this value"
+                          title={t('devicesPage.filterByThisValue')}
                         >
                           {val}
                         </button>
@@ -902,35 +905,35 @@ export default function IPAddressesPage() {
                 })}
                 <td className="px-4 py-3 text-right space-x-2">
                   {ip.virtual ? (
-                    isAdmin && <button onClick={() => openCreate(ip.address)} className="text-gray-400 hover:text-green-600 text-xs">Create</button>
+                    isAdmin && <button onClick={() => openCreate(ip.address)} className="text-gray-400 hover:text-green-600 text-xs">{t('vrfs.create')}</button>
                   ) : (
                     <>
-                      <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">Edit</button>
+                      <button onClick={() => openMeta(ip)} className="text-gray-400 hover:text-indigo-600 text-xs">{t('common.edit')}</button>
                       {ip.status !== 'assigned' && (
-                        <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">Assign</button>
+                        <button onClick={() => openAssign(ip)} className="text-gray-400 hover:text-blue-600 text-xs">{t('ipAddressesPage.assign')}</button>
                       )}
                       {ip.status === 'assigned' && (
                         <>
-                          <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">Release</button>
+                          <button onClick={() => handleRelease(ip.id)} className="text-gray-400 hover:text-yellow-600 text-xs">{t('ipAddressesPage.release')}</button>
                           {ip.expiresAt && new Date(ip.expiresAt) < new Date() && (
-                            <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">Release Expired</button>
+                            <button onClick={() => handleReleaseExpired(ip.id)} className="text-red-500 hover:text-red-700 text-xs">{t('ipAddressesPage.releaseExpired')}</button>
                           )}
                         </>
                       )}
                       {subnet?.technitiumScopeName && ip.macAddress && (
-                        <button onClick={() => handlePushReservation(ip.id)} className="text-gray-400 hover:text-purple-600 text-xs">Reserve</button>
+                        <button onClick={() => handlePushReservation(ip.id)} className="text-gray-400 hover:text-purple-600 text-xs">{t('ipAddressesPage.reserve')}</button>
                       )}
                       {subnet?.technitiumScopeName && (
-                        <button onClick={() => handleRemoveReservation(ip.id)} className="text-gray-400 hover:text-orange-600 text-xs">Unreserve</button>
+                        <button onClick={() => handleRemoveReservation(ip.id)} className="text-gray-400 hover:text-orange-600 text-xs">{t('ipAddressesPage.unreserve')}</button>
                       )}
                       {deleteConfirm === ip.id ? (
                         <>
-                          <span className="text-red-600 text-xs">Confirm?</span>
-                          <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                          <span className="text-red-600 text-xs">{t('subnets.confirmDelete')}</span>
+                          <button onClick={() => handleDelete(ip.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('common.yes')}</button>
+                          <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">{t('common.no')}</button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                        <button onClick={() => setDeleteConfirm(ip.id)} className="text-gray-400 hover:text-red-600 text-xs">{t('common.delete')}</button>
                       )}
                     </>
                   )}
@@ -954,10 +957,10 @@ export default function IPAddressesPage() {
       </>}
 
       {modal === 'create' && (
-        <Modal title="New IP Address" onClose={() => setModal(null)}>
+        <Modal title={t('ipAddressesPage.newIpAddressModalTitle')} onClose={() => setModal(null)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.ipAddressLabel')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="192.168.0.10"
@@ -967,7 +970,7 @@ export default function IPAddressesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hostname</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('dashboard.hostname')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="server01.example.com"
@@ -976,30 +979,30 @@ export default function IPAddressesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('delegations.status')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.status}
                 onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
               >
-                <option value="available">Available</option>
-                <option value="assigned">Assigned</option>
-                <option value="reserved">Reserved</option>
+                <option value="available">{t('ipAddressesPage.available')}</option>
+                <option value="assigned">{t('adminRoles.assignedLabel')}</option>
+                <option value="reserved">{t('dhcp.reserved')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminTags.tagColumn')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.tag_id}
                 onChange={e => setForm(f => ({ ...f, tag_id: e.target.value }))}
               >
-                <option value="">No tag</option>
-                {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                <option value="">{t('ipAddressesPage.noTag')}</option>
+                {tags.map(tag => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">MAC Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.columnMacAddress')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="aa:bb:cc:dd:ee:ff"
@@ -1009,7 +1012,7 @@ export default function IPAddressesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PTR / Hostname</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.ptrHostnameLabel')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="host.example.com"
@@ -1018,7 +1021,7 @@ export default function IPAddressesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">DNS Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('myRequests.dnsName')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="web01.example.com"
@@ -1028,7 +1031,7 @@ export default function IPAddressesPage() {
             </div>
             {cfDefs.length > 0 && (
               <div className="border-t pt-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('subnetForm.customFields')}</p>
                 <CustomFieldForm
                   definitions={cfDefs}
                   values={form.custom_fields}
@@ -1040,9 +1043,9 @@ export default function IPAddressesPage() {
               <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{createError}</div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Add IP'}
+                {saving ? t('common.saving') : t('ipAddressesPage.addIp')}
               </button>
             </div>
           </form>
@@ -1050,16 +1053,16 @@ export default function IPAddressesPage() {
       )}
 
       {modal?.assign && (
-        <Modal title={`Assign ${modal.assign.Address}`} onClose={() => setModal(null)}>
+        <Modal title={t('ipAddressesPage.assignModalTitle', { address: modal.assign.Address })} onClose={() => setModal(null)}>
           <form onSubmit={handleAssign} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Device</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('ipAddressesPage.columnDevice')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                 value={form.device_id}
                 onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
               >
-                <option value="">— None —</option>
+                <option value="">{t('ipAddressesPage.noneOption')}</option>
                 {devices.map(d => (
                   <option key={d.id} value={d.id}>{d.hostname}</option>
                 ))}
@@ -1067,22 +1070,22 @@ export default function IPAddressesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Lease Duration (days) <span className="text-gray-400 font-normal">— optional</span>
+                {t('ipAddressesPage.leaseDurationLabel')} <span className="text-gray-400 font-normal">{t('ipAddressesPage.optionalSuffix')}</span>
               </label>
               <input
                 type="number"
                 min="1"
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Leave blank for permanent"
+                placeholder={t('ipAddressesPage.leaveBlankPermanentPlaceholder')}
                 value={form.lease_duration_days}
                 onChange={e => setForm(f => ({ ...f, lease_duration_days: e.target.value }))}
               />
-              <p className="text-xs text-gray-400 mt-1">If set, the assignment will expire after this many days.</p>
+              <p className="text-xs text-gray-400 mt-1">{t('ipAddressesPage.leaseDurationHint')}</p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Assign'}
+                {saving ? t('common.saving') : t('ipAddressesPage.assign')}
               </button>
             </div>
           </form>
@@ -1090,25 +1093,25 @@ export default function IPAddressesPage() {
       )}
 
       {modal === 'requestIP' && (
-        <Modal title="Request IP Address" onClose={() => setModal(null)}>
+        <Modal title={t('ipAddressesPage.requestIpAddressModalTitle')} onClose={() => setModal(null)}>
           {ipReqSuccess ? (
-            <div className="py-4 text-center text-green-600 font-medium">Request submitted successfully!</div>
+            <div className="py-4 text-center text-green-600 font-medium">{t('ipAddressesPage.requestSubmittedSuccess')}</div>
           ) : (
             <form onSubmit={handleIPRequestSubmit} className="space-y-4">
               {ipReqError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{ipReqError}</div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subnet</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.subnetLabel')}</label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm font-mono bg-gray-50 text-gray-500"
-                  value={subnet ? `${subnet.networkAddress}/${subnet.prefixLength}` : `Subnet #${subnetID}`}
+                  value={subnet ? `${subnet.networkAddress}/${subnet.prefixLength}` : t('ipAddressesPage.subnetHashLabel', { id: subnetID })}
                   readOnly
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Specific IP <span className="text-gray-400 font-normal">(optional — leave blank for auto-assign)</span>
+                  {t('ipAddressesPage.specificIpLabel')} <span className="text-gray-400 font-normal">{t('ipAddressesPage.optionalAutoAssignHint')}</span>
                 </label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1119,7 +1122,7 @@ export default function IPAddressesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  DNS Name <span className="text-gray-400 font-normal">(optional)</span>
+                  {t('myRequests.dnsName')} <span className="text-gray-400 font-normal">{t('ipAddressesPage.optionalHint')}</span>
                 </label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1130,21 +1133,21 @@ export default function IPAddressesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Purpose <span className="text-red-500">*</span>
+                  {t('ipAddressesPage.purposeLabel')} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
-                  placeholder="Describe why you need this IP address..."
+                  placeholder={t('ipAddressesPage.purposePlaceholder')}
                   value={ipReqForm.purpose}
                   onChange={e => setIPReqForm(f => ({ ...f, purpose: e.target.value }))}
                   required
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
                 <button type="submit" disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50">
-                  {saving ? 'Submitting...' : 'Submit Request'}
+                  {saving ? t('ipAddressesPage.submitting') : t('ipAddressesPage.submitRequest')}
                 </button>
               </div>
             </form>
@@ -1153,22 +1156,22 @@ export default function IPAddressesPage() {
       )}
 
       {modal?.meta && (
-        <Modal title={`Edit ${modal.meta.Address}`} onClose={() => setModal(null)}>
+        <Modal title={t('ipAddressesPage.editIpModalTitle', { address: modal.meta.Address })} onClose={() => setModal(null)}>
           <form onSubmit={handleUpdateMeta} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Device</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.columnDevice')}</label>
               {form.device_id ? (
                 <div className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
                   <span className="text-sm text-gray-700 dark:text-gray-200 flex-1">
-                    {devices.find(d => d.id === parseInt(form.device_id))?.hostname || `Device #${form.device_id}`}
+                    {devices.find(d => d.id === parseInt(form.device_id))?.hostname || t('ipAddressesPage.deviceHashLabel', { id: form.device_id })}
                   </span>
-                  <button type="button" onClick={() => setForm(f => ({ ...f, device_id: '' }))} className="text-gray-400 hover:text-red-500 text-xs">✕ Clear</button>
+                  <button type="button" onClick={() => setForm(f => ({ ...f, device_id: '' }))} className="text-gray-400 hover:text-red-500 text-xs">{t('ipAddressesPage.clearSelection')}</button>
                 </div>
               ) : (
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search devices..."
+                    placeholder={t('ipAddressesPage.searchDevicesPlaceholder')}
                     value={metaDeviceSearch}
                     onChange={e => setMetaDeviceSearch(e.target.value)}
                     className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -1189,7 +1192,7 @@ export default function IPAddressesPage() {
                           </button>
                         ))}
                       {devices.filter(d => d.hostname?.toLowerCase().includes(metaDeviceSearch.toLowerCase())).length === 0 && (
-                        <div className="px-3 py-2 text-sm text-gray-400">No devices found</div>
+                        <div className="px-3 py-2 text-sm text-gray-400">{t('ipAddressesPage.noDevicesFound')}</div>
                       )}
                     </div>
                   )}
@@ -1197,18 +1200,18 @@ export default function IPAddressesPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminTags.tagColumn')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.tag_id}
                 onChange={e => setForm(f => ({ ...f, tag_id: e.target.value }))}
               >
-                <option value="">No tag</option>
-                {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                <option value="">{t('ipAddressesPage.noTag')}</option>
+                {tags.map(tag => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">MAC Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.columnMacAddress')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="aa:bb:cc:dd:ee:ff"
@@ -1218,7 +1221,7 @@ export default function IPAddressesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PTR / Hostname</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.ptrHostnameLabel')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="host.example.com"
@@ -1227,7 +1230,7 @@ export default function IPAddressesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">DNS Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('myRequests.dnsName')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="web01.example.com"
@@ -1237,15 +1240,15 @@ export default function IPAddressesPage() {
             </div>
             {modal.meta.portOpen && Object.values(modal.meta.portOpen).some(Boolean) && (
               <div className="border-t pt-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Open Ports (read-only)</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('ipAddressesPage.openPortsReadOnly')}</p>
                 <PortBadges portOpen={modal.meta.portOpen} />
               </div>
             )}
             {(modal.meta.dnsLastChecked) && (
               <div className="border-t pt-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">DNS Info (read-only)</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('ipAddressesPage.dnsInfoReadOnly')}</p>
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <span className="font-medium">Last DNS Check:</span>
+                  <span className="font-medium">{t('ipAddressesPage.lastDnsCheckLabel')}</span>
                   <span>{modal.meta.dnsLastChecked ? new Date(modal.meta.dnsLastChecked).toLocaleString() : '—'}</span>
                 </div>
               </div>
@@ -1257,7 +1260,7 @@ export default function IPAddressesPage() {
             )}
             {cfDefs.length > 0 && (
               <div className="border-t pt-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Custom Fields</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('subnetForm.customFields')}</p>
                 <CustomFieldForm
                   definitions={cfDefs}
                   values={form.custom_fields}
@@ -1266,9 +1269,9 @@ export default function IPAddressesPage() {
               </div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
