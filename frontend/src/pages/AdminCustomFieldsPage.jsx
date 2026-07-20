@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import { getCustomFields, createCustomField, updateCustomField, deleteCustomField, reorderCustomFields } from '../api/admin'
 import PageSpinner from '../components/PageSpinner'
@@ -6,7 +7,7 @@ import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 
 const ENTITY_TYPES = ['subnet', 'ip_address', 'device']
-const ENTITY_LABELS = { subnet: 'Subnets', ip_address: 'IP Addresses', device: 'Devices' }
+const ENTITY_LABEL_KEYS = { subnet: 'entityLabelSubnets', ip_address: 'entityLabelIpAddresses', device: 'entityLabelDevices' }
 const FIELD_TYPES = ['text', 'number', 'textarea', 'dropdown', 'checkbox', 'date', 'url', 'email']
 
 const EMPTY_FORM = {
@@ -22,6 +23,8 @@ const EMPTY_FORM = {
 }
 
 export default function AdminCustomFieldsPage() {
+  const { t } = useTranslation()
+  const ENTITY_LABELS = Object.fromEntries(ENTITY_TYPES.map(et => [et, t(`adminCustomFields.${ENTITY_LABEL_KEYS[et]}`)]))
   const [fields, setFields] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -42,7 +45,7 @@ export default function AdminCustomFieldsPage() {
       const res = await getCustomFields()
       setFields(Array.isArray(res.data) ? res.data : [])
     } catch {
-      setError('Failed to load custom fields')
+      setError(t('adminCustomFields.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -97,7 +100,7 @@ export default function AdminCustomFieldsPage() {
       setModal(null)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to save custom field')
+      setError(err.response?.data?.error || err.message || t('adminCustomFields.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -109,7 +112,7 @@ export default function AdminCustomFieldsPage() {
       setDeleteConfirm(null)
       load()
     } catch {
-      setError('Failed to delete custom field')
+      setError(t('adminCustomFields.deleteFailed'))
     }
   }
 
@@ -118,7 +121,7 @@ export default function AdminCustomFieldsPage() {
       await reorderCustomFields(ids)
       load()
     } catch {
-      setError('Failed to reorder fields')
+      setError(t('adminCustomFields.reorderFailed'))
     }
   }
 
@@ -144,14 +147,14 @@ export default function AdminCustomFieldsPage() {
     setForm(f => ({ ...f, options: f.options.filter((_, i) => i !== idx) }))
   }
 
-  if (loading) return <PageSpinner message="Loading custom fields..." />
+  if (loading) return <PageSpinner message={t('adminCustomFields.loadingFields')} />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Custom Fields</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('adminCustomFields.title')}</h1>
         <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-          + New Field
+          {t('adminCustomFields.newField')}
         </button>
       </div>
 
@@ -179,17 +182,17 @@ export default function AdminCustomFieldsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-10">Order</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Label</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Required</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Searchable</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-10">{t('adminCustomFields.orderColumn')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminCustomFields.labelColumn')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminCustomFields.typeColumn')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminCustomFields.requiredColumn')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('adminCustomFields.searchableColumn')}</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {fieldsForTab(et).length === 0 && (
-                <EmptyRow colSpan={6} message={`No custom fields for ${ENTITY_LABELS[et]} yet.`} />
+                <EmptyRow colSpan={6} message={t('adminCustomFields.noFieldsFor', { entityLabel: ENTITY_LABELS[et] })} />
               )}
               {fieldsForTab(et).map((field, idx, list) => (
                 <tr key={field.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
@@ -199,13 +202,13 @@ export default function AdminCustomFieldsPage() {
                         onClick={() => moveField(et, idx, -1)}
                         disabled={idx === 0}
                         className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 text-xs leading-none"
-                        title="Move up"
+                        title={t('adminCustomFields.moveUp')}
                       >▲</button>
                       <button
                         onClick={() => moveField(et, idx, 1)}
                         disabled={idx === list.length - 1}
                         className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-25 text-xs leading-none"
-                        title="Move down"
+                        title={t('adminCustomFields.moveDown')}
                       >▼</button>
                     </div>
                   </td>
@@ -213,28 +216,28 @@ export default function AdminCustomFieldsPage() {
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{field.fieldType}</td>
                   <td className="px-4 py-3">
                     {field.isRequired ? (
-                      <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs rounded">Yes</span>
+                      <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs rounded">{t('common.yes')}</span>
                     ) : (
-                      <span className="text-gray-400 text-xs">No</span>
+                      <span className="text-gray-400 text-xs">{t('common.no')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     {field.isSearchable ? (
-                      <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded">Yes</span>
+                      <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded">{t('common.yes')}</span>
                     ) : (
-                      <span className="text-gray-400 text-xs">No</span>
+                      <span className="text-gray-400 text-xs">{t('common.no')}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right space-x-2">
-                    <button onClick={() => openEdit(field)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                    <button onClick={() => openEdit(field)} className="text-gray-400 hover:text-blue-600 text-xs">{t('common.edit')}</button>
                     {deleteConfirm === field.id ? (
                       <>
-                        <span className="text-red-600 text-xs">Confirm?</span>
-                        <button onClick={() => handleDelete(field.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                        <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                        <span className="text-red-600 text-xs">{t('subnets.confirmDelete')}</span>
+                        <button onClick={() => handleDelete(field.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('common.yes')}</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">{t('common.no')}</button>
                       </>
                     ) : (
-                      <button onClick={() => setDeleteConfirm(field.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                      <button onClick={() => setDeleteConfirm(field.id)} className="text-gray-400 hover:text-red-600 text-xs">{t('common.delete')}</button>
                     )}
                   </td>
                 </tr>
@@ -247,13 +250,13 @@ export default function AdminCustomFieldsPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? 'New Custom Field' : `Edit: ${modal.edit.label}`}
+          title={modal === 'create' ? t('adminCustomFields.newFieldModalTitle') : `${t('adminCustomFields.editFieldModalTitlePrefix')}${modal.edit.label}`}
           onClose={() => setModal(null)}
         >
           <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
             {modal === 'create' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Entity Type <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminCustomFields.entityType')} <span className="text-red-500">*</span></label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.entity_type}
@@ -264,7 +267,7 @@ export default function AdminCustomFieldsPage() {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.name')} <span className="text-red-500">*</span></label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder="circuit_id"
@@ -273,10 +276,10 @@ export default function AdminCustomFieldsPage() {
                 required
                 disabled={modal !== 'create'}
               />
-              {modal === 'create' && <p className="text-xs text-gray-500 mt-1">Machine name, no spaces (e.g. circuit_id)</p>}
+              {modal === 'create' && <p className="text-xs text-gray-500 mt-1">{t('adminCustomFields.nameHint')}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Label <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminCustomFields.label')} <span className="text-red-500">*</span></label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder="Circuit ID"
@@ -286,7 +289,7 @@ export default function AdminCustomFieldsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Field Type <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminCustomFields.fieldType')} <span className="text-red-500">*</span></label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={form.field_type}
@@ -297,36 +300,36 @@ export default function AdminCustomFieldsPage() {
             </div>
             {form.field_type === 'dropdown' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Options</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('adminCustomFields.options')}</label>
                 <div className="space-y-1 mb-2">
                   {(form.options || []).map((opt, idx) => (
                     <div key={idx} className="flex items-center gap-2 text-sm">
                       <span className="font-mono text-gray-600 dark:text-gray-400 flex-1">{opt.value}</span>
                       <span className="text-gray-500 dark:text-gray-400 flex-1">{opt.label}</span>
-                      <button type="button" onClick={() => removeOption(idx)} className="text-gray-400 hover:text-red-600 text-xs">Remove</button>
+                      <button type="button" onClick={() => removeOption(idx)} className="text-gray-400 hover:text-red-600 text-xs">{t('adminCustomFields.remove')}</button>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-2">
                   <input
                     className="flex-1 border rounded px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                    placeholder="value"
+                    placeholder={t('adminCustomFields.valuePlaceholder')}
                     value={newOption.value}
                     onChange={e => setNewOption(o => ({ ...o, value: e.target.value }))}
                   />
                   <input
                     className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                    placeholder="label"
+                    placeholder={t('adminCustomFields.labelPlaceholder')}
                     value={newOption.label}
                     onChange={e => setNewOption(o => ({ ...o, label: e.target.value }))}
                   />
-                  <button type="button" onClick={addOption} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-500">Add</button>
+                  <button type="button" onClick={addOption} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-500">{t('adminCustomFields.add')}</button>
                 </div>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Value</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminCustomFields.defaultValue')}</label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.default_value}
@@ -334,7 +337,7 @@ export default function AdminCustomFieldsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Placeholder</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminCustomFields.placeholder')}</label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.placeholder}
@@ -350,7 +353,7 @@ export default function AdminCustomFieldsPage() {
                   onChange={e => setForm(f => ({ ...f, is_required: e.target.checked }))}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Required</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t('adminCustomFields.required')}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -359,13 +362,13 @@ export default function AdminCustomFieldsPage() {
                   onChange={e => setForm(f => ({ ...f, is_searchable: e.target.checked }))}
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-300">Searchable</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t('adminCustomFields.searchable')}</span>
               </label>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
