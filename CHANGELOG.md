@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.16
+
+### Added
+- **i18n batch 14/15: admin integrations & auth providers** (issue #35): converted `IntegrationTemplatesPage`, `AdminGrafanaPage`, `AdminTagsPage`, `AdminSamlPage`, `AdminOAuth2Page`, `IdentityPoliciesPage`, `AdminLdapPage`, `AdminCustomFieldsPage`, `AdminIntegrationsPage`, and `AdminWebhooksPage` to `t()` calls.
+
 ## v1.34.15
 
 ### Added

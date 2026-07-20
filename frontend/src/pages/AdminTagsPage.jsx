@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getTags, createTag, updateTag, deleteTag } from '../api/ipam'
 import Modal from '../components/Modal'
 import TagBadge from '../components/TagBadge'
@@ -9,6 +10,7 @@ import EmptyRow from '../components/EmptyRow'
 const EMPTY_FORM = { name: '', colour: '#6B7280', description: '' }
 
 export default function AdminTagsPage() {
+  const { t } = useTranslation()
   const [tags, setTags] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -26,7 +28,7 @@ export default function AdminTagsPage() {
       const res = await getTags()
       setTags(res.data || [])
     } catch {
-      setError('Failed to load tags')
+      setError(t('adminTags.loadFailed'))
     } finally {
       setLoading(false)
     }
@@ -58,15 +60,15 @@ export default function AdminTagsPage() {
       }
       if (modal === 'create') {
         await createTag(payload)
-        showMsg('Tag created')
+        showMsg(t('adminTags.created'))
       } else {
         await updateTag(modal.edit.id, payload)
-        showMsg('Tag updated')
+        showMsg(t('adminTags.updated'))
       }
       setModal(null)
       load()
     } catch(err) {
-      setError(err.response?.data?.error || 'Failed to save tag')
+      setError(err.response?.data?.error || t('adminTags.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -76,23 +78,23 @@ export default function AdminTagsPage() {
     try {
       await deleteTag(id)
       setDeleteConfirm(null)
-      showMsg('Tag deleted')
+      showMsg(t('adminTags.deleted'))
       load()
     } catch(err) {
-      const msg = err.response?.data?.error || 'Failed to delete tag'
+      const msg = err.response?.data?.error || t('adminTags.deleteFailed')
       setError(msg)
       setDeleteConfirm(null)
     }
   }
 
-  if (loading) return <PageSpinner message="Loading tags..." />
+  if (loading) return <PageSpinner message={t('adminTags.loadingTags')} />
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">IP Tags</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('adminTags.title')}</h1>
         <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-          + New Tag
+          {t('adminTags.newTag')}
         </button>
       </div>
 
@@ -108,16 +110,16 @@ export default function AdminTagsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Tag</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Colour</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Description</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">Type</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('adminTags.tagColumn')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('adminTags.colourColumn')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('common.description')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('natRules.type')}</th>
               <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
             {tags.length === 0 && (
-              <EmptyRow colSpan={5} message="No tags yet." />
+              <EmptyRow colSpan={5} message={t('adminTags.noTagsYet')} />
             )}
             {tags.map(tag => (
               <tr key={tag.id} className="border-b last:border-0 hover:bg-gray-50">
@@ -126,22 +128,22 @@ export default function AdminTagsPage() {
                 <td className="px-4 py-3 text-gray-500">{tag.description || '—'}</td>
                 <td className="px-4 py-3">
                   {tag.isSystem ? (
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">System</span>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{t('adminTags.system')}</span>
                   ) : (
-                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">Custom</span>
+                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{t('adminTags.custom')}</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openEdit(tag)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                  <button onClick={() => openEdit(tag)} className="text-gray-400 hover:text-blue-600 text-xs">{t('common.edit')}</button>
                   {!tag.isSystem && (
                     deleteConfirm === tag.id ? (
                       <>
-                        <span className="text-red-600 text-xs">Confirm?</span>
-                        <button onClick={() => handleDelete(tag.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                        <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                        <span className="text-red-600 text-xs">{t('subnets.confirmDelete')}</span>
+                        <button onClick={() => handleDelete(tag.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('common.yes')}</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">{t('common.no')}</button>
                       </>
                     ) : (
-                      <button onClick={() => setDeleteConfirm(tag.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                      <button onClick={() => setDeleteConfirm(tag.id)} className="text-gray-400 hover:text-red-600 text-xs">{t('common.delete')}</button>
                     )
                   )}
                 </td>
@@ -153,10 +155,10 @@ export default function AdminTagsPage() {
       </div>
 
       {modal && (
-        <Modal title={modal === 'create' ? 'New Tag' : 'Edit Tag'} onClose={() => setModal(null)}>
+        <Modal title={modal === 'create' ? t('adminTags.newTagModalTitle') : t('adminTags.editTagModalTitle')} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.name}
@@ -165,7 +167,7 @@ export default function AdminTagsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Colour</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminTags.colour')}</label>
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
@@ -183,7 +185,7 @@ export default function AdminTagsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.description}
@@ -191,13 +193,13 @@ export default function AdminTagsPage() {
               />
             </div>
             <div className="pt-1">
-              <p className="text-xs text-gray-500 mb-1">Preview:</p>
-              <TagBadge tag={{ name: form.name || 'Preview', colour: form.colour }} />
+              <p className="text-xs text-gray-500 mb-1">{t('adminTags.preview')}</p>
+              <TagBadge tag={{ name: form.name || t('adminTags.previewPlaceholder'), colour: form.colour }} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>

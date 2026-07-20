@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../api/admin'
 
 const defaultConfig = {
@@ -16,6 +17,7 @@ const defaultConfig = {
 }
 
 export default function AdminLdapPage() {
+  const { t } = useTranslation()
   const [config, setConfig] = useState(defaultConfig)
   const [passwordSet, setPasswordSet] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -57,11 +59,11 @@ export default function AdminLdapPage() {
       setMappings(mappingsRes.data || [])
       setRoles(rolesRes.data || [])
     } catch (err) {
-      showMessage('Failed to load LDAP config: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminLdap.loadFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadData()
@@ -82,10 +84,10 @@ export default function AdminLdapPage() {
       const payload = { ...config }
       if (!payload.bind_password) delete payload.bind_password
       await client.updateLdapConfig(payload)
-      showMessage('LDAP configuration saved')
+      showMessage(t('adminLdap.configSaved'))
       loadData()
     } catch (err) {
-      showMessage('Save failed: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminLdap.saveFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setSaving(false)
     }
@@ -96,9 +98,9 @@ export default function AdminLdapPage() {
     setTestResult(null)
     try {
       const res = await client.testLdapConnection()
-      setTestResult({ ok: true, message: res.data?.message || 'Connection successful' })
+      setTestResult({ ok: true, message: res.data?.message || t('adminLdap.connectionSuccessful') })
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Connection failed'
+      const msg = err.response?.data?.error || err.message || t('adminLdap.connectionFailed')
       setTestResult({ ok: false, message: msg })
     } finally {
       setTesting(false)
@@ -107,7 +109,7 @@ export default function AdminLdapPage() {
 
   const handleAddMapping = async () => {
     if (!newMapping.ldap_group_dn || !newMapping.role_id) {
-      showMessage('Both LDAP group DN and role are required', 'error')
+      showMessage(t('adminLdap.bothFieldsRequired'), 'error')
       return
     }
     setAddingMapping(true)
@@ -116,36 +118,36 @@ export default function AdminLdapPage() {
       setNewMapping({ ldap_group_dn: '', role_id: '' })
       const res = await client.getLdapGroupMappings()
       setMappings(res.data || [])
-      showMessage('Group mapping added')
+      showMessage(t('adminLdap.mappingAdded'))
     } catch (err) {
-      showMessage('Failed to add mapping: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminLdap.addMappingFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setAddingMapping(false)
     }
   }
 
   const handleDeleteMapping = async (id) => {
-    if (!window.confirm('Delete this group mapping?')) return
+    if (!window.confirm(t('adminLdap.deleteMappingConfirm'))) return
     try {
       await client.deleteLdapGroupMapping(id)
       setMappings((prev) => prev.filter((m) => m.id !== id))
-      showMessage('Mapping deleted')
+      showMessage(t('adminLdap.mappingDeleted'))
     } catch (err) {
-      showMessage('Failed to delete: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminLdap.deleteMappingFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-        Loading LDAP settings...
+        {t('adminLdap.loadingSettings')}
       </div>
     )
   }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">LDAP / Active Directory</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{t('adminLdap.title')}</h1>
 
       {message.text && (
         <div
@@ -162,7 +164,7 @@ export default function AdminLdapPage() {
       <div className="space-y-6">
         {/* Connection Settings */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Connection Settings</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminLdap.connectionSettingsTitle')}</h2>
 
           <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input
@@ -172,14 +174,14 @@ export default function AdminLdapPage() {
               className="w-4 h-4 text-blue-600 rounded"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              <strong>Enable LDAP authentication</strong>
-              <span className="block text-gray-500 dark:text-gray-400">Allow users to sign in with LDAP credentials</span>
+              <strong>{t('adminLdap.enableLdap')}</strong>
+              <span className="block text-gray-500 dark:text-gray-400">{t('adminLdap.enableLdapHint')}</span>
             </span>
           </label>
 
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Host</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.host')}</label>
               <input
                 type="text"
                 value={config.host || ''}
@@ -189,7 +191,7 @@ export default function AdminLdapPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Port</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.port')}</label>
               <input
                 type="number"
                 value={config.port || 389}
@@ -201,15 +203,15 @@ export default function AdminLdapPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">TLS Mode</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.tlsMode')}</label>
             <select
               value={config.tls_mode || 'none'}
               onChange={(e) => handleChange('tls_mode', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="none">None (plain LDAP)</option>
-              <option value="starttls">STARTTLS</option>
-              <option value="tls">LDAPS (TLS)</option>
+              <option value="none">{t('adminLdap.tlsModeNone')}</option>
+              <option value="starttls">{t('adminLdap.tlsModeStarttls')}</option>
+              <option value="tls">{t('adminLdap.tlsModeTls')}</option>
             </select>
           </div>
 
@@ -220,16 +222,16 @@ export default function AdminLdapPage() {
               onChange={(e) => handleChange('skip_cert_verify', e.target.checked)}
               className="w-4 h-4 text-blue-600 rounded"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Skip TLS certificate verification (insecure)</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{t('adminLdap.skipCertVerify')}</span>
           </label>
         </div>
 
         {/* Bind Credentials */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Bind Credentials</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminLdap.bindCredentialsTitle')}</h2>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bind DN</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.bindDn')}</label>
             <input
               type="text"
               value={config.bind_dn || ''}
@@ -240,26 +242,26 @@ export default function AdminLdapPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bind Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.bindPassword')}</label>
             <input
               type="password"
               value={config.bind_password || ''}
               onChange={(e) => handleChange('bind_password', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder={passwordSet ? 'unchanged' : 'Enter bind password'}
+              placeholder={passwordSet ? t('adminLdap.unchanged') : t('adminLdap.enterBindPassword')}
             />
             {passwordSet && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to keep the existing password.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminLdap.leaveBlankToKeepPassword')}</p>
             )}
           </div>
         </div>
 
         {/* Search Settings */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Search Settings</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminLdap.searchSettingsTitle')}</h2>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Base DN</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.baseDn')}</label>
             <input
               type="text"
               value={config.base_dn || ''}
@@ -270,7 +272,7 @@ export default function AdminLdapPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User Filter</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.userFilter')}</label>
             <input
               type="text"
               value={config.user_filter || ''}
@@ -278,12 +280,12 @@ export default function AdminLdapPage() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
               placeholder="(sAMAccountName=%s)"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Use <code>%s</code> as a placeholder for the username.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminLdap.userFilterHintPrefix')}<code>%s</code>{t('adminLdap.userFilterHintSuffix')}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username Attribute</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.usernameAttr')}</label>
               <input
                 type="text"
                 value={config.username_attr || ''}
@@ -293,7 +295,7 @@ export default function AdminLdapPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Attribute</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminLdap.emailAttr')}</label>
               <input
                 type="text"
                 value={config.email_attr || ''}
@@ -312,14 +314,14 @@ export default function AdminLdapPage() {
             disabled={saving}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
           >
-            {saving ? 'Saving...' : 'Save Settings'}
+            {saving ? t('common.saving') : t('scanRetention.saveSettings')}
           </button>
           <button
             onClick={handleTest}
             disabled={testing}
             className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 disabled:opacity-50 transition text-sm font-medium"
           >
-            {testing ? 'Testing...' : 'Test Connection'}
+            {testing ? t('adminLdap.testing') : t('adminLdap.testConnection')}
           </button>
           {testResult && (
             <div
@@ -329,24 +331,24 @@ export default function AdminLdapPage() {
                   : 'bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300'
               }`}
             >
-              {testResult.ok ? testResult.message : `Error: ${testResult.message}`}
+              {testResult.ok ? testResult.message : `${t('adminLdap.errorPrefix')}${testResult.message}`}
             </div>
           )}
         </div>
 
         {/* Group → Role Mappings */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">Group to Role Mappings</h2>
+          <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">{t('adminLdap.groupRoleMappingsTitle')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Map LDAP groups to IPAM roles. Users are assigned the highest-priority matching role on login.
+            {t('adminLdap.groupRoleMappingsSubtitle')}
           </p>
 
           {mappings.length > 0 ? (
             <table className="w-full text-sm mb-4">
               <thead>
                 <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  <th className="pb-2 font-medium">LDAP Group DN</th>
-                  <th className="pb-2 font-medium">Role</th>
+                  <th className="pb-2 font-medium">{t('adminLdap.ldapGroupDnColumn')}</th>
+                  <th className="pb-2 font-medium">{t('rolePresets.role')}</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
@@ -362,7 +364,7 @@ export default function AdminLdapPage() {
                           onClick={() => handleDeleteMapping(m.id)}
                           className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
                         >
-                          Delete
+                          {t('common.delete')}
                         </button>
                       </td>
                     </tr>
@@ -371,12 +373,12 @@ export default function AdminLdapPage() {
               </tbody>
             </table>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">No group mappings configured.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('adminLdap.noGroupMappings')}</p>
           )}
 
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">LDAP Group DN</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('adminLdap.ldapGroupDnColumn')}</label>
               <input
                 type="text"
                 value={newMapping.ldap_group_dn}
@@ -386,13 +388,13 @@ export default function AdminLdapPage() {
               />
             </div>
             <div className="w-40">
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Role</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('rolePresets.role')}</label>
               <select
                 value={newMapping.role_id}
                 onChange={(e) => setNewMapping((prev) => ({ ...prev, role_id: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                <option value="">Select role</option>
+                <option value="">{t('adminLdap.selectRole')}</option>
                 {roles.map((r) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
@@ -403,7 +405,7 @@ export default function AdminLdapPage() {
               disabled={addingMapping}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 transition text-sm font-medium whitespace-nowrap"
             >
-              {addingMapping ? 'Adding...' : 'Add Mapping'}
+              {addingMapping ? t('adminLdap.adding') : t('adminLdap.addMapping')}
             </button>
           </div>
         </div>

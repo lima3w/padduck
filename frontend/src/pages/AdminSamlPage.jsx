@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../api/admin'
 
 const defaultConfig = {
@@ -10,6 +11,7 @@ const defaultConfig = {
 }
 
 export default function AdminSamlPage() {
+  const { t } = useTranslation()
   const [config, setConfig] = useState(defaultConfig)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ text: '', type: '' })
@@ -24,11 +26,11 @@ export default function AdminSamlPage() {
         setConfig({ ...defaultConfig, ...res.data })
       }
     } catch (err) {
-      showMessage('Failed to load SAML config: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminSaml.loadFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadData()
@@ -47,10 +49,10 @@ export default function AdminSamlPage() {
     setSaving(true)
     try {
       await client.updateSamlConfig(config)
-      showMessage('SAML configuration saved')
+      showMessage(t('adminSaml.configSaved'))
       loadData()
     } catch (err) {
-      showMessage('Save failed: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminSaml.saveFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setSaving(false)
     }
@@ -63,14 +65,14 @@ export default function AdminSamlPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-        Loading SAML settings...
+        {t('adminSaml.loadingSettings')}
       </div>
     )
   }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">SAML 2.0</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{t('adminSaml.title')}</h1>
 
       {message.text && (
         <div
@@ -95,18 +97,18 @@ export default function AdminSamlPage() {
               className="w-4 h-4 text-blue-600 rounded"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              <strong>Enable SAML 2.0 authentication</strong>
-              <span className="block text-gray-500 dark:text-gray-400">Allow users to sign in via a SAML identity provider</span>
+              <strong>{t('adminSaml.enableSaml')}</strong>
+              <span className="block text-gray-500 dark:text-gray-400">{t('adminSaml.enableSamlHint')}</span>
             </span>
           </label>
         </div>
 
         {/* Identity Provider */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Identity Provider</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminSaml.identityProviderTitle')}</h2>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IDP Metadata URL</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminSaml.idpMetadataUrl')}</label>
             <input
               type="url"
               value={config.idp_metadata_url || config.idpMetadataUrl || ''}
@@ -115,7 +117,7 @@ export default function AdminSamlPage() {
               placeholder="https://idp.example.com/metadata"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              The backend will fetch and parse this XML on save.
+              {t('adminSaml.idpMetadataUrlHint')}
             </p>
           </div>
 
@@ -125,7 +127,7 @@ export default function AdminSamlPage() {
               onClick={() => setShowXmlPaste((v) => !v)}
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-2"
             >
-              {showXmlPaste ? 'Hide XML paste' : 'Or paste IDP metadata XML manually'}
+              {showXmlPaste ? t('adminSaml.hideXmlPaste') : t('adminSaml.showXmlPaste')}
             </button>
             {showXmlPaste && (
               <textarea
@@ -141,10 +143,10 @@ export default function AdminSamlPage() {
 
         {/* Service Provider */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Service Provider</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminSaml.serviceProviderTitle')}</h2>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Entity ID</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminSaml.entityId')}</label>
             <input
               type="text"
               value={config.entity_id || config.entityId || ''}
@@ -153,42 +155,42 @@ export default function AdminSamlPage() {
               placeholder="https://ipam.example.com"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Unique identifier for this service provider. Usually the application URL.
+              {t('adminSaml.entityIdHint')}
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assertion Consumer Service (ACS) URL</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminSaml.acsUrlLabel')}</label>
             <input
               type="text"
               value={acsUrl}
               readOnly
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded text-sm bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 cursor-default"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Register this URL with your identity provider.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminSaml.acsUrlHint')}</p>
           </div>
         </div>
 
         {/* SP Certificate */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">SP Certificate</h2>
+          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">{t('adminSaml.spCertTitle')}</h2>
           {certFingerprint ? (
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Certificate fingerprint (first 20 chars):</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('adminSaml.certFingerprintLabel')}</p>
               <code className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200">
                 {certFingerprint}
               </code>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">Auto-generated on first use.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('adminSaml.autoGenerated')}</p>
           )}
         </div>
 
         {/* Download SP Metadata */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">SP Metadata</h2>
+          <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">{t('adminSaml.spMetadataTitle')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            Download the SP metadata XML to configure your identity provider.
+            {t('adminSaml.spMetadataSubtitle')}
           </p>
           <a
             href="/api/v1/auth/saml/metadata"
@@ -196,7 +198,7 @@ export default function AdminSamlPage() {
             rel="noopener noreferrer"
             className="inline-block bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition text-sm font-medium"
           >
-            Download SP Metadata
+            {t('adminSaml.downloadSpMetadata')}
           </a>
         </div>
 
@@ -205,7 +207,7 @@ export default function AdminSamlPage() {
           disabled={saving}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? t('common.saving') : t('scanRetention.saveSettings')}
         </button>
       </div>
     </div>

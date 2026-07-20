@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as client from '../api/admin'
 
 const defaultConfig = {
@@ -14,6 +15,7 @@ const defaultConfig = {
 }
 
 export default function AdminOAuth2Page() {
+  const { t } = useTranslation()
   const [config, setConfig] = useState(defaultConfig)
   const [secretSet, setSecretSet] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -30,11 +32,11 @@ export default function AdminOAuth2Page() {
         setConfig({ ...defaultConfig, ...c, clientSecret: '', client_secret: '' })
       }
     } catch (err) {
-      showMessage('Failed to load OAuth2 config: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminOAuth2.loadFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadData()
@@ -58,10 +60,10 @@ export default function AdminOAuth2Page() {
         delete payload.clientSecret
       }
       await client.updateOAuth2Config(payload)
-      showMessage('OAuth2 configuration saved')
+      showMessage(t('adminOAuth2.configSaved'))
       loadData()
     } catch (err) {
-      showMessage('Save failed: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminOAuth2.saveFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setSaving(false)
     }
@@ -73,14 +75,14 @@ export default function AdminOAuth2Page() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-        Loading OAuth2 settings...
+        {t('adminOAuth2.loadingSettings')}
       </div>
     )
   }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">OAuth2 / OIDC</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{t('adminOAuth2.title')}</h1>
 
       {message.text && (
         <div
@@ -97,7 +99,7 @@ export default function AdminOAuth2Page() {
       <div className="space-y-6">
         {/* Provider Settings */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Provider Settings</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminOAuth2.providerSettingsTitle')}</h2>
 
           <label className="flex items-center gap-3 mb-4 cursor-pointer">
             <input
@@ -107,13 +109,13 @@ export default function AdminOAuth2Page() {
               className="w-4 h-4 text-blue-600 rounded"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">
-              <strong>Enable OAuth2 / OIDC authentication</strong>
-              <span className="block text-gray-500 dark:text-gray-400">Allow users to sign in via an external OAuth2 provider</span>
+              <strong>{t('adminOAuth2.enableOAuth2')}</strong>
+              <span className="block text-gray-500 dark:text-gray-400">{t('adminOAuth2.enableOAuth2Hint')}</span>
             </span>
           </label>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Provider Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.providerName')}</label>
             <input
               type="text"
               value={config.provider_name || config.providerName || ''}
@@ -121,27 +123,27 @@ export default function AdminOAuth2Page() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Google"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Displayed on the login button, e.g. &ldquo;Sign in with Google&rdquo;.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminOAuth2.providerNameHint')}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Redirect URI</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.redirectUri')}</label>
             <input
               type="text"
               value={redirectUri}
               readOnly
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-600 rounded text-sm bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 cursor-default"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Register this URI with your OAuth2 provider.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminOAuth2.redirectUriHint')}</p>
           </div>
         </div>
 
         {/* OIDC Discovery */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">OIDC Discovery</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminOAuth2.oidcDiscoveryTitle')}</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Discovery URL</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.discoveryUrl')}</label>
             <input
               type="url"
               value={config.discovery_url || config.discoveryUrl || ''}
@@ -150,26 +152,26 @@ export default function AdminOAuth2Page() {
               placeholder="https://accounts.google.com/.well-known/openid-configuration"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              When set, the authorization, token, and userinfo URLs are discovered automatically.
+              {t('adminOAuth2.discoveryUrlHint')}
             </p>
           </div>
         </div>
 
         {/* Manual URLs */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">Manual URLs</h2>
+          <h2 className="text-lg font-semibold mb-1 text-gray-900 dark:text-gray-100">{t('adminOAuth2.manualUrlsTitle')}</h2>
           {hasDiscovery && (
             <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
-              A discovery URL is set — these fields are optional and will be overridden by auto-discovery.
+              {t('adminOAuth2.discoverySetWarning')}
             </p>
           )}
           {!hasDiscovery && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Required when no discovery URL is provided.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('adminOAuth2.requiredWhenNoDiscovery')}</p>
           )}
 
           <div className={`space-y-4 ${hasDiscovery ? 'opacity-60' : ''}`}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Authorization URL</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.authorizationUrl')}</label>
               <input
                 type="url"
                 value={config.authorization_url || config.authorizationUrl || ''}
@@ -179,7 +181,7 @@ export default function AdminOAuth2Page() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Token URL</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.tokenUrl')}</label>
               <input
                 type="url"
                 value={config.token_url || config.tokenUrl || ''}
@@ -189,7 +191,7 @@ export default function AdminOAuth2Page() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Userinfo URL</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.userinfoUrl')}</label>
               <input
                 type="url"
                 value={config.userinfo_url || config.userinfoUrl || ''}
@@ -203,10 +205,10 @@ export default function AdminOAuth2Page() {
 
         {/* Credentials */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Credentials</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminOAuth2.credentialsTitle')}</h2>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client ID</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.clientId')}</label>
             <input
               type="text"
               value={config.client_id || config.clientId || ''}
@@ -217,26 +219,26 @@ export default function AdminOAuth2Page() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client Secret</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.clientSecret')}</label>
             <input
               type="password"
               value={config.client_secret || config.clientSecret || ''}
               onChange={(e) => handleChange('client_secret', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder={secretSet ? 'unchanged' : 'Enter client secret'}
+              placeholder={secretSet ? t('adminOAuth2.unchanged') : t('adminOAuth2.enterClientSecret')}
             />
             {secretSet && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to keep the existing secret.</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminOAuth2.leaveBlankToKeepSecret')}</p>
             )}
           </div>
         </div>
 
         {/* Scopes */}
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Scopes</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('adminOAuth2.scopesTitle')}</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Requested Scopes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('adminOAuth2.requestedScopes')}</label>
             <input
               type="text"
               value={config.scopes || ''}
@@ -244,7 +246,7 @@ export default function AdminOAuth2Page() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="openid email profile"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Space-separated list of OAuth2 scopes to request.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('adminOAuth2.scopesHint')}</p>
           </div>
         </div>
 
@@ -253,7 +255,7 @@ export default function AdminOAuth2Page() {
           disabled={saving}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? t('common.saving') : t('scanRetention.saveSettings')}
         </button>
       </div>
     </div>
