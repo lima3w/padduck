@@ -2688,6 +2688,19 @@
     "systemHealthTitle": "System Health",
     "systemHealthDescription": "Review deployment, backup, and dependency health."
   },
+  "apiTokenAnalyticsPage": {
+    "loadFailed": "Failed to load analytics",
+    "title": "API Token Analytics",
+    "subtitle": "Usage statistics for all API tokens. Rate limit shown is the global per-minute cap.",
+    "tokenNameColumn": "Token Name",
+    "usageCountColumn": "Usage Count",
+    "lastIpColumn": "Last IP",
+    "expiresColumn": "Expires",
+    "rateLimitColumn": "Rate Limit/min",
+    "rotatedColumn": "Rotated",
+    "noTokensFound": "No tokens found.",
+    "fullScope": "full"
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
