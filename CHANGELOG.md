@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.19
+
+### Added
+- **i18n: convert VlanDetailPage** (issue #35): converted `VlanDetailPage.jsx` to `t()` calls, reusing existing `vlans.*`/`dashboard.*`/`common.*` keys where copy overlapped. Second of the remaining large-deferred-file follow-ups.
+
 ## v1.34.18
 
 ### Added
