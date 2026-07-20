@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Modal from '../components/Modal'
 import Pagination from '../components/Pagination'
 import CustomFieldForm from '../components/CustomFieldForm'
@@ -26,15 +27,16 @@ const DEFAULT_LIMIT = 50
 
 const EMPTY_FORM = { hostname: '', type_id: '', description: '', vendor: '', model: '', os_version: '', location_id: '', rack_id: '', rack_unit_start: '', rack_unit_size: '', custom_fields: {}, snmp_version: 'v2c', snmp_community: '', snmp_v3_user: '', snmp_v3_auth_proto: 'SHA', snmp_v3_auth_pass: '', snmp_v3_priv_proto: 'AES', snmp_v3_priv_pass: '' }
 
-const COL_LABELS = { vendor_model: 'Vendor / Model', location: 'Location', ips: 'IPs', status: 'Status' }
+const COL_LABEL_KEYS = { vendor_model: 'devicesPage.vendorModelColumn', location: 'subnets.location', ips: 'devicesPage.ipsColumn', status: 'devicesPage.statusColumn' }
 
 function ColToggle({ cols, setCols, labels }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm flex items-center gap-1">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" /></svg>
-        Columns
+        {t('devicesPage.columns')}
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 py-1">
@@ -51,6 +53,8 @@ function ColToggle({ cols, setCols, labels }) {
 }
 
 export default function DevicesPage() {
+  const { t } = useTranslation()
+  const COL_LABELS = Object.fromEntries(Object.entries(COL_LABEL_KEYS).map(([k, key]) => [k, t(key)]))
   const [devices, setDevices] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -77,7 +81,7 @@ export default function DevicesPage() {
   async function handleExport() {
     setDownloading(true)
     try { await downloadFile('/api/v1/admin/reports/export/devices', 'devices.csv') }
-    catch { setError('Export failed') }
+    catch { setError(t('exportData.exportFailed')) }
     finally { setDownloading(false) }
   }
   const [cfDefs, setCfDefs] = useState([])
@@ -124,14 +128,14 @@ export default function DevicesPage() {
   }, [])
 
   const vendorSuggestions = useMemo(() => {
-    const typeName = (deviceTypes.find(t => String(t.id) === String(form.type_id))?.name || '').toLowerCase()
+    const typeName = (deviceTypes.find(dt => String(dt.id) === String(form.type_id))?.name || '').toLowerCase()
     const cats = Object.values(vendorCatalog.categories)
     const matched = cats.find(c => c.keywords.some(k => typeName.includes(k))) || vendorCatalog.categories.other
     return Object.keys(matched.vendors)
   }, [form.type_id, deviceTypes])
 
   const modelSuggestions = useMemo(() => {
-    const typeName = (deviceTypes.find(t => String(t.id) === String(form.type_id))?.name || '').toLowerCase()
+    const typeName = (deviceTypes.find(dt => String(dt.id) === String(form.type_id))?.name || '').toLowerCase()
     const cats = Object.values(vendorCatalog.categories)
     const matched = cats.find(c => c.keywords.some(k => typeName.includes(k))) || vendorCatalog.categories.other
     const models = matched.vendors[form.vendor] || []
@@ -147,11 +151,11 @@ export default function DevicesPage() {
       setTotal(data.total ?? 0)
       setPage(p)
     } catch {
-      setError('Failed to load devices')
+      setError(t('devicesPage.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadDeviceTypes()
@@ -215,7 +219,7 @@ export default function DevicesPage() {
       setTotal(rows.length)
       setPage(1)
     } catch {
-      setError('Failed to search devices')
+      setError(t('devicesPage.searchFailed'))
     } finally {
       setLoading(false)
     }
@@ -294,7 +298,7 @@ export default function DevicesPage() {
       setModal(null)
       load(page)
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Failed to save device')
+      setError(err.response?.data?.error || err.message || t('devicesPage.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -306,25 +310,25 @@ export default function DevicesPage() {
       setDeleteConfirm(null)
       load(page)
     } catch {
-      setError('Failed to delete device')
+      setError(t('devicesPage.deleteFailed'))
     }
   }
 
-  if (loading && devices.length === 0) return <PageSpinner message="Loading devices..." />
+  if (loading && devices.length === 0) return <PageSpinner message={t('devicesPage.loadingDevices')} />
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Devices</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('nav.devices')}</h1>
         <div className="flex items-center gap-2">
           <ColToggle cols={cols} setCols={setCols} labels={locationsEnabled ? COL_LABELS : Object.fromEntries(Object.entries(COL_LABELS).filter(([k]) => k !== 'location'))} />
           {isAdmin && (
             <button onClick={handleExport} disabled={downloading} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm disabled:opacity-50">
-              {downloading ? 'Exporting...' : 'Export CSV'}
+              {downloading ? t('devicesPage.exporting') : t('devicesPage.exportCsv')}
             </button>
           )}
           <button onClick={openCreate} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium">
-            + Add Device
+            {t('devicesPage.addDevice')}
           </button>
         </div>
       </div>
@@ -335,7 +339,7 @@ export default function DevicesPage() {
         <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
           <input
             type="text"
-            placeholder="Search hostname..."
+            placeholder={t('devicesPage.searchHostnamePlaceholder')}
             value={filterHostname}
             onChange={e => setFilterHostname(e.target.value)}
             className="flex-1 min-w-40 border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
@@ -345,9 +349,9 @@ export default function DevicesPage() {
             onChange={e => setFilterTypeId(e.target.value)}
             className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
           >
-            <option value="">All Types</option>
-            {deviceTypes.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+            <option value="">{t('devicesPage.allTypes')}</option>
+            {deviceTypes.map(dt => (
+              <option key={dt.id} value={dt.id}>{dt.name}</option>
             ))}
           </select>
           <select
@@ -355,9 +359,9 @@ export default function DevicesPage() {
             onChange={e => setFilterOnline(e.target.value)}
             className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
           >
-            <option value="">Online/Offline</option>
-            <option value="true">Online only</option>
-            <option value="false">Offline only</option>
+            <option value="">{t('devicesPage.onlineOfflineOption')}</option>
+            <option value="true">{t('devicesPage.onlineOnly')}</option>
+            <option value="false">{t('devicesPage.offlineOnly')}</option>
           </select>
           {locationsEnabled && locations.length > 0 && (
             <select
@@ -365,7 +369,7 @@ export default function DevicesPage() {
               onChange={e => setFilterLocationId(e.target.value)}
               className="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
             >
-              <option value="">All Locations</option>
+              <option value="">{t('devicesPage.allLocations')}</option>
               {locations.map(l => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
@@ -377,7 +381,7 @@ export default function DevicesPage() {
               onClick={addCfFilterRow}
               className="px-3 py-2 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
             >
-              + Filter
+              {t('devicesPage.addFilter')}
             </button>
           )}
           <button
@@ -385,7 +389,7 @@ export default function DevicesPage() {
             disabled={loading}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50"
           >
-            Search
+            {t('devicesPage.search')}
           </button>
           {(isFiltered || filterHostname || filterTypeId || filterOnline || filterLocationId || cfFilterRows.length > 0) && (
             <button
@@ -393,7 +397,7 @@ export default function DevicesPage() {
               onClick={handleClearSearch}
               className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-sm font-medium"
             >
-              Clear
+              {t('backups.clear')}
             </button>
           )}
         </form>
@@ -411,15 +415,15 @@ export default function DevicesPage() {
               onChange={e => updateCfFilterRow(idx, { op: e.target.value })}
               className="border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
             >
-              <option value="is">is</option>
-              <option value="contains">contains</option>
-              <option value="is not">is not</option>
+              <option value="is">{t('devicesPage.operatorIs')}</option>
+              <option value="contains">{t('devicesPage.operatorContains')}</option>
+              <option value="is not">{t('devicesPage.operatorIsNot')}</option>
             </select>
             <input
               type="text"
               value={row.value}
               onChange={e => updateCfFilterRow(idx, { value: e.target.value })}
-              placeholder="value"
+              placeholder={t('adminCustomFields.valuePlaceholder')}
               className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
             />
             <button
@@ -435,7 +439,7 @@ export default function DevicesPage() {
 
       {!isFiltered && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {total} device{total !== 1 ? 's' : ''}
+          {t('devicesPage.devicesCount', { count: total })}
         </p>
       )}
 
@@ -444,12 +448,12 @@ export default function DevicesPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Type</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Hostname</th>
-              {col('vendor_model') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Vendor / Model</th>}
-              {col('location') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Location</th>}
-              {col('ips') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">IPs</th>}
-              {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Status</th>}
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('deviceInfo.type')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('editDevice.hostname')}</th>
+              {col('vendor_model') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('devicesPage.vendorModelColumn')}</th>}
+              {col('location') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('subnets.location')}</th>}
+              {col('ips') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('devicesPage.ipsColumn')}</th>}
+              {col('status') && <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('devicesPage.statusColumn')}</th>}
               {searchableFields.map(f => (
                 <th key={f.name} className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{f.label}</th>
               ))}
@@ -458,7 +462,7 @@ export default function DevicesPage() {
           </thead>
           <tbody>
             {devices.length === 0 && (
-              <EmptyRow colSpan={2 + [col('vendor_model'),col('location'),col('ips'),col('status')].filter(Boolean).length + 1 + searchableFields.length} message="No devices yet." />
+              <EmptyRow colSpan={2 + [col('vendor_model'),col('location'),col('ips'),col('status')].filter(Boolean).length + 1 + searchableFields.length} message={t('devicesPage.noDevicesYet')} />
             )}
 
             {devices.map(d => (
@@ -490,7 +494,7 @@ export default function DevicesPage() {
                   <span className={`inline-flex items-center gap-1.5 text-xs font-medium`}>
                     <span className={`w-2 h-2 rounded-full ${d.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                     <span className={d.isOnline ? 'text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}>
-                      {d.isOnline ? 'Online' : 'Offline'}
+                      {d.isOnline ? t('deviceInfo.online') : t('deviceInfo.offline')}
                     </span>
                   </span>
                 </td>}
@@ -502,7 +506,7 @@ export default function DevicesPage() {
                         <button
                           className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-dotted text-left"
                           onClick={() => addCfFilterFromValue(f.name, val)}
-                          title="Filter by this value"
+                          title={t('devicesPage.filterByThisValue')}
                         >
                           {val}
                         </button>
@@ -511,15 +515,15 @@ export default function DevicesPage() {
                   )
                 })}
                 <td className="px-4 py-3 text-right space-x-2">
-                  <button onClick={() => openEdit(d)} className="text-gray-400 hover:text-blue-600 text-xs">Edit</button>
+                  <button onClick={() => openEdit(d)} className="text-gray-400 hover:text-blue-600 text-xs">{t('common.edit')}</button>
                   {deleteConfirm === d.id ? (
                     <>
-                      <span className="text-red-600 text-xs">Confirm?</span>
-                      <button onClick={() => handleDelete(d.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">Yes</button>
-                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                      <span className="text-red-600 text-xs">{t('subnets.confirmDelete')}</span>
+                      <button onClick={() => handleDelete(d.id)} className="text-red-600 hover:text-red-800 text-xs font-medium">{t('common.yes')}</button>
+                      <button onClick={() => setDeleteConfirm(null)} className="text-gray-400 hover:text-gray-600 text-xs">{t('common.no')}</button>
                     </>
                   ) : (
-                    <button onClick={() => setDeleteConfirm(d.id)} className="text-gray-400 hover:text-red-600 text-xs">Delete</button>
+                    <button onClick={() => setDeleteConfirm(d.id)} className="text-gray-400 hover:text-red-600 text-xs">{t('common.delete')}</button>
                   )}
                 </td>
               </tr>
@@ -540,12 +544,12 @@ export default function DevicesPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? 'Add Device' : 'Edit Device'}
+          title={modal === 'create' ? t('devicesPage.addDeviceModalTitle') : t('editDevice.title')}
           onClose={() => setModal(null)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hostname <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('editDevice.hostname')} <span className="text-red-500">*</span></label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder="router01.example.com"
@@ -555,20 +559,20 @@ export default function DevicesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('deviceInfo.type')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={form.type_id}
                 onChange={e => setForm(f => ({ ...f, type_id: e.target.value }))}
               >
-                <option value="">No type</option>
-                {deviceTypes.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                <option value="">{t('editDevice.noType')}</option>
+                {deviceTypes.map(dt => (
+                  <option key={dt.id} value={dt.id}>{dt.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={2}
@@ -584,7 +588,7 @@ export default function DevicesPage() {
             </datalist>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vendor</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('deviceInfo.vendor')}</label>
                 <input
                   list="vendor-list"
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -594,7 +598,7 @@ export default function DevicesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('deviceInfo.model')}</label>
                 <input
                   list="model-list"
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -605,7 +609,7 @@ export default function DevicesPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">OS Version</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('deviceInfo.osVersion')}</label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 placeholder="IOS 15.4"
@@ -615,7 +619,7 @@ export default function DevicesPage() {
             </div>
             {locationsEnabled && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (optional)</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subnetForm.locationOptional')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={form.location_id}
@@ -625,7 +629,7 @@ export default function DevicesPage() {
                   loadRacksForLocation(locId)
                 }}
               >
-                <option value="">No location</option>
+                <option value="">{t('subnetForm.noLocation')}</option>
                 {locations.map(l => (
                   <option key={l.id} value={l.id}>{l.name}</option>
                 ))}
@@ -635,13 +639,13 @@ export default function DevicesPage() {
             {locationsEnabled && form.location_id && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack (optional)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('editDevice.rackOptional')}</label>
                   <select
                     className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                     value={form.rack_id}
                     onChange={e => setForm(f => ({ ...f, rack_id: e.target.value }))}
                   >
-                    <option value="">No rack</option>
+                    <option value="">{t('editDevice.noRack')}</option>
                     {racks.map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
@@ -650,7 +654,7 @@ export default function DevicesPage() {
                 {form.rack_id && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack Unit Start</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('editDevice.rackUnitStart')}</label>
                       <input
                         type="number"
                         min="1"
@@ -661,7 +665,7 @@ export default function DevicesPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rack Unit Size</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('editDevice.rackUnitSize')}</label>
                       <input
                         type="number"
                         min="1"
@@ -676,10 +680,10 @@ export default function DevicesPage() {
               </>
             )}
             <div className="border-t dark:border-gray-600 pt-4">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">SNMP</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('editDevice.snmp')}</p>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SNMP Version</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('credentials.snmpVersion')}</label>
                   <select
                     className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                     value={form.snmp_version}
@@ -692,7 +696,7 @@ export default function DevicesPage() {
                 </div>
                 {(form.snmp_version === 'v1' || form.snmp_version === 'v2c') && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Community String</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('credentials.communityString')}</label>
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -705,7 +709,7 @@ export default function DevicesPage() {
                 {form.snmp_version === 'v3' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.username')}</label>
                       <input
                         type="text"
                         className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -715,7 +719,7 @@ export default function DevicesPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Protocol</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('credentials.authProtocol')}</label>
                         <select
                           className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                           value={form.snmp_v3_auth_proto}
@@ -726,7 +730,7 @@ export default function DevicesPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Auth Password</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('credentials.authPassword')}</label>
                         <input
                           type="password"
                           className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -737,7 +741,7 @@ export default function DevicesPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Protocol</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('credentials.privProtocol')}</label>
                         <select
                           className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                           value={form.snmp_v3_priv_proto}
@@ -748,7 +752,7 @@ export default function DevicesPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priv Password</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('credentials.privPassword')}</label>
                         <input
                           type="password"
                           className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -763,7 +767,7 @@ export default function DevicesPage() {
             </div>
             {cfDefs.length > 0 && (
               <div className="border-t dark:border-gray-600 pt-4">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Custom Fields</p>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('subnetForm.customFields')}</p>
                 <CustomFieldForm
                   definitions={cfDefs}
                   values={form.custom_fields}
@@ -772,9 +776,9 @@ export default function DevicesPage() {
               </div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>
               <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
