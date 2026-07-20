@@ -2701,6 +2701,26 @@
     "noTokensFound": "No tokens found.",
     "fullScope": "full"
   },
+  "scanProfilesPage": {
+    "loadFailed": "Failed to load scan profiles",
+    "saveFailed": "Failed to save scan profile",
+    "deleteFailed": "Failed to delete scan profile",
+    "loadingScanProfiles": "Loading scan profiles...",
+    "title": "Scan Profiles",
+    "newProfile": "+ New Profile",
+    "tcpPortsColumn": "TCP Ports",
+    "dnsLookupColumn": "DNS Lookup",
+    "snmpCommunityColumn": "SNMP Community",
+    "noScanProfilesConfigured": "No scan profiles configured.",
+    "newProfileModalTitle": "New Scan Profile",
+    "editProfileModalTitlePrefix": "Edit: ",
+    "pingConcurrencyLabel": "Ping Concurrency",
+    "concurrencyRangeHint": "(1–100)",
+    "tcpPortsLabel": "TCP Ports",
+    "tcpPortsHint": "(comma-separated, e.g. 22,80,443)",
+    "dnsLookupLabel": "DNS Lookup",
+    "snmpCommunityLabel": "SNMP Community"
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
