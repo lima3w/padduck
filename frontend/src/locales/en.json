@@ -1868,5 +1868,26 @@
     "step1HintSuffix": " Grafana plugin and set this as the base URL.",
     "bearerHintPrefix": "Add this as a ",
     "bearerHintSuffix": " token in the Grafana datasource HTTP Headers:"
+  },
+  "adminTags": {
+    "loadFailed": "Failed to load tags",
+    "created": "Tag created",
+    "updated": "Tag updated",
+    "saveFailed": "Failed to save tag",
+    "deleted": "Tag deleted",
+    "deleteFailed": "Failed to delete tag",
+    "loadingTags": "Loading tags...",
+    "title": "IP Tags",
+    "newTag": "+ New Tag",
+    "tagColumn": "Tag",
+    "colourColumn": "Colour",
+    "noTagsYet": "No tags yet.",
+    "system": "System",
+    "custom": "Custom",
+    "newTagModalTitle": "New Tag",
+    "editTagModalTitle": "Edit Tag",
+    "colour": "Colour",
+    "preview": "Preview:",
+    "previewPlaceholder": "Preview"
   }
 }
