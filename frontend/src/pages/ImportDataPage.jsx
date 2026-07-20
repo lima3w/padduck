@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 
-const TABS = [
-  { key: 'subnets', label: 'Subnets CSV' },
-  { key: 'ips', label: 'IP Addresses CSV' },
-  { key: 'phpipam', label: 'PHPIpam' },
+const TAB_KEYS = [
+  { key: 'subnets', labelKey: 'tabSubnets' },
+  { key: 'ips', labelKey: 'tabIps' },
+  { key: 'phpipam', labelKey: 'tabPhpipam' },
 ]
 
 const SUBNET_HEADERS = 'cidr,description,network,gateway,vlan,vrf,location'
@@ -25,6 +26,7 @@ function downloadTemplate(filename, content) {
 }
 
 function DropZone({ onFile, accept }) {
+  const { t } = useTranslation()
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef(null)
 
@@ -61,42 +63,43 @@ function DropZone({ onFile, accept }) {
         onClick={e => { e.stopPropagation() }}
       />
       <div className="text-gray-400 dark:text-gray-500 text-sm">
-        <p className="font-medium text-gray-600 dark:text-gray-300">Drop a CSV file here, or click to browse</p>
-        <p className="mt-1 text-xs">Accepts .csv files</p>
+        <p className="font-medium text-gray-600 dark:text-gray-300">{t('importData.dropLabel')}</p>
+        <p className="mt-1 text-xs">{t('importData.dropAccepts')}</p>
       </div>
     </div>
   )
 }
 
 function ResultPanel({ result }) {
+  const { t } = useTranslation()
   if (!result) return null
   const { total, imported, failed, errors } = result
   return (
     <div className="mt-4 space-y-3">
       <div className="flex gap-4 text-sm">
         <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-200">
-          Total: <strong>{total}</strong>
+          {t('backups.totalLabel')} <strong>{total}</strong>
         </span>
         <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">
-          Imported: <strong>{imported}</strong>
+          {t('backups.importedLabel')} <strong>{imported}</strong>
         </span>
         {failed > 0 && (
           <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300">
-            Failed: <strong>{failed}</strong>
+            {t('backups.failedLabel')} <strong>{failed}</strong>
           </span>
         )}
       </div>
       {Array.isArray(errors) && errors.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b dark:border-gray-700">
-            <p className="text-sm font-medium text-red-700 dark:text-red-300">Import Errors</p>
+            <p className="text-sm font-medium text-red-700 dark:text-red-300">{t('importData.importErrorsTitle')}</p>
           </div>
           <table className="w-full text-xs">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Row</th>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Value</th>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Error</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('importData.rowColumn')}</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('importData.valueColumn')}</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('adminWebhooks.errorColumn')}</th>
               </tr>
             </thead>
             <tbody>
@@ -116,24 +119,25 @@ function ResultPanel({ result }) {
 }
 
 function DryRunPreviewPanel({ result }) {
+  const { t } = useTranslation()
   if (!result) return null
   const actionConfig = {
-    create:  { label: 'Create',  cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-    skip:    { label: 'Skip',    cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
-    warning: { label: 'Warning', cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
-    error:   { label: 'Error',   cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+    create:  { label: t('vrfs.create'), cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+    skip:    { label: t('importData.actionSkip'), cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+    warning: { label: t('importData.actionWarning'), cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+    error:   { label: t('auditLog.errorLabel'), cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
   }
   return (
     <div className="mt-4 space-y-3">
       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded text-sm text-blue-800 dark:text-blue-200 font-medium">
-        Dry Run Preview — no changes were made
+        {t('importData.dryRunBanner')}
       </div>
       <div className="flex gap-3 text-sm flex-wrap">
-        <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-200">Total: <strong>{result.total}</strong></span>
-        <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">Would Create: <strong>{result.creates}</strong></span>
-        {result.skips > 0 && <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">Skips: <strong>{result.skips}</strong></span>}
-        {result.warnings > 0 && <span className="px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded text-yellow-700 dark:text-yellow-300">Warnings: <strong>{result.warnings}</strong></span>}
-        {result.errors > 0 && <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300">Errors: <strong>{result.errors}</strong></span>}
+        <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-200">{t('backups.totalLabel')} <strong>{result.total}</strong></span>
+        <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-300">{t('importData.wouldCreateLabel')} <strong>{result.creates}</strong></span>
+        {result.skips > 0 && <span className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">{t('importData.skipsLabel')} <strong>{result.skips}</strong></span>}
+        {result.warnings > 0 && <span className="px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded text-yellow-700 dark:text-yellow-300">{t('importData.warningsLabel')} <strong>{result.warnings}</strong></span>}
+        {result.errors > 0 && <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300">{t('importData.errorsLabel')} <strong>{result.errors}</strong></span>}
       </div>
       {result.rows?.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -141,10 +145,10 @@ function DryRunPreviewPanel({ result }) {
           <table className="w-full text-xs">
             <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Row</th>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Action</th>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Value</th>
-                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">Reason</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('importData.rowColumn')}</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('importData.actionColumn')}</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('importData.valueColumn')}</th>
+                <th className="text-left px-4 py-2 text-gray-600 dark:text-gray-300 font-medium">{t('importData.reasonColumn')}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,6 +175,7 @@ function DryRunPreviewPanel({ result }) {
 }
 
 function SubnetsTab() {
+  const { t } = useTranslation()
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [previewing, setPreviewing] = useState(false)
@@ -199,7 +204,7 @@ function SubnetsTab() {
       })
       setDryRunResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Preview failed')
+      setError(err.response?.data?.error || t('importData.previewFailed'))
     } finally {
       setPreviewing(false)
     }
@@ -219,7 +224,7 @@ function SubnetsTab() {
       })
       setResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed')
+      setError(err.response?.data?.error || t('importData.uploadFailed'))
     } finally {
       setUploading(false)
     }
@@ -229,16 +234,16 @@ function SubnetsTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Import Subnets from CSV</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('importData.subnetsTabTitle')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Expected headers: <code className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">{SUBNET_HEADERS}</code>
+            {t('importData.expectedHeadersPrefix')}<code className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">{SUBNET_HEADERS}</code>
           </p>
         </div>
         <button
           onClick={() => downloadTemplate('subnets-template.csv', SUBNET_HEADERS + '\n')}
           className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
         >
-          Download Template
+          {t('importData.downloadTemplate')}
         </button>
       </div>
 
@@ -247,27 +252,27 @@ function SubnetsTab() {
       {file && (
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+            {t('importData.selectedPrefix')}<strong>{file.name}</strong>{t('importData.sizeParenPrefix')}{(file.size / 1024).toFixed(1)}{t('importData.sizeSuffix')}
           </span>
           <button
             onClick={handlePreview}
             disabled={previewing || uploading}
             className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
           >
-            {previewing ? 'Previewing...' : 'Preview (Dry Run)'}
+            {previewing ? t('importData.previewing') : t('importData.previewDryRun')}
           </button>
           <button
             onClick={handleUpload}
             disabled={uploading || previewing}
             className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {uploading ? 'Uploading...' : 'Upload & Import'}
+            {uploading ? t('importData.uploading') : t('importData.uploadAndImport')}
           </button>
           <button
             onClick={() => { setFile(null); setResult(null); setDryRunResult(null); setError('') }}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
-            Clear
+            {t('backups.clear')}
           </button>
         </div>
       )}
@@ -280,6 +285,7 @@ function SubnetsTab() {
 }
 
 function IPsTab() {
+  const { t } = useTranslation()
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [previewing, setPreviewing] = useState(false)
@@ -308,7 +314,7 @@ function IPsTab() {
       })
       setDryRunResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Preview failed')
+      setError(err.response?.data?.error || t('importData.previewFailed'))
     } finally {
       setPreviewing(false)
     }
@@ -328,7 +334,7 @@ function IPsTab() {
       })
       setResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed')
+      setError(err.response?.data?.error || t('importData.uploadFailed'))
     } finally {
       setUploading(false)
     }
@@ -338,16 +344,16 @@ function IPsTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Import IP Addresses from CSV</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('importData.ipsTabTitle')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Expected headers: <code className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">{IP_HEADERS}</code>
+            {t('importData.expectedHeadersPrefix')}<code className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">{IP_HEADERS}</code>
           </p>
         </div>
         <button
           onClick={() => downloadTemplate('ip-addresses-template.csv', IP_HEADERS + '\n')}
           className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
         >
-          Download Template
+          {t('importData.downloadTemplate')}
         </button>
       </div>
 
@@ -356,27 +362,27 @@ function IPsTab() {
       {file && (
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+            {t('importData.selectedPrefix')}<strong>{file.name}</strong>{t('importData.sizeParenPrefix')}{(file.size / 1024).toFixed(1)}{t('importData.sizeSuffix')}
           </span>
           <button
             onClick={handlePreview}
             disabled={previewing || uploading}
             className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
           >
-            {previewing ? 'Previewing...' : 'Preview (Dry Run)'}
+            {previewing ? t('importData.previewing') : t('importData.previewDryRun')}
           </button>
           <button
             onClick={handleUpload}
             disabled={uploading || previewing}
             className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {uploading ? 'Uploading...' : 'Upload & Import'}
+            {uploading ? t('importData.uploading') : t('importData.uploadAndImport')}
           </button>
           <button
             onClick={() => { setFile(null); setResult(null); setDryRunResult(null); setError('') }}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
-            Clear
+            {t('backups.clear')}
           </button>
         </div>
       )}
@@ -389,6 +395,7 @@ function IPsTab() {
 }
 
 function PHPIpamTab() {
+  const { t } = useTranslation()
   const [kind, setKind] = useState('subnets')
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -426,7 +433,7 @@ function PHPIpamTab() {
       })
       setDryRunResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Preview failed')
+      setError(err.response?.data?.error || t('importData.previewFailed'))
     } finally {
       setPreviewing(false)
     }
@@ -446,7 +453,7 @@ function PHPIpamTab() {
       })
       setResult(data)
     } catch (err) {
-      setError(err.response?.data?.error || 'Upload failed')
+      setError(err.response?.data?.error || t('importData.uploadFailed'))
     } finally {
       setUploading(false)
     }
@@ -459,16 +466,16 @@ function PHPIpamTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Import from PHPIpam</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('importData.phpipamTabTitle')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Import a CSV export from a PHPIpam instance
+            {t('importData.phpipamTabSubtitle')}
           </p>
         </div>
         <button
           onClick={() => downloadTemplate(templateFilename, templateHeaders + '\n')}
           className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
         >
-          Download Template
+          {t('importData.downloadTemplate')}
         </button>
       </div>
 
@@ -482,7 +489,7 @@ function PHPIpamTab() {
             onChange={() => handleKindChange('subnets')}
             className="accent-blue-600"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Subnets</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">{t('backups.csvTabSubnets')}</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -493,13 +500,13 @@ function PHPIpamTab() {
             onChange={() => handleKindChange('ips')}
             className="accent-blue-600"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">IP Addresses</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">{t('backups.csvTabIps')}</span>
         </label>
       </div>
 
       <div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-          Expected headers: <code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">{templateHeaders}</code>
+          {t('importData.expectedHeadersPrefix')}<code className="font-mono bg-gray-100 dark:bg-gray-700 px-1 rounded">{templateHeaders}</code>
         </p>
         <DropZone onFile={handleFile} />
       </div>
@@ -507,27 +514,27 @@ function PHPIpamTab() {
       {file && (
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            Selected: <strong>{file.name}</strong> ({(file.size / 1024).toFixed(1)} KB)
+            {t('importData.selectedPrefix')}<strong>{file.name}</strong>{t('importData.sizeParenPrefix')}{(file.size / 1024).toFixed(1)}{t('importData.sizeSuffix')}
           </span>
           <button
             onClick={handlePreview}
             disabled={previewing || uploading}
             className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded text-sm hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
           >
-            {previewing ? 'Previewing...' : 'Preview (Dry Run)'}
+            {previewing ? t('importData.previewing') : t('importData.previewDryRun')}
           </button>
           <button
             onClick={handleUpload}
             disabled={uploading || previewing}
             className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {uploading ? 'Uploading...' : 'Upload & Import'}
+            {uploading ? t('importData.uploading') : t('importData.uploadAndImport')}
           </button>
           <button
             onClick={() => { setFile(null); setResult(null); setDryRunResult(null); setError('') }}
             className="text-sm text-gray-400 hover:text-gray-600"
           >
-            Clear
+            {t('backups.clear')}
           </button>
         </div>
       )}
@@ -540,29 +547,30 @@ function PHPIpamTab() {
 }
 
 export default function ImportDataPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('subnets')
 
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Data Import</h1>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('importData.title')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Import subnets and IP addresses from CSV files or PHPIpam exports.
+          {t('importData.subtitle')}
         </p>
       </div>
 
       <div className="flex border-b dark:border-gray-700 mb-6">
-        {TABS.map(tab => (
+        {TAB_KEYS.map(tabInfo => (
           <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            key={tabInfo.key}
+            onClick={() => setActiveTab(tabInfo.key)}
             className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === tab.key
+              activeTab === tabInfo.key
                 ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
                 : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
             }`}
           >
-            {tab.label}
+            {t(`importData.${tabInfo.labelKey}`)}
           </button>
         ))}
       </div>
