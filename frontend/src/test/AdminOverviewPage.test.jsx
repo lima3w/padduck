@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import AdminOverviewPage, { ADMIN_SURFACE_SECTIONS } from '../pages/AdminOverviewPage'
+import AdminOverviewPage, { buildAdminSurfaceSections } from '../pages/AdminOverviewPage'
+import i18n from '../i18n'
 
 describe('AdminOverviewPage', () => {
   it('groups core admin surfaces in one overview', () => {
@@ -25,7 +26,8 @@ describe('AdminOverviewPage', () => {
       </MemoryRouter>
     )
 
-    for (const network of ADMIN_SURFACE_SECTIONS) {
+    const sections = buildAdminSurfaceSections(i18n.t.bind(i18n))
+    for (const network of sections) {
       for (const link of network.links) {
         expect(screen.getByRole('link', { name: new RegExp(link.title) })).toHaveAttribute('href', link.to)
       }
