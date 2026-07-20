@@ -2053,6 +2053,18 @@
     "conditions": "Conditions",
     "active": "Active"
   },
+  "deploymentHealth": {
+    "title": "Deployment Health",
+    "loadFailed": "Failed to load system health",
+    "systemHealthTitle": "System Health",
+    "loading": "Loading...",
+    "databaseLabel": "Database",
+    "scanAgentsLabel": "Scan Agents",
+    "noAgentsRegistered": "No agents registered.",
+    "totalLabel": "Total:",
+    "healthyLabel": "Healthy:",
+    "offlineLabel": "Offline:"
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
