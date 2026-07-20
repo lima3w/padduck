@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.27
+
+### Added
+- **i18n audit: convert 14 shared components missed by the original batch sweep** (issue #35 follow-up): `CommandPalette`, `FingerprintPanel`, `ObservedStatePanel`, `ErrorBoundary` (both fallback views), `Modal`, `Pagination`, `SubnetTree`, `PermissionDenied`, `ProtectedRoute`, `ChangeHistory`, `DataQualityBadge`, `CustomFieldForm`, `PageSpinner`, and `ObjectRelationshipsPanel` now use `t()` calls. These are shared across dozens of already-converted pages, so this closes the remaining user-visible gaps found by the audit.
+
 ## v1.34.26
 
 ### Added

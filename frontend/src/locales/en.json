@@ -2757,6 +2757,91 @@
     "changeDecisionPrefix": "You can change this decision at any time in",
     "adminSettingsTelemetryLink": "Admin Settings → Telemetry"
   },
+  "commandPalette": {
+    "dialogLabel": "Command palette",
+    "searchAriaLabel": "Search networks, subnets, and devices",
+    "searchPlaceholder": "Search networks, subnets, devices…",
+    "networkFallback": "Network {{id}}",
+    "noResultsFor": "No results for “{{query}}”",
+    "typeToSearch": "Type to search across networks, subnets, and devices",
+    "navigateHint": "navigate",
+    "openHint": "open",
+    "closeHint": "close"
+  },
+  "fingerprintPanel": {
+    "title": "Device Fingerprint",
+    "building": "Building...",
+    "rebuild": "Rebuild",
+    "noFingerprintYet": "No fingerprint yet. Click Rebuild to generate one.",
+    "confidence": "Confidence",
+    "osLabel": "OS:",
+    "vendorLabel": "Vendor:",
+    "openPortsLabel": "Open ports:"
+  },
+  "observedStatePanel": {
+    "title": "Observed State",
+    "noScanData": "No scan data observed for this resource yet.",
+    "alive": "Alive",
+    "notResponding": "Not responding",
+    "lastSeenByScannerSuffix": "(last seen by scanner)",
+    "ptrLabel": "PTR:",
+    "snmpHostnameLabel": "SNMP hostname:",
+    "snmpMacLabel": "SNMP MAC:",
+    "responseTimeLabel": "Response time:",
+    "openPortsLabel": "Open ports:",
+    "sourceLabel": "Source:",
+    "lastSeenLabel": "Last seen:"
+  },
+  "errorBoundary": {
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedErrorPrefix": "An unexpected error occurred. Try",
+    "reloadingThePage": "reloading the page",
+    "unexpectedErrorSuffix": ". If the problem persists, contact your administrator.",
+    "componentStackDevOnly": "Component stack (dev only)",
+    "pageFailedToLoad": "This page failed to load",
+    "unexpectedErrorOccurred": "An unexpected error occurred.",
+    "tryAgain": "Try again",
+    "reloadPage": "Reload page"
+  },
+  "modal": {
+    "closeDialog": "Close dialog"
+  },
+  "pagination": {
+    "noResults": "No results",
+    "showingRange": "Showing {{from}}–{{to}} of {{total}}",
+    "prev": "Prev",
+    "next": "Next"
+  },
+  "subnetTree": {
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "noSubnetsYet": "No subnets yet"
+  },
+  "permissionDenied": {
+    "defaultMessage": "You do not have permission to view this page."
+  },
+  "changeHistory": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "title": "Change History",
+    "viewAll": "View all",
+    "systemFallback": "system"
+  },
+  "dataQualityBadge": {
+    "title": "Data Quality",
+    "fieldsComplete": "{{filled}}/{{total}} fields complete"
+  },
+  "customFieldForm": {
+    "selectOption": "Select..."
+  },
+  "pageSpinner": {
+    "loading": "Loading..."
+  },
+  "objectRelationshipsPanel": {
+    "defaultTitle": "Relationships"
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",

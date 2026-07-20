@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 /**
  * Pagination component.
  * Props:
@@ -7,6 +9,7 @@
  *   onChange  {Function} — called with new page number
  */
 export default function Pagination({ page, limit, total, onChange }) {
+  const { t } = useTranslation()
   const totalPages = Math.ceil(total / limit) || 1
   const from = total === 0 ? 0 : (page - 1) * limit + 1
   const to = Math.min(page * limit, total)
@@ -55,17 +58,17 @@ export default function Pagination({ page, limit, total, onChange }) {
     <div className="flex items-center justify-between mt-4">
       <span className="text-sm text-gray-500 dark:text-gray-400">
         {total === 0
-          ? 'No results'
-          : `Showing ${from}–${to} of ${total}`}
+          ? t('pagination.noResults')
+          : t('pagination.showingRange', { from, to, total })}
       </span>
       <div className="flex items-center gap-1">
-        {btn('Prev', page - 1, page <= 1)}
+        {btn(t('pagination.prev'), page - 1, page <= 1)}
         {withEllipsis.map((p, i) =>
           p === '...'
             ? <span key={`ellipsis-${i}`} className="px-2 text-gray-400">…</span>
             : btn(p, p, false, p === page)
         )}
-        {btn('Next', page + 1, page >= totalPages)}
+        {btn(t('pagination.next'), page + 1, page >= totalPages)}
       </div>
     </div>
   )

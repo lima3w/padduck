@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export default function Modal({ title, onClose, children }) {
+  const { t } = useTranslation()
   const titleId = useId()
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
@@ -47,7 +49,7 @@ export default function Modal({ title, onClose, children }) {
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close dialog"
+            aria-label={t('modal.closeDialog')}
             className="rounded text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-gray-300 dark:hover:text-gray-100 text-xl leading-none"
           >
             &times;
