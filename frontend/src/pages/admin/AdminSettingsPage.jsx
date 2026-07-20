@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { approveUser, getAdminConfig, listPendingApprovals, rejectUser, updateAdminConfig } from '../../api/admin'
 import { CONFIG_KEYS_BY_TAB } from './settingsShared'
 import RegistrationTab from './RegistrationTab'
@@ -19,6 +20,7 @@ import TelemetryTab from './TelemetryTab'
 // tab is its own component under src/pages/admin/ and keeps tab-specific
 // state and handlers to itself.
 export default function AdminSettingsPage() {
+  const { t } = useTranslation()
   const location = useLocation()
   const [config, setConfig] = useState(null)
   const [approvals, setApprovals] = useState([])
@@ -45,11 +47,11 @@ export default function AdminSettingsPage() {
       setConfig({ ...loadedConfig, ...featureDefaults })
       setApprovals(approvalsRes.data.approvals || [])
     } catch (err) {
-      showMessage('Failed to load settings: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminSettingsPage.loadFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     loadData()
@@ -74,14 +76,14 @@ export default function AdminSettingsPage() {
           .map((key) => [key, config[key]])
       )
       await updateAdminConfig(updates)
-      showMessage('Settings saved successfully')
+      showMessage(t('adminSettingsPage.settingsSavedSuccess'))
       if (activeTab === 'features') {
         window.setTimeout(() => {
           window.location.href = window.location.pathname + '?tab=features'
         }, 250)
       }
     } catch (err) {
-      showMessage('Failed to save: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminSettingsPage.saveFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     } finally {
       setSaving(false)
     }
@@ -90,52 +92,52 @@ export default function AdminSettingsPage() {
   const handleApprove = async (id) => {
     try {
       await approveUser(id)
-      showMessage('User approved')
+      showMessage(t('adminSettingsPage.userApproved'))
       setApprovals((prev) => prev.filter((a) => a.id !== id))
     } catch (err) {
-      showMessage('Failed to approve: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminSettingsPage.approveFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     }
   }
 
   const handleReject = async (id) => {
-    const reason = window.prompt('Rejection reason (optional):') ?? ''
+    const reason = window.prompt(t('adminSettingsPage.rejectionReasonPrompt')) ?? ''
     try {
       await rejectUser(id, reason)
-      showMessage('User rejected')
+      showMessage(t('adminSettingsPage.userRejected'))
       setApprovals((prev) => prev.filter((a) => a.id !== id))
     } catch (err) {
-      showMessage('Failed to reject: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('adminSettingsPage.rejectFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
-        Loading settings...
+        {t('adminSettingsPage.loadingSettings')}
       </div>
     )
   }
 
   const tabs = [
-    { id: 'registration', label: 'Registration' },
-    { id: 'smtp', label: 'SMTP / Email' },
-    { id: 'approvals', label: `Approvals${approvals.length > 0 ? ` (${approvals.length})` : ''}` },
-    { id: 'audit', label: 'Audit' },
-    { id: 'alerts', label: 'Alerts' },
-    { id: 'dns', label: 'DNS' },
-    { id: 'scanner', label: 'Scanner' },
-    { id: 'features', label: 'Features' },
-    { id: 'updates', label: 'Updates' },
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'tools', label: 'Tools' },
-    { id: 'telemetry', label: 'Telemetry' },
+    { id: 'registration', label: t('adminSettingsPage.registrationTabLabel') },
+    { id: 'smtp', label: t('adminSettingsPage.smtpTabLabel') },
+    { id: 'approvals', label: t('adminSettingsPage.approvalsTabLabel', { suffix: approvals.length > 0 ? ` (${approvals.length})` : '' }) },
+    { id: 'audit', label: t('nav.audit') },
+    { id: 'alerts', label: t('adminSettingsPage.alertsTabLabel') },
+    { id: 'dns', label: t('nav.sections.dns') },
+    { id: 'scanner', label: t('adminSettingsPage.scannerTabLabel') },
+    { id: 'features', label: t('adminSettingsPage.featuresTabLabel') },
+    { id: 'updates', label: t('adminSettingsPage.updatesTabLabel') },
+    { id: 'notifications', label: t('adminSettingsPage.notificationsTabLabel') },
+    { id: 'tools', label: t('adminSettingsPage.toolsTabLabel') },
+    { id: 'telemetry', label: t('telemetryTab.title') },
   ]
 
   const configProps = { config, handleConfigChange, handleSaveConfig, saving }
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Admin Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('adminSettingsPage.title')}</h1>
 
       {message.text && (
         <div

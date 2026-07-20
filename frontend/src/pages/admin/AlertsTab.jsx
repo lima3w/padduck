@@ -1,11 +1,14 @@
+import { useTranslation } from 'react-i18next'
+
 export default function AlertsTab({ config, handleConfigChange, handleSaveConfig, saving }) {
+  const { t } = useTranslation()
   return (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">Utilisation Alerts</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('alertsTab.title')}</h2>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Default Alert Threshold (%)
+                {t('alertsTab.thresholdLabel')}
               </label>
               <input
                 type="number"
@@ -17,7 +20,7 @@ export default function AlertsTab({ config, handleConfigChange, handleSaveConfig
                 placeholder="80"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Send an alert when a subnet&apos;s utilization exceeds this percentage. Individual subnets can override this value.
+                {t('alertsTab.thresholdHint')}
               </p>
             </div>
             <button
@@ -25,7 +28,7 @@ export default function AlertsTab({ config, handleConfigChange, handleSaveConfig
               disabled={saving}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </div>

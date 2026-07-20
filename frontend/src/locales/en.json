@@ -1483,5 +1483,341 @@
     "noMatchesPeriod": "No matches.",
     "allPermissionsAssigned": "All permissions assigned.",
     "add": "Add"
+  },
+  "alertsTab": {
+    "title": "Utilisation Alerts",
+    "thresholdLabel": "Default Alert Threshold (%)",
+    "thresholdHint": "Send an alert when a subnet's utilization exceeds this percentage. Individual subnets can override this value."
+  },
+  "featuresTab": {
+    "title": "Enabled Modules",
+    "subtitle": "Disabled modules are removed from navigation and their API routes reject direct access.",
+    "toggles": {
+      "feature_customers_enabled": {
+        "title": "Customers",
+        "description": "Customer records and customer navigation."
+      },
+      "feature_vlans_enabled": {
+        "title": "VLANs",
+        "description": "VLANs, VLAN domains, VLAN groups, and VLAN usage reports."
+      },
+      "feature_vrfs_enabled": {
+        "title": "VRFs",
+        "description": "VRF records and VRF navigation."
+      },
+      "feature_racks_enabled": {
+        "title": "Racks",
+        "description": "Rack records, rack details, and rack device lists."
+      },
+      "feature_locations_enabled": {
+        "title": "Locations",
+        "description": "Location records, location hierarchy, and location details."
+      },
+      "feature_bgp_enabled": {
+        "title": "BGP / AS Numbers",
+        "description": "Autonomous system records and BGP navigation."
+      },
+      "feature_devices_enabled": {
+        "title": "Devices",
+        "description": "Device inventory, device types, interfaces, and device IP associations."
+      },
+      "feature_nat_enabled": {
+        "title": "NAT Rules",
+        "description": "NAT mapping records and NAT navigation."
+      },
+      "feature_firewall_enabled": {
+        "title": "Firewall Zones",
+        "description": "Firewall zone records, zone mappings, and firewall navigation."
+      },
+      "feature_dhcp_enabled": {
+        "title": "DHCP",
+        "description": "DHCP server and lease records."
+      },
+      "feature_circuits_enabled": {
+        "title": "Circuits",
+        "description": "Circuit providers, physical circuits, and logical circuits."
+      },
+      "anonymous_api_enabled": {
+        "title": "Anonymous API Access",
+        "description": "Allow unauthenticated read-only IP queries via GET /api/v1/query/ip. Additive — no existing behavior changes."
+      }
+    }
+  },
+  "notificationsTab": {
+    "title": "Notification Stats",
+    "subtitle": "Counts of notification emails sent by type. Users can control their preferences under Account Settings.",
+    "loadFailed": "Failed to load notification stats.",
+    "noneSent": "No notifications have been sent yet."
+  },
+  "toolsTab": {
+    "openArrow": "Open →",
+    "sections": {
+      "dataTools": {
+        "title": "Data Tools",
+        "links": {
+          "overlapReport": {
+            "title": "Subnet Overlap Check",
+            "description": "Find overlapping subnets across all networks"
+          },
+          "dataImport": {
+            "title": "Data Import",
+            "description": "Import subnets, IP addresses, or phpIPAM data"
+          },
+          "dataExport": {
+            "title": "Data Export",
+            "description": "Export a full data backup"
+          }
+        }
+      },
+      "schemaTaxonomy": {
+        "title": "Schema & Taxonomy",
+        "links": {
+          "customFields": {
+            "title": "Custom Fields",
+            "description": "Manage extra fields for subnets, IPs, and devices"
+          },
+          "ipTags": {
+            "title": "IP Tags",
+            "description": "Create and manage IP address tags"
+          },
+          "vlanDomains": {
+            "title": "VLAN Domains",
+            "description": "Manage VLAN namespace boundaries"
+          },
+          "vlanGroups": {
+            "title": "VLAN Groups",
+            "description": "Group VLANs for organization and reporting"
+          },
+          "vlanUsage": {
+            "title": "VLAN Usage",
+            "description": "Review VLAN allocation and utilization"
+          }
+        }
+      },
+      "discoveryAutomation": {
+        "title": "Discovery & Automation",
+        "links": {
+          "webhooks": {
+            "title": "Webhooks",
+            "description": "Configure outbound event delivery"
+          },
+          "integrations": {
+            "title": "Integrations",
+            "description": "Integration setup notes and connection checks"
+          },
+          "grafana": {
+            "title": "Grafana",
+            "description": "Configure the Grafana datasource integration"
+          }
+        }
+      },
+      "authentication": {
+        "title": "Authentication",
+        "links": {
+          "ldap": {
+            "title": "LDAP / AD",
+            "description": "Configure LDAP authentication and group mappings"
+          },
+          "oauth2": {
+            "title": "OAuth2 / OIDC",
+            "description": "Configure OAuth2 or OpenID Connect login"
+          },
+          "saml": {
+            "title": "SAML SSO",
+            "description": "Configure SAML single sign-on"
+          },
+          "identityPolicies": {
+            "title": "Identity Policies",
+            "description": "Manage IP-based access control and identity rules"
+          }
+        }
+      }
+    }
+  },
+  "registrationTab": {
+    "appUrlTitle": "Application URL",
+    "publicUrlLabel": "Public URL",
+    "publicUrlHintPrefix": "Used in verification and notification emails. Include scheme and port if non-standard (e.g. ",
+    "publicUrlHintSuffix": ").",
+    "registrationSettingsTitle": "Registration Settings",
+    "enableSelfRegistration": "Enable self-registration",
+    "enableSelfRegistrationHint": "Allow anyone to create an account",
+    "smtpNotConfiguredWarning": "Email verification is enabled but SMTP is not configured — verification emails will not be sent and new users will be stuck. Configure SMTP on the Email tab first.",
+    "requireEmailVerification": "Require email verification",
+    "requireEmailVerificationHint": "Users must verify their email before logging in",
+    "requireAdminApproval": "Require admin approval",
+    "requireAdminApprovalHint": "New accounts must be approved by an admin"
+  },
+  "updatesTab": {
+    "checkFailed": "Update check failed",
+    "title": "Update Check",
+    "enableUpdateChecks": "Enable update checks",
+    "enableUpdateChecksHint": "Checks the GitHub releases API for new versions of Padduck.",
+    "checksDisabled": "Update checks are disabled.",
+    "updateAvailable": "Update available: {{version}}",
+    "noUpdateAvailable": "No update available.",
+    "currentPrefix": "Current: ",
+    "unknown": "unknown",
+    "latestSuffix": " · Latest: {{version}}",
+    "viewRelease": "View release",
+    "checking": "Checking...",
+    "checkNow": "Check Now"
+  },
+  "scannerTab": {
+    "title": "Discovery Scanner",
+    "resolveHostnames": "Resolve hostnames via reverse DNS",
+    "resolveHostnamesHint": "After a successful ping, the scanner performs a PTR lookup and stores the result in the IP address record. A forward lookup is also done to flag mismatches. Adds up to 2 s per alive host. Default: enabled.",
+    "snmpTitle": "SNMP",
+    "globalCommunityString": "Global community string",
+    "hideCommunityString": "Hide community string",
+    "showCommunityString": "Show community string",
+    "communityStringHint": "Used when no per-device community is configured. Default: public.",
+    "snmpVersion": "SNMP version",
+    "snmpVersionHint": "Global default version. Per-device credentials override this."
+  },
+  "smtpTab": {
+    "enterEmailError": "Enter an email address to send test to",
+    "testEmailSentPrefix": "Test email sent to ",
+    "testFailedPrefix": "SMTP test failed: ",
+    "title": "SMTP Configuration",
+    "smtpHost": "SMTP Host",
+    "port": "Port",
+    "password": "Password",
+    "fromAddress": "From Address",
+    "useTls": "Use TLS",
+    "sendTestEmail": "Send Test Email"
+  },
+  "telemetryTab": {
+    "sentSuccess": "Telemetry snapshot sent successfully",
+    "sendFailedPrefix": "Send failed: ",
+    "title": "Telemetry",
+    "subtitle": "Padduck can send periodic usage snapshots to a PocketBase instance you control. No data leaves your infrastructure without your configuration — the destination URL and token are set below and are never shared with third parties.",
+    "enableTelemetry": "Enable telemetry",
+    "enableTelemetryHint": "Send usage snapshots on the configured schedule.",
+    "whatIsCollected": "What is collected?",
+    "collectedObjectCounts": "Object counts: subnets, IP addresses, VLANs, devices, users (no names or IPs)",
+    "collectedActiveUsers": "Active user counts over 7 and 30 days (count only)",
+    "collectedUtilization": "Subnet utilization percentiles and threshold bucket counts (no addresses or hostnames)",
+    "collectedFeatureFlags": "Feature flag states (enabled/disabled per feature)",
+    "collectedVersion": "Version and instance identifier",
+    "collectedLocale": "Locale fields you configure below (UI locale, timezone, country/region codes)",
+    "noPiiNotice": "No IP addresses, hostnames, user names, or any personally identifiable information is ever included.",
+    "scheduleDeploymentTitle": "Schedule & Deployment",
+    "snapshotsSentToPrefix": "Snapshots are sent to ",
+    "snapshotsSentToSuffix": ".",
+    "snapshotPeriod": "Snapshot Period",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "deploymentType": "Deployment Type",
+    "unknown": "Unknown",
+    "docker": "Docker",
+    "dockerCompose": "Docker Compose",
+    "kubernetes": "Kubernetes",
+    "bareMetal": "Bare Metal",
+    "deploymentMode": "Deployment Mode",
+    "selfHosted": "Self-Hosted",
+    "onPrem": "On-Premises",
+    "development": "Development",
+    "testStaging": "Test / Staging",
+    "localeTitle": "Locale (optional)",
+    "localeSubtitle": "These values are included in snapshots to help aggregate data by region. All fields are optional.",
+    "uiLocale": "UI Locale",
+    "timezoneRegion": "Timezone Region",
+    "countryCode": "Country Code",
+    "regionCode": "Region Code",
+    "sending": "Sending...",
+    "sendTestSnapshotNow": "Send Test Snapshot Now"
+  },
+  "adminSettingsPage": {
+    "loadFailedPrefix": "Failed to load settings: ",
+    "settingsSavedSuccess": "Settings saved successfully",
+    "saveFailedPrefix": "Failed to save: ",
+    "userApproved": "User approved",
+    "approveFailedPrefix": "Failed to approve: ",
+    "rejectionReasonPrompt": "Rejection reason (optional):",
+    "userRejected": "User rejected",
+    "rejectFailedPrefix": "Failed to reject: ",
+    "loadingSettings": "Loading settings...",
+    "registrationTabLabel": "Registration",
+    "smtpTabLabel": "SMTP / Email",
+    "approvalsTabLabel": "Approvals{{suffix}}",
+    "alertsTabLabel": "Alerts",
+    "scannerTabLabel": "Scanner",
+    "featuresTabLabel": "Features",
+    "updatesTabLabel": "Updates",
+    "notificationsTabLabel": "Notifications",
+    "toolsTabLabel": "Tools",
+    "title": "Admin Settings"
+  },
+  "dnsTab": {
+    "addedNameserverPrefix": "Nameserver added: ",
+    "savedButFailedNameserverPrefix": "Settings saved, but failed to add nameserver: ",
+    "connected": "Connected",
+    "connectionFailed": "Connection failed",
+    "bulkCheckStarted": "DNS bulk check started in background",
+    "failedStartDnsCheck": "Failed to start DNS check",
+    "failedLoadDhcpScopesPrefix": "Failed to load DHCP scopes: ",
+    "syncedLeases": "Synced {{count}} leases",
+    "syncFailed": "Sync failed",
+    "selectNetworkError": "Select a network to import into",
+    "scopeImportedSuccess": "Scope \"{{scope}}\" imported as a new subnet",
+    "importFailedPrefix": "Import failed: ",
+    "powerDnsTitle": "PowerDNS Integration",
+    "enablePowerDns": "Enable PowerDNS integration",
+    "enablePowerDnsHint": "Sync DNS records with PowerDNS server",
+    "apiUrl": "API URL",
+    "apiKey": "API Key",
+    "defaultZone": "Default Zone",
+    "defaultZoneHint": "Include the trailing dot (FQDN format).",
+    "ptrZones": "PTR Zones",
+    "ptrZonesHint": "Comma-separated list of reverse zones for PTR records.",
+    "connectedPrefix": "Connected: ",
+    "errorPrefix": "Error: ",
+    "testing": "Testing...",
+    "testPowerDnsConnection": "Test PowerDNS Connection",
+    "technitiumTitle": "Technitium DNS Server",
+    "serverUrl": "Server URL",
+    "serverUrlHint": "Base URL of the Technitium DNS web interface (no trailing slash).",
+    "apiToken": "API Token",
+    "apiTokenHint": "API token from Technitium DNS administration panel.",
+    "defaultZoneSyncLabel": "Default Zone (for DNS sync)",
+    "defaultZoneSyncHint": "Zone where A records are created when an IP is assigned a DNS name.",
+    "skipTlsLabel": "Skip TLS certificate verification",
+    "skipTlsWarning": "(use only for self-signed certs)",
+    "testConnection": "Test Connection",
+    "alsoAddAsNameserver": "Also add as a nameserver",
+    "nameserverNameLabel": "Nameserver name",
+    "zoneVisibilityTitle": "DNS Zone Visibility",
+    "zoneVisibilitySubtitle": "Control which zones from the DNS provider are shown in the DNS Zones list.",
+    "filterMode": "Filter Mode",
+    "allowAllOption": "Allow all except — show every zone; listed zones are hidden",
+    "blockAllOption": "Block all except — hide every zone; only listed zones are shown",
+    "zonesToHide": "Zones to hide",
+    "zonesToShow": "Zones to show",
+    "zoneListHint": "One zone name per line.",
+    "autoAllowNewZones": "Automatically allow new zones — when a zone is found that is not in the list above, add it automatically",
+    "autoSyncTitle": "DNS Auto-Sync",
+    "autoSyncSubtitle": "Automatically synchronize IP address records in IPAM with A/AAAA records from the configured DNS provider.",
+    "autoAddDiscoveredIps": "Auto-add discovered IPs to matching subnet — when a DNS A/AAAA record is found for an IP not already in IPAM, create the record automatically",
+    "autoRemoveIps": "Auto-remove IPs no longer in DNS — remove IPAM records that were added by DNS auto-sync but no longer appear in any DNS zone",
+    "bulkCheckTitle": "DNS Bulk Check",
+    "bulkCheckSubtitle": "Run a background check on all IP addresses that have a DNS name assigned, verifying that DNS records are in sync.",
+    "starting": "Starting...",
+    "runBulkCheck": "Run DNS Bulk Check",
+    "dhcpTitle": "Technitium DHCP",
+    "dhcpSubtitle": "Pull leases from all Technitium DHCP scopes into the IPAM, or import a scope as a new subnet.",
+    "syncing": "Syncing…",
+    "syncLeasesNow": "Sync Leases Now",
+    "loadingEllipsis": "Loading…",
+    "loadScopes": "Load Scopes",
+    "noDhcpScopesFound": "No DHCP scopes found.",
+    "importIntoNetwork": "Import into network:",
+    "selectEllipsis": "Select…",
+    "scopeColumn": "Scope",
+    "rangeColumn": "Range",
+    "maskColumn": "Mask",
+    "enabled": "Enabled",
+    "importing": "Importing…",
+    "importAsSubnet": "Import as subnet"
   }
 }

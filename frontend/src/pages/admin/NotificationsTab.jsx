@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getNotificationStats } from '../../api/admin'
 
 export default function NotificationsTab() {
+  const { t } = useTranslation()
   const [notifStats, setNotifStats] = useState(null)
   const [notifStatsLoading, setNotifStatsLoading] = useState(false)
 
@@ -22,18 +24,18 @@ export default function NotificationsTab() {
   return (
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Notification Stats</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">{t('notificationsTab.title')}</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Counts of notification emails sent by type. Users can control their preferences under Account Settings.
+              {t('notificationsTab.subtitle')}
             </p>
           </div>
 
           {notifStatsLoading ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-gray-500">{t('common.loading')}</p>
           ) : notifStats === null ? (
-            <p className="text-sm text-red-500">Failed to load notification stats.</p>
+            <p className="text-sm text-red-500">{t('notificationsTab.loadFailed')}</p>
           ) : Object.keys(notifStats).length === 0 ? (
-            <p className="text-sm text-gray-500">No notifications have been sent yet.</p>
+            <p className="text-sm text-gray-500">{t('notificationsTab.noneSent')}</p>
           ) : (
             <div className="border border-gray-200 rounded divide-y divide-gray-100">
               {Object.entries(notifStats).map(([key, count]) => (
@@ -52,7 +54,7 @@ export default function NotificationsTab() {
             disabled={notifStatsLoading}
             className="text-sm text-blue-600 hover:underline disabled:opacity-50"
           >
-            Refresh
+            {t('dashboard.refresh')}
           </button>
         </div>
   )

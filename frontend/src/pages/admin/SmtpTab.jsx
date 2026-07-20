@@ -1,30 +1,32 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { testSMTP } from '../../api/admin'
 
 export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, saving, showMessage }) {
+  const { t } = useTranslation()
   const [testEmail, setTestEmail] = useState('')
 
   const handleTestSMTP = async () => {
     if (!testEmail) {
-      showMessage('Enter an email address to send test to', 'error')
+      showMessage(t('smtpTab.enterEmailError'), 'error')
       return
     }
     try {
       await testSMTP(testEmail)
-      showMessage('Test email sent to ' + testEmail)
+      showMessage(t('smtpTab.testEmailSentPrefix') + testEmail)
     } catch (err) {
-      showMessage('SMTP test failed: ' + (err.response?.data?.error || err.message), 'error')
+      showMessage(t('smtpTab.testFailedPrefix') + (err.response?.data?.error || err.message), 'error')
     }
   }
 
   return (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">SMTP Configuration</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('smtpTab.title')}</h2>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('smtpTab.smtpHost')}</label>
                 <input
                   type="text"
                   value={config.smtp_host || ''}
@@ -34,7 +36,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('smtpTab.port')}</label>
                 <input
                   type="number"
                   value={config.smtp_port || '587'}
@@ -47,7 +49,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.username')}</label>
                 <input
                   type="text"
                   value={config.smtp_username || ''}
@@ -57,7 +59,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('smtpTab.password')}</label>
                 <input
                   type="password"
                   value={config.smtp_password || ''}
@@ -69,7 +71,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">From Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('smtpTab.fromAddress')}</label>
               <input
                 type="email"
                 value={config.smtp_from || ''}
@@ -86,7 +88,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
                 onChange={(e) => handleConfigChange('smtp_tls', e.target.checked ? 'true' : 'false')}
                 className="w-4 h-4 text-blue-600 rounded"
               />
-              <span className="text-sm text-gray-700">Use TLS</span>
+              <span className="text-sm text-gray-700">{t('smtpTab.useTls')}</span>
             </label>
           </div>
 
@@ -96,7 +98,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
               disabled={saving}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition font-medium"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
             <input
               type="email"
@@ -109,7 +111,7 @@ export default function SmtpTab({ config, handleConfigChange, handleSaveConfig, 
               onClick={handleTestSMTP}
               className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition text-sm font-medium"
             >
-              Send Test Email
+              {t('smtpTab.sendTestEmail')}
             </button>
           </div>
         </div>

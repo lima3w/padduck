@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.15
+
+### Added
+- **i18n batch 13/15: admin settings tabs** (issue #35): converted `AlertsTab`, `FeaturesTab`, `NotificationsTab`, `ToolsTab`, `RegistrationTab`, `UpdatesTab`, `ScannerTab`, `SmtpTab`, `TelemetryTab`, `AdminSettingsPage`, and `DnsTab` to `t()` calls.
+
 ## v1.34.14
 
 ### Added
