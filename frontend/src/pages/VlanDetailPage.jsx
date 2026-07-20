@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import ChangeHistory from '../components/ChangeHistory'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'
 import { getNetworks, getSubnetsPaginated } from '../api/ipam'
@@ -30,6 +31,7 @@ function GroupBadge({ group }) {
 }
 
 export default function VlanDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [vlan, setVlan] = useState(null)
   const [subnets, setSubnets] = useState([])
@@ -63,7 +65,7 @@ export default function VlanDetailPage() {
       if (vlanRes.status === 'fulfilled') {
         setVlan(vlanRes.value.data)
       } else {
-        setError('Failed to load VLAN')
+        setError(t('vlanDetail.loadFailed'))
       }
       if (subnetsRes.status === 'fulfilled') {
         const d = subnetsRes.value.data
@@ -84,7 +86,7 @@ export default function VlanDetailPage() {
     } finally {
       setLoading(false)
     }
-  }, [id])
+  }, [id, t])
 
   useEffect(() => { load() }, [load])
 
@@ -120,11 +122,11 @@ export default function VlanDetailPage() {
         group_id: form.groupId ? parseInt(form.groupId) : null,
       }
       await updateVlan(id, payload)
-      showMsg('VLAN updated')
+      showMsg(t('vlans.updated'))
       setEditModal(false)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update VLAN')
+      setError(err.response?.data?.error || t('vlanDetail.updateFailed'))
     } finally {
       setSaving(false)
     }
@@ -147,7 +149,7 @@ export default function VlanDetailPage() {
       setAssignSubnets(candidates)
       setAssignSubnetId(candidates[0] ? String(candidates[0].id) : '')
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to load network subnets')
+      setError(err.response?.data?.error || t('vlanDetail.loadSubnetsFailed'))
     } finally {
       setLoadingAssignSubnets(false)
     }
@@ -168,11 +170,11 @@ export default function VlanDetailPage() {
     setAssigning(true)
     try {
       await assignSubnetToVlan(id, parseInt(assignSubnetId))
-      showMsg('Subnet assigned to VLAN')
+      showMsg(t('vlanDetail.subnetAssigned'))
       setAssignModal(false)
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to assign subnet')
+      setError(err.response?.data?.error || t('vlanDetail.assignFailed'))
     } finally {
       setAssigning(false)
     }
@@ -181,16 +183,16 @@ export default function VlanDetailPage() {
   async function handleRemoveSubnet(subnetId) {
     try {
       await removeSubnetFromVlan(id, subnetId)
-      showMsg('Subnet removed from VLAN')
+      showMsg(t('vlanDetail.subnetRemoved'))
       load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to remove subnet')
+      setError(err.response?.data?.error || t('vlanDetail.removeFailed'))
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading VLAN...</p>
+  if (loading) return <p className="text-gray-500">{t('vlanDetail.loadingVlan')}</p>
   if (error && !vlan) return <p className="text-red-600">{error}</p>
-  if (!vlan) return <p className="text-gray-500">VLAN not found.</p>
+  if (!vlan) return <p className="text-gray-500">{t('vlanDetail.vlanNotFound')}</p>
 
   const isAdmin = getCachedUser()?.role === 'admin'
   const domain = getDomain(vlan.domainId)
@@ -198,35 +200,35 @@ export default function VlanDetailPage() {
   const sectionIds = new Set(subnets.map(s => s.networkId).filter(Boolean))
   const relationshipItems = [
     domain && {
-      label: 'Domain',
+      label: t('vlans.domain'),
       value: domain.name,
-      description: 'VLAN namespace boundary',
+      description: t('vlanDetail.domainDescription'),
     },
     group && {
-      label: 'Group',
+      label: t('vlans.group'),
       value: group.name,
-      description: 'VLAN grouping',
+      description: t('vlanDetail.groupDescription'),
     },
     {
-      label: 'Subnets',
-      value: 'Assigned subnets',
+      label: t('dashboard.subnets'),
+      value: t('vlanDetail.assignedSubnetsValue'),
       count: subnets.length,
-      description: `${subnets.length} subnet${subnets.length === 1 ? '' : 's'} assigned to this VLAN`,
+      description: t('vlanDetail.subnetsAssignedToVlan', { count: subnets.length }),
     },
     {
-      label: 'Networks',
-      value: 'Related networks',
+      label: t('nav.networks'),
+      value: t('vlanDetail.relatedNetworksValue'),
       count: sectionIds.size,
-      description: `${sectionIds.size} network${sectionIds.size === 1 ? '' : 's'} represented by assigned subnets`,
+      description: t('vlanDetail.networksRepresented', { count: sectionIds.size }),
     },
   ]
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-2 mb-4 text-sm text-gray-500 dark:text-gray-400">
-        <Link to="/vlans" className="hover:text-blue-600 dark:hover:text-blue-400">VLANs</Link>
+        <Link to="/vlans" className="hover:text-blue-600 dark:hover:text-blue-400">{t('nav.vlans')}</Link>
         <span>/</span>
-        <span className="text-gray-800 dark:text-gray-200 font-medium">VLAN {vlan.vlanId} — {vlan.name}</span>
+        <span className="text-gray-800 dark:text-gray-200 font-medium">{t('vlanDetail.vlanHeading', { vlanId: vlan.vlanId, name: vlan.name })}</span>
       </div>
 
       {message && (
@@ -237,7 +239,7 @@ export default function VlanDetailPage() {
       {error && (
         <div className="mb-4 p-3 rounded text-sm bg-red-50 text-red-700 border border-red-200">
           {error}
-          <button onClick={() => setError(null)} className="ml-2 underline">Dismiss</button>
+          <button onClick={() => setError(null)} className="ml-2 underline">{t('common.dismiss')}</button>
         </div>
       )}
 
@@ -245,26 +247,26 @@ export default function VlanDetailPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
         <div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
           <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-            VLAN {vlan.vlanId} — {vlan.name}
+            {t('vlanDetail.vlanHeading', { vlanId: vlan.vlanId, name: vlan.name })}
           </h1>
           <button
             onClick={openEdit}
             className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
           >
-            Edit
+            {t('common.edit')}
           </button>
         </div>
         <div className="px-6 py-4 grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">VLAN ID</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{t('vlans.vlanIdLabel')}</p>
             <p className="font-mono font-semibold text-gray-800 dark:text-gray-200">{vlan.vlanId}</p>
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Name</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{t('common.name')}</p>
             <p className="font-medium text-gray-800 dark:text-gray-200">{vlan.name}</p>
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Domain</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{t('vlans.domain')}</p>
             {domain ? (
               <span className="text-gray-700 dark:text-gray-300">{domain.name}</span>
             ) : (
@@ -272,12 +274,12 @@ export default function VlanDetailPage() {
             )}
           </div>
           <div>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Group</p>
+            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{t('vlans.group')}</p>
             <GroupBadge group={group} />
           </div>
           {vlan.description && (
             <div className="col-span-2">
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">Description</p>
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase tracking-wider mb-1">{t('common.description')}</p>
               <p className="text-gray-700 dark:text-gray-300">{vlan.description}</p>
             </div>
           )}
@@ -290,24 +292,24 @@ export default function VlanDetailPage() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
         <div className="px-6 py-4 border-b dark:border-gray-700 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Subnets in this VLAN</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('vlanDetail.subnetsInVlanTitle')}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {subnets.length} subnet{subnets.length !== 1 ? 's' : ''} assigned to VLAN {vlan.vlanId}
+              {t('vlanDetail.subnetsAssignedCountSubtitle', { count: subnets.length, vlanId: vlan.vlanId })}
             </p>
           </div>
           <button
             onClick={openAssignSubnet}
             className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded"
           >
-            Add Subnet
+            {t('vlanDetail.addSubnet')}
           </button>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">CIDR</th>
-              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Description</th>
-              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">Network</th>
+              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('topology.cidr')}</th>
+              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
+              <th className="text-left px-6 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('subnets.network')}</th>
               <th className="px-6 py-3"></th>
             </tr>
           </thead>
@@ -315,7 +317,7 @@ export default function VlanDetailPage() {
             {subnets.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-6 py-6 text-center text-gray-400">
-                  No subnets are assigned to this VLAN.
+                  {t('vlanDetail.noSubnetsAssigned')}
                 </td>
               </tr>
             )}
@@ -344,7 +346,7 @@ export default function VlanDetailPage() {
                         to={`/networks/${secId}/subnets`}
                         className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
                       >
-                        Network #{secId}
+                        {t('vlanDetail.networkHash', { id: secId })}
                       </Link>
                     ) : '—'}
                   </td>
@@ -353,7 +355,7 @@ export default function VlanDetailPage() {
                       onClick={() => handleRemoveSubnet(subnetId)}
                       className="text-xs text-gray-400 hover:text-red-600"
                     >
-                      Remove
+                      {t('deviceIp.remove')}
                     </button>
                   </td>
                 </tr>
@@ -366,11 +368,11 @@ export default function VlanDetailPage() {
       {isAdmin && <ChangeHistory resourceType="vlan" resourceId={vlan?.id} />}
 
       {editModal && (
-        <Modal title="Edit VLAN" onClose={() => setEditModal(false)}>
+        <Modal title={t('vlans.editVlanModalTitle')} onClose={() => setEditModal(false)}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                VLAN ID <span className="text-red-500">*</span>
+                {t('vlans.vlanIdLabel')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -384,7 +386,7 @@ export default function VlanDetailPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
+                {t('common.name')} <span className="text-red-500">*</span>
               </label>
               <input
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
@@ -394,7 +396,7 @@ export default function VlanDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description')}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 rows={2}
@@ -404,13 +406,13 @@ export default function VlanDetailPage() {
             </div>
             {domains.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Domain</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('vlans.domain')}</label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.domainId}
                   onChange={e => setForm(f => ({ ...f, domainId: e.target.value }))}
                 >
-                  <option value="">No domain</option>
+                  <option value="">{t('vlans.noDomain')}</option>
                   {domains.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
@@ -419,13 +421,13 @@ export default function VlanDetailPage() {
             )}
             {groups.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('vlans.group')}</label>
                 <select
                   className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   value={form.groupId}
                   onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))}
                 >
-                  <option value="">No group</option>
+                  <option value="">{t('vlans.noGroup')}</option>
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
@@ -438,14 +440,14 @@ export default function VlanDetailPage() {
                 onClick={() => setEditModal(false)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
@@ -453,10 +455,10 @@ export default function VlanDetailPage() {
       )}
 
       {assignModal && (
-        <Modal title="Add Subnet to VLAN" onClose={() => setAssignModal(false)}>
+        <Modal title={t('vlanDetail.addSubnetModalTitle')} onClose={() => setAssignModal(false)}>
           <form onSubmit={handleAssignSubnet} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Network</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('subnets.network')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={assignSectionId}
@@ -465,7 +467,7 @@ export default function VlanDetailPage() {
                   loadAssignableSubnets(e.target.value)
                 }}
               >
-                {networks.length === 0 && <option value="">No networks available</option>}
+                {networks.length === 0 && <option value="">{t('vlanDetail.noNetworksAvailable')}</option>}
                 {networks.map(network => (
                   <option key={network.id} value={network.id}>
                     {network.name}
@@ -474,15 +476,15 @@ export default function VlanDetailPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subnet</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('dashboard.subnet')}</label>
               <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={assignSubnetId}
                 onChange={e => setAssignSubnetId(e.target.value)}
                 disabled={loadingAssignSubnets || assignSubnets.length === 0}
               >
-                {loadingAssignSubnets && <option value="">Loading subnets...</option>}
-                {!loadingAssignSubnets && assignSubnets.length === 0 && <option value="">No available subnets</option>}
+                {loadingAssignSubnets && <option value="">{t('vlanDetail.loadingSubnets')}</option>}
+                {!loadingAssignSubnets && assignSubnets.length === 0 && <option value="">{t('vlanDetail.noAvailableSubnets')}</option>}
                 {!loadingAssignSubnets && assignSubnets.map(subnet => {
                   const subnetId = subnet.id
                   const cidr = subnet.networkAddress || ''
@@ -502,14 +504,14 @@ export default function VlanDetailPage() {
                 onClick={() => setAssignModal(false)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={assigning || !assignSubnetId}
                 className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {assigning ? 'Adding...' : 'Add Subnet'}
+                {assigning ? t('adminLdap.adding') : t('vlanDetail.addSubnet')}
               </button>
             </div>
           </form>
