@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getIntegrationTemplates } from '../api/admin'
 
 export default function IntegrationTemplatesPage() {
+  const { t } = useTranslation()
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -10,9 +12,9 @@ export default function IntegrationTemplatesPage() {
   useEffect(() => {
     getIntegrationTemplates()
       .then(res => setTemplates(res.data || []))
-      .catch(err => setError(err.response?.data?.error || 'Failed to load templates'))
+      .catch(err => setError(err.response?.data?.error || t('integrationTemplates.loadFailed')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   function toggle(id) {
     setExpanded(prev => prev === id ? null : id)
@@ -20,54 +22,54 @@ export default function IntegrationTemplatesPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Integration Templates</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('integrationTemplates.title')}</h1>
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        Ready-to-use templates for connecting IPAM to common automation platforms and network tools.
+        {t('integrationTemplates.subtitle')}
       </p>
 
-      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</p>}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {!loading && !error && (
         <div className="space-y-3">
           {templates.length === 0 && (
-            <p className="text-sm text-gray-400">No templates available.</p>
+            <p className="text-sm text-gray-400">{t('integrationTemplates.noTemplatesAvailable')}</p>
           )}
-          {templates.map(t => (
-            <div key={t.id} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
+          {templates.map(template => (
+            <div key={template.id} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
               <button
-                onClick={() => toggle(t.id)}
+                onClick={() => toggle(template.id)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">{t.name}</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{template.name}</span>
                   <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-                    {t.category}
+                    {template.category}
                   </span>
                 </div>
-                <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === t.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === template.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
-              {expanded === t.id && (
+              {expanded === template.id && (
                 <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-4 space-y-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{template.description}</p>
 
                   <div>
-                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Setup Steps</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('integrationTemplates.setupSteps')}</h3>
                     <ol className="list-decimal list-inside space-y-1">
-                      {(t.steps || []).map((step, i) => (
+                      {(template.steps || []).map((step, i) => (
                         <li key={i} className="text-sm text-gray-700 dark:text-gray-300">{step}</li>
                       ))}
                     </ol>
                   </div>
 
-                  {t.endpoints?.length > 0 && (
+                  {template.endpoints?.length > 0 && (
                     <div>
-                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Relevant Endpoints</h3>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('integrationTemplates.relevantEndpoints')}</h3>
                       <ul className="space-y-1">
-                        {t.endpoints.map((ep, i) => (
+                        {template.endpoints.map((ep, i) => (
                           <li key={i} className="font-mono text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded">{ep}</li>
                         ))}
                       </ul>

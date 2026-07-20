@@ -1819,5 +1819,13 @@
     "enabled": "Enabled",
     "importing": "Importing…",
     "importAsSubnet": "Import as subnet"
+  },
+  "integrationTemplates": {
+    "loadFailed": "Failed to load templates",
+    "title": "Integration Templates",
+    "subtitle": "Ready-to-use templates for connecting IPAM to common automation platforms and network tools.",
+    "noTemplatesAvailable": "No templates available.",
+    "setupSteps": "Setup Steps",
+    "relevantEndpoints": "Relevant Endpoints"
   }
 }
