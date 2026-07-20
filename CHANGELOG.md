@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.25
+
+### Removed
+- **dead `BreakGlassPage.jsx`**: removed the unreachable standalone break-glass page. The `/admin/break-glass` route has redirected to `/admin/users` for some time, where the same feature already lives as a tab inside `AdminUsersPage.jsx`; this file was an orphaned duplicate with no route pointing to it.
+
 ## v1.34.24
 
 ### Added
