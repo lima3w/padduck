@@ -2078,6 +2078,27 @@
     "migrationBundleSubtitle": "Exports the canonical JSON migration input, CSV fallback, manifest checksums, and bundle README.",
     "exportMigrationBundle": "Export Migration Bundle"
   },
+  "adminCompatibility": {
+    "title": "V2 Compatibility",
+    "subtitle": "Migration readiness, deprecation reporting, and v2 export preparation.",
+    "migrationBundle": "Migration Bundle",
+    "loadFailed": "Compatibility report failed",
+    "downloadFailed": "Migration bundle download failed",
+    "checksLabel": "Checks",
+    "warningsLabel": "Warnings",
+    "failuresLabel": "Failures",
+    "deprecationsLabel": "Deprecations",
+    "migrationReadinessTitle": "Migration Readiness",
+    "statusColumn": "Status",
+    "areaColumn": "Area",
+    "checkColumn": "Check",
+    "actionColumn": "Action",
+    "noActionRequired": "No action required.",
+    "deprecationReportTitle": "Deprecation Report",
+    "v1SurfaceLabel": "V1 Surface",
+    "v2ChangeLabel": "V2 Change",
+    "recommendedWorkLabel": "Recommended Work"
+  },
   "adminSaml": {
     "loadFailedPrefix": "Failed to load SAML config: ",
     "configSaved": "SAML configuration saved",
