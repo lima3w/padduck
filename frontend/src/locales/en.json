@@ -1946,5 +1946,28 @@
     "scopesTitle": "Scopes",
     "requestedScopes": "Requested Scopes",
     "scopesHint": "Space-separated list of OAuth2 scopes to request."
+  },
+  "identityPolicies": {
+    "loadPoliciesFailed": "Failed to load identity policies",
+    "loadSessionsFailed": "Failed to load active sessions",
+    "savePoliciesFailed": "Failed to save identity policies",
+    "title": "Identity Policies",
+    "subtitle": "Configure session lifetime, MFA enforcement, and inactive user policies.",
+    "policySettingsTitle": "Policy Settings",
+    "policiesSaved": "Policies saved successfully.",
+    "enforceMfa": "Enforce MFA for all users",
+    "sessionMaxAge": "Session max age (hours)",
+    "sessionMaxAgeRange": "1–8760",
+    "apiTokenMaxAge": "API token max age (days)",
+    "noLimit": "0 = no limit",
+    "inactiveUserAutoDisable": "Inactive user auto-disable (days)",
+    "savePolicies": "Save Policies",
+    "activeSessionRiskTitle": "Active Session Risk",
+    "refreshing": "Refreshing...",
+    "loadingSessions": "Loading sessions...",
+    "noActiveSessions": "No active sessions found.",
+    "userFallback": "User {{id}}",
+    "lastUsed": "Last Used",
+    "riskFlags": "Risk Flags"
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getIdentityPolicies, updateIdentityPolicies, getSessionRisk } from '../api/admin'
 
 function formatDatetime(str) {
@@ -10,6 +11,7 @@ function formatDatetime(str) {
 }
 
 export default function IdentityPoliciesPage() {
+  const { t } = useTranslation()
   // Policy form state
   const [form, setForm] = useState({
     enforce_mfa: false,
@@ -40,18 +42,18 @@ export default function IdentityPoliciesPage() {
         }
         setForm(loaded)
       })
-      .catch(() => setPolicyError('Failed to load identity policies'))
+      .catch(() => setPolicyError(t('identityPolicies.loadPoliciesFailed')))
       .finally(() => setLoadingPolicies(false))
-  }, [])
+  }, [t])
 
   const fetchSessions = useCallback(() => {
     setLoadingSessions(true)
     setSessionError(null)
     getSessionRisk()
       .then(res => setSessions(res.data?.sessions ?? []))
-      .catch(() => setSessionError('Failed to load active sessions'))
+      .catch(() => setSessionError(t('identityPolicies.loadSessionsFailed')))
       .finally(() => setLoadingSessions(false))
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchSessions()
@@ -80,7 +82,7 @@ export default function IdentityPoliciesPage() {
       setPolicySuccess(true)
       setTimeout(() => setPolicySuccess(false), 3000)
     } catch (err) {
-      setPolicyError(err.response?.data?.error || 'Failed to save identity policies')
+      setPolicyError(err.response?.data?.error || t('identityPolicies.savePoliciesFailed'))
     } finally {
       setSavingPolicies(false)
     }
@@ -89,18 +91,18 @@ export default function IdentityPoliciesPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Identity Policies</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('identityPolicies.title')}</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Configure session lifetime, MFA enforcement, and inactive user policies.
+          {t('identityPolicies.subtitle')}
         </p>
       </div>
 
       {/* Identity Policies Panel */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Policy Settings</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('identityPolicies.policySettingsTitle')}</h2>
 
         {loadingPolicies ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
         ) : (
           <form onSubmit={handleSave} className="space-y-6">
             {policyError && (
@@ -110,7 +112,7 @@ export default function IdentityPoliciesPage() {
             )}
             {policySuccess && (
               <div className="rounded bg-green-50 dark:bg-green-900/30 px-4 py-3 text-sm text-green-700 dark:text-green-300">
-                Policies saved successfully.
+                {t('identityPolicies.policiesSaved')}
               </div>
             )}
 
@@ -125,15 +127,15 @@ export default function IdentityPoliciesPage() {
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <label htmlFor="enforce_mfa" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Enforce MFA for all users
+                {t('identityPolicies.enforceMfa')}
               </label>
             </div>
 
             {/* Session Max Age */}
             <div>
               <label htmlFor="session_max_age_hours" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Session max age (hours)
-                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">1–8760</span>
+                {t('identityPolicies.sessionMaxAge')}
+                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">{t('identityPolicies.sessionMaxAgeRange')}</span>
               </label>
               <input
                 id="session_max_age_hours"
@@ -150,8 +152,8 @@ export default function IdentityPoliciesPage() {
             {/* API Token Max Age */}
             <div>
               <label htmlFor="api_token_max_age_days" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                API token max age (days)
-                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">0 = no limit</span>
+                {t('identityPolicies.apiTokenMaxAge')}
+                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">{t('identityPolicies.noLimit')}</span>
               </label>
               <input
                 id="api_token_max_age_days"
@@ -168,8 +170,8 @@ export default function IdentityPoliciesPage() {
             {/* Inactive User Days */}
             <div>
               <label htmlFor="inactive_user_days" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Inactive user auto-disable (days)
-                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">0 = no limit</span>
+                {t('identityPolicies.inactiveUserAutoDisable')}
+                <span className="ml-1 text-gray-400 dark:text-gray-500 font-normal">{t('identityPolicies.noLimit')}</span>
               </label>
               <input
                 id="inactive_user_days"
@@ -188,7 +190,7 @@ export default function IdentityPoliciesPage() {
               disabled={savingPolicies}
               className="px-4 py-2 rounded text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {savingPolicies ? 'Saving...' : 'Save Policies'}
+              {savingPolicies ? t('common.saving') : t('identityPolicies.savePolicies')}
             </button>
           </form>
         )}
@@ -197,13 +199,13 @@ export default function IdentityPoliciesPage() {
       {/* Active Session Risk Panel */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Active Session Risk</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('identityPolicies.activeSessionRiskTitle')}</h2>
           <button
             onClick={fetchSessions}
             disabled={loadingSessions}
             className="px-3 py-1.5 rounded text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
           >
-            {loadingSessions ? 'Refreshing...' : 'Refresh'}
+            {loadingSessions ? t('identityPolicies.refreshing') : t('dashboard.refresh')}
           </button>
         </div>
 
@@ -214,19 +216,19 @@ export default function IdentityPoliciesPage() {
         )}
 
         {loadingSessions ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">Loading sessions...</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{t('identityPolicies.loadingSessions')}</div>
         ) : sessions.length === 0 ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">No active sessions found.</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 py-6 text-center">{t('identityPolicies.noActiveSessions')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">User</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">IP</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Created</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Last Used</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Risk Flags</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('auditLog.user')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('myRequests.ipType')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('privacyConsentReport.createdColumn')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('identityPolicies.lastUsed')}</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">{t('identityPolicies.riskFlags')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -240,7 +242,7 @@ export default function IdentityPoliciesPage() {
                         : 'hover:bg-gray-50 dark:hover:bg-gray-750'}
                     >
                       <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                        {s.username || `User ${s.userId}`}
+                        {s.username || t('identityPolicies.userFallback', { id: s.userId })}
                       </td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300 font-mono text-xs">
                         {s.ipAddress || '—'}
