@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.29
+
+### Fixed
+- **security: bump brace-expansion 5.0.6 → 5.0.7** (dev dependency, `frontend/`): addresses a flagged high-severity advisory upstream.
+
 ## v1.34.28
 
 ### Fixed
