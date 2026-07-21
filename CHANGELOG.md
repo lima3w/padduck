@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.28
+
+### Fixed
+- **security: bump axios 1.17.0 → 1.18.0** in `frontend/`: hardens redirect handling (no longer leaks caller-specified auth headers to a different origin on cross-origin redirects) and rejects malformed `http(s):` URLs missing `//`.
+
 ## v1.34.27
 
 ### Added
