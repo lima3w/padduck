@@ -71,3 +71,107 @@ func TestRequireBearerAuth_WithBearerHeader_Passes(t *testing.T) {
 	// Middleware passes; handler returns 200
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 }
+
+// ---------------------------------------------------------------------------
+// GrafanaHealth / GrafanaSearch / GrafanaQuery — auth enforcement.
+//
+// All three are requirePerm-gated, so success paths (including
+// GrafanaQuery's known-target branches, which touch a nil Identity
+// service) are only reachable by a permitted user — which requires a live
+// repo (see plan). Only the auth guard branches are testable here without
+// a DB. buildGrafanaTable's "unknown target" default case has no service
+// dependency and is tested directly below.
+// ---------------------------------------------------------------------------
+
+func TestGrafanaHealth_NoUser_Returns401(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Get("/grafana/", h.GrafanaHealth)
+
+	req := httptest.NewRequest("GET", "/grafana/", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGrafanaHealth_NoPermission_Returns403(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Get("/grafana/", func(c *fiber.Ctx) error {
+		c.Locals("user", permUser())
+		return h.GrafanaHealth(c)
+	})
+
+	req := httptest.NewRequest("GET", "/grafana/", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGrafanaSearch_NoUser_Returns401(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Post("/grafana/search", h.GrafanaSearch)
+
+	req := httptest.NewRequest("POST", "/grafana/search", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGrafanaSearch_NoPermission_Returns403(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Post("/grafana/search", func(c *fiber.Ctx) error {
+		c.Locals("user", permUser())
+		return h.GrafanaSearch(c)
+	})
+
+	req := httptest.NewRequest("POST", "/grafana/search", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestGrafanaQuery_NoUser_Returns401(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Post("/grafana/query", h.GrafanaQuery)
+
+	req := httptest.NewRequest("POST", "/grafana/query", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestGrafanaQuery_NoPermission_Returns403(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Post("/grafana/query", func(c *fiber.Ctx) error {
+		c.Locals("user", permUser())
+		return h.GrafanaQuery(c)
+	})
+
+	req := httptest.NewRequest("POST", "/grafana/query", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusForbidden, resp.StatusCode)
+}
+
+func TestBuildGrafanaTable_UnknownTarget_ReturnsEmptyTable(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Get("/x", func(c *fiber.Ctx) error {
+		resp, err := h.buildGrafanaTable(c, "not-a-real-metric")
+		assert.NoError(t, err)
+		assert.Equal(t, "table", resp.Type)
+		assert.Equal(t, []grafanaColumn{}, resp.Columns)
+		assert.Equal(t, [][]interface{}{}, resp.Rows)
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	req := httptest.NewRequest("GET", "/x", nil)
+	resp, err := app.Test(req)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+}

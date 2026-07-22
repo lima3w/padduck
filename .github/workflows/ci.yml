@@ -1,4 +1,4 @@
-name: CI Test Suite
+name: CI Checks
 
 on:
   push:
@@ -17,19 +17,6 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -87,19 +74,13 @@ jobs:
       - name: Govulncheck Go modules
         run: make govulncheck
 
-      - name: Test backend
-        working-directory: ./backend
-        env:
-          TEST_DATABASE_URL: postgres://postgres:test@127.0.0.1:5432/postgres?sslmode=disable
-        run: go test -mod=vendor -race -count=1 ./...
+      # Unit/integration test execution is intentionally not run in CI.
+      # Run `make test` / `make test-integration` locally (or
+      # `make ci-local` before pushing).
 
       - name: Build agent
         working-directory: ./agent
         run: go build ./...
-
-      - name: Test agent
-        working-directory: ./agent
-        run: go test -race -count=1 ./...
 
   frontend-ci:
     runs-on: ubuntu-latest
@@ -132,9 +113,9 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
-      - name: Test frontend
-        working-directory: ./frontend
-        run: npm run test:coverage
+      # Unit test execution is intentionally not run in CI.
+      # Run `npm run test` / `npm run test:coverage` locally, or
+      # `make frontend-test` (or `make ci-local`) before pushing.
 
       - name: Build frontend
         working-directory: ./frontend

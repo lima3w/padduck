@@ -13,7 +13,7 @@ GOVULNCHECK_VERSION ?= v1.3.0
 GOVULNCHECK_MIN_GO ?= go1.26.5
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
-## ci-local: run all checks that must pass before pushing (mirrors GitHub CI)
+## ci-local: run all checks that must pass before pushing (GitHub CI checks, plus tests, which CI no longer runs)
 ci-local: check-migrations check-openapi-sync mod-verify vet staticcheck gosec govulncheck test frontend-install frontend-audit frontend-lint frontend-test frontend-build
 	@echo "✓ ci-local passed"
 
