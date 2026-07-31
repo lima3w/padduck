@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { getNetwork, getSubnetsPaginated, getSubnetTree } from '../api/ipam'
 import { getNameservers } from '../api/dns'

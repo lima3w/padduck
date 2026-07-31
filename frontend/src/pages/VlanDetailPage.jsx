@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import ChangeHistory from '../components/ChangeHistory'
 import ObjectRelationshipsPanel from '../components/ObjectRelationshipsPanel'

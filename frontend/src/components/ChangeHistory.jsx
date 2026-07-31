@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 function formatRelativeTime(isoString, t) {
   const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000)

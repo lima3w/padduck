@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router'
 import SubnetsPage from '../pages/SubnetsPage'
 
 vi.mock('../api/admin', () => ({

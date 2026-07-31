@@ -1,6 +1,6 @@
 import { useAuth } from '../hooks/useAuth'
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import UserMenu from './UserMenu'
 import { api } from '../api/client'

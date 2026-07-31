@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { approveUser, getAdminConfig, listPendingApprovals, rejectUser, updateAdminConfig } from '../../api/admin'
 import { CONFIG_KEYS_BY_TAB } from './settingsShared'

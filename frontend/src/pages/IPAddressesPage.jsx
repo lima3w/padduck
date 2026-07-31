@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { getSubnet, getIPAddressesPaginated, createIPAddress, assignIPAddress, assignIPAddressWithLease, releaseIPAddress, releaseExpiredLease, deleteIPAddress, searchIPAddresses, getTags, updateIPMeta, bulkReleaseIPs, bulkDeleteIPs, pushDHCPReservation, removeDHCPReservation } from '../api/ipam'
 import { getCustomFields } from '../api/admin'

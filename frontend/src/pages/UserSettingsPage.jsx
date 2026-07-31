@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import ProfileTab from './user/ProfileTab'
