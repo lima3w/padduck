@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.34.31
+
+### Fixed
+- **security: fix react-router CSRF bypass (GHSA-qwww-vcr4-c8h2)**: migrated `frontend/` off the discontinued `react-router-dom` package (no v8 release exists for it — the v6/v7 compatibility shim was dropped) to `react-router` 8.3.0 directly. The app only uses `BrowserRouter`/`Routes`/`Route`/hooks, all still exported from the main `react-router` entrypoint in v8, so this was a straight import-path swap across all 55 consumers, no router-pattern migration needed.
+- **security: bump golang.org/x/text 0.38.0 → 0.39.0**: indirect Go dependency (reached via `db/migrations.go` → `sql.OpenDB`), fixes GO-2026-5970, an infinite loop on invalid input.
+
+## v1.34.30
+
+### Changed
+- **chore: remove unused `typescript` devDependency** (`frontend/`): no `.ts`/`.tsx` files, `tsconfig.json`, or lint/build config reference it — it was dead weight.
+- **chore: bump `jsdom` 29 → 30 and `@testing-library/jest-dom` 6 → 7** (dev dependencies, `frontend/`): both compatible with the repo's Node 22 runtime. Added `@testing-library/dom` as an explicit devDependency since jest-dom v7 now requires it as a peer dependency (previously only present transitively via `@testing-library/react`).
+
 ## v1.34.29
 
 ### Fixed

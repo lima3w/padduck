@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import UtilizationTrendsPage from './UtilizationTrendsPage'
 import InactiveIPsPage from './InactiveIPsPage'
