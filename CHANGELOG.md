@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.34.32
+
+### Fixed
+- **security: bump postcss 8.5.15 → 8.5.25** (dev dependency, `frontend/`, pulls in `nanoid` 3.3.12 → 3.3.16): addresses a flagged high-severity advisory upstream.
+
+### Changed
+- **chore: consolidated GitHub Actions bumps**: `actions/checkout` 7.0.0 → 7.0.1, `actions/setup-node` 6.4.0 → 7.0.0 (major, but only removes the unused `always-auth` input — this repo never set it), `docker/login-action` 4.2.0 → 4.4.0, `docker/metadata-action` 6.1.0 → 6.2.0, `softprops/action-gh-release` 3.0.1 → 3.0.2. All pins kept as commit SHAs.
+
 ## v1.34.31
 
 ### Fixed
