@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.34.33
+
+### Fixed
+- **security: Go toolchain 1.26.5 → 1.27.4** (`backend/`, `agent/`, both Dockerfiles, CI): clears the 23 stdlib advisories in GO-2026-6859 and friends (#350).
+- **security: all Go modules bumped to latest**, including `golang.org/x/text` 0.44.0 (#355), `golang.org/x/image` 0.48.0 (#354), `klauspost/compress` 1.20.4 (#353), `andybalholm/brotli` 1.3.0 (#352), `pgx/v5` 5.13.0, `go-jose/v4` 4.1.9, `x/crypto` 0.59.0, `x/net` 0.62.0, `crewjam/saml` 0.6.3, `fasthttp` 1.79.0, and the rest of the dependency tree (backend vendor directory refreshed).
+- **security: all frontend dependencies bumped to latest** (#325–#348): `axios` 1.21.1, `undici` (via vite/vitest/jsdom), `vite` 8.3.8, `vitest` and `@vitest/coverage-v8` 5.1.0, `zod`, `follow-redirects`, `browserslist`, `baseline-browser-mapping`, `nanoid`, `source-map-js`, `brace-expansion`, plus `react` 19.3.1, `react-router` 8.5.1, `i18next` 27.1.3, `react-i18next` 18.0.2, `jsdom` 31.0.1 and the rest. `minimatch` is pinned to `^11.0.8` for `@typescript-eslint/typescript-estree` via an npm override (upstream 8.73.0 is only partially published); `npm audit` reports 0 vulnerabilities.
+- **security: mitigate GO-2026-6909 in `crewjam/saml`** (no upstream fix yet, #351 stays open): SAML responses are now parsed through `parseSAMLResponseSafely`, which converts a library panic (assertion without `<Issuer>`) into an error and rejects any `<NameID>` inside `<Subject>` that is not in the SAML assertion namespace. A missing Subject/NameID is also rejected instead of dereferenced. `make govulncheck` ignores this one ID via `GOVULNCHECK_IGNORE`; remove it once the library ships a fix.
+
+### Changed
+- **chore: Go analysis tools bumped**: staticcheck 0.7.0 → 0.8.2, gosec 2.26.1 → 2.30.0, govulncheck 1.3.0 → 1.9.0. Removed four dead index increments flagged by the new staticcheck (SA4006).
+- **db: connection-string hint** now also triggers on pgx's new libpq-style parse errors (invalid percent-encoding), since pgx 5.13 no longer parses URLs with `net/url` and accepts raw characters like `<` in credentials.
+
 ## v1.34.32
 
 ### Fixed

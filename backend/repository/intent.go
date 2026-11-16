@@ -56,7 +56,6 @@ func (r *Repository) ListIntents(ctx context.Context, orgID *int64, status, reso
 	if resourceType != "" {
 		query += ` AND resource_type = $` + itoa(n)
 		args = append(args, resourceType)
-		n++
 	}
 	query += ` ORDER BY submitted_at DESC`
 

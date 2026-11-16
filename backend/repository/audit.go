@@ -161,7 +161,6 @@ func (r *Repository) CountAuditLogs(ctx context.Context, filter *models.AuditLog
 	if filter.Until != nil {
 		where = append(where, fmt.Sprintf("created_at <= $%d", i))
 		args = append(args, *filter.Until)
-		i++
 	}
 
 	query := `SELECT COUNT(*) FROM audit_logs`

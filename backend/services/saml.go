@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -11,6 +12,7 @@ import (
 	"encoding/pem"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -272,7 +274,7 @@ func (s *SAMLService) ProcessAssertion(ctx context.Context, samlResponse, acsURL
 	// Pass the stored AuthnRequest IDs so the library can validate InResponseTo,
 	// preventing assertion replay attacks.
 	requestIDs := s.pendingRequestIDs()
-	assertion, err := sp.ServiceProvider.ParseXMLResponse(rawXML, requestIDs, *parsedURL)
+	assertion, err := parseSAMLResponseSafely(sp.ServiceProvider, rawXML, requestIDs, *parsedURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid SAML assertion: %w", err)
 	}
@@ -287,6 +289,9 @@ func (s *SAMLService) ProcessAssertion(ctx context.Context, samlResponse, acsURL
 	}
 
 	// Extract NameID as the external identifier
+	if assertion.Subject == nil || assertion.Subject.NameID == nil {
+		return nil, fmt.Errorf("SAML assertion missing NameID")
+	}
 	nameID := assertion.Subject.NameID.Value
 	if nameID == "" {
 		return nil, fmt.Errorf("SAML assertion missing NameID")
@@ -323,4 +328,53 @@ func (s *SAMLService) ProcessAssertion(ctx context.Context, samlResponse, acsURL
 		}
 	}
 	return user, nil
+}
+
+const samlAssertionNS = "urn:oasis:names:tc:SAML:2.0:assertion"
+
+// parseSAMLResponseSafely wraps saml.ServiceProvider.ParseXMLResponse with
+// mitigations for GO-2026-6909 (crewjam/saml, no upstream fix yet): a panic
+// during assertion validation is converted to an error, and responses whose
+// Subject carries a NameID outside the SAML assertion namespace are rejected
+// so Subject.NameID cannot be spoofed. Remove once the library is fixed.
+func parseSAMLResponseSafely(sp saml.ServiceProvider, rawXML []byte, requestIDs []string, acsURL url.URL) (assertion *saml.Assertion, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			assertion = nil
+			err = fmt.Errorf("malformed SAML response: %v", r)
+		}
+	}()
+	if err := rejectForeignNamespaceNameID(rawXML); err != nil {
+		return nil, err
+	}
+	return sp.ParseXMLResponse(rawXML, requestIDs, acsURL)
+}
+
+// rejectForeignNamespaceNameID returns an error if any <Subject> element in
+// the SAML assertion namespace contains a direct <NameID> child that is not in
+// that same namespace.
+func rejectForeignNamespaceNameID(rawXML []byte) error {
+	dec := xml.NewDecoder(bytes.NewReader(rawXML))
+	// Stack of "is this open element an assertion-namespace Subject".
+	var stack []bool
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("invalid SAML response XML: %w", err)
+		}
+		switch t := tok.(type) {
+		case xml.StartElement:
+			if len(stack) > 0 && stack[len(stack)-1] && t.Name.Local == "NameID" && t.Name.Space != samlAssertionNS {
+				return fmt.Errorf("invalid SAML assertion: NameID in unexpected namespace %q", t.Name.Space)
+			}
+			stack = append(stack, t.Name.Local == "Subject" && t.Name.Space == samlAssertionNS)
+		case xml.EndElement:
+			if len(stack) > 0 {
+				stack = stack[:len(stack)-1]
+			}
+		}
+	}
 }

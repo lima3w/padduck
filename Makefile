@@ -7,9 +7,11 @@ GO_BIN := $(shell go env GOPATH)/bin
 STATICCHECK := $(GO_BIN)/staticcheck
 GOSEC := $(GO_BIN)/gosec
 GOVULNCHECK := $(GO_BIN)/govulncheck
-STATICCHECK_VERSION ?= v0.7.0
-GOSEC_VERSION ?= v2.26.1
-GOVULNCHECK_VERSION ?= v1.3.0
+STATICCHECK_VERSION ?= v0.8.2
+GOSEC_VERSION ?= v2.30.0
+GOVULNCHECK_VERSION ?= v1.9.0
+# Space-separated OSV IDs to ignore. GO-2026-6909: crewjam/saml has no upstream fix; mitigated in services/saml.go (parseSAMLResponseSafely). Remove when fixed.
+GOVULNCHECK_IGNORE ?= GO-2026-6909
 GOVULNCHECK_MIN_GO ?= go1.26.5
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 
@@ -107,7 +109,14 @@ govulncheck:
 		exit 1; \
 	fi
 	@echo "→ govulncheck backend"
-	cd $(BACKEND_DIR) && GOFLAGS=-mod=vendor $(GOVULNCHECK) ./...
+	@# Findings listed in GOVULNCHECK_IGNORE are excluded (unfixed upstream, mitigated in code).
+	@out=$$(cd $(BACKEND_DIR) && GOFLAGS=-mod=vendor $(GOVULNCHECK) -format json ./...) || { echo "$$out"; exit 1; }; \
+	ids=$$(echo "$$out" | jq -r --arg ign "$(GOVULNCHECK_IGNORE)" \
+		'select(.finding != null and .finding.trace[0].function != null) | .finding.osv | select(. as $$id | ($$ign | split(" ") | index($$id)) | not)' | sort -u); \
+	if [ -n "$$ids" ]; then \
+		echo "govulncheck: reachable vulnerabilities found:"; echo "$$ids" | sed 's|^|  https://pkg.go.dev/vuln/|'; exit 1; \
+	fi; \
+	echo "govulncheck: no reachable vulnerabilities (ignored: $(GOVULNCHECK_IGNORE))"
 	@echo "→ govulncheck agent"
 	cd agent && $(GOVULNCHECK) ./...
 
