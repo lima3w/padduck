@@ -12,9 +12,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -ldflags="-s -w -X padduck/version.Version=${APP_VERSION} -X padduck/version.Commit=${GIT_COMMIT} -X padduck/version.BuildDate=${BUILD_DATE}" \
     -o app .
 
-FROM alpine:3.22
+FROM alpine:3.24
 RUN addgroup -S app && adduser -S app -G app && \
-    apk add --no-cache su-exec libssl3=3.5.7-r0 libcrypto3=3.5.7-r0
+    apk add --no-cache su-exec libssl3=3.5.9-r0 libcrypto3=3.5.9-r0
 WORKDIR /app
 COPY --from=builder /app/app .
 COPY --from=builder /app/migrations ./migrations

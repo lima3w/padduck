@@ -10,6 +10,7 @@
 
 ### Changed
 - **chore: Node 22 → 26.13.1** (current LTS, "Lithium"): `frontend/Dockerfile` builder image and both `setup-node` steps in CI, pinned to the exact version. All frontend dependencies already support Node 26.
+- **chore: runtime base image `alpine:3.22` → `alpine:3.24`** (backend and agent Dockerfiles) and `libssl3`/`libcrypto3` pins 3.5.7-r0 → 3.5.9-r0: the old pins no longer resolved in the Alpine repos, which broke the e2e image build.
 - **chore: Go analysis tools bumped**: staticcheck 0.7.0 → 0.8.2, gosec 2.26.1 → 2.30.0, govulncheck 1.3.0 → 1.9.0. Removed four dead index increments flagged by the new staticcheck (SA4006).
 - **db: connection-string hint** now also triggers on pgx's new libpq-style parse errors (invalid percent-encoding), since pgx 5.13 no longer parses URLs with `net/url` and accepts raw characters like `<` in credentials.
 
