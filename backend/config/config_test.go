@@ -119,3 +119,10 @@ func TestBuildDatabaseURLUsesPostgresPartsWhenProvided(t *testing.T) {
 
 	assert.Equal(t, "postgres://customuser:secret@otherhost:5433/customdb", buildDatabaseURL())
 }
+
+func TestIsKnownDefaultCredential(t *testing.T) {
+	assert.True(t, isKnownDefaultCredential("padduck", envExamplePlaceholderPassword))
+	assert.True(t, isKnownDefaultCredential("padduck", "CHANGE_ME_STRONG_PASSWORD_HERE"))
+	assert.True(t, isKnownDefaultCredential("padduck", "postgres"))
+	assert.False(t, isKnownDefaultCredential("padduck", "k3J9x-a-real-generated-secret"))
+}

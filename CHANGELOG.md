@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.34.35
+
+### Fixed
+- **fix: creating a scan job for a CIDR that isn't an existing subnet now offers to create it or cancel** (#283): instead of surfacing the raw `subnet not found for CIDR` error, the New Scan Job modal prompts to create the subnet (in a network the user picks, via the existing subnet API) and then retries the scan job, or to cancel and back out of the modal. If there are no networks yet, the prompt says so and creation is disabled.
+- **fix: the `.env.example` placeholder `POSTGRES_PASSWORD` is now rejected** (#275): the backend's existing production guard against known-default database credentials also refuses `change_me_strong_password_here`, so an uncustomized `.env` can no longer silently deploy with a well-known password. The error explains the fix, including the `ALTER USER` step if the database volume was already initialized. **Upgrade note:** installs still running with the placeholder must set a real password (and change it in PostgreSQL). `make validate-env` rejects it too.
+
+### Changed
+- **docs: `.env.example` separates the one required variable** (`POSTGRES_PASSWORD`) into a bannered "REQUIRED — YOU MUST CHANGE THIS" block, with the optional variables under their own header (#275).
+
 ## v1.34.34
 
 ### Fixed

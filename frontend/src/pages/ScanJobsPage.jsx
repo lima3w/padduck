@@ -5,6 +5,18 @@ import Modal from '../components/Modal'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
+import { getNetworks, createSubnet } from '../api/ipam'
+
+// Prefix of the backend's 400 message when a scan job targets an unknown CIDR.
+const SUBNET_NOT_FOUND_PREFIX = 'subnet not found for CIDR'
+
+// Splits "10.0.0.0/24" into { address, prefix }; returns null if malformed.
+function parseCIDR(value) {
+  const [address, prefix, ...rest] = String(value || '').trim().split('/')
+  const n = Number(prefix)
+  if (!address || rest.length > 0 || prefix === undefined || prefix === '' || !Number.isInteger(n) || n < 0 || n > 128) return null
+  return { address, prefix: n, cidr: `${address}/${n}` }
+}
 
 const SCAN_TYPE_LABEL_KEYS = { ping: 'scanTypePing', snmp: 'scanTypeSnmp', 'ping+snmp': 'scanTypePingSnmp' }
 
@@ -78,6 +90,7 @@ export default function ScanJobsPage() {
   const [createModal, setCreateModal] = useState(false)
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM)
   const [creating, setCreating] = useState(false)
+  const [missingSubnet, setMissingSubnet] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [hideDown, setHideDown] = useState(false)
   const [goneIPs, setGoneIPs] = useState(new Set())
@@ -234,30 +247,75 @@ export default function ScanJobsPage() {
     }
   }
 
+  async function postScanJob() {
+    await api.post('/admin/scan-jobs', {
+      name: createForm.name,
+      subnet: createForm.subnet,
+      schedule_cron: createForm.schedule_cron || null,
+      is_active: createForm.is_active,
+      scan_type: createForm.scan_type,
+      ping_concurrency: createForm.ping_concurrency,
+      notify_on_change: createForm.notify_on_change,
+      auto_add_ips: createForm.auto_add_ips,
+      discover_dns: createForm.discover_dns,
+      dns_overwrite: createForm.dns_overwrite,
+    })
+    setCreateModal(false)
+    setCreateForm(EMPTY_CREATE_FORM)
+    setMissingSubnet(null)
+    await loadJobs()
+  }
+
   async function handleCreate(e) {
     e.preventDefault()
     setCreating(true)
     try {
-      await api.post('/admin/scan-jobs', {
-        name: createForm.name,
-        subnet: createForm.subnet,
-        schedule_cron: createForm.schedule_cron || null,
-        is_active: createForm.is_active,
-        scan_type: createForm.scan_type,
-        ping_concurrency: createForm.ping_concurrency,
-        notify_on_change: createForm.notify_on_change,
-        auto_add_ips: createForm.auto_add_ips,
-        discover_dns: createForm.discover_dns,
-        dns_overwrite: createForm.dns_overwrite,
-      })
-      setCreateModal(false)
-      setCreateForm(EMPTY_CREATE_FORM)
-      await loadJobs()
+      await postScanJob()
     } catch (err) {
-      setError(err.response?.data?.error || t('scanJobs.createFailed'))
+      const message = err.response?.data?.error
+      const cidr = parseCIDR(createForm.subnet)
+      if (err.response?.status === 400 && cidr && typeof message === 'string' && message.startsWith(SUBNET_NOT_FOUND_PREFIX)) {
+        await promptCreateSubnet(cidr)
+      } else {
+        setError(message || t('scanJobs.createFailed'))
+      }
     } finally {
       setCreating(false)
     }
+  }
+
+  // The CIDR isn't a known subnet: offer to create it (in a network the user
+  // picks) or cancel, instead of surfacing the raw backend error.
+  async function promptCreateSubnet(cidr) {
+    let networks = []
+    try {
+      networks = (await getNetworks()).data || []
+    } catch {
+      // Fall through with no networks; the prompt explains what to do.
+    }
+    setMissingSubnet({ ...cidr, networks, networkId: networks[0]?.id ?? '', error: '', saving: false })
+  }
+
+  async function handleCreateMissingSubnet() {
+    const m = missingSubnet
+    setMissingSubnet(s => ({ ...s, saving: true, error: '' }))
+    try {
+      await createSubnet(m.networkId, { network_address: m.address, prefix_length: m.prefix })
+    } catch (err) {
+      setMissingSubnet(s => ({ ...s, saving: false, error: err.response?.data?.error || t('scanJobs.subnetNotFoundCreateFailed') }))
+      return
+    }
+    try {
+      await postScanJob()
+    } catch (err) {
+      setMissingSubnet(null)
+      setError(err.response?.data?.error || t('scanJobs.createFailed'))
+    }
+  }
+
+  function handleCancelMissingSubnet() {
+    setMissingSubnet(null)
+    setCreateModal(false)
   }
 
   async function handleDelete(jobId) {
@@ -810,6 +868,46 @@ export default function ScanJobsPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Unknown CIDR: offer to create the subnet or cancel */}
+      {missingSubnet && (
+        <Modal title={t('scanJobs.subnetNotFoundTitle')} onClose={handleCancelMissingSubnet}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">{t('scanJobs.subnetNotFoundBody', { cidr: missingSubnet.cidr })}</p>
+            {missingSubnet.networks.length === 0 ? (
+              <p className="text-sm text-amber-700">{t('scanJobs.subnetNotFoundNoNetworks')}</p>
+            ) : (
+              <div>
+                <label htmlFor="missing-subnet-network" className="block text-sm font-medium text-gray-700 mb-1">{t('scanJobs.subnetNotFoundNetworkLabel')}</label>
+                <select
+                  id="missing-subnet-network"
+                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={missingSubnet.networkId}
+                  onChange={e => setMissingSubnet(s => ({ ...s, networkId: e.target.value }))}
+                >
+                  {missingSubnet.networks.map(n => (
+                    <option key={n.id} value={n.id}>{n.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {missingSubnet.error && <p role="alert" className="text-sm text-red-600">{missingSubnet.error}</p>}
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={handleCancelMissingSubnet} className="px-4 py-2 border rounded text-sm hover:bg-gray-50">
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateMissingSubnet}
+                disabled={missingSubnet.saving || missingSubnet.networks.length === 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                {missingSubnet.saving ? t('scanJobs.subnetNotFoundCreating') : t('scanJobs.subnetNotFoundCreate')}
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

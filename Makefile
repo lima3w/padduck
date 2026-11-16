@@ -167,6 +167,10 @@ validate-env:
 		echo "ERROR: the following required env vars are not set:$$missing"; \
 		echo "       Copy .env.example to .env and fill in the required values."; \
 		exit 1; \
+	fi; \
+	if [ "$$POSTGRES_PASSWORD" = "change_me_strong_password_here" ]; then \
+		echo "ERROR: POSTGRES_PASSWORD is still the .env.example placeholder — set a strong password."; \
+		exit 1; \
 	fi
 
 ## help: list available targets
