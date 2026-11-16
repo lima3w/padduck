@@ -18,7 +18,6 @@ Padduck reads configuration from **environment variables** at startup. When usin
 | `POSTGRES_PASSWORD` | `padduck` | **Change before any shared deployment** |
 | `POSTGRES_DB` | `padduck` | Database name |
 | `DATABASE_URL` | *(derived)* | Full PostgreSQL connection string; overrides the three above |
-| `SERVER_PORT` | `8080` | Port the backend listens on |
 | `ENVIRONMENT` | `production` | `production` (JSON logs) or `development` (text logs) |
 | `MFA_ENCRYPTION_KEY` | *(empty)* | **Required for production.** 64 hex chars. `openssl rand -hex 32` |
 | `ADMIN_PASSWORD` | *(auto-generated)* | Initial admin password (auto-generated if empty) |

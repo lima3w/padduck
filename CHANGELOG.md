@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.34
+
+### Fixed
+- **fix: remove `SERVER_PORT` and `FRONTEND_INTERNAL_PORT` as user-facing overrides** (#273, #274): `frontend/nginx.conf` hardcodes `backend:8080` and `listen 3000` at build time, so changing either variable silently broke the stack (frontend unhealthy, `/api/` 502). The backend (8080) and frontend (3000) container-internal ports are now fixed in `docker-compose.yml` (the backend is never published to the host, and `FRONTEND_PORT` already controls the host-side port); the variables were removed from `.env.example` and the configuration docs. **Upgrade note:** if your `.env` sets `SERVER_PORT` or `FRONTEND_INTERNAL_PORT` to a non-default value, remove it; use `FRONTEND_PORT` to change the published port.
+
 ## v1.34.33
 
 ### Fixed
