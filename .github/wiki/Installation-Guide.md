@@ -70,7 +70,6 @@ Open **http://localhost:3000** and log in as `admin`.
 | `POSTGRES_PASSWORD` | `padduck` | **Change before any shared deployment** |
 | `POSTGRES_DB` | `padduck` | Database name |
 | `DATABASE_URL` | *(derived)* | Full connection string; overrides the three variables above |
-| `SERVER_PORT` | `8080` | Backend port inside container |
 | `ENVIRONMENT` | `production` | `production` (JSON logs) or `development` (text logs) |
 | `MFA_ENCRYPTION_KEY` | *(empty)* | **Recommended for production** — 64 hex characters. If unset, the backend auto-generates one and persists it to a file, so it survives restarts but not a full data wipe |
 | `ADMIN_PASSWORD` | *(auto-generated)* | Leave empty to auto-generate on first boot |

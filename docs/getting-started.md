@@ -87,7 +87,6 @@ All settings are read from environment variables. Docker Compose interpolates th
 | `POSTGRES_PASSWORD` | **required** | Must be set in `.env` before first run; the stack will not start without it |
 | `POSTGRES_DB` | `padduck` | Database name |
 | `DATABASE_URL` | *(derived)* | Full connection string; overrides the three variables above when set |
-| `SERVER_PORT` | `8080` | Port the backend listens on inside the container |
 | `ENVIRONMENT` | `production` | Controls the log format: `production` emits JSON logs, anything else emits text logs |
 | `LOG_LEVEL` | `warn` | Log verbosity: `warn` (warnings and errors only), `info` (adds operational logging such as scan job lifecycle), `debug` (full verbosity), or `error`. Unknown values fall back to `warn` with a startup notice |
 | `MFA_ENCRYPTION_KEY` | generated if unset | Optional override for the backend-managed persistent key. Must be 64 hex characters. Generate with `openssl rand -hex 32` |
