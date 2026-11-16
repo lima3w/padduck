@@ -164,8 +164,25 @@ func isWeakKey(b []byte) bool {
 	return true
 }
 
-// warnWeakDBCredentials logs a fatal error when the DATABASE_URL contains
-// the known-default credentials shipped in the example compose file.
+// envExamplePlaceholderPassword is the POSTGRES_PASSWORD value shipped in
+// .env.example. Compose only checks that the variable is set, so an
+// uncustomized copy would otherwise deploy with this well-known password.
+const envExamplePlaceholderPassword = "change_me_strong_password_here"
+
+// isKnownDefaultCredential reports whether the password is a well-known weak
+// default (including the .env.example placeholder) or equals the username.
+func isKnownDefaultCredential(user, password string) bool {
+	knownDefaults := []string{"ipam", "postgres", "password", "secret", "changeme", "demo", envExamplePlaceholderPassword}
+	for _, weak := range knownDefaults {
+		if strings.EqualFold(password, weak) || strings.EqualFold(user, weak) && password == user {
+			return true
+		}
+	}
+	return false
+}
+
+// warnWeakDBCredentials logs a fatal error when the database URL contains
+// known-default credentials, including the .env.example placeholder.
 func warnWeakDBCredentials(rawURL string) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -176,13 +193,10 @@ func warnWeakDBCredentials(rawURL string) {
 	if !hasPassword {
 		return
 	}
-	knownDefaults := []string{"ipam", "postgres", "password", "secret", "changeme", "demo"}
-	for _, weak := range knownDefaults {
-		if strings.EqualFold(password, weak) || strings.EqualFold(user, weak) && password == user {
-			slog.Error("DATABASE_URL contains known-default credentials — set strong credentials before running in production",
-				"user", user)
-			os.Exit(1)
-		}
+	if isKnownDefaultCredential(user, password) {
+		slog.Error("database credentials are a known default or the .env.example placeholder — set a strong POSTGRES_PASSWORD (generate one with `openssl rand -base64 32`) before running in production. If the database volume was already initialized with the old password, also change it in PostgreSQL (ALTER USER)",
+			"user", user)
+		os.Exit(1)
 	}
 }
 
