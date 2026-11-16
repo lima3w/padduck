@@ -9,6 +9,7 @@
 - **security: mitigate GO-2026-6909 in `crewjam/saml`** (no upstream fix yet, #351 stays open): SAML responses are now parsed through `parseSAMLResponseSafely`, which converts a library panic (assertion without `<Issuer>`) into an error and rejects any `<NameID>` inside `<Subject>` that is not in the SAML assertion namespace. A missing Subject/NameID is also rejected instead of dereferenced. `make govulncheck` ignores this one ID via `GOVULNCHECK_IGNORE`; remove it once the library ships a fix.
 
 ### Changed
+- **chore: Node 22 → 26.13.1** (current LTS, "Lithium"): `frontend/Dockerfile` builder image and both `setup-node` steps in CI, pinned to the exact version. All frontend dependencies already support Node 26.
 - **chore: Go analysis tools bumped**: staticcheck 0.7.0 → 0.8.2, gosec 2.26.1 → 2.30.0, govulncheck 1.3.0 → 1.9.0. Removed four dead index increments flagged by the new staticcheck (SA4006).
 - **db: connection-string hint** now also triggers on pgx's new libpq-style parse errors (invalid percent-encoding), since pgx 5.13 no longer parses URLs with `net/url` and accepts raw characters like `<` in credentials.
 
