@@ -34,10 +34,10 @@ func TestConnect(t *testing.T) {
 func TestConnectSurfacesHintForUnescapedUserinfo(t *testing.T) {
 	ctx := context.Background()
 
-	// '<' is not a valid userinfo character per net/url and isn't otherwise
-	// a URL delimiter, so this reliably fails with "invalid userinfo" during
-	// ParseConfig rather than falling through to a real connection attempt.
-	_, err := Connect(ctx, "postgres://padduck:p<ss@db:5432/padduck")
+	// A stray '%' that isn't a valid percent-escape is rejected by pgx's URL
+	// parser during ParseConfig, so this fails fast with the hint rather than
+	// falling through to a real connection attempt.
+	_, err := Connect(ctx, "postgres://padduck:p%zzss@db:5432/padduck")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse connection string")
 	assert.Contains(t, err.Error(), "percent-encode it")

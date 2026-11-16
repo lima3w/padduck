@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:22.22.3-alpine AS builder
+FROM node:26.13.1-alpine AS builder
 WORKDIR /app
 RUN npm install -g npm@11.16.0
 COPY package*.json ./

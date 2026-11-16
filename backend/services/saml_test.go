@@ -1,8 +1,10 @@
 package services
 
 import (
+	"net/url"
 	"testing"
 
+	"github.com/crewjam/saml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,4 +73,26 @@ func TestSAMLService_ProcessAssertion_NilConfig(t *testing.T) {
 	svc := &SAMLService{repository: nil, encryptionKey: key}
 	// Without a DB we cannot call ProcessAssertion; assert the struct is valid.
 	assert.NotNil(t, svc)
+}
+
+func TestRejectForeignNamespaceNameID(t *testing.T) {
+	ok := `<a:Assertion xmlns:a="urn:oasis:names:tc:SAML:2.0:assertion"><a:Subject><a:NameID>u</a:NameID></a:Subject></a:Assertion>`
+	assert.NoError(t, rejectForeignNamespaceNameID([]byte(ok)))
+
+	bad := `<a:Assertion xmlns:a="urn:oasis:names:tc:SAML:2.0:assertion"><a:Subject><NameID xmlns="urn:evil">admin</NameID></a:Subject></a:Assertion>`
+	assert.Error(t, rejectForeignNamespaceNameID([]byte(bad)))
+
+	// A foreign NameID outside of a Subject is not our concern.
+	other := `<a:Assertion xmlns:a="urn:oasis:names:tc:SAML:2.0:assertion"><x:Foo xmlns:x="urn:x"><x:NameID/></x:Foo></a:Assertion>`
+	assert.NoError(t, rejectForeignNamespaceNameID([]byte(other)))
+
+	assert.Error(t, rejectForeignNamespaceNameID([]byte(`<a><b></a>`)))
+}
+
+func TestParseSAMLResponseSafely_RecoversFromPanic(t *testing.T) {
+	// An empty ServiceProvider with garbage input must return an error, never panic.
+	assert.NotPanics(t, func() {
+		_, err := parseSAMLResponseSafely(saml.ServiceProvider{}, []byte("<Response/>"), nil, url.URL{})
+		assert.Error(t, err)
+	})
 }

@@ -79,7 +79,7 @@ func (x *GoSNMP) validateParametersV3() error {
 func (packet *SnmpPacket) authenticate(msg []byte) ([]byte, error) {
 	defer func() {
 		if e := recover(); e != nil {
-			var buf = make([]byte, 8192)
+			buf := make([]byte, 8192)
 			runtime.Stack(buf, true)
 			fmt.Printf("[v3::authenticate]recover: %v. Stack=%v\n", e, string(buf))
 		}
@@ -97,6 +97,31 @@ func (packet *SnmpPacket) authenticate(msg []byte) ([]byte, error) {
 	return msg, nil
 }
 
+// isDiscoveryProbe reports whether the header of an incoming packet has the
+// special settings of an Engine Discovery request (RFC3414 section 4):
+// reportable, noAuthNoPriv, an empty username and an empty authoritative
+// engine ID. The PDU type and the empty variable binding list can only be
+// checked once the payload is parsed.
+func isDiscoveryProbe(result *SnmpPacket) bool {
+	msgSecParams, ok := result.SecurityParameters.(*UsmSecurityParameters)
+	return ok &&
+		result.MsgFlags&Reportable != 0 &&
+		result.MsgFlags&AuthPriv == NoAuthNoPriv &&
+		msgSecParams.UserName == "" &&
+		msgSecParams.AuthoritativeEngineID == ""
+}
+
+// isEngineDiscoveryRequest reports whether a fully parsed packet is an
+// unauthenticated Engine Discovery request, which must never be delivered
+// as a trap.
+func isEngineDiscoveryRequest(result *SnmpPacket) bool {
+	return result.Version == Version3 &&
+		result.SecurityModel == UserSecurityModel &&
+		isDiscoveryProbe(result) &&
+		result.PDUType == GetRequest &&
+		len(result.Variables) == 0
+}
+
 func (x *GoSNMP) testAuthentication(packet []byte, result *SnmpPacket, useResponseSecurityParameters bool) error {
 	if x.Version != Version3 {
 		return fmt.Errorf("testAuthentication called with non Version3 connection")
@@ -104,17 +129,6 @@ func (x *GoSNMP) testAuthentication(packet []byte, result *SnmpPacket, useRespon
 	msgFlags := x.MsgFlags
 	if useResponseSecurityParameters {
 		msgFlags = result.MsgFlags
-	}
-
-	// Special case for Engine Discovery (RFC3414 section 4) where we should
-	// skip authentication for the discovery packet with the special settings
-	// described in the RFC. The discovery package requires
-	msgSecParams := result.SecurityParameters.(*UsmSecurityParameters)
-	if msgFlags&NoAuthNoPriv == 0 && // NoAuthNoPriv method
-		msgSecParams.UserName == "" && // empty username
-		msgSecParams.AuthoritativeEngineID == "" && // empty authoritative engine ID
-		len(result.Variables) == 0 { // empty variable binding list
-		return nil
 	}
 
 	if msgFlags&AuthNoPriv > 0 {
@@ -161,9 +175,25 @@ func (x *GoSNMP) negotiateInitialSecurityParameters(packetOut *SnmpPacket) error
 	if discoveryPacket := packetOut.SecurityParameters.discoveryRequired(); discoveryPacket != nil {
 		discoveryPacket.ContextName = x.ContextName
 		result, err := x.sendOneRequest(discoveryPacket, true)
-
 		if err != nil {
-			return err
+			// Some devices (e.g. Dell EMC switches) respond to discovery probes with
+			// usmStatsUnknownUserNames instead of usmStatsUnknownEngineIDs, yet still
+			// include valid engine parameters. Treat it as a valid discovery response.
+			if !errors.Is(err, ErrUnknownUsername) || result == nil {
+				return err
+			}
+			usp, ok := result.SecurityParameters.(*UsmSecurityParameters)
+			if !ok || usp.AuthoritativeEngineID == "" {
+				return err
+			}
+		}
+
+		// The discovery Report is unauthenticated. Without a valid engine ID
+		// (RFC3411 section 5) the client would keep trusting the msgFlags
+		// of later responses.
+		if usp, ok := result.SecurityParameters.(*UsmSecurityParameters); !ok ||
+			len(usp.AuthoritativeEngineID) < 5 || len(usp.AuthoritativeEngineID) > 32 {
+			return errors.New("engine discovery response has an invalid authoritative engine ID")
 		}
 
 		err = x.storeSecurityParameters(result)
@@ -231,7 +261,7 @@ func (packet *SnmpPacket) marshalV3(buf *bytes.Buffer) (*bytes.Buffer, error) {
 	if err != nil {
 		return emptyBuffer, err
 	}
-	buf.Write([]byte{byte(Sequence), byte(len(header))})
+	buf.Write([]byte{byte(Sequence), byte(len(header))}) //nolint:gosec
 	packet.Logger.Printf("Marshal V3 Header len=%d. Eaten Last 4 Bytes=%v", len(header), header[len(header)-4:])
 	buf.Write(header)
 
@@ -281,7 +311,7 @@ func (packet *SnmpPacket) marshalV3Header() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	buf.Write([]byte{byte(Integer), byte(len(maxmsgsize))})
+	buf.Write([]byte{byte(Integer), byte(len(maxmsgsize))}) //nolint:gosec
 	buf.Write(maxmsgsize)
 	packet.Logger.Printf("MarshalV3Header maxmsgsize len=%v", buf.Len()-oldLen)
 	oldLen = buf.Len()
@@ -354,7 +384,8 @@ func (packet *SnmpPacket) prepareV3ScopedPDU() ([]byte, error) {
 
 func (x *GoSNMP) unmarshalV3Header(packet []byte,
 	cursor int,
-	response *SnmpPacket) (int, error) {
+	response *SnmpPacket,
+) (int, error) {
 	if PDUType(packet[cursor]) != Sequence {
 		return 0, fmt.Errorf("invalid SNMPV3 Header")
 	}
@@ -450,7 +481,7 @@ func (x *GoSNMP) unmarshalV3Header(packet []byte,
 
 func (x *GoSNMP) decryptPacket(packet []byte, cursor int, response *SnmpPacket) ([]byte, int, error) {
 	var err error
-	var decrypted = false
+	decrypted := false
 
 	if cursor >= len(packet) {
 		return nil, 0, errors.New("error parsing SNMPV3: truncated packet")

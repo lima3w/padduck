@@ -52,7 +52,6 @@ func (r *Repository) ListDriftItems(ctx context.Context, orgID *int64, status st
 	if orgID != nil {
 		query += ` AND organization_id = $` + itoa(n)
 		args = append(args, *orgID)
-		n++
 	}
 	query += ` ORDER BY created_at DESC`
 

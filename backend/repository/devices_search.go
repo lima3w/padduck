@@ -44,7 +44,6 @@ func (r *Repository) SearchDevices(ctx context.Context, f *DeviceSearchFilter) (
 	if f.IsOnline != nil {
 		where = append(where, fmt.Sprintf("d.is_online = $%d", n))
 		args = append(args, *f.IsOnline)
-		n++
 	}
 
 	whereClause := ""

@@ -26,7 +26,7 @@ var (
 func Connect(ctx context.Context, connString string) (*DB, error) {
 	config, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		if strings.Contains(err.Error(), "invalid userinfo") {
+		if msg := err.Error(); strings.Contains(msg, "invalid userinfo") || strings.Contains(msg, "percent-encoded") {
 			return nil, fmt.Errorf("failed to parse connection string: %w — if DATABASE_URL was hand-built, the username or password likely contains an un-encoded special character (e.g. @ : / ? # %%); percent-encode it, or unset DATABASE_URL and set POSTGRES_PASSWORD instead so the app builds the URL for you", err)
 		}
 		return nil, fmt.Errorf("failed to parse connection string: %w", err)
