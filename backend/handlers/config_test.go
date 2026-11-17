@@ -118,6 +118,7 @@ var allFrontendConfigKeys = []string{
 	"technitium_default_zone",
 	"technitium_ptr_zones",
 	"technitium_skip_tls",
+	"technitium_dhcp_sync_interval_minutes",
 	// scanner tab
 	"scanner_resolve_hostnames",
 	"scanner_snmp_community",

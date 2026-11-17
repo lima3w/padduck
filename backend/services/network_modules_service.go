@@ -233,6 +233,11 @@ func (s *NetworkModulesService) ListDHCPLeases(ctx context.Context, serverID int
 	return s.repo.ListDHCPLeases(ctx, serverID)
 }
 
+// ListDHCPLeasesFiltered lists leases narrowed by server, subnet, IP and/or VLAN.
+func (s *NetworkModulesService) ListDHCPLeasesFiltered(ctx context.Context, f repository.DHCPLeaseFilter) ([]*models.DHCPLease, error) {
+	return s.repo.ListDHCPLeasesFiltered(ctx, f)
+}
+
 func (s *NetworkModulesService) CreateDHCPLease(ctx context.Context, req *repository.DHCPLeaseParams) (*models.DHCPLease, error) {
 	if err := validateDHCPLease(req); err != nil {
 		return nil, err

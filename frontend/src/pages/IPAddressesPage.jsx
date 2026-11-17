@@ -19,6 +19,7 @@ import DelegationsTab from './ip/DelegationsTab'
 import PortBadges from './ip/PortBadges'
 import SortTh from './ip/SortTh'
 import UtilisationHistorySection from './ip/UtilisationHistorySection'
+import DHCPLeasesSection from './ip/DHCPLeasesSection'
 
 const DEFAULT_LIMIT = 25
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
@@ -953,6 +954,7 @@ export default function IPAddressesPage() {
           onChange={handlePageChange}
         />
       )}
+      <DHCPLeasesSection subnetId={subnetID} />
       <UtilisationHistorySection subnetId={subnetID} />
       </>}
 
@@ -1253,6 +1255,9 @@ export default function IPAddressesPage() {
                 </div>
               </div>
             )}
+            <div className="border-t pt-3 empty:hidden">
+              <DHCPLeasesSection ipId={modal.meta.id} compact />
+            </div>
             {isAdmin && (
               <div className="border-t pt-3">
                 <ObservedStatePanel resourceType="ip_address" resourceId={modal.meta.id} />
