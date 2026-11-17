@@ -4188,6 +4188,21 @@ paths:
           in: query
           schema:
             type: integer
+        - name: subnet_id
+          in: query
+          description: Only leases linked to this subnet
+          schema:
+            type: integer
+        - name: ip_id
+          in: query
+          description: Only leases linked to this IP address record
+          schema:
+            type: integer
+        - name: vlan_id
+          in: query
+          description: Only leases on this VLAN
+          schema:
+            type: integer
       responses:
         "200":
           $ref: "#/components/responses/OKArray"

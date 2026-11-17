@@ -295,7 +295,12 @@ func (h *Handler) ListDHCPLeases(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2DHCPList) {
 		return nil
 	}
-	items, err := h.ops.NetworkModules.ListDHCPLeases(c.Context(), int64(c.QueryInt("server_id", 0)))
+	items, err := h.ops.NetworkModules.ListDHCPLeasesFiltered(c.Context(), repository.DHCPLeaseFilter{
+		ServerID: int64(c.QueryInt("server_id", 0)),
+		SubnetID: int64(c.QueryInt("subnet_id", 0)),
+		IPID:     int64(c.QueryInt("ip_id", 0)),
+		VLANID:   int64(c.QueryInt("vlan_id", 0)),
+	})
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
 	}

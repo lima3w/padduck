@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"padduck/models"
@@ -30,6 +31,17 @@ type DHCPServerParams struct {
 	LocationID  *int64 `json:"location_id"`
 	Description string `json:"description"`
 	Status      string `json:"status"`
+	VLANID      *int64 `json:"vlan_id"`
+	// AutoSync is optional: nil keeps the current value (true on create).
+	AutoSync *bool `json:"auto_sync"`
+}
+
+// DHCPLeaseFilter narrows ListDHCPLeasesFiltered. Zero values mean "any".
+type DHCPLeaseFilter struct {
+	ServerID int64
+	SubnetID int64
+	IPID     int64
+	VLANID   int64
 }
 
 type DHCPLeaseParams struct {
@@ -40,6 +52,7 @@ type DHCPLeaseParams struct {
 	SubnetID   *int64  `json:"subnet_id"`
 	IPID       *int64  `json:"ip_id"`
 	CustomerID *int64  `json:"customer_id"`
+	VLANID     *int64  `json:"vlan_id"`
 	StartsAt   *string `json:"starts_at"`
 	EndsAt     *string `json:"ends_at"`
 	State      string  `json:"state"`
@@ -255,16 +268,24 @@ func (r *Repository) DeleteFirewallZoneMapping(ctx context.Context, id int64) er
 	return deleteByID(ctx, r, "firewall_zone_mappings", id)
 }
 
+const dhcpServerSelect = `SELECT s.id, s.name, s.address, s.vendor, s.version, s.location_id, s.description, s.status, l.name, s.vlan_id, CASE WHEN v.id IS NULL THEN NULL ELSE v.vlan_id::text || ' ' || v.name END, s.auto_sync, s.last_synced_at, s.last_sync_error, s.last_sync_count, s.created_at, s.updated_at FROM dhcp_servers s LEFT JOIN locations l ON l.id=s.location_id LEFT JOIN vlans v ON v.id=s.vlan_id`
+
+func scanDHCPServer(row pgx.Row) (*models.DHCPServer, error) {
+	item := &models.DHCPServer{}
+	err := row.Scan(&item.ID, &item.Name, &item.Address, &item.Vendor, &item.Version, &item.LocationID, &item.Description, &item.Status, &item.LocationName, &item.VLANID, &item.VLANName, &item.AutoSync, &item.LastSyncedAt, &item.LastSyncError, &item.LastSyncCount, &item.CreatedAt, &item.UpdatedAt)
+	return item, err
+}
+
 func (r *Repository) ListDHCPServers(ctx context.Context) ([]*models.DHCPServer, error) {
-	rows, err := r.db.Query(ctx, `SELECT s.id, s.name, s.address, s.vendor, s.version, s.location_id, s.description, s.status, l.name, s.created_at, s.updated_at FROM dhcp_servers s LEFT JOIN locations l ON l.id=s.location_id ORDER BY s.name`)
+	rows, err := r.db.Query(ctx, dhcpServerSelect+` ORDER BY s.name`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	var out []*models.DHCPServer
 	for rows.Next() {
-		item := &models.DHCPServer{}
-		if err := rows.Scan(&item.ID, &item.Name, &item.Address, &item.Vendor, &item.Version, &item.LocationID, &item.Description, &item.Status, &item.LocationName, &item.CreatedAt, &item.UpdatedAt); err != nil {
+		item, err := scanDHCPServer(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -273,14 +294,16 @@ func (r *Repository) ListDHCPServers(ctx context.Context) ([]*models.DHCPServer,
 }
 
 func (r *Repository) GetDHCPServerByID(ctx context.Context, id int64) (*models.DHCPServer, error) {
-	item := &models.DHCPServer{}
-	err := r.db.QueryRow(ctx, `SELECT s.id, s.name, s.address, s.vendor, s.version, s.location_id, s.description, s.status, l.name, s.created_at, s.updated_at FROM dhcp_servers s LEFT JOIN locations l ON l.id=s.location_id WHERE s.id=$1`, id).Scan(&item.ID, &item.Name, &item.Address, &item.Vendor, &item.Version, &item.LocationID, &item.Description, &item.Status, &item.LocationName, &item.CreatedAt, &item.UpdatedAt)
-	return item, err
+	return scanDHCPServer(r.db.QueryRow(ctx, dhcpServerSelect+` WHERE s.id=$1`, id))
 }
 
 func (r *Repository) CreateDHCPServer(ctx context.Context, p *DHCPServerParams) (*models.DHCPServer, error) {
+	autoSync := true
+	if p.AutoSync != nil {
+		autoSync = *p.AutoSync
+	}
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO dhcp_servers (name, address, vendor, version, location_id, description, status) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status).Scan(&id)
+	err := r.db.QueryRow(ctx, `INSERT INTO dhcp_servers (name, address, vendor, version, location_id, description, status, vlan_id, auto_sync) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, p.VLANID, autoSync).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +311,7 @@ func (r *Repository) CreateDHCPServer(ctx context.Context, p *DHCPServerParams) 
 }
 
 func (r *Repository) UpdateDHCPServer(ctx context.Context, id int64, p *DHCPServerParams) (*models.DHCPServer, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE dhcp_servers SET name=$1, address=$2, vendor=$3, version=$4, location_id=$5, description=$6, status=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, id)
+	tag, err := r.db.Exec(ctx, `UPDATE dhcp_servers SET name=$1, address=$2, vendor=$3, version=$4, location_id=$5, description=$6, status=$7, vlan_id=$8, auto_sync=COALESCE($9, auto_sync), updated_at=CURRENT_TIMESTAMP WHERE id=$10`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, p.VLANID, p.AutoSync, id)
 	if err != nil {
 		return nil, err
 	}
@@ -298,16 +321,45 @@ func (r *Repository) UpdateDHCPServer(ctx context.Context, id int64, p *DHCPServ
 	return r.GetDHCPServerByID(ctx, id)
 }
 
+// RecordDHCPServerSync stores the outcome of a lease sync on the server row so
+// the UI can show last-synced time and error state.
+func (r *Repository) RecordDHCPServerSync(ctx context.Context, id int64, count int, syncErr string) error {
+	_, err := r.db.Exec(ctx, `UPDATE dhcp_servers SET last_synced_at=CURRENT_TIMESTAMP, last_sync_error=$2, last_sync_count=$3 WHERE id=$1`, id, syncErr, count)
+	return err
+}
+
 func (r *Repository) DeleteDHCPServer(ctx context.Context, id int64) error {
 	return deleteByID(ctx, r, "dhcp_servers", id)
 }
 
+const dhcpLeaseSelect = `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.vlan_id, CASE WHEN v.id IS NULL THEN NULL ELSE v.vlan_id::text || ' ' || v.name END, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id LEFT JOIN vlans v ON v.id=l.vlan_id`
+
+func scanDHCPLease(row pgx.Row) (*models.DHCPLease, error) {
+	item := &models.DHCPLease{}
+	err := row.Scan(&item.ID, &item.ServerID, &item.IPAddress, &item.MACAddress, &item.Hostname, &item.SubnetID, &item.IPID, &item.CustomerID, &item.VLANID, &item.VLANName, &item.StartsAt, &item.EndsAt, &item.State, &item.ServerName, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt)
+	return item, err
+}
+
 func (r *Repository) ListDHCPLeases(ctx context.Context, serverID int64) ([]*models.DHCPLease, error) {
-	query := `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id`
+	return r.ListDHCPLeasesFiltered(ctx, DHCPLeaseFilter{ServerID: serverID})
+}
+
+func (r *Repository) ListDHCPLeasesFiltered(ctx context.Context, f DHCPLeaseFilter) ([]*models.DHCPLease, error) {
+	query := dhcpLeaseSelect
 	args := []any{}
-	if serverID > 0 {
-		query += ` WHERE l.server_id=$1`
-		args = append(args, serverID)
+	var conds []string
+	add := func(col string, v int64) {
+		if v > 0 {
+			args = append(args, v)
+			conds = append(conds, fmt.Sprintf("%s=$%d", col, len(args)))
+		}
+	}
+	add("l.server_id", f.ServerID)
+	add("l.subnet_id", f.SubnetID)
+	add("l.ip_id", f.IPID)
+	add("l.vlan_id", f.VLANID)
+	if len(conds) > 0 {
+		query += " WHERE " + strings.Join(conds, " AND ")
 	}
 	query += ` ORDER BY l.ip_address`
 	rows, err := r.db.Query(ctx, query, args...)
@@ -317,8 +369,8 @@ func (r *Repository) ListDHCPLeases(ctx context.Context, serverID int64) ([]*mod
 	defer rows.Close()
 	var out []*models.DHCPLease
 	for rows.Next() {
-		item := &models.DHCPLease{}
-		if err := rows.Scan(&item.ID, &item.ServerID, &item.IPAddress, &item.MACAddress, &item.Hostname, &item.SubnetID, &item.IPID, &item.CustomerID, &item.StartsAt, &item.EndsAt, &item.State, &item.ServerName, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt); err != nil {
+		item, err := scanDHCPLease(rows)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -327,14 +379,12 @@ func (r *Repository) ListDHCPLeases(ctx context.Context, serverID int64) ([]*mod
 }
 
 func (r *Repository) GetDHCPLeaseByID(ctx context.Context, id int64) (*models.DHCPLease, error) {
-	item := &models.DHCPLease{}
-	err := r.db.QueryRow(ctx, `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id WHERE l.id=$1`, id).Scan(&item.ID, &item.ServerID, &item.IPAddress, &item.MACAddress, &item.Hostname, &item.SubnetID, &item.IPID, &item.CustomerID, &item.StartsAt, &item.EndsAt, &item.State, &item.ServerName, &item.CustomerName, &item.CreatedAt, &item.UpdatedAt)
-	return item, err
+	return scanDHCPLease(r.db.QueryRow(ctx, dhcpLeaseSelect+` WHERE l.id=$1`, id))
 }
 
 func (r *Repository) CreateDHCPLease(ctx context.Context, p *DHCPLeaseParams) (*models.DHCPLease, error) {
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, customer_id, starts_at, ends_at, state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.StartsAt, p.EndsAt, p.State).Scan(&id)
+	err := r.db.QueryRow(ctx, `INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, customer_id, vlan_id, starts_at, ends_at, state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.VLANID, p.StartsAt, p.EndsAt, p.State).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +392,7 @@ func (r *Repository) CreateDHCPLease(ctx context.Context, p *DHCPLeaseParams) (*
 }
 
 func (r *Repository) UpdateDHCPLease(ctx context.Context, id int64, p *DHCPLeaseParams) (*models.DHCPLease, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE dhcp_leases SET server_id=$1, ip_address=$2, mac_address=$3, hostname=$4, subnet_id=$5, ip_id=$6, customer_id=$7, starts_at=$8, ends_at=$9, state=$10, updated_at=CURRENT_TIMESTAMP WHERE id=$11`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.StartsAt, p.EndsAt, p.State, id)
+	tag, err := r.db.Exec(ctx, `UPDATE dhcp_leases SET server_id=$1, ip_address=$2, mac_address=$3, hostname=$4, subnet_id=$5, ip_id=$6, customer_id=$7, vlan_id=$8, starts_at=$9, ends_at=$10, state=$11, updated_at=CURRENT_TIMESTAMP WHERE id=$12`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.VLANID, p.StartsAt, p.EndsAt, p.State, id)
 	if err != nil {
 		return nil, err
 	}
@@ -361,19 +411,20 @@ func (r *Repository) DeleteDHCPLease(ctx context.Context, id int64) error {
 func (r *Repository) UpsertDHCPLease(ctx context.Context, p *DHCPLeaseParams) (int64, error) {
 	var id int64
 	err := r.db.QueryRow(ctx, `
-		INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, starts_at, ends_at, state)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, vlan_id, starts_at, ends_at, state)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		ON CONFLICT (server_id, ip_address) DO UPDATE SET
 			mac_address  = EXCLUDED.mac_address,
 			hostname     = EXCLUDED.hostname,
 			subnet_id    = EXCLUDED.subnet_id,
 			ip_id        = EXCLUDED.ip_id,
+			vlan_id      = EXCLUDED.vlan_id,
 			starts_at    = EXCLUDED.starts_at,
 			ends_at      = EXCLUDED.ends_at,
 			state        = EXCLUDED.state,
 			updated_at   = CURRENT_TIMESTAMP
 		RETURNING id`,
-		p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID,
+		p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.VLANID,
 		p.StartsAt, p.EndsAt, p.State,
 	).Scan(&id)
 	return id, err
@@ -410,7 +461,7 @@ func (r *Repository) FindIPByAddress(ctx context.Context, address string) (*mode
 func (r *Repository) FindSubnetContaining(ctx context.Context, ipAddress string) (*models.Subnet, error) {
 	row := r.db.QueryRow(ctx, `
 		SELECT `+subnetSelectCols+` `+subnetFromJoin+`
-		WHERE ($1::inet >= s.network_address AND $1::inet < s.network_address + (1 << (32 - s.prefix_length))::bigint::inet)
+		WHERE $1::inet << set_masklen(s.network_address, s.prefix_length)
 		ORDER BY s.prefix_length DESC LIMIT 1`, ipAddress)
 	return scanSubnet(row)
 }

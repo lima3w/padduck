@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.34.40
+
+### Added
+- **feat: Technitium DHCP sync with VLAN mapping** (#36):
+  - DHCP servers and leases now have an optional `vlan_id` (migration `20260717_001`). A synced lease takes its VLAN from the subnet it falls in, falling back to the server's VLAN, so mixed environments (some VLANs on Technitium DHCP, others not) work without configuration; leases outside any tracked subnet still sync, just unlinked.
+  - Scheduled lease sync: a background job syncs Technitium leases every 15 minutes (admin config `technitium_dhcp_sync_interval_minutes`; `0` disables it). A per-server "Sync leases automatically" toggle opts a server out of the scheduled job; the manual "Sync now" button on the DHCP page always runs. Last-synced time, lease count and last error are stored on the server and shown on the DHCP page.
+  - DHCP page: VLAN selector on the server form, VLAN column on servers and leases, a lease filter by VLAN, a sync-status line and a "Sync now" button.
+  - Subnet page and IP edit dialog now list linked DHCP leases (MAC, hostname, state, VLAN, expiry). `GET /dhcp-leases` accepts `subnet_id`, `ip_id` and `vlan_id` filters.
+
+### Fixed
+- Linking a synced lease to its subnet never worked: `FindSubnetContaining` failed with `cannot cast type bigint to inet`, so every synced lease was stored with no subnet. It now uses a proper CIDR containment check.
+- Editing a lease in the DHCP page no longer clears its linked subnet, IP and customer.
+
 ## v1.34.39
 
 ### Security

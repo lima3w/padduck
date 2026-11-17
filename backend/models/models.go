@@ -36,18 +36,18 @@ type Organization struct {
 }
 
 type OrganizationSettings struct {
-	OrganizationID    int64      `json:"organization_id"`
-	MaxSubnets        *int       `json:"max_subnets"`
-	MaxIPAddresses    *int       `json:"max_ip_addresses"`
-	MaxUsers          *int       `json:"max_users"`
-	MaxWebhooks       *int       `json:"max_webhooks"`
-	MaxAPITokens      *int       `json:"max_api_tokens"`
+	OrganizationID     int64     `json:"organization_id"`
+	MaxSubnets         *int      `json:"max_subnets"`
+	MaxIPAddresses     *int      `json:"max_ip_addresses"`
+	MaxUsers           *int      `json:"max_users"`
+	MaxWebhooks        *int      `json:"max_webhooks"`
+	MaxAPITokens       *int      `json:"max_api_tokens"`
 	AuditRetentionDays *int      `json:"audit_retention_days"`
-	SMTPHost          *string    `json:"smtp_host"`
-	SMTPPort          *int       `json:"smtp_port"`
-	SMTPFrom          *string    `json:"smtp_from"`
-	CreatedAt         time.Time  `json:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at"`
+	SMTPHost           *string   `json:"smtp_host"`
+	SMTPPort           *int      `json:"smtp_port"`
+	SMTPFrom           *string   `json:"smtp_from"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // User represents a system user
@@ -236,27 +236,27 @@ type Nameserver struct {
 
 // Subnet represents a network subnet
 type Subnet struct {
-	ID                 int64              `json:"id"`
-	NetworkID          int64              `json:"network_id"`
-	NetworkAddress     string             `json:"network_address"`
-	PrefixLength       int                `json:"prefix_length"`
-	Description        string             `json:"description"`
-	Gateway            *string            `json:"gateway,omitempty"`
-	AutoReserveFirst   bool               `json:"auto_reserve_first"`
-	AutoReserveLast    bool               `json:"auto_reserve_last"`
-	LocationID         *int64             `json:"location_id,omitempty"`
-	NameserverID       *int64             `json:"nameserver_id,omitempty"`
-	Nameserver         *Nameserver        `json:"nameserver,omitempty"`
-	VLANID             *int64             `json:"vlan_id,omitempty"`
-	ParentSubnetID     *int64             `json:"parent_subnet_id,omitempty"`
-	IsContainer        bool               `json:"is_container"`
-	AlertThresholdPct  *int               `json:"alert_threshold_pct,omitempty"`
-	AlertEmailOverride *string            `json:"alert_email_override,omitempty"`
-	CreatedAt          time.Time          `json:"created_at"`
-	UpdatedAt          time.Time          `json:"updated_at"`
-	CustomFields       map[string]*string `json:"custom_fields,omitempty"`
-	ScanProfileID        *int64             `json:"scan_profile_id,omitempty"`
-	TechnitiumScopeName  string             `json:"technitium_scope_name"`
+	ID                  int64              `json:"id"`
+	NetworkID           int64              `json:"network_id"`
+	NetworkAddress      string             `json:"network_address"`
+	PrefixLength        int                `json:"prefix_length"`
+	Description         string             `json:"description"`
+	Gateway             *string            `json:"gateway,omitempty"`
+	AutoReserveFirst    bool               `json:"auto_reserve_first"`
+	AutoReserveLast     bool               `json:"auto_reserve_last"`
+	LocationID          *int64             `json:"location_id,omitempty"`
+	NameserverID        *int64             `json:"nameserver_id,omitempty"`
+	Nameserver          *Nameserver        `json:"nameserver,omitempty"`
+	VLANID              *int64             `json:"vlan_id,omitempty"`
+	ParentSubnetID      *int64             `json:"parent_subnet_id,omitempty"`
+	IsContainer         bool               `json:"is_container"`
+	AlertThresholdPct   *int               `json:"alert_threshold_pct,omitempty"`
+	AlertEmailOverride  *string            `json:"alert_email_override,omitempty"`
+	CreatedAt           time.Time          `json:"created_at"`
+	UpdatedAt           time.Time          `json:"updated_at"`
+	CustomFields        map[string]*string `json:"custom_fields,omitempty"`
+	ScanProfileID       *int64             `json:"scan_profile_id,omitempty"`
+	TechnitiumScopeName string             `json:"technitium_scope_name"`
 }
 
 // IPv6Delegation represents a delegated IPv6 prefix assigned to a device or description
@@ -1062,17 +1062,25 @@ type NATRule struct {
 
 // DHCPServer tracks DHCP service ownership and operational metadata.
 type DHCPServer struct {
-	ID           int64     `json:"id"`
-	Name         string    `json:"name"`
-	Address      string    `json:"address"`
-	Vendor       string    `json:"vendor"`
-	Version      string    `json:"version"`
-	LocationID   *int64    `json:"location_id,omitempty"`
-	Description  string    `json:"description"`
-	Status       string    `json:"status"`
-	LocationName *string   `json:"location_name,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           int64   `json:"id"`
+	Name         string  `json:"name"`
+	Address      string  `json:"address"`
+	Vendor       string  `json:"vendor"`
+	Version      string  `json:"version"`
+	LocationID   *int64  `json:"location_id,omitempty"`
+	Description  string  `json:"description"`
+	Status       string  `json:"status"`
+	LocationName *string `json:"location_name,omitempty"`
+	// VLANID optionally scopes the server to a VLAN; VLANName is "<number> <name>".
+	VLANID   *int64  `json:"vlan_id,omitempty"`
+	VLANName *string `json:"vlan_name,omitempty"`
+	// AutoSync opts the server in or out of automatic lease sync (Technitium).
+	AutoSync      bool       `json:"auto_sync"`
+	LastSyncedAt  *time.Time `json:"last_synced_at,omitempty"`
+	LastSyncError string     `json:"last_sync_error"`
+	LastSyncCount *int       `json:"last_sync_count,omitempty"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // DHCPLease records a DHCP lease observed from, or managed by, a DHCP server.
@@ -1088,6 +1096,8 @@ type DHCPLease struct {
 	StartsAt     *time.Time `json:"starts_at,omitempty"`
 	EndsAt       *time.Time `json:"ends_at,omitempty"`
 	State        string     `json:"state"`
+	VLANID       *int64     `json:"vlan_id,omitempty"`
+	VLANName     *string    `json:"vlan_name,omitempty"`
 	ServerName   *string    `json:"server_name,omitempty"`
 	CustomerName *string    `json:"customer_name,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
@@ -1247,11 +1257,11 @@ type DiscoveryConflict struct {
 
 // GraphNode is a resource vertex in the directed topology graph.
 type GraphNode struct {
-	ID             int64      `json:"id"`
-	OrganizationID *int64     `json:"organization_id,omitempty"`
-	ResourceType   string     `json:"resource_type"`
-	ResourceID     int64      `json:"resource_id"`
-	CreatedAt      time.Time  `json:"created_at"`
+	ID             int64     `json:"id"`
+	OrganizationID *int64    `json:"organization_id,omitempty"`
+	ResourceType   string    `json:"resource_type"`
+	ResourceID     int64     `json:"resource_id"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 // GraphEdge is a directed, typed relationship between two GraphNodes.

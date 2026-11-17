@@ -237,6 +237,8 @@ func main() {
 
 	// Start discovery scheduler
 	svc.Ops.Discovery.StartScheduler(ctx)
+	// Start Technitium DHCP lease sync (no-op unless Technitium is configured)
+	svc.StartTechnitiumDHCPSync(ctx)
 	// Start retention pruner (#435)
 	svc.Ops.Discovery.StartRetentionPruner(ctx)
 
