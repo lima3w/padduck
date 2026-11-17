@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.41
+
+### Added
+- **feat: Technitium DHCP sync interval is now configurable in the GUI** (#36 follow-up): Admin Settings → DNS → Technitium has a "DHCP lease sync interval (minutes)" field (default 15; `0` disables scheduled sync). Previously `technitium_dhcp_sync_interval_minutes` could only be set through the admin config API.
+
 ## v1.34.40
 
 ### Added

@@ -249,6 +249,20 @@ export default function DnsTab({ config, handleConfigChange, handleSaveConfig, s
               <span className="text-xs text-yellow-600">{t('dnsTab.skipTlsWarning')}</span>
             </div>
 
+            <div className="mb-4">
+              <label htmlFor="technitium_dhcp_sync_interval_minutes" className="block text-sm font-medium text-gray-700 mb-1">{t('dnsTab.dhcpSyncIntervalLabel')}</label>
+              <input
+                type="number"
+                id="technitium_dhcp_sync_interval_minutes"
+                min="0"
+                step="1"
+                value={config.technitium_dhcp_sync_interval_minutes ?? '15'}
+                onChange={e => handleConfigChange('technitium_dhcp_sync_interval_minutes', e.target.value)}
+                className="w-32 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">{t('dnsTab.dhcpSyncIntervalHint')}</p>
+            </div>
+
             {technitiumTestStatus && technitiumTestStatus !== 'testing' && (
               <div className={`mb-4 px-3 py-2 rounded text-sm ${technitiumTestStatus.ok ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
                 {technitiumTestStatus.ok ? `${t('dnsTab.connectedPrefix')}${technitiumTestStatus.message}` : `${t('dnsTab.errorPrefix')}${technitiumTestStatus.message}`}
