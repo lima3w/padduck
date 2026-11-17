@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { getAdminConfig, updateAdminConfig } from '../api/admin'
-import { WIZARD_STEPS, WIZARD_DONE_KEY } from './setup/steps'
+import { notifyFeaturesChanged } from '../context/FeaturesContext'
+import { WIZARD_STEPS, WIZARD_DONE_KEY, isStepComplete } from './setup/steps'
 
 // First-run setup wizard shell: step navigation, per-step save, and skip
 // affordances. Steps live in ./setup/steps.js.
@@ -36,13 +37,14 @@ export default function SetupWizardPage() {
 
   const step = WIZARD_STEPS[index]
   const isLast = index === WIZARD_STEPS.length - 1
-  const answered = step.keys.every(k => values[k] === 'true' || values[k] === 'false')
+  const answered = isStepComplete(step, values)
 
   async function finish(extra = {}) {
     setSaving(true)
     setError('')
     try {
       await updateAdminConfig({ ...extra, [WIZARD_DONE_KEY]: 'true' })
+      notifyFeaturesChanged()
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err.response?.data?.error || t('setupWizard.saveFailed'))
@@ -63,6 +65,7 @@ export default function SetupWizardPage() {
     setError('')
     try {
       await updateAdminConfig(stepUpdates())
+      notifyFeaturesChanged()
       setIndex(i => i + 1)
     } catch (err) {
       setError(err.response?.data?.error || t('setupWizard.saveFailed'))

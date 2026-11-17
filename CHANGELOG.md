@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.34.37
+
+### Added
+- **feat: module selection step in the first-run setup wizard** (#281): the wizard now ends with a "Choose your modules" step where the admin turns off the modules they don't need (Devices, Locations, Racks, BGP, NAT, Firewall Zones, DHCP, Circuits, Customers, VLANs, VRFs), grouped by their sidebar section. It reuses the existing `feature_*_enabled` flags, so a disabled module is hidden from navigation and its API routes reject direct access, exactly as with Admin Settings → Features, where it can be changed at any time. Everything stays enabled by default. DNS, Admin and Automation have no feature flag and are always shown.
+- Saving feature flags from the wizard refreshes the app's cached feature map immediately (`notifyFeaturesChanged()` in `FeaturesContext`), so route guards pick up the change without a reload.
+
 ## v1.34.36
 
 ### Added
