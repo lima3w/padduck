@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.34.39
+
+### Security
+- **fix: frontend base image bumped to nginx 1.31.8** (#362): the previous `nginx:1.31.2-trixie` was affected by CVE-2026-42533 (fixed in 1.31.3) and CVE-2026-15176, CVE-2026-93479, CVE-2026-95101, CVE-2026-97629 and CVE-2026-97205 (fixed in 1.31.7). 1.31.8 is the latest mainline release.
+
 ## v1.34.38
 
 ### Changed
