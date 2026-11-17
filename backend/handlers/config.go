@@ -93,6 +93,7 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"feature_circuits_enabled":    true,
 		"feature_firewall_enabled":    true,
 		"update_check_enabled":        true,
+		"setup_wizard_completed":      true,
 		"dns_zone_filter_mode":        true,
 		"dns_zone_filter_list":        true,
 		"dns_zone_filter_auto_allow":  true,

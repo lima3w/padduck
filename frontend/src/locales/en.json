@@ -2758,11 +2758,34 @@
     "deploymentItem2": "Deployment type and mode if you choose to fill them in (e.g. Docker Compose, Self-Hosted)",
     "deploymentItem3": "Optional locale fields if configured (UI locale, timezone region, country/region code)",
     "neverIncludedNote": "No subnet CIDRs, IP addresses, MAC addresses, hostnames, usernames, emails, or any names from your data are ever included.",
-    "saving": "Saving...",
     "enableTelemetry": "Enable Telemetry",
     "noThanks": "No Thanks",
     "changeDecisionPrefix": "You can change this decision at any time in",
     "adminSettingsTelemetryLink": "Admin Settings → Telemetry"
+  },
+  "setupWizard": {
+    "progressLabel": "Setup progress",
+    "steps": {
+      "telemetry": "Telemetry",
+      "updates": "Updates"
+    },
+    "updates": {
+      "title": "Stay up to date",
+      "subtitle": "Padduck can check for new releases so you know when an update is available. This is optional.",
+      "detail": "When enabled, Padduck asks the GitHub releases API for the latest version and shows a notice in Admin Settings → Updates.",
+      "privacy": "Nothing about your install or network is sent — it is a plain request for the latest release.",
+      "enable": "Enable update checks",
+      "disable": "No thanks",
+      "changeLaterPrefix": "You can change this at any time in",
+      "adminSettingsLink": "Admin Settings → Updates"
+    },
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "skipStep": "Skip this step",
+    "skipAll": "Skip setup for now",
+    "saving": "Saving...",
+    "saveFailed": "Failed to save your choice. Please try again."
   },
   "commandPalette": {
     "dialogLabel": "Command palette",

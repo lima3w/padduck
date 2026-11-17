@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Routes, Route } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import DashboardPage from '../pages/DashboardPage'
 
@@ -24,6 +24,7 @@ vi.mock('../utils/storageKeys', () => ({
 
 import { api } from '../api/client'
 import { getDashboardSummary, getDashboardRecentActivity } from '../api/app'
+import { getAdminConfig } from '../api/admin'
 
 const summary = {
   totalNetworks: 3,
@@ -82,5 +83,48 @@ describe('DashboardPage', () => {
     await user.click(screen.getByRole('button', { name: 'Retry' }))
     expect(await screen.findByText('Networks')).toBeInTheDocument()
     await waitFor(() => expect(getDashboardSummary).toHaveBeenCalledTimes(2))
+  })
+})
+
+describe('DashboardPage first-run wizard redirect', () => {
+  function renderWithSetupRoute() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/dashboard']}>
+          <Routes>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/setup" element={<div>Setup wizard</div>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    getDashboardSummary.mockResolvedValue({ data: summary })
+    getDashboardRecentActivity.mockResolvedValue({ data: activity })
+    api.get.mockResolvedValue({ data: [] })
+  })
+
+  it('sends admins to /setup on a fresh install', async () => {
+    getAdminConfig.mockResolvedValue({ data: { config: {} } })
+    renderWithSetupRoute()
+    expect(await screen.findByText('Setup wizard')).toBeInTheDocument()
+  })
+
+  it('does not redirect once the wizard was completed or dismissed', async () => {
+    getAdminConfig.mockResolvedValue({ data: { config: { setup_wizard_completed: 'true' } } })
+    renderWithSetupRoute()
+    await waitFor(() => expect(getAdminConfig).toHaveBeenCalled())
+    expect(screen.queryByText('Setup wizard')).not.toBeInTheDocument()
+  })
+
+  it('does not redirect existing installs that already answered telemetry', async () => {
+    getAdminConfig.mockResolvedValue({ data: { config: { telemetry_enabled: 'false' } } })
+    renderWithSetupRoute()
+    await waitFor(() => expect(getAdminConfig).toHaveBeenCalled())
+    expect(screen.queryByText('Setup wizard')).not.toBeInTheDocument()
   })
 })

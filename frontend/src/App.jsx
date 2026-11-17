@@ -72,7 +72,7 @@ const AdminCompatibilityPage = lazy(() => import('./pages/AdminCompatibilityPage
 const DiscoveryPage = lazy(() => import('./pages/DiscoveryPage'))
 const UsersRolesPage = lazy(() => import('./pages/UsersRolesPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
-const TelemetrySetupPage = lazy(() => import('./pages/TelemetrySetupPage'))
+const SetupWizardPage = lazy(() => import('./pages/SetupWizardPage'))
 
 // Apply system dark preference immediately on app mount (before useDarkMode hook runs)
 function DarkModeBootstrap() {
@@ -148,7 +148,8 @@ export default function App() {
       <LocaleBootstrap />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
-          <Route path="/setup/telemetry" element={<ProtectedRoute><TelemetrySetupPage /></ProtectedRoute>} />
+          <Route path="/setup" element={<ProtectedRoute><SetupWizardPage /></ProtectedRoute>} />
+          <Route path="/setup/telemetry" element={<Navigate to="/setup" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
