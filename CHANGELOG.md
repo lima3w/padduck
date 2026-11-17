@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.34.36
+
+### Added
+- **feat: first-run setup wizard** (#278, #279, #280): admins on a fresh install are now guided through a step-by-step wizard at `/setup` instead of the single telemetry page. The shell has a progress indicator, Back / Next, "Skip this step", and "Skip setup for now"; steps are defined in `frontend/src/pages/setup/steps.js` so more can be added. Each step saves its choice on Next and shows an error (and stays put) if the save fails.
+  - **Telemetry opt-in step** (#279): the former standalone `/setup/telemetry` page, folded in (`/setup/telemetry` now redirects to `/setup`).
+  - **Update-check opt-in step** (#280): enables `update_check_enabled` (previously only available at Admin Settings → Updates).
+  - New admin config key `setup_wizard_completed`, set when the wizard is finished or dismissed. The dashboard only redirects to the wizard when `telemetry_enabled` has never been answered and the wizard hasn't been completed, so existing installs that already answered the telemetry prompt are not sent through it, and skipping no longer re-prompts on every visit.
+
 ## v1.34.35
 
 ### Fixed

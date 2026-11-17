@@ -134,6 +134,9 @@ var allFrontendConfigKeys = []string{
 	"feature_devices_enabled",
 	// updates tab
 	"update_check_enabled",
+	// first-run setup wizard
+	"setup_wizard_completed",
+	"telemetry_enabled",
 }
 
 func TestUpdateConfig_AllFrontendKeys_AreAllowed(t *testing.T) {

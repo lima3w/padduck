@@ -72,15 +72,18 @@ export default function DashboardPage() {
   const user = getCachedUser()
   const isAdmin = user?.role === 'admin'
 
-  // Redirect admins to the telemetry setup page on first boot (when the
-  // telemetry_enabled config key has never been set to "true" or "false").
+  // Redirect admins to the first-run setup wizard on a fresh install: the
+  // telemetry_enabled key has never been answered and the wizard hasn't been
+  // finished or dismissed. Existing installs that already answered telemetry
+  // are not sent through it.
   useEffect(() => {
     if (!isAdmin) return
     getAdminConfig()
       .then(res => {
-        const val = res.data?.config?.telemetry_enabled
-        if (val !== 'true' && val !== 'false') {
-          navigate('/setup/telemetry', { replace: true })
+        const config = res.data?.config || {}
+        const telemetryAnswered = config.telemetry_enabled === 'true' || config.telemetry_enabled === 'false'
+        if (!telemetryAnswered && config.setup_wizard_completed !== 'true') {
+          navigate('/setup', { replace: true })
         }
       })
       .catch(() => {})
