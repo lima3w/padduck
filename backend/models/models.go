@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // CustomFieldDefinition defines a custom field for an entity type
 type CustomFieldDefinition struct {
@@ -1412,4 +1415,30 @@ type RoleGrant struct {
 	ScopeID        *int64    `json:"scope_id"`
 	GrantedBy      *int64    `json:"granted_by"`
 	GrantedAt      time.Time `json:"granted_at"`
+}
+
+// UniFiLink ties a Padduck VLAN or device to its UniFi counterpart (#38).
+type UniFiLink struct {
+	ID           int64           `json:"id"`
+	VLANID       *int64          `json:"vlan_id,omitempty"`
+	DeviceID     *int64          `json:"device_id,omitempty"`
+	UniFiID      string          `json:"unifi_id"`
+	UniFiName    string          `json:"unifi_name"`
+	Details      json.RawMessage `json:"details"`
+	LastSyncedAt time.Time       `json:"last_synced_at"`
+}
+
+// UniFiConflict records a difference between an IP record and what UniFi
+// reports, left for an admin to accept or dismiss.
+type UniFiConflict struct {
+	ID           int64      `json:"id"`
+	IPID         int64      `json:"ip_id"`
+	IPAddress    string     `json:"ip_address"`
+	SubnetID     int64      `json:"subnet_id"`
+	Field        string     `json:"field"`
+	PadduckValue string     `json:"padduck_value"`
+	UniFiValue   string     `json:"unifi_value"`
+	Status       string     `json:"status"`
+	CreatedAt    time.Time  `json:"created_at"`
+	ResolvedAt   *time.Time `json:"resolved_at,omitempty"`
 }

@@ -16,6 +16,7 @@ import { downloadFile } from '../utils/download'
 import { loadPrefs, savePrefs, loadColPrefs, saveColPrefs } from '../utils/listPrefs'
 import { getCachedUser, LEGACY_STORAGE_KEYS, STORAGE_KEYS } from '../utils/storageKeys'
 import vendorCatalog from '../data/vendors.json'
+import useUniFiLinks from '../hooks/useUniFiLinks'
 
 const FILTER_KEY = STORAGE_KEYS.deviceFilters
 const LEGACY_FILTER_KEY = LEGACY_STORAGE_KEYS.deviceFilters
@@ -54,6 +55,7 @@ function ColToggle({ cols, setCols, labels }) {
 
 export default function DevicesPage() {
   const { t } = useTranslation()
+  const unifi = useUniFiLinks()
   const COL_LABELS = Object.fromEntries(Object.entries(COL_LABEL_KEYS).map(([k, key]) => [k, t(key)]))
   const [devices, setDevices] = useState([])
   const [total, setTotal] = useState(0)
@@ -476,6 +478,14 @@ export default function DevicesPage() {
                   <Link to={`/devices/${d.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
                     {d.hostname}
                   </Link>
+                  {unifi.devices[d.id] && (
+                    <span
+                      className="ml-2 px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 text-xs font-normal"
+                      title={[unifi.devices[d.id].details?.model, unifi.devices[d.id].details?.firmware && `v${unifi.devices[d.id].details.firmware}`].filter(Boolean).join(' · ')}
+                    >
+                      {t('deviceInfo.unifiBadge')}
+                    </span>
+                  )}
                 </td>
                 {col('vendor_model') && <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                   {[d.vendor, d.model].filter(Boolean).join(' / ') || '—'}
