@@ -128,6 +128,18 @@ func TestUnknownSite(t *testing.T) {
 	assert.ErrorContains(t, err, `site "nope" not found (available: default, lab)`)
 }
 
+func TestNetworkVLANAcceptsStringOrNumber(t *testing.T) {
+	var nets []Network
+	require.NoError(t, json.Unmarshal([]byte(`[
+		{"_id":"a","name":"str","vlan_enabled":true,"vlan":"10"},
+		{"_id":"b","name":"num","vlan_enabled":true,"vlan":25},
+		{"_id":"c","name":"none"}
+	]`), &nets))
+	assert.Equal(t, 10, nets[0].VLANNumber())
+	assert.Equal(t, 25, nets[1].VLANNumber())
+	assert.Equal(t, 0, nets[2].VLANNumber())
+}
+
 func TestVLANNumberBounds(t *testing.T) {
 	assert.Equal(t, 0, Network{VLANEnabled: true, VLAN: "abc"}.VLANNumber())
 	assert.Equal(t, 0, Network{VLANEnabled: true, VLAN: "4095"}.VLANNumber())

@@ -25,15 +25,33 @@ type Site struct {
 	Desc string `json:"desc"`
 }
 
+// flexString decodes a JSON string or number into a string. UniFi controllers
+// differ on whether a network's "vlan" is "10" or 10.
+type flexString string
+
+func (f *flexString) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err == nil {
+		*f = flexString(s)
+		return nil
+	}
+	var n json.Number
+	if err := json.Unmarshal(b, &n); err != nil {
+		return fmt.Errorf("expected a string or number: %w", err)
+	}
+	*f = flexString(n.String())
+	return nil
+}
+
 // Network is a UniFi network (LAN/VLAN).
 type Network struct {
-	ID          string `json:"_id"`
-	Name        string `json:"name"`
-	Purpose     string `json:"purpose"`
-	VLANEnabled bool   `json:"vlan_enabled"`
-	VLAN        string `json:"vlan"`
-	IPSubnet    string `json:"ip_subnet"`
-	Enabled     bool   `json:"enabled"`
+	ID          string     `json:"_id"`
+	Name        string     `json:"name"`
+	Purpose     string     `json:"purpose"`
+	VLANEnabled bool       `json:"vlan_enabled"`
+	VLAN        flexString `json:"vlan"`
+	IPSubnet    string     `json:"ip_subnet"`
+	Enabled     bool       `json:"enabled"`
 }
 
 // VLANNumber returns the 802.1Q tag, or 0 when the network is untagged.
@@ -42,7 +60,7 @@ func (n Network) VLANNumber() int {
 		return 0
 	}
 	var v int
-	if _, err := fmt.Sscanf(n.VLAN, "%d", &v); err != nil || v < 1 || v > 4094 {
+	if _, err := fmt.Sscanf(string(n.VLAN), "%d", &v); err != nil || v < 1 || v > 4094 {
 		return 0
 	}
 	return v
