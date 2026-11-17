@@ -49,6 +49,7 @@ tags:
   - name: NAT
   - name: Firewall
   - name: DHCP
+  - name: UniFi
   - name: Circuits
   - name: BGP
 
@@ -3809,6 +3810,77 @@ paths:
           $ref: "#/components/responses/OK"
         "502":
           $ref: "#/components/responses/BadGateway"
+
+  # ── UniFi integration ─────────────────────────────────────────────────────
+
+  /api/v1/admin/unifi/test:
+    post:
+      tags: [Admin, UniFi]
+      summary: Test UniFi connection
+      description: Tests the given (unsaved) connection settings, falling back to the saved ones for blank fields and for secrets sent as the redaction placeholder. Verifies authentication and that the site exists.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/admin/unifi/sync:
+    post:
+      tags: [Admin, UniFi]
+      summary: Sync from UniFi
+      description: Reconciles UniFi networks with VLANs by VLAN number, imports connected clients as IP records, and links or creates UniFi devices. Populated fields that differ are never overwritten; they are raised as conflicts.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/admin/unifi/status:
+    get:
+      tags: [Admin, UniFi]
+      summary: UniFi sync status
+      description: Whether UniFi is configured, the time, result and error of the last sync, and the number of open conflicts.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/unifi/conflicts:
+    get:
+      tags: [Admin, UniFi]
+      summary: List UniFi sync conflicts
+      parameters:
+        - name: status
+          in: query
+          description: open (default), accepted, dismissed or all
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/unifi/conflicts/{id}/resolve:
+    post:
+      tags: [Admin, UniFi]
+      summary: Resolve a UniFi sync conflict
+      description: 'Body {"action":"accept"} applies UniFi''s value to the IP record; {"action":"dismiss"} keeps Padduck''s value and stops the same difference being raised again.'
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/unifi/links:
+    get:
+      tags: [UniFi]
+      summary: List UniFi links
+      description: VLANs and devices that were synced from UniFi, with the UniFi network or device name and live device details. Used for display badges.
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
 
   /api/v1/admin/dhcp/technitium/import-scope:
     post:

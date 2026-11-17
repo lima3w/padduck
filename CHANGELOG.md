@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.34.42
+
+### Added
+- **feat: UniFi Network integration** (#38): Admin Settings → UniFi connects to a UniFi Network Application and imports its data. Connect with a UniFi OS API key, or with a username and password (UniFi OS console login or a standalone controller's classic login); the site, skip-TLS option and a Test Connection button are included.
+  - **VLANs:** UniFi networks with a VLAN tag are matched to Padduck VLANs by VLAN number (created if missing; an existing VLAN's name is never overwritten). The VLANs list shows the linked UniFi network name.
+  - **Clients → IP records:** connected clients become IP records inside the subnet that contains their address (MAC, hostname, last seen). Blank hostname/MAC fields are filled in and an "available" address that has a client becomes "assigned". Clients outside every tracked subnet are counted but not created.
+  - **Devices:** adopted UniFi devices are linked to the device with the same hostname, or created; online state, model and firmware are kept current, and the Devices list shows a UniFi badge.
+  - **Conflicts are flagged, not overwritten:** when a populated hostname or MAC differs from what UniFi reports, the difference is listed under Admin Settings → UniFi → Conflicts to review, where it can be accepted (use UniFi's value) or dismissed (keep Padduck's; the same difference is not raised again).
+  - **Sync:** run on demand from the settings page, or on a schedule via "Scheduled sync interval (minutes)". The schedule is **off by default** (0) because a sync creates records; run one manually and review it first. Last-synced time, result summary and errors are shown on the page.
+  - New admin endpoints under `/api/v1/admin/unifi/` (test, sync, status, conflicts) and `GET /api/v1/unifi/links`; new tables `unifi_links` and `unifi_conflicts` (migration `20260718_001`). `unifi_api_key` and `unifi_password` are treated as secrets (redacted in config responses and the audit log).
+  - Switch port and uplink data for topology views is not part of this release.
+
 ## v1.34.41
 
 ### Added

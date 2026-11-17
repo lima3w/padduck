@@ -20,6 +20,8 @@ func (h *Handler) GetConfig(c *fiber.Ctx) error {
 		"smtp_password":          true,
 		"pdns_api_key":           true,
 		"technitium_token":       true,
+		"unifi_api_key":          true,
+		"unifi_password":         true,
 		"scanner_snmp_community": true,
 	}
 
@@ -77,6 +79,13 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"technitium_ptr_zones":                  true,
 		"technitium_skip_tls":                   true,
 		"technitium_dhcp_sync_interval_minutes": true,
+		"unifi_url":                             true,
+		"unifi_api_key":                         true,
+		"unifi_username":                        true,
+		"unifi_password":                        true,
+		"unifi_site":                            true,
+		"unifi_skip_tls":                        true,
+		"unifi_sync_interval_minutes":           true,
 		"scanner_resolve_hostnames":             true,
 		"scanner_snmp_community":                true,
 		"scanner_snmp_version":                  true,
@@ -121,6 +130,8 @@ func (h *Handler) UpdateConfig(c *fiber.Ctx) error {
 		"smtp_password":          true,
 		"pdns_api_key":           true,
 		"technitium_token":       true,
+		"unifi_api_key":          true,
+		"unifi_password":         true,
 		"scanner_snmp_community": true,
 	}
 
@@ -173,6 +184,8 @@ func (h *Handler) RevealConfig(c *fiber.Ctx) error {
 		"smtp_password":          true,
 		"pdns_api_key":           true,
 		"technitium_token":       true,
+		"unifi_api_key":          true,
+		"unifi_password":         true,
 		"scanner_snmp_community": true,
 	}
 

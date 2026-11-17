@@ -33,6 +33,15 @@ export const CONFIG_KEYS_BY_TAB = {
     'dns_auto_add_ips_enabled',
     'dns_auto_remove_ips_enabled',
   ],
+  unifi: [
+    'unifi_url',
+    'unifi_api_key',
+    'unifi_username',
+    'unifi_password',
+    'unifi_site',
+    'unifi_skip_tls',
+    'unifi_sync_interval_minutes',
+  ],
   scanner: [
     'scanner_resolve_hostnames',
     'scanner_snmp_community',

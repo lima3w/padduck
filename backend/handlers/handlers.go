@@ -496,6 +496,14 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/dhcp/technitium/sync", h.SyncTechnitiumLeases)
 	admin.Post("/dhcp/technitium/import-scope", h.ImportTechnitiumScope)
 
+	// UniFi integration (#38)
+	admin.Post("/unifi/test", h.TestUniFiConnection)
+	admin.Post("/unifi/sync", h.SyncUniFi)
+	admin.Get("/unifi/status", h.GetUniFiStatus)
+	admin.Get("/unifi/conflicts", h.ListUniFiConflicts)
+	admin.Post("/unifi/conflicts/:id/resolve", h.ResolveUniFiConflict)
+	protected.Get("/unifi/links", h.ListUniFiLinks)
+
 	// Inbound automation endpoints (v1.23.0)
 	automation := protected.Group("/automation")
 	automation.Use(h.RequireBearerAuth)

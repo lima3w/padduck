@@ -119,6 +119,13 @@ var allFrontendConfigKeys = []string{
 	"technitium_ptr_zones",
 	"technitium_skip_tls",
 	"technitium_dhcp_sync_interval_minutes",
+	"unifi_url",
+	"unifi_api_key",
+	"unifi_username",
+	"unifi_password",
+	"unifi_site",
+	"unifi_skip_tls",
+	"unifi_sync_interval_minutes",
 	// scanner tab
 	"scanner_resolve_hostnames",
 	"scanner_snmp_community",

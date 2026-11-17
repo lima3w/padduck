@@ -9,6 +9,7 @@ import EmptyRow from '../components/EmptyRow'
 import TableActions from '../components/TableActions'
 import { downloadFile } from '../utils/download'
 import { getCachedUser } from '../utils/storageKeys'
+import useUniFiLinks from '../hooks/useUniFiLinks'
 
 const EMPTY_FORM = { vlanId: '', name: '', description: '', domainId: '', groupId: '' }
 
@@ -37,6 +38,7 @@ function GroupBadge({ group }) {
 
 export default function VlansPage() {
   const { t } = useTranslation()
+  const unifi = useUniFiLinks()
   const [vlans, setVlans] = useState([])
   const [domains, setDomains] = useState([])
   const [groups, setGroups] = useState([])
@@ -206,7 +208,14 @@ export default function VlansPage() {
                       {vlan.vlanId}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{vlan.name}</td>
+                  <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
+                    {vlan.name}
+                    {unifi.vlans[vlan.id] && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 text-xs font-normal" title={t('vlans.unifiNetworkTitle')}>
+                        {t('vlans.unifiNetwork', { name: unifi.vlans[vlan.id].unifiName })}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                     {domain ? (
                       <span className="text-xs text-gray-700 dark:text-gray-300">{domain.name}</span>
