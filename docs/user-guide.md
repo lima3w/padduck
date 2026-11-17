@@ -10,7 +10,7 @@ Topics covered there include: login and MFA, dashboard, networks, subnets (inclu
 
 ### Admin password (first boot)
 
-The auto-generated password is printed to the server log and written to `./data/backend/admin-password` on the host (mounted at `/app/data/admin-password` inside the container). Set `ADMIN_PASSWORD` to override, or `RESET_ADMIN_PASSWORD=true` to force-reset.
+The auto-generated password is printed to the server log and written to `/app/data/admin-password` inside the backend container (the `backend-data` named volume; read it with `docker compose exec backend cat /app/data/admin-password`). Set `ADMIN_PASSWORD` to override, or `RESET_ADMIN_PASSWORD=true` to force-reset.
 
 ### API authentication
 

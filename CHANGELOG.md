@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.34.38
+
+### Changed
+- **docker-compose: frontend now binds to all interfaces by default** (#276): `FRONTEND_BIND` defaults to `0.0.0.0` instead of `127.0.0.1`, so a stack deployed from another machine (e.g. via a stack manager) is reachable out of the box. The UI is plain HTTP, so internet-facing installs should still sit behind a TLS-terminating reverse proxy, or set `FRONTEND_BIND=127.0.0.1` to restrict access to the Docker host. Docs and `.env.example` updated.
+- **docker-compose: state now lives in named volumes** (#277): the `db` and `backend` services use the `db-data` and `backend-data` named volumes instead of `./data/db` and `./data/backend` bind mounts, removing host UID/GID ownership friction and making stacks portable across redeploys. **Breaking for existing installs:** the old `./data` directories are no longer used, so a fresh database and backend state are created on upgrade; copy data into the new volumes first if you need to keep it. Docs now point to `/app/data/...` in the `backend-data` volume (e.g. `docker compose exec backend cat /app/data/admin-password`).
+
 ## v1.34.37
 
 ### Added

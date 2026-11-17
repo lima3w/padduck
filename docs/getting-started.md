@@ -55,7 +55,7 @@ docker compose up -d
 SCREENSHOT: Terminal output of `docker compose up -d` completing successfully, showing all three services (db, backend, frontend) marked as healthy.
 
 The first image pull can take a few minutes. On first startup, the backend
-creates a persistent MFA encryption key in `./data/backend/mfa-encryption-key`
+creates a persistent MFA encryption key in `/app/data/mfa-encryption-key` (in the `backend-data` volume)
 if `MFA_ENCRYPTION_KEY` is not set. When all three services are healthy you will
 see the backend print the admin password (if you left `ADMIN_PASSWORD` blank):
 
@@ -66,11 +66,7 @@ see the backend print the admin password (if you left `ADMIN_PASSWORD` blank):
 ========================================
 ```
 
-> **Tip:** The generated password is also written to `/app/data/admin-password` inside the backend container (mode `0600`), which is bind-mounted from `./data/backend` on the host. You can read it directly from the host:
-> ```bash
-> cat ./data/backend/admin-password
-> ```
-> or from inside the container:
+> **Tip:** The generated password is also written to `/app/data/admin-password` inside the backend container (mode `0600`), which lives in the `backend-data` named volume. Read it from inside the container:
 > ```bash
 > docker compose exec backend cat /app/data/admin-password
 > ```
@@ -136,12 +132,13 @@ Internet → reverse proxy (TLS) → 127.0.0.1:3000 (frontend container)
                                   backend:8080
 ```
 
-The reverse proxy terminates HTTPS and forwards to `127.0.0.1:3000` on the
+The reverse proxy terminates HTTPS and forwards to port 3000 on the
 same host. Session cookies are automatically marked Secure when the request
 arrives over HTTPS (`SESSION_COOKIE_SECURE=auto`).
 
-If you need the frontend reachable on all interfaces (not recommended for
-production), set `FRONTEND_BIND=0.0.0.0` in `.env`.
+The frontend port binds to all interfaces by default. To restrict it to the
+Docker host only (for example when a reverse proxy runs on the same host), set
+`FRONTEND_BIND=127.0.0.1` in `.env`.
 
 ### HSTS
 
