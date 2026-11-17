@@ -26,6 +26,7 @@ export const CONFIG_KEYS_BY_TAB = {
     'technitium_token',
     'technitium_default_zone',
     'technitium_skip_tls',
+    'technitium_dhcp_sync_interval_minutes',
     'dns_zone_filter_mode',
     'dns_zone_filter_list',
     'dns_zone_filter_auto_allow',

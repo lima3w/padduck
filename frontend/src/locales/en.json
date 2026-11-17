@@ -1800,6 +1800,8 @@
     "defaultZoneSyncHint": "Zone where A records are created when an IP is assigned a DNS name.",
     "skipTlsLabel": "Skip TLS certificate verification",
     "skipTlsWarning": "(use only for self-signed certs)",
+    "dhcpSyncIntervalLabel": "DHCP lease sync interval (minutes)",
+    "dhcpSyncIntervalHint": "How often Technitium DHCP leases are synced automatically. Set to 0 to disable scheduled sync; servers can also opt out individually on the DHCP page. Default 15.",
     "testConnection": "Test Connection",
     "alsoAddAsNameserver": "Also add as a nameserver",
     "nameserverNameLabel": "Nameserver name",
