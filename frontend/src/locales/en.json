@@ -2767,7 +2767,14 @@
     "progressLabel": "Setup progress",
     "steps": {
       "telemetry": "Telemetry",
-      "updates": "Updates"
+      "updates": "Updates",
+      "features": "Modules"
+    },
+    "features": {
+      "title": "Choose your modules",
+      "subtitle": "Turn off the modules you don't need to declutter the navigation. Disabled modules are hidden and their API routes reject direct access. Everything is on by default.",
+      "changeLaterPrefix": "You can change this at any time in",
+      "adminSettingsLink": "Admin Settings → Features"
     },
     "updates": {
       "title": "Stay up to date",

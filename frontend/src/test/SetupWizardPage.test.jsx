@@ -46,12 +46,15 @@ describe('SetupWizardPage', () => {
     expect(await screen.findByText('Stay up to date')).toBeInTheDocument()
 
     await user.click(screen.getByRole('radio', { name: 'No thanks' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await waitFor(() => expect(updateAdminConfig).toHaveBeenCalledWith({ update_check_enabled: 'false' }))
+
+    expect(await screen.findByText('Choose your modules')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Finish' }))
 
-    await waitFor(() => expect(updateAdminConfig).toHaveBeenLastCalledWith({
-      update_check_enabled: 'false',
+    await waitFor(() => expect(updateAdminConfig).toHaveBeenLastCalledWith(expect.objectContaining({
       setup_wizard_completed: 'true',
-    }))
+    })))
     expect(await screen.findByText('Dashboard page')).toBeInTheDocument()
   })
 
@@ -82,6 +85,8 @@ describe('SetupWizardPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Skip this step' }))
     await screen.findByText('Stay up to date')
     await user.click(screen.getByRole('button', { name: 'Skip this step' }))
+    await screen.findByText('Choose your modules')
+    await user.click(screen.getByRole('button', { name: 'Skip this step' }))
 
     await waitFor(() => expect(updateAdminConfig).toHaveBeenCalledWith({ setup_wizard_completed: 'true' }))
     expect(await screen.findByText('Dashboard page')).toBeInTheDocument()
@@ -111,5 +116,56 @@ describe('SetupWizardPage', () => {
     getAdminConfig.mockResolvedValue({ data: { config: { telemetry_enabled: 'true' } } })
     renderWizard()
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Enable Telemetry' })).toHaveAttribute('aria-checked', 'true'))
+  })
+
+  describe('modules step', () => {
+    async function goToModules(user) {
+      await user.click(await screen.findByRole('button', { name: 'Skip this step' }))
+      await screen.findByText('Stay up to date')
+      await user.click(screen.getByRole('button', { name: 'Skip this step' }))
+      await screen.findByText('Choose your modules')
+    }
+
+    it('lists every module grouped by section, all enabled by default', async () => {
+      const user = userEvent.setup()
+      renderWizard()
+      await goToModules(user)
+
+      for (const name of ['Devices', 'Locations', 'Racks', 'BGP / AS Numbers', 'NAT Rules', 'Firewall Zones', 'Customers', 'VLANs', 'VRFs']) {
+        expect(screen.getByRole('checkbox', { name: new RegExp(`^${name}`) })).toBeChecked()
+      }
+      expect(screen.getAllByRole('checkbox')).toHaveLength(11)
+      expect(screen.getByRole('button', { name: 'Finish' })).toBeEnabled()
+    })
+
+    it('saves unchecked modules as disabled when finishing', async () => {
+      const user = userEvent.setup()
+      renderWizard()
+      await goToModules(user)
+
+      await user.click(screen.getByRole('checkbox', { name: /^VLANs/ }))
+      await user.click(screen.getByRole('checkbox', { name: /^Customers/ }))
+      await user.click(screen.getByRole('button', { name: 'Finish' }))
+
+      await waitFor(() => expect(updateAdminConfig).toHaveBeenCalled())
+      const sent = updateAdminConfig.mock.calls.at(-1)[0]
+      expect(sent).toMatchObject({
+        feature_vlans_enabled: 'false',
+        feature_customers_enabled: 'false',
+        setup_wizard_completed: 'true',
+      })
+      expect(Object.keys(sent).filter(k => k.startsWith('feature_') && sent[k] === 'false').sort())
+        .toEqual(['feature_customers_enabled', 'feature_vlans_enabled'])
+    })
+
+    it('prefills previously disabled modules as unchecked', async () => {
+      const user = userEvent.setup()
+      getAdminConfig.mockResolvedValue({ data: { config: { feature_nat_enabled: 'false' } } })
+      renderWizard()
+      await goToModules(user)
+
+      expect(screen.getByRole('checkbox', { name: /^NAT Rules/ })).not.toBeChecked()
+      expect(screen.getByRole('checkbox', { name: /^Racks/ })).toBeChecked()
+    })
   })
 })
