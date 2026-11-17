@@ -3,7 +3,7 @@ services:
     image: postgres:18
     restart: unless-stopped
     volumes:
-      - ./data/db:/var/lib/postgresql
+      - db-data:/var/lib/postgresql
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-padduck}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env — see .env.example}"
@@ -17,7 +17,7 @@ services:
     # Security hardening: prevent privilege escalation and drop all capabilities
     # except the two that the official Postgres init script needs (it starts as
     # root, chowns the data directory, then drops to the postgres user).
-    # CHOWN and FOWNER are re-added so it can change ownership of ./data/db on
+    # CHOWN and FOWNER are re-added so it can change ownership of the db-data volume on
     # first boot. read_only is not applied because Postgres writes extensively
     # to its data volume and internal paths (/tmp, /var/run/postgresql) — fully
     # mapping those with tmpfs is brittle across minor Postgres upgrades.
@@ -36,7 +36,7 @@ services:
     image: ghcr.io/lima3w/padduck-backend:${IMAGE_TAG:-1.34.10}
     restart: unless-stopped
     volumes:
-      - ./data/backend:/app/data
+      - backend-data:/app/data
     environment:
       DATABASE_URL: "${DATABASE_URL:-}"
       POSTGRES_USER: "${POSTGRES_USER:-padduck}"
@@ -84,13 +84,12 @@ services:
     image: ghcr.io/lima3w/padduck-frontend:${IMAGE_TAG:-1.34.10}
     restart: unless-stopped
     ports:
-      # Bind to loopback only so the UI is not exposed on all interfaces
-      # without TLS. Access via http://localhost:3000 for local use.
-      # For production, place a TLS-terminating reverse proxy (nginx, Caddy,
-      # Traefik) in front and point it at 127.0.0.1:${FRONTEND_PORT:-3000}.
-      # To bind on all interfaces (not recommended), override FRONTEND_BIND:
-      #   FRONTEND_BIND=0.0.0.0
-      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-3000}:3000"
+      # Binds to all interfaces by default so the UI is reachable from other
+      # machines (e.g. when deployed through a stack manager). The UI is plain
+      # HTTP: for internet-facing use put a TLS-terminating reverse proxy
+      # (nginx, Caddy, Traefik) in front, or restrict the bind address with
+      #   FRONTEND_BIND=127.0.0.1
+      - "${FRONTEND_BIND:-0.0.0.0}:${FRONTEND_PORT:-3000}:3000"
     depends_on:
       backend:
         condition: service_healthy
@@ -122,3 +121,7 @@ services:
       - /var/run
       - /var/cache/nginx
       - /var/log/nginx
+
+volumes:
+  db-data:
+  backend-data:

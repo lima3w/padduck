@@ -31,7 +31,7 @@ docker compose up -d
 
 `POSTGRES_PASSWORD` is **required** — the stack will not start without it. On
 first startup, the backend creates a persistent MFA encryption key in
-`./data/backend/mfa-encryption-key` if `MFA_ENCRYPTION_KEY` is not set.
+`/app/data/mfa-encryption-key` (the `backend-data` volume) if `MFA_ENCRYPTION_KEY` is not set.
 
 Open `http://localhost:3000` and log in as `admin`. The generated password is
 printed to the backend log on first boot.
@@ -51,7 +51,7 @@ Configuration is read from environment variables. Docker Compose will also read 
 | `MFA_ENCRYPTION_KEY` | generated if unset | Optional override; 64 hex characters; generate with `openssl rand -hex 32` |
 | `SESSION_COOKIE_SECURE` | `auto` | `auto` marks session cookies secure when behind HTTPS; set `true` or `false` to override |
 | `FRONTEND_PORT` | `3000` | Host port the UI is exposed on |
-| `FRONTEND_BIND` | `127.0.0.1` | Network interface the frontend port binds to. Defaults to loopback; place a TLS-terminating reverse proxy in front for production. Set to `0.0.0.0` only with additional network-level access control |
+| `FRONTEND_BIND` | `0.0.0.0` | Network interface the frontend port binds to. Defaults to all interfaces; place a TLS-terminating reverse proxy in front for internet-facing use, or set `127.0.0.1` to restrict access to the Docker host |
 | `IMAGE_TAG` | `1.34.10` | Pinned release version (GHCR tags have no `v` prefix). To upgrade, set `IMAGE_TAG=<new>` in `.env`, then run `docker compose pull && docker compose up -d` |
 
 Update checks can be enabled under **Admin Settings → Updates**. The backend checks the GitHub releases API automatically — no configuration required.

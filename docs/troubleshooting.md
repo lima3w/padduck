@@ -161,21 +161,21 @@ level=WARN msg="could not write admin password file; set ADMIN_PASSWORD explicit
 
 **Why it happens:** The key used to encrypt MFA secrets changed. In Docker
 Compose production deployments, the backend creates and reuses
-`./data/backend/mfa-encryption-key` when `MFA_ENCRYPTION_KEY` is unset. MFA
-secrets can be lost if that file is deleted, the `./data/backend` bind mount is
+`/app/data/mfa-encryption-key` when `MFA_ENCRYPTION_KEY` is unset. MFA
+secrets can be lost if that file is deleted, the `backend-data` volume is
 not persistent, or `MFA_ENCRYPTION_KEY` is changed after users enroll MFA.
 Development and test runs without a valid key still use a temporary per-process
 key.
 
 **Fix:**
 
-1. Confirm `./data/backend/mfa-encryption-key` exists and is persisted across restarts
+1. Confirm `/app/data/mfa-encryption-key` exists and is persisted across restarts
 2. If you manage the key through `.env`, confirm `MFA_ENCRYPTION_KEY` has not changed
 3. Restore the previous key from backup if available
 4. Users whose MFA secrets were encrypted with the old key will need to re-enroll if the old key cannot be restored
 
 > **Important:** Do not change `MFA_ENCRYPTION_KEY` or delete
-> `./data/backend/mfa-encryption-key` without a migration plan. Rotating the key
+> `/app/data/mfa-encryption-key` without a migration plan. Rotating the key
 > invalidates all existing MFA enrollments.
 
 ---
