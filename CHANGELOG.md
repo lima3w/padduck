@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.34.43
+
+### Added
+- **feat: topology graph view and discovery-driven relationships** (#17): the typed graph model, traversal and API from earlier releases are now populated and usable. A new **Topology** page (sidebar, `/topology`) renders the whole graph with Cytoscape: zoom, pan, search, per-type filters, click-to-detail (relationships and a link to the resource), a shortest-path finder between any two resources, and PNG export.
+  - **Graph stays in sync with inventory:** nodes for every subnet, device, VLAN and location, plus edges derived from inventory (subnet *contains* child subnet, subnet *member_of* VLAN or location, device *member_of* subnet via its IP addresses or location, location *contains* child location). Runs at startup, every ten minutes, after each UniFi sync, and on demand with **Rebuild graph** (`POST /api/v1/topology/sync`). Nodes for deleted resources are removed. Existing installs get their graph built on first start, not only for resources created afterward.
+  - **Suggested relationships:** UniFi sync now reads each device's reported uplink and suggests a `device uplink_to device` edge (with the remote port as evidence). Suggestions appear in a review list on the Topology page where an admin can **Confirm** or **Dismiss** them. A dismissed suggestion is never recreated, and a confirmed one is kept; if the controller later reports a different uplink the stale suggestion is replaced.
+  - **API:** `GET /api/v1/topology/graph` now returns the whole graph when no root is given and includes node `label`/`detail`; dismissed edges are excluded from the graph, neighbor and path queries. New `GET /api/v1/topology/edges?status=`, `PUT /api/v1/topology/edges/{id}/status`, `POST /api/v1/topology/sync`. The graph, path and edge endpoints are now in the OpenAPI spec.
+  - Not included: switch-port-level edges (`connects_to`) and non-UniFi discovery sources; the model supports them but nothing produces them yet.
+
 ## v1.34.42
 
 ### Added

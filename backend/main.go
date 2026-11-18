@@ -239,6 +239,8 @@ func main() {
 	svc.Ops.Discovery.StartScheduler(ctx)
 	// Start Technitium DHCP lease sync (no-op unless Technitium is configured)
 	svc.StartTechnitiumDHCPSync(ctx)
+	// Keep the topology graph in step with inventory
+	svc.Ops.Topology.StartGraphSync(ctx)
 	// Start optional UniFi sync (off unless unifi_sync_interval_minutes > 0)
 	svc.StartUniFiSync(ctx)
 	// Start retention pruner (#435)

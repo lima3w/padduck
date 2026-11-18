@@ -97,6 +97,10 @@ type Device struct {
 	IP      string `json:"ip"`
 	State   int    `json:"state"` // 1 = connected
 	Adopted bool   `json:"adopted"`
+	Uplink  struct {
+		MAC        string `json:"uplink_mac"`
+		RemotePort int    `json:"uplink_remote_port"`
+	} `json:"uplink"`
 }
 
 // Online reports whether the controller sees the device as connected.

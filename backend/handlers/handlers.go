@@ -604,6 +604,9 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Topology graph (#17)
 	protected.Get("/topology/graph", h.GetTopologyGraph)
 	protected.Get("/topology/path", h.GetTopologyPath)
+	protected.Get("/topology/edges", h.ListTopologyEdges)
+	protected.Put("/topology/edges/:id/status", h.UpdateTopologyEdgeStatus)
+	protected.Post("/topology/sync", h.SyncTopologyGraph)
 
 	// Telemetry
 	admin.Post("/telemetry/send", h.SendTelemetryNow)

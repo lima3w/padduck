@@ -51,7 +51,8 @@ func fakeUniFi(t *testing.T, version string) *httptest.Server {
 	mux.HandleFunc("/proxy/network/api/s/default/stat/device", guard(func(w http.ResponseWriter, _ *http.Request) {
 		env(w, []map[string]any{
 			{"mac": "11:22:33:44:55:01", "name": "SW-01", "model": "USW-24", "version": version, "type": "usw", "state": 1, "adopted": true},
-			{"mac": "11:22:33:44:55:02", "name": "ap-new", "model": "U7-Pro", "version": "6.6.0", "type": "uap", "state": 0, "adopted": true},
+			{"mac": "11:22:33:44:55:02", "name": "ap-new", "model": "U7-Pro", "version": "6.6.0", "type": "uap", "state": 0, "adopted": true,
+				"uplink": map[string]any{"uplink_mac": "11:22:33:44:55:01", "uplink_remote_port": 7}},
 			{"mac": "11:22:33:44:55:03", "name": "pending", "adopted": false},
 		})
 	}))
@@ -62,7 +63,7 @@ func fakeUniFi(t *testing.T, version string) *httptest.Server {
 
 func TestSyncUniFi_Integration(t *testing.T) {
 	pool := testdb.Connect(t, "services")
-	testdb.Truncate(t, pool, "unifi_conflicts", "unifi_links", "ip_addresses", "devices", "subnets", "vlans", "networks", "users", "configs")
+	testdb.Truncate(t, pool, "topology_edges", "topology_nodes", "unifi_conflicts", "unifi_links", "ip_addresses", "devices", "subnets", "vlans", "networks", "users", "configs")
 	repo := repository.NewRepository(pool)
 	svc := NewService(repo, testMFAKey)
 	ctx := context.Background()
@@ -219,6 +220,21 @@ func TestSyncUniFi_Integration(t *testing.T) {
 	open, err = repo.ListUniFiConflicts(ctx, "open")
 	require.NoError(t, err)
 	assert.Empty(t, open)
+
+	// The AP's reported uplink becomes a suggested edge, and an admin decision survives re-sync.
+	edges, err := svc.Ops.Topology.ListEdges(ctx, "suggested")
+	require.NoError(t, err)
+	require.Len(t, edges, 1)
+	assert.Equal(t, "uplink_to", edges[0].Relationship)
+	assert.Equal(t, "ap-new", edges[0].SourceLabel)
+	assert.Equal(t, "sw-01", edges[0].TargetLabel)
+	assert.Contains(t, *edges[0].Evidence, "port 7")
+	require.NoError(t, svc.Ops.Topology.SetEdgeStatus(ctx, edges[0].ID, "dismissed"))
+	_, err = svc.SyncUniFi(ctx)
+	require.NoError(t, err)
+	edges, err = svc.Ops.Topology.ListEdges(ctx, "suggested")
+	require.NoError(t, err)
+	assert.Empty(t, edges, "a dismissed suggestion is not recreated")
 }
 
 func TestSyncUniFi_NotConfiguredAndBadCredentials(t *testing.T) {

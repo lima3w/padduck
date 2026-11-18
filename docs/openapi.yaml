@@ -3895,6 +3895,99 @@ paths:
         "502":
           $ref: "#/components/responses/BadGateway"
 
+  # ── Topology graph ──────────────────────────────────────────────────────────
+
+  /api/v1/topology/graph:
+    get:
+      tags: [Discovery]
+      summary: Get topology graph
+      description: Returns a Cytoscape-compatible graph. Give `root_type` and `root_id` to get the neighborhood reachable within `depth` hops (default 3, max 10); omit both for the whole graph. Dismissed edges are never included. Resource types are subnet, device, vlan and location.
+      parameters:
+        - name: root_type
+          in: query
+          schema:
+            type: string
+            enum: [subnet, device, vlan, location]
+        - name: root_id
+          in: query
+          schema:
+            type: integer
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/topology/path:
+    get:
+      tags: [Discovery]
+      summary: Find the shortest path between two resources
+      parameters:
+        - name: from_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: from_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: to_type
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: to_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/topology/edges:
+    get:
+      tags: [Discovery]
+      summary: List topology graph edges
+      description: Filter by `?status=suggested|confirmed|dismissed`. Each edge carries its endpoints and their labels.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [suggested, confirmed, dismissed]
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/topology/edges/{id}/status:
+    put:
+      tags: [Discovery]
+      summary: Confirm or dismiss a topology edge
+      description: Body is `{"status":"confirmed"}` or `{"status":"dismissed"}`. Requires admin write access.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/topology/sync:
+    post:
+      tags: [Discovery]
+      summary: Rebuild the topology graph from inventory
+      description: Registers nodes for every subnet, device, VLAN and location, removes nodes for deleted resources, and rebuilds the edges derived from inventory. Suggested, confirmed and dismissed edges are not touched. Also runs automatically at startup and every ten minutes.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
   # ── Admin — topology hints ──────────────────────────────────────────────────
 
   /api/v1/admin/topology/hints:

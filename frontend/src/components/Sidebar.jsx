@@ -318,6 +318,16 @@ export default function Sidebar({ open, onClose }) {
         )}
 
         <NavLink
+          to="/topology"
+          className={({ isActive }) =>
+            `px-3 py-2 rounded text-sm font-medium transition-colors ${
+              isActive ? 'bg-[#f5b800] text-[#07162b]' : 'hover:bg-[#0d2848]'
+            }`
+          }
+        >
+          {t('nav.topologyGraph')}
+        </NavLink>
+        <NavLink
           to="/reports"
           className={({ isActive }) =>
             `px-3 py-2 rounded text-sm font-medium transition-colors ${

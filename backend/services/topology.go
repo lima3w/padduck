@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"padduck/models"
 )
@@ -14,6 +16,12 @@ type topologyRepo interface {
 	UpdateTopologyHintStatus(ctx context.Context, id int64, status string) (*models.TopologyHint, error)
 
 	UpsertTopologyNode(ctx context.Context, orgID *int64, resourceType string, resourceID int64) (*models.GraphNode, error)
+	SyncTopologyGraph(ctx context.Context) error
+	SuggestTopologyEdge(ctx context.Context, srcType string, srcID int64, tgtType string, tgtID int64, relationship string, confidence float64, evidence, evidencePrefix string) error
+	ListTopologyEdges(ctx context.Context, status string) ([]*models.GraphEdgeDetail, error)
+	SetTopologyEdgeStatus(ctx context.Context, id int64, status string) error
+	GetTopologyFull(ctx context.Context, limit int) ([]*models.GraphNode, []*models.GraphEdge, error)
+	TopologyNodeLabels(ctx context.Context, nodes []*models.GraphNode) (map[string][2]string, error)
 	UpsertTopologyEdge(ctx context.Context, orgID *int64, srcType string, srcID int64, tgtType string, tgtID int64, relationship string, confidence float64, status string, evidence *string) (*models.GraphEdge, error)
 	GetTopologyNeighbors(ctx context.Context, orgID *int64, rootType string, rootID int64, maxDepth int) ([]*models.GraphNode, []*models.GraphEdge, error)
 	GetTopologyPath(ctx context.Context, fromType string, fromID int64, toType string, toID int64) ([]*models.GraphNode, []*models.GraphEdge, error)
@@ -80,7 +88,7 @@ func (s *TopologyService) GetNeighbors(ctx context.Context, orgID *int64, rootTy
 	if err != nil {
 		return nil, err
 	}
-	return toCytoscapeGraph(nodes, edges), nil
+	return s.labeled(ctx, nodes, edges), nil
 }
 
 // GetPath returns a Cytoscape-compatible graph of the shortest path between two resources.
@@ -89,7 +97,90 @@ func (s *TopologyService) GetPath(ctx context.Context, fromType string, fromID i
 	if err != nil {
 		return nil, err
 	}
-	return toCytoscapeGraph(nodes, edges), nil
+	return s.labeled(ctx, nodes, edges), nil
+}
+
+// GetFullGraph returns every node and edge, capped at limit nodes.
+func (s *TopologyService) GetFullGraph(ctx context.Context, limit int) (*models.CytoscapeGraph, error) {
+	nodes, edges, err := s.repository.GetTopologyFull(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+	return s.labeled(ctx, nodes, edges), nil
+}
+
+// labeled builds the Cytoscape payload and adds display labels to each node.
+func (s *TopologyService) labeled(ctx context.Context, nodes []*models.GraphNode, edges []*models.GraphEdge) *models.CytoscapeGraph {
+	g := toCytoscapeGraph(nodes, edges)
+	if labels, err := s.repository.TopologyNodeLabels(ctx, nodes); err == nil {
+		for _, n := range g.Nodes {
+			if l, ok := labels[n.Data["id"].(string)]; ok {
+				n.Data["label"], n.Data["detail"] = l[0], l[1]
+			}
+		}
+	}
+	return g
+}
+
+// SyncGraph reconciles the graph with current inventory.
+func (s *TopologyService) SyncGraph(ctx context.Context) error {
+	return s.repository.SyncTopologyGraph(ctx)
+}
+
+// SuggestEdge records a discovered relationship for an admin to confirm or dismiss.
+func (s *TopologyService) SuggestEdge(ctx context.Context, srcType string, srcID int64, tgtType string, tgtID int64, relationship string, confidence float64, evidence, evidencePrefix string) error {
+	return s.repository.SuggestTopologyEdge(ctx, srcType, srcID, tgtType, tgtID, relationship, confidence, evidence, evidencePrefix)
+}
+
+// ListEdges lists edges by status (empty = all).
+func (s *TopologyService) ListEdges(ctx context.Context, status string) ([]*models.GraphEdgeDetail, error) {
+	edges, err := s.repository.ListTopologyEdges(ctx, status)
+	if err != nil {
+		return nil, err
+	}
+	nodes := make([]*models.GraphNode, 0, len(edges)*2)
+	for _, e := range edges {
+		nodes = append(nodes, &models.GraphNode{ResourceType: e.SourceType, ResourceID: e.SourceID},
+			&models.GraphNode{ResourceType: e.TargetType, ResourceID: e.TargetID})
+	}
+	if labels, err := s.repository.TopologyNodeLabels(ctx, nodes); err == nil {
+		for _, e := range edges {
+			e.SourceLabel = labels[fmt.Sprintf("%s_%d", e.SourceType, e.SourceID)][0]
+			e.TargetLabel = labels[fmt.Sprintf("%s_%d", e.TargetType, e.TargetID)][0]
+		}
+	}
+	return edges, nil
+}
+
+// SetEdgeStatus confirms or dismisses an edge.
+func (s *TopologyService) SetEdgeStatus(ctx context.Context, id int64, status string) error {
+	if status != "confirmed" && status != "dismissed" {
+		return fmt.Errorf("invalid status %q: must be confirmed or dismissed", status)
+	}
+	return s.repository.SetTopologyEdgeStatus(ctx, id, status)
+}
+
+// StartGraphSync keeps the graph in step with inventory: once at startup and
+// every ten minutes after.
+func (s *TopologyService) StartGraphSync(ctx context.Context) {
+	go func() {
+		run := func() {
+			if err := s.SyncGraph(ctx); err != nil {
+				log.Printf("topology graph sync: %v", err)
+			}
+		}
+		run()
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				run()
+			}
+		}
+	}()
 }
 
 // toCytoscapeGraph converts raw graph nodes and edges into the Cytoscape.js element format.
