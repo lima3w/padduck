@@ -22,11 +22,11 @@ type IPSearchFilter struct {
 
 func (r *Repository) SearchNetworks(ctx context.Context, query string, limit, offset int64) ([]*models.Network, error) {
 	sql := `SELECT id, name, description, created_by, created_at, updated_at FROM networks
-	        WHERE name ILIKE $1 OR description ILIKE $1
+	        WHERE @org(organization_id) AND (name ILIKE $1 OR description ILIKE $1)
 	        ORDER BY created_at DESC
 	        LIMIT $2 OFFSET $3`
 	searchQuery := "%" + query + "%"
-	rows, err := r.db.Query(ctx, sql, searchQuery, limit, offset)
+	rows, err := r.sQuery(ctx, sql, searchQuery, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +46,11 @@ func (r *Repository) SearchNetworks(ctx context.Context, query string, limit, of
 
 func (r *Repository) SearchSubnets(ctx context.Context, networkID int64, query string, limit, offset int64) ([]*models.Subnet, error) {
 	sql := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-	        WHERE s.network_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)
+	        WHERE s.network_id = $1 AND @org(s.organization_id) AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)
 	        ORDER BY s.network_address ASC
 	        LIMIT $3 OFFSET $4`
 	searchQuery := "%" + query + "%"
-	rows, err := r.db.Query(ctx, sql, networkID, searchQuery, limit, offset)
+	rows, err := r.sQuery(ctx, sql, networkID, searchQuery, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +70,10 @@ func (r *Repository) SearchSubnets(ctx context.Context, networkID int64, query s
 // GlobalSearchSubnets searches subnets across all sections.
 func (r *Repository) GlobalSearchSubnets(ctx context.Context, query string, limit int64) ([]*models.Subnet, error) {
 	sql := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-	        WHERE host(s.network_address) ILIKE $1 OR s.description ILIKE $1
+	        WHERE @org(s.organization_id) AND (host(s.network_address) ILIKE $1 OR s.description ILIKE $1)
 	        ORDER BY s.network_address ASC
 	        LIMIT $2`
-	rows, err := r.db.Query(ctx, sql, "%"+query+"%", limit)
+	rows, err := r.sQuery(ctx, sql, "%"+query+"%", limit)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (r *Repository) GlobalSearchSubnets(ctx context.Context, query string, limi
 
 func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, query string, status string, limit, offset int64, filter ...IPSearchFilter) ([]*models.IPAddress, error) {
 	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
-	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2)`
+	        WHERE ip.subnet_id = $1 AND @org(ip.organization_id) AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2)`
 	args := []interface{}{subnetID, "%" + query + "%"}
 	n := 3
 
@@ -141,7 +141,7 @@ func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, quer
 	sql += fmt.Sprintf(" ORDER BY ip.address ASC LIMIT $%d OFFSET $%d", n, n+1)
 	args = append(args, limit, offset)
 
-	rows, err := r.db.Query(ctx, sql, args...)
+	rows, err := r.sQuery(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +161,9 @@ func (r *Repository) SearchIPAddresses(ctx context.Context, subnetID int64, quer
 // SearchIPAddressesGlobal searches IP addresses across all subnets by address text.
 func (r *Repository) SearchIPAddressesGlobal(ctx context.Context, query string, limit int64) ([]*models.IPAddress, error) {
 	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
-	        WHERE ip.address::text ILIKE $1 OR ip.hostname ILIKE $1
+	        WHERE @org(ip.organization_id) AND (ip.address::text ILIKE $1 OR ip.hostname ILIKE $1)
 	        ORDER BY ip.address ASC LIMIT $2`
-	rows, err := r.db.Query(ctx, sql, "%"+query+"%", limit)
+	rows, err := r.sQuery(ctx, sql, "%"+query+"%", limit)
 	if err != nil {
 		return nil, err
 	}

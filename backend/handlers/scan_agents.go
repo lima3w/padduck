@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"padduck/models"
+	"padduck/repository"
 	"padduck/services"
 )
 
@@ -128,6 +129,8 @@ func (h *Handler) AgentAuthMiddleware(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusUnauthorized, ErrUnauthorized, "invalid or inactive agent token")
 	}
 	c.Locals("scan_agent", agent)
+	// Everything the agent reads or writes is confined to its own organization.
+	c.Context().SetUserValue(repository.OrgCtxKey, agent.OrganizationID)
 	return c.Next()
 }
 

@@ -77,14 +77,14 @@ func scanDevice(row interface{ Scan(dest ...any) error }) (*models.Device, error
 
 func (r *Repository) ListDevicesWithOptions(ctx context.Context, opts ListOptions) ([]*models.Device, int64, error) {
 	args := []interface{}{}
-	where := ""
+	where := " WHERE @org(d.organization_id)"
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
-		where = fmt.Sprintf(" WHERE d.hostname ILIKE $%d OR d.vendor ILIKE $%d OR d.model ILIKE $%d", len(args), len(args), len(args))
+		where += fmt.Sprintf(" AND (d.hostname ILIKE $%d OR d.vendor ILIKE $%d OR d.model ILIKE $%d)", len(args), len(args), len(args))
 	}
 	var total int64
 	countQuery := `SELECT COUNT(*) FROM devices d` + where
-	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+	if err := r.sQueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -102,7 +102,7 @@ func (r *Repository) ListDevicesWithOptions(ctx context.Context, opts ListOption
 		ORDER BY ` + sortCol + ` ` + orderDirection(opts.Order) + `
 		LIMIT $` + fmt.Sprint(len(args)-1) + ` OFFSET $` + fmt.Sprint(len(args))
 
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -141,11 +141,11 @@ func (r *Repository) ListAllDevices(ctx context.Context) ([]*models.Device, erro
 		       COUNT(ip.id) AS ip_count
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
-		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id WHERE @org(d.organization_id)
 		GROUP BY d.id, dt.id
 		ORDER BY d.hostname`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -178,6 +178,9 @@ func (r *Repository) ListAllDevices(ctx context.Context) ([]*models.Device, erro
 
 // CreateDevice inserts a new device and returns the created device.
 func (r *Repository) CreateDevice(ctx context.Context, p *DeviceParams) (*models.Device, error) {
+	if err := r.checkOrgRefs(ctx, sharedRef("device_types", p.TypeID), ref("networks", p.NetworkID), ref("locations", p.LocationID), ref("racks", p.RackID)); err != nil {
+		return nil, err
+	}
 	if p.SNMPVersion == "" {
 		p.SNMPVersion = "v2c"
 	}
@@ -185,11 +188,11 @@ func (r *Repository) CreateDevice(ctx context.Context, p *DeviceParams) (*models
 		INSERT INTO devices (hostname, description, type_id, network_id, vendor, model, os_version,
 		                     snmp_community, snmp_version, snmp_v3_user, snmp_v3_auth_proto,
 		                     snmp_v3_auth_pass, snmp_v3_priv_proto, snmp_v3_priv_pass,
-		                     location_id, rack_id, rack_unit_start, rack_unit_size)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+		                     location_id, rack_id, rack_unit_start, rack_unit_size, organization_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, @orgval)
 		RETURNING id, hostname, description, type_id, network_id, vendor, model, os_version,
 		          is_online, last_ping_at, location_id, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query,
+	row := r.sQueryRow(ctx, query,
 		p.Hostname, p.Description, p.TypeID, p.NetworkID, p.Vendor, p.Model, p.OSVersion,
 		p.SNMPCommunity, p.SNMPVersion, p.SNMPV3User, p.SNMPV3AuthProto,
 		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass,
@@ -207,10 +210,10 @@ func (r *Repository) GetDeviceByID(ctx context.Context, id int64) (*models.Devic
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
 		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
-		WHERE d.id = $1
+		WHERE @org(d.organization_id) AND d.id = $1
 		GROUP BY d.id, dt.id`
 
-	rows, err := r.db.Query(ctx, query, id)
+	rows, err := r.sQuery(ctx, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -243,6 +246,9 @@ func (r *Repository) GetDeviceByID(ctx context.Context, id int64) (*models.Devic
 
 // UpdateDevice updates an existing device and returns the updated record.
 func (r *Repository) UpdateDevice(ctx context.Context, id int64, p *DeviceParams) (*models.Device, error) {
+	if err := r.checkOrgRefs(ctx, sharedRef("device_types", p.TypeID), ref("networks", p.NetworkID), ref("locations", p.LocationID), ref("racks", p.RackID)); err != nil {
+		return nil, err
+	}
 	if p.SNMPVersion == "" {
 		p.SNMPVersion = "v2c"
 	}
@@ -253,10 +259,10 @@ func (r *Repository) UpdateDevice(ctx context.Context, id int64, p *DeviceParams
 		  snmp_v3_auth_pass=$12, snmp_v3_priv_proto=$13, snmp_v3_priv_pass=$14,
 		  location_id=$15, rack_id=$16, rack_unit_start=$17, rack_unit_size=$18,
 		  updated_at=now()
-		WHERE id=$19
+		WHERE @org(organization_id) AND id=$19
 		RETURNING id, hostname, description, type_id, network_id, vendor, model, os_version,
 		          is_online, last_ping_at, location_id, rack_id, rack_unit_start, rack_unit_size, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query,
+	row := r.sQueryRow(ctx, query,
 		p.Hostname, p.Description, p.TypeID, p.NetworkID, p.Vendor, p.Model, p.OSVersion,
 		p.SNMPCommunity, p.SNMPVersion, p.SNMPV3User, p.SNMPV3AuthProto,
 		p.SNMPV3AuthPass, p.SNMPV3PrivProto, p.SNMPV3PrivPass,
@@ -272,7 +278,7 @@ func (r *Repository) UpdateDevice(ctx context.Context, id int64, p *DeviceParams
 
 // DeleteDevice deletes a device by ID.
 func (r *Repository) DeleteDevice(ctx context.Context, id int64) error {
-	ct, err := r.db.Exec(ctx, `DELETE FROM devices WHERE id=$1`, id)
+	ct, err := r.sExec(ctx, `DELETE FROM devices WHERE @org(organization_id) AND id=$1`, id)
 	if err != nil {
 		return err
 	}
@@ -291,11 +297,11 @@ func (r *Repository) ListDevicesInRack(ctx context.Context, rackID int64) ([]*mo
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
 		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
-		WHERE d.rack_id = $1
+		WHERE @org(d.organization_id) AND d.rack_id = $1
 		GROUP BY d.id, dt.id
 		ORDER BY d.rack_unit_start NULLS LAST, d.hostname`
 
-	rows, err := r.db.Query(ctx, query, rackID)
+	rows, err := r.sQuery(ctx, query, rackID)
 	if err != nil {
 		return nil, err
 	}
@@ -335,11 +341,11 @@ func (r *Repository) ListDevicesByLocation(ctx context.Context, locationID int64
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
 		LEFT JOIN ip_addresses ip ON ip.device_id = d.id
-		WHERE d.location_id = $1
+		WHERE @org(d.organization_id) AND d.location_id = $1
 		GROUP BY d.id, dt.id
 		ORDER BY d.hostname`
 
-	rows, err := r.db.Query(ctx, query, locationID)
+	rows, err := r.sQuery(ctx, query, locationID)
 	if err != nil {
 		return nil, err
 	}

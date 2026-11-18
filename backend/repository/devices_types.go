@@ -8,8 +8,8 @@ import (
 
 // ListDeviceTypes returns all device types ordered by name.
 func (r *Repository) ListDeviceTypes(ctx context.Context) ([]*models.DeviceType, error) {
-	query := `SELECT id, name, COALESCE(icon, ''), description, created_at, updated_at FROM device_types ORDER BY name`
-	rows, err := r.db.Query(ctx, query)
+	query := `SELECT id, name, COALESCE(icon, ''), description, created_at, updated_at FROM device_types WHERE organization_id IS NULL OR @org(organization_id) ORDER BY name`
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}

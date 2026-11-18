@@ -42,17 +42,20 @@ type LocationParams struct {
 
 // CreateLocation inserts a new location record.
 func (r *Repository) CreateLocation(ctx context.Context, p *LocationParams) (*models.Location, error) {
-	query := `INSERT INTO locations (parent_id, name, type, address, city, region, country, facility_code, time_zone, contact_name, contact_email, contact_phone, status, lat, lng, description)
-	          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+	if err := r.checkOrgRefs(ctx, ref("locations", p.ParentID)); err != nil {
+		return nil, err
+	}
+	query := `INSERT INTO locations (parent_id, name, type, address, city, region, country, facility_code, time_zone, contact_name, contact_email, contact_phone, status, lat, lng, description, organization_id)
+	          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, @orgval)
 	          RETURNING ` + locationSelectCols
-	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.City, p.Region, p.Country, p.FacilityCode, p.TimeZone, p.ContactName, p.ContactEmail, p.ContactPhone, p.Status, p.Lat, p.Lng, p.Description)
+	row := r.sQueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.City, p.Region, p.Country, p.FacilityCode, p.TimeZone, p.ContactName, p.ContactEmail, p.ContactPhone, p.Status, p.Lat, p.Lng, p.Description)
 	return scanLocation(row)
 }
 
 // GetLocationByID returns a single location.
 func (r *Repository) GetLocationByID(ctx context.Context, id int64) (*models.Location, error) {
-	query := `SELECT ` + locationSelectCols + ` FROM locations WHERE id=$1`
-	row := r.db.QueryRow(ctx, query, id)
+	query := `SELECT ` + locationSelectCols + ` FROM locations WHERE @org(organization_id) AND id=$1`
+	row := r.sQueryRow(ctx, query, id)
 	l, err := scanLocation(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -65,8 +68,8 @@ func (r *Repository) GetLocationByID(ctx context.Context, id int64) (*models.Loc
 
 // ListLocations returns all locations ordered by name.
 func (r *Repository) ListLocations(ctx context.Context) ([]*models.Location, error) {
-	query := `SELECT ` + locationSelectCols + ` FROM locations ORDER BY name`
-	rows, err := r.db.Query(ctx, query)
+	query := `SELECT ` + locationSelectCols + ` FROM locations WHERE @org(organization_id) ORDER BY name`
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -86,12 +89,12 @@ func (r *Repository) ListLocations(ctx context.Context) ([]*models.Location, err
 // ListLocationsPaginated returns a page of locations with a total count.
 func (r *Repository) ListLocationsPaginated(ctx context.Context, limit, offset int) ([]*models.Location, int64, error) {
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM locations`).Scan(&total); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM locations WHERE @org(organization_id) `).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := `SELECT ` + locationSelectCols + ` FROM locations ORDER BY name LIMIT $1 OFFSET $2`
-	rows, err := r.db.Query(ctx, query, limit, offset)
+	query := `SELECT ` + locationSelectCols + ` FROM locations WHERE @org(organization_id) ORDER BY name LIMIT $1 OFFSET $2`
+	rows, err := r.sQuery(ctx, query, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -110,10 +113,13 @@ func (r *Repository) ListLocationsPaginated(ctx context.Context, limit, offset i
 
 // UpdateLocation updates an existing location.
 func (r *Repository) UpdateLocation(ctx context.Context, id int64, p *LocationParams) (*models.Location, error) {
+	if err := r.checkOrgRefs(ctx, ref("locations", p.ParentID)); err != nil {
+		return nil, err
+	}
 	query := `UPDATE locations SET parent_id=$1, name=$2, type=$3, address=$4, city=$5, region=$6, country=$7, facility_code=$8, time_zone=$9, contact_name=$10, contact_email=$11, contact_phone=$12, status=$13, lat=$14, lng=$15, description=$16, updated_at=now()
-	          WHERE id=$17
+	          WHERE @org(organization_id) AND id=$17
 	          RETURNING ` + locationSelectCols
-	row := r.db.QueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.City, p.Region, p.Country, p.FacilityCode, p.TimeZone, p.ContactName, p.ContactEmail, p.ContactPhone, p.Status, p.Lat, p.Lng, p.Description, id)
+	row := r.sQueryRow(ctx, query, p.ParentID, p.Name, p.Type, p.Address, p.City, p.Region, p.Country, p.FacilityCode, p.TimeZone, p.ContactName, p.ContactEmail, p.ContactPhone, p.Status, p.Lat, p.Lng, p.Description, id)
 	l, err := scanLocation(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -126,7 +132,7 @@ func (r *Repository) UpdateLocation(ctx context.Context, id int64, p *LocationPa
 
 // DeleteLocation deletes a location by ID.
 func (r *Repository) DeleteLocation(ctx context.Context, id int64) error {
-	ct, err := r.db.Exec(ctx, `DELETE FROM locations WHERE id=$1`, id)
+	ct, err := r.sExec(ctx, `DELETE FROM locations WHERE @org(organization_id) AND id=$1`, id)
 	if err != nil {
 		return err
 	}
@@ -141,13 +147,13 @@ func (r *Repository) GetLocationTree(ctx context.Context) ([]*models.Location, e
 	query := `
 		WITH RECURSIVE loc_tree AS (
 			SELECT id, parent_id, name, type, address, city, region, country, facility_code, time_zone, contact_name, contact_email, contact_phone, status, lat, lng, description, created_at, updated_at, 0 AS depth
-			FROM locations WHERE parent_id IS NULL
+			FROM locations WHERE parent_id IS NULL AND @org(organization_id)
 			UNION ALL
 			SELECT l.id, l.parent_id, l.name, l.type, l.address, l.city, l.region, l.country, l.facility_code, l.time_zone, l.contact_name, l.contact_email, l.contact_phone, l.status, l.lat, l.lng, l.description, l.created_at, l.updated_at, lt.depth + 1
-			FROM locations l JOIN loc_tree lt ON l.parent_id = lt.id
+			FROM locations l JOIN loc_tree lt ON l.parent_id = lt.id WHERE @org(l.organization_id)
 		)
 		SELECT ` + locationSelectCols + ` FROM loc_tree ORDER BY depth, name`
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -168,12 +174,12 @@ func (r *Repository) GetLocationTree(ctx context.Context) ([]*models.Location, e
 func (r *Repository) GetLocationAncestors(ctx context.Context, locationID int64) ([]int64, error) {
 	query := `
 		WITH RECURSIVE ancestors AS (
-			SELECT id, parent_id FROM locations WHERE id=$1
+			SELECT id, parent_id FROM locations WHERE id=$1 AND @org(organization_id)
 			UNION ALL
 			SELECT l.id, l.parent_id FROM locations l JOIN ancestors a ON l.id = a.parent_id
 		)
 		SELECT id FROM ancestors`
-	rows, err := r.db.Query(ctx, query, locationID)
+	rows, err := r.sQuery(ctx, query, locationID)
 	if err != nil {
 		return nil, err
 	}

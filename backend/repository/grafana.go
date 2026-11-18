@@ -38,11 +38,11 @@ func (r *Repository) GrafanaGetSubnetUtilization(ctx context.Context) ([]Grafana
 			COUNT(ip.id) AS total
 		FROM subnets s
 		JOIN networks sec ON sec.id = s.network_id
-		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id WHERE @org(s.organization_id)
 		GROUP BY s.id, s.network_address, s.prefix_length, s.description, sec.name
 		ORDER BY sec.name ASC, s.network_address ASC`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,8 @@ func (r *Repository) GrafanaGetSubnetUtilization(ctx context.Context) ([]Grafana
 }
 
 func (r *Repository) GrafanaGetIPCountsByStatus(ctx context.Context) ([]GrafanaIPStatusRow, error) {
-	query := `SELECT status, COUNT(*) FROM ip_addresses GROUP BY status ORDER BY status ASC`
-	rows, err := r.db.Query(ctx, query)
+	query := `SELECT status, COUNT(*) FROM ip_addresses WHERE @org(organization_id) GROUP BY status ORDER BY status ASC`
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -90,11 +90,11 @@ func (r *Repository) GrafanaGetSectionSummary(ctx context.Context) ([]GrafanaSec
 			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END) AS used_ips
 		FROM networks sec
 		LEFT JOIN subnets s ON s.network_id = sec.id
-		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id WHERE @org(sec.organization_id)
 		GROUP BY sec.id, sec.name
 		ORDER BY sec.name ASC`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}

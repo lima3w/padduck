@@ -398,6 +398,11 @@ func (a *AutomationService) RecordApplied(ctx context.Context, decision *PolicyD
 	if decision == nil || decision.Request.TriggeredBy == "" || decision.Request.DryRun {
 		return
 	}
+	// Run in the organization the request belonged to (the caller may have
+	// handed us a detached context).
+	if decision.Request.OrgID != nil {
+		ctx = repository.WithOrg(ctx, *decision.Request.OrgID)
+	}
 	for _, policy := range decision.Matched {
 		results := []models.PolicyActionResult{}
 		for _, act := range policy.Actions {

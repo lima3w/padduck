@@ -16,7 +16,8 @@ func (r *Repository) UpsertTopologyNode(ctx context.Context, orgID *int64, resou
 		INSERT INTO topology_nodes (organization_id, resource_type, resource_id)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (resource_type, resource_id) DO UPDATE
-		  SET resource_type = EXCLUDED.resource_type
+		  SET resource_type = EXCLUDED.resource_type,
+		      organization_id = COALESCE(topology_nodes.organization_id, EXCLUDED.organization_id)
 		RETURNING id, organization_id, resource_type, resource_id, created_at`,
 		orgID, resourceType, resourceID,
 	).Scan(&n.ID, &n.OrganizationID, &n.ResourceType, &n.ResourceID, &n.CreatedAt)
@@ -26,8 +27,8 @@ func (r *Repository) UpsertTopologyNode(ctx context.Context, orgID *int64, resou
 // getTopologyNodeID looks up the node ID for a (resource_type, resource_id) pair.
 func (r *Repository) getTopologyNodeID(ctx context.Context, resourceType string, resourceID int64) (int64, error) {
 	var id int64
-	err := r.db.QueryRow(ctx,
-		`SELECT id FROM topology_nodes WHERE resource_type = $1 AND resource_id = $2`,
+	err := r.sQueryRow(ctx,
+		`SELECT id FROM topology_nodes WHERE resource_type = $1 AND resource_id = $2 AND @org(organization_id)`,
 		resourceType, resourceID,
 	).Scan(&id)
 	if err != nil {
@@ -287,7 +288,12 @@ func (r *Repository) SyncTopologyGraph(ctx context.Context) error {
 			return err
 		}
 		if _, err := r.db.Exec(ctx, fmt.Sprintf(
-			`INSERT INTO topology_nodes (resource_type, resource_id) SELECT $1, id FROM %s ON CONFLICT DO NOTHING`, t.table), t.typ); err != nil {
+			`INSERT INTO topology_nodes (organization_id, resource_type, resource_id) SELECT organization_id, $1, id FROM %s ON CONFLICT DO NOTHING`, t.table), t.typ); err != nil {
+			return err
+		}
+		if _, err := r.db.Exec(ctx, fmt.Sprintf(
+			`UPDATE topology_nodes n SET organization_id = x.organization_id FROM %s x
+			 WHERE n.resource_type=$1 AND n.resource_id=x.id AND n.organization_id IS DISTINCT FROM x.organization_id`, t.table), t.typ); err != nil {
 			return err
 		}
 	}
@@ -301,8 +307,8 @@ func (r *Repository) SyncTopologyGraph(ctx context.Context) error {
 	}
 	_, err := r.db.Exec(ctx, `
 		WITH`+autoEdgesCTE+`
-		INSERT INTO topology_edges (source_node_id, target_node_id, relationship, confidence, status, evidence)
-		SELECT s.id, t.id, d.rel, 1.0, 'confirmed', 'auto'
+		INSERT INTO topology_edges (organization_id, source_node_id, target_node_id, relationship, confidence, status, evidence)
+		SELECT s.organization_id, s.id, t.id, d.rel, 1.0, 'confirmed', 'auto'
 		FROM derived d
 		JOIN topology_nodes s ON s.resource_type=d.src_type AND s.resource_id=d.src_id
 		JOIN topology_nodes t ON t.resource_type=d.tgt_type AND t.resource_id=d.tgt_id
@@ -315,11 +321,11 @@ func (r *Repository) SyncTopologyGraph(ctx context.Context) error {
 // Any other open suggestion from the same source with the same evidence prefix
 // and relationship is dropped so a moved uplink does not leave a stale one.
 func (r *Repository) SuggestTopologyEdge(ctx context.Context, srcType string, srcID int64, tgtType string, tgtID int64, relationship string, confidence float64, evidence, evidencePrefix string) error {
-	srcNode, err := r.UpsertTopologyNode(ctx, nil, srcType, srcID)
+	srcNode, err := r.UpsertTopologyNode(ctx, r.resourceOrg(ctx, srcType, srcID), srcType, srcID)
 	if err != nil {
 		return err
 	}
-	tgtNode, err := r.UpsertTopologyNode(ctx, nil, tgtType, tgtID)
+	tgtNode, err := r.UpsertTopologyNode(ctx, r.resourceOrg(ctx, tgtType, tgtID), tgtType, tgtID)
 	if err != nil {
 		return err
 	}
@@ -331,10 +337,10 @@ func (r *Repository) SuggestTopologyEdge(ctx context.Context, srcType string, sr
 		return err
 	}
 	_, err = r.db.Exec(ctx, `
-		INSERT INTO topology_edges (source_node_id, target_node_id, relationship, confidence, status, evidence)
-		VALUES ($1,$2,$3,$4,'suggested',$5)
+		INSERT INTO topology_edges (organization_id, source_node_id, target_node_id, relationship, confidence, status, evidence)
+		VALUES ($6,$1,$2,$3,$4,'suggested',$5)
 		ON CONFLICT (source_node_id, target_node_id, relationship) DO NOTHING`,
-		srcNode.ID, tgtNode.ID, relationship, confidence, evidence)
+		srcNode.ID, tgtNode.ID, relationship, confidence, evidence, srcNode.OrganizationID)
 	return err
 }
 
@@ -346,13 +352,13 @@ func (r *Repository) ListTopologyEdges(ctx context.Context, status string) ([]*m
 		       s.resource_type, s.resource_id, t.resource_type, t.resource_id
 		FROM topology_edges e
 		JOIN topology_nodes s ON s.id=e.source_node_id
-		JOIN topology_nodes t ON t.id=e.target_node_id`
+		JOIN topology_nodes t ON t.id=e.target_node_id WHERE @org(e.organization_id)`
 	args := []any{}
 	if status != "" {
-		q += ` WHERE e.status=$1`
+		q += ` AND e.status=$1`
 		args = append(args, status)
 	}
-	rows, err := r.db.Query(ctx, q+` ORDER BY e.id`, args...)
+	rows, err := r.sQuery(ctx, q+` ORDER BY e.id`, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +377,7 @@ func (r *Repository) ListTopologyEdges(ctx context.Context, status string) ([]*m
 
 // SetTopologyEdgeStatus confirms or dismisses an edge.
 func (r *Repository) SetTopologyEdgeStatus(ctx context.Context, id int64, status string) error {
-	tag, err := r.db.Exec(ctx, `UPDATE topology_edges SET status=$2 WHERE id=$1`, id, status)
+	tag, err := r.sExec(ctx, `UPDATE topology_edges SET status=$2 WHERE id=$1 AND @org(organization_id)`, id, status)
 	if err != nil {
 		return err
 	}
@@ -383,7 +389,7 @@ func (r *Repository) SetTopologyEdgeStatus(ctx context.Context, id int64, status
 
 // GetTopologyFull returns every node and every non-dismissed edge, capped at limit nodes.
 func (r *Repository) GetTopologyFull(ctx context.Context, limit int) ([]*models.GraphNode, []*models.GraphEdge, error) {
-	rows, err := r.db.Query(ctx, `SELECT id, organization_id, resource_type, resource_id, created_at FROM topology_nodes ORDER BY id LIMIT $1`, limit)
+	rows, err := r.sQuery(ctx, `SELECT id, organization_id, resource_type, resource_id, created_at FROM topology_nodes WHERE @org(organization_id) ORDER BY id LIMIT $1`, limit)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -440,4 +446,19 @@ func (r *Repository) TopologyNodeLabels(ctx context.Context, nodes []*models.Gra
 		rows.Close()
 	}
 	return out, nil
+}
+
+// resourceOrg returns the organization that owns a graph resource, or nil when
+// it cannot be determined (the node is then adopted by the next graph sync).
+func (r *Repository) resourceOrg(ctx context.Context, resourceType string, id int64) *int64 {
+	tables := map[string]string{"subnet": "subnets", "device": "devices", "vlan": "vlans", "location": "locations"}
+	table, ok := tables[resourceType]
+	if !ok {
+		return nil
+	}
+	var org int64
+	if err := r.db.QueryRow(ctx, "SELECT organization_id FROM "+table+" WHERE id=$1", id).Scan(&org); err != nil {
+		return nil
+	}
+	return &org
 }

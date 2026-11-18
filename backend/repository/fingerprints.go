@@ -9,7 +9,7 @@ import (
 
 // GetDeviceFingerprint returns the fingerprint for a device, or nil if none exists.
 func (r *Repository) GetDeviceFingerprint(ctx context.Context, deviceID int64) (*models.DeviceFingerprint, error) {
-	row := r.db.QueryRow(ctx, `
+	row := r.sQueryRow(ctx, `
 		SELECT id, device_id, open_ports, os_guess, vendor_guess, confidence_score, evidence, last_updated_at
 		FROM device_fingerprints WHERE device_id = $1`, deviceID)
 	return scanFingerprint(row)
@@ -19,7 +19,7 @@ func (r *Repository) GetDeviceFingerprint(ctx context.Context, deviceID int64) (
 func (r *Repository) UpsertDeviceFingerprint(ctx context.Context, deviceID int64, openPorts []int, osGuess, vendorGuess *string, confidenceScore float64, evidence []string) (*models.DeviceFingerprint, error) {
 	portsJSON, _ := json.Marshal(openPorts)
 	evidenceJSON, _ := json.Marshal(evidence)
-	row := r.db.QueryRow(ctx, `
+	row := r.sQueryRow(ctx, `
 		INSERT INTO device_fingerprints (device_id, open_ports, os_guess, vendor_guess, confidence_score, evidence, last_updated_at)
 		VALUES ($1, $2::jsonb, $3, $4, $5, $6::jsonb, now())
 		ON CONFLICT (device_id) DO UPDATE SET

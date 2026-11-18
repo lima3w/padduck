@@ -548,6 +548,7 @@ type NotificationPreferences struct {
 // ScanJob represents a scheduled or one-time network discovery scan
 type ScanJob struct {
 	ID              int64      `json:"id"`
+	OrganizationID  int64      `json:"-"`
 	Name            string     `json:"name"`
 	SubnetIDs       []int64    `json:"subnet_ids"`
 	ScheduleCron    *string    `json:"schedule_cron,omitempty"`
@@ -591,17 +592,18 @@ type ScanRunChange struct {
 
 // ScanAgent represents a remote scanning agent
 type ScanAgent struct {
-	ID           int64      `json:"id"`
-	Name         string     `json:"name"`
-	TokenHash    string     `json:"-"`
-	LastSeen     *time.Time `json:"last_seen,omitempty"`
-	IsActive     bool       `json:"is_active"`
-	CreatedAt    time.Time  `json:"created_at"`
-	Version      *string    `json:"version,omitempty"`
-	Capabilities []string   `json:"capabilities,omitempty"`
-	Status       string     `json:"status"`
-	LastError    *string    `json:"last_error,omitempty"`
-	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	ID             int64      `json:"id"`
+	OrganizationID int64      `json:"-"`
+	Name           string     `json:"name"`
+	TokenHash      string     `json:"-"`
+	LastSeen       *time.Time `json:"last_seen,omitempty"`
+	IsActive       bool       `json:"is_active"`
+	CreatedAt      time.Time  `json:"created_at"`
+	Version        *string    `json:"version,omitempty"`
+	Capabilities   []string   `json:"capabilities,omitempty"`
+	Status         string     `json:"status"`
+	LastError      *string    `json:"last_error,omitempty"`
+	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
 }
 
 // ScanProfile holds reusable scan configuration that can be referenced by scan jobs or subnets.
@@ -1026,6 +1028,7 @@ type AlertCooldown struct {
 // ScheduledReport defines a recurring report that is emailed to recipients.
 type ScheduledReport struct {
 	ID              int64          `json:"id"`
+	OrganizationID  *int64         `json:"-"`
 	Name            string         `json:"name"`
 	ReportType      string         `json:"report_type"`
 	ScheduleCron    string         `json:"schedule_cron"`

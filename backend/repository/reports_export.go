@@ -19,10 +19,10 @@ func (r *Repository) GetDuplicates(ctx context.Context) (*models.DuplicatesRepor
 	}
 
 	// Duplicate hostnames — collect one row per hostname then fetch ids separately.
-	dupRows, err := r.db.Query(ctx, `
+	dupRows, err := r.sQuery(ctx, `
 		SELECT hostname, COUNT(*) AS cnt
 		FROM devices
-		WHERE hostname IS NOT NULL AND hostname <> ''
+		WHERE @org(organization_id) AND hostname IS NOT NULL AND hostname <> ''
 		GROUP BY hostname
 		HAVING COUNT(*) > 1
 		ORDER BY cnt DESC
@@ -49,8 +49,8 @@ func (r *Repository) GetDuplicates(ctx context.Context) (*models.DuplicatesRepor
 	}
 
 	for _, dm := range dups {
-		idRows, err := r.db.Query(ctx,
-			`SELECT id FROM devices WHERE hostname = $1 ORDER BY id`, dm.hostname)
+		idRows, err := r.sQuery(ctx,
+			`SELECT id FROM devices WHERE @org(organization_id) AND hostname = $1 ORDER BY id`, dm.hostname)
 		if err != nil {
 			return nil, err
 		}
@@ -75,14 +75,14 @@ func (r *Repository) GetDuplicates(ctx context.Context) (*models.DuplicatesRepor
 	}
 
 	// Conflicting IPs — same address assigned to more than one ip_addresses row.
-	cipRows, err := r.db.Query(ctx, `
+	cipRows, err := r.sQuery(ctx, `
 		SELECT
 			host(ip.address),
 			host(s.network_address) || '/' || s.prefix_length AS cidr,
 			COUNT(DISTINCT ip.id) AS cnt
 		FROM ip_addresses ip
 		JOIN subnets s ON s.id = ip.subnet_id
-		WHERE ip.status = 'used'
+		WHERE @org(ip.organization_id) AND ip.status = 'used'
 		GROUP BY ip.address, s.network_address, s.prefix_length
 		HAVING COUNT(DISTINCT ip.id) > 1
 		ORDER BY cnt DESC
@@ -110,8 +110,8 @@ func (r *Repository) GetDuplicates(ctx context.Context) (*models.DuplicatesRepor
 	}
 
 	for _, cm := range cips {
-		hnRows, err := r.db.Query(ctx,
-			`SELECT COALESCE(hostname, '') FROM ip_addresses WHERE address::text = $1 AND status = 'used' ORDER BY id`,
+		hnRows, err := r.sQuery(ctx,
+			`SELECT COALESCE(hostname, '') FROM ip_addresses WHERE @org(organization_id) AND address::text = $1 AND status = 'used' ORDER BY id`,
 			cm.address)
 		if err != nil {
 			return nil, err
@@ -153,7 +153,7 @@ type SubnetGapRow struct {
 
 // GetSubnetGaps returns all subnets with their allocated vs free IP counts.
 func (r *Repository) GetSubnetGaps(ctx context.Context) ([]*SubnetGapRow, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT
 			s.id,
 			host(s.network_address) || '/' || s.prefix_length AS cidr,
@@ -162,7 +162,7 @@ func (r *Repository) GetSubnetGaps(ctx context.Context) ([]*SubnetGapRow, error)
 			COUNT(ip.id) FILTER (WHERE ip.status <> 'available') AS used_ips,
 			(1 << (32 - s.prefix_length)) - COUNT(ip.id) FILTER (WHERE ip.status <> 'available') AS free_ips
 		FROM subnets s
-		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id WHERE @org(s.organization_id)
 		GROUP BY s.id
 		ORDER BY free_ips DESC, s.network_address
 	`)
@@ -196,7 +196,7 @@ type VLANAssignmentRow struct {
 
 // GetVLANAssignment returns all VLANs with their assigned subnets.
 func (r *Repository) GetVLANAssignment(ctx context.Context) ([]*VLANAssignmentRow, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT
 			v.id,
 			v.name,
@@ -204,7 +204,7 @@ func (r *Repository) GetVLANAssignment(ctx context.Context) ([]*VLANAssignmentRo
 			COUNT(s.id) AS subnet_count,
 			COALESCE(string_agg(host(s.network_address) || '/' || s.prefix_length, ', ' ORDER BY s.network_address), '') AS subnet_cidrs
 		FROM vlans v
-		LEFT JOIN subnets s ON s.vlan_id = v.id
+		LEFT JOIN subnets s ON s.vlan_id = v.id WHERE @org(v.organization_id)
 		GROUP BY v.id, v.name, v.vlan_id
 		ORDER BY v.vlan_id
 	`)
@@ -236,7 +236,7 @@ type IPAgeRow struct {
 
 // GetIPAge returns all IP addresses with their age and days since last seen.
 func (r *Repository) GetIPAge(ctx context.Context) ([]*IPAgeRow, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT
 			id,
 			address,
@@ -244,7 +244,7 @@ func (r *Repository) GetIPAge(ctx context.Context) ([]*IPAgeRow, error) {
 			device_id,
 			EXTRACT(DAY FROM now() - created_at)::int AS days_old,
 			CASE WHEN last_seen IS NOT NULL THEN EXTRACT(DAY FROM now() - last_seen)::int ELSE -1 END AS days_since_seen
-		FROM ip_addresses
+		FROM ip_addresses WHERE @org(organization_id)
 		ORDER BY days_old DESC
 	`)
 	if err != nil {
@@ -274,7 +274,7 @@ type DNSAuditRow struct {
 
 // GetDNSAudit returns all IP addresses that have a dns_name set, with their DNS check status.
 func (r *Repository) GetDNSAudit(ctx context.Context) ([]*DNSAuditRow, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT
 			id,
 			address,
@@ -282,7 +282,7 @@ func (r *Repository) GetDNSAudit(ctx context.Context) ([]*DNSAuditRow, error) {
 			COALESCE(ptr_record, '') AS ptr_record,
 			COALESCE(dns_last_checked::text, 'never') AS dns_last_checked
 		FROM ip_addresses
-		WHERE dns_name IS NOT NULL AND dns_name <> ''
+		WHERE @org(organization_id) AND dns_name IS NOT NULL AND dns_name <> ''
 		ORDER BY address
 	`)
 	if err != nil {
@@ -303,7 +303,7 @@ func (r *Repository) GetDNSAudit(ctx context.Context) ([]*DNSAuditRow, error) {
 
 // GetInactiveDevices returns devices that have not been pinged within the given number of days.
 func (r *Repository) GetInactiveDevices(ctx context.Context, days int) ([]*models.InactiveDeviceReport, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT
 			id,
 			hostname,
@@ -315,7 +315,7 @@ func (r *Repository) GetInactiveDevices(ctx context.Context, days int) ([]*model
 				ELSE GREATEST(0, EXTRACT(DAY FROM now() - last_ping_at)::int)
 			END AS days_inactive
 		FROM devices
-		WHERE last_ping_at IS NULL OR last_ping_at < now() - ($1 * INTERVAL '1 day')
+		WHERE @org(organization_id) AND (last_ping_at IS NULL OR last_ping_at < now() - ($1 * INTERVAL '1 day'))
 		ORDER BY days_inactive DESC
 		LIMIT 500
 	`, days)
@@ -338,7 +338,7 @@ func (r *Repository) GetInactiveDevices(ctx context.Context, days int) ([]*model
 // GetOverdueScanJobs returns active scan jobs that have not run within the expected window.
 // It returns jobs that have not run in more than the given number of days (or never).
 func (r *Repository) GetOverdueScanJobs(ctx context.Context, days int) ([]*models.FailedScanJobReport, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT
 			id,
 			name,
@@ -350,8 +350,8 @@ func (r *Repository) GetOverdueScanJobs(ctx context.Context, days int) ([]*model
 			END AS days_since_run,
 			is_active
 		FROM scan_jobs
-		WHERE is_active = true
-		  AND (last_run_at IS NULL OR last_run_at < now() - ($1 * INTERVAL '1 day'))
+		WHERE @org(organization_id) AND (is_active = true
+		  AND (last_run_at IS NULL OR last_run_at < now() - ($1 * INTERVAL '1 day')))
 		ORDER BY days_since_run DESC
 		LIMIT 500
 	`, days)

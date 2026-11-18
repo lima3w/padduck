@@ -121,7 +121,7 @@ type FirewallZoneMappingParams struct {
 }
 
 func (r *Repository) ListNATRules(ctx context.Context) ([]*models.NATRule, error) {
-	rows, err := r.db.Query(ctx, `SELECT n.id, n.name, n.type, n.internal_cidr, n.external_cidr, n.protocol, n.internal_port, n.external_port, n.device_id, n.customer_id, n.description, n.status, c.name, d.hostname, n.created_at, n.updated_at FROM nat_rules n LEFT JOIN customers c ON c.id=n.customer_id LEFT JOIN devices d ON d.id=n.device_id ORDER BY n.name`)
+	rows, err := r.sQuery(ctx, `SELECT n.id, n.name, n.type, n.internal_cidr, n.external_cidr, n.protocol, n.internal_port, n.external_port, n.device_id, n.customer_id, n.description, n.status, c.name, d.hostname, n.created_at, n.updated_at FROM nat_rules n LEFT JOIN customers c ON c.id=n.customer_id LEFT JOIN devices d ON d.id=n.device_id WHERE @org(n.organization_id) ORDER BY n.name`)
 	if err != nil {
 		return nil, err
 	}
@@ -139,13 +139,13 @@ func (r *Repository) ListNATRules(ctx context.Context) ([]*models.NATRule, error
 
 func (r *Repository) GetNATRuleByID(ctx context.Context, id int64) (*models.NATRule, error) {
 	item := &models.NATRule{}
-	err := r.db.QueryRow(ctx, `SELECT n.id, n.name, n.type, n.internal_cidr, n.external_cidr, n.protocol, n.internal_port, n.external_port, n.device_id, n.customer_id, n.description, n.status, c.name, d.hostname, n.created_at, n.updated_at FROM nat_rules n LEFT JOIN customers c ON c.id=n.customer_id LEFT JOIN devices d ON d.id=n.device_id WHERE n.id=$1`, id).Scan(&item.ID, &item.Name, &item.Type, &item.InternalCIDR, &item.ExternalCIDR, &item.Protocol, &item.InternalPort, &item.ExternalPort, &item.DeviceID, &item.CustomerID, &item.Description, &item.Status, &item.CustomerName, &item.DeviceName, &item.CreatedAt, &item.UpdatedAt)
+	err := r.sQueryRow(ctx, `SELECT n.id, n.name, n.type, n.internal_cidr, n.external_cidr, n.protocol, n.internal_port, n.external_port, n.device_id, n.customer_id, n.description, n.status, c.name, d.hostname, n.created_at, n.updated_at FROM nat_rules n LEFT JOIN customers c ON c.id=n.customer_id LEFT JOIN devices d ON d.id=n.device_id WHERE @org(n.organization_id) AND n.id=$1`, id).Scan(&item.ID, &item.Name, &item.Type, &item.InternalCIDR, &item.ExternalCIDR, &item.Protocol, &item.InternalPort, &item.ExternalPort, &item.DeviceID, &item.CustomerID, &item.Description, &item.Status, &item.CustomerName, &item.DeviceName, &item.CreatedAt, &item.UpdatedAt)
 	return item, err
 }
 
 func (r *Repository) CreateNATRule(ctx context.Context, p *NATRuleParams) (*models.NATRule, error) {
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO nat_rules (name, type, internal_cidr, external_cidr, protocol, internal_port, external_port, device_id, customer_id, description, status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, p.Name, p.Type, p.InternalCIDR, p.ExternalCIDR, p.Protocol, p.InternalPort, p.ExternalPort, p.DeviceID, p.CustomerID, p.Description, p.Status).Scan(&id)
+	err := r.sQueryRow(ctx, `INSERT INTO nat_rules (name, type, internal_cidr, external_cidr, protocol, internal_port, external_port, device_id, customer_id, description, status, organization_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, @orgval) RETURNING id`, p.Name, p.Type, p.InternalCIDR, p.ExternalCIDR, p.Protocol, p.InternalPort, p.ExternalPort, p.DeviceID, p.CustomerID, p.Description, p.Status).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +153,7 @@ func (r *Repository) CreateNATRule(ctx context.Context, p *NATRuleParams) (*mode
 }
 
 func (r *Repository) UpdateNATRule(ctx context.Context, id int64, p *NATRuleParams) (*models.NATRule, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE nat_rules SET name=$1, type=$2, internal_cidr=$3, external_cidr=$4, protocol=$5, internal_port=$6, external_port=$7, device_id=$8, customer_id=$9, description=$10, status=$11, updated_at=CURRENT_TIMESTAMP WHERE id=$12`, p.Name, p.Type, p.InternalCIDR, p.ExternalCIDR, p.Protocol, p.InternalPort, p.ExternalPort, p.DeviceID, p.CustomerID, p.Description, p.Status, id)
+	tag, err := r.sExec(ctx, `UPDATE nat_rules SET name=$1, type=$2, internal_cidr=$3, external_cidr=$4, protocol=$5, internal_port=$6, external_port=$7, device_id=$8, customer_id=$9, description=$10, status=$11, updated_at=CURRENT_TIMESTAMP WHERE @org(organization_id) AND id=$12`, p.Name, p.Type, p.InternalCIDR, p.ExternalCIDR, p.Protocol, p.InternalPort, p.ExternalPort, p.DeviceID, p.CustomerID, p.Description, p.Status, id)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (r *Repository) DeleteNATRule(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) ListFirewallZones(ctx context.Context) ([]*models.FirewallZone, error) {
-	rows, err := r.db.Query(ctx, `SELECT id, name, description, color, status, created_at, updated_at FROM firewall_zones ORDER BY name`)
+	rows, err := r.sQuery(ctx, `SELECT id, name, description, color, status, created_at, updated_at FROM firewall_zones WHERE @org(organization_id) ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -186,13 +186,13 @@ func (r *Repository) ListFirewallZones(ctx context.Context) ([]*models.FirewallZ
 
 func (r *Repository) GetFirewallZoneByID(ctx context.Context, id int64) (*models.FirewallZone, error) {
 	item := &models.FirewallZone{}
-	err := r.db.QueryRow(ctx, `SELECT id, name, description, color, status, created_at, updated_at FROM firewall_zones WHERE id=$1`, id).Scan(&item.ID, &item.Name, &item.Description, &item.Color, &item.Status, &item.CreatedAt, &item.UpdatedAt)
+	err := r.sQueryRow(ctx, `SELECT id, name, description, color, status, created_at, updated_at FROM firewall_zones WHERE @org(organization_id) AND id=$1`, id).Scan(&item.ID, &item.Name, &item.Description, &item.Color, &item.Status, &item.CreatedAt, &item.UpdatedAt)
 	return item, err
 }
 
 func (r *Repository) CreateFirewallZone(ctx context.Context, p *FirewallZoneParams) (*models.FirewallZone, error) {
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO firewall_zones (name, description, color, status) VALUES ($1,$2,$3,$4) RETURNING id`, p.Name, p.Description, p.Color, p.Status).Scan(&id)
+	err := r.sQueryRow(ctx, `INSERT INTO firewall_zones (name, description, color, status, organization_id) VALUES ($1,$2,$3,$4, @orgval) RETURNING id`, p.Name, p.Description, p.Color, p.Status).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (r *Repository) CreateFirewallZone(ctx context.Context, p *FirewallZonePara
 }
 
 func (r *Repository) UpdateFirewallZone(ctx context.Context, id int64, p *FirewallZoneParams) (*models.FirewallZone, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE firewall_zones SET name=$1, description=$2, color=$3, status=$4, updated_at=CURRENT_TIMESTAMP WHERE id=$5`, p.Name, p.Description, p.Color, p.Status, id)
+	tag, err := r.sExec(ctx, `UPDATE firewall_zones SET name=$1, description=$2, color=$3, status=$4, updated_at=CURRENT_TIMESTAMP WHERE @org(organization_id) AND id=$5`, p.Name, p.Description, p.Color, p.Status, id)
 	if err != nil {
 		return nil, err
 	}
@@ -215,14 +215,14 @@ func (r *Repository) DeleteFirewallZone(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) ListFirewallZoneMappings(ctx context.Context, zoneID int64) ([]*models.FirewallZoneMapping, error) {
-	query := `SELECT m.id, m.zone_id, m.object_type, m.object_id, COALESCE(m.cidr::text, ''), m.direction, m.description, m.status, z.name, m.created_at, m.updated_at FROM firewall_zone_mappings m JOIN firewall_zones z ON z.id=m.zone_id`
+	query := `SELECT m.id, m.zone_id, m.object_type, m.object_id, COALESCE(m.cidr::text, ''), m.direction, m.description, m.status, z.name, m.created_at, m.updated_at FROM firewall_zone_mappings m JOIN firewall_zones z ON z.id=m.zone_id WHERE @org(m.organization_id) `
 	args := []any{}
 	if zoneID > 0 {
-		query += ` WHERE m.zone_id=$1`
+		query += ` AND m.zone_id=$1`
 		args = append(args, zoneID)
 	}
 	query += ` ORDER BY z.name, m.object_type, m.object_id, m.cidr`
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -240,13 +240,13 @@ func (r *Repository) ListFirewallZoneMappings(ctx context.Context, zoneID int64)
 
 func (r *Repository) GetFirewallZoneMappingByID(ctx context.Context, id int64) (*models.FirewallZoneMapping, error) {
 	item := &models.FirewallZoneMapping{}
-	err := r.db.QueryRow(ctx, `SELECT m.id, m.zone_id, m.object_type, m.object_id, COALESCE(m.cidr::text, ''), m.direction, m.description, m.status, z.name, m.created_at, m.updated_at FROM firewall_zone_mappings m JOIN firewall_zones z ON z.id=m.zone_id WHERE m.id=$1`, id).Scan(&item.ID, &item.ZoneID, &item.ObjectType, &item.ObjectID, &item.CIDR, &item.Direction, &item.Description, &item.Status, &item.ZoneName, &item.CreatedAt, &item.UpdatedAt)
+	err := r.sQueryRow(ctx, `SELECT m.id, m.zone_id, m.object_type, m.object_id, COALESCE(m.cidr::text, ''), m.direction, m.description, m.status, z.name, m.created_at, m.updated_at FROM firewall_zone_mappings m JOIN firewall_zones z ON z.id=m.zone_id WHERE @org(m.organization_id) AND m.id=$1`, id).Scan(&item.ID, &item.ZoneID, &item.ObjectType, &item.ObjectID, &item.CIDR, &item.Direction, &item.Description, &item.Status, &item.ZoneName, &item.CreatedAt, &item.UpdatedAt)
 	return item, err
 }
 
 func (r *Repository) CreateFirewallZoneMapping(ctx context.Context, p *FirewallZoneMappingParams) (*models.FirewallZoneMapping, error) {
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO firewall_zone_mappings (zone_id, object_type, object_id, cidr, direction, description, status) VALUES ($1,$2,$3,NULLIF($4, '')::cidr,$5,$6,$7) RETURNING id`, p.ZoneID, p.ObjectType, p.ObjectID, p.CIDR, p.Direction, p.Description, p.Status).Scan(&id)
+	err := r.sQueryRow(ctx, `INSERT INTO firewall_zone_mappings (zone_id, object_type, object_id, cidr, direction, description, status, organization_id) VALUES ($1,$2,$3,NULLIF($4, '')::cidr,$5,$6,$7, @orgval) RETURNING id`, p.ZoneID, p.ObjectType, p.ObjectID, p.CIDR, p.Direction, p.Description, p.Status).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (r *Repository) CreateFirewallZoneMapping(ctx context.Context, p *FirewallZ
 }
 
 func (r *Repository) UpdateFirewallZoneMapping(ctx context.Context, id int64, p *FirewallZoneMappingParams) (*models.FirewallZoneMapping, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE firewall_zone_mappings SET zone_id=$1, object_type=$2, object_id=$3, cidr=NULLIF($4, '')::cidr, direction=$5, description=$6, status=$7, updated_at=CURRENT_TIMESTAMP WHERE id=$8`, p.ZoneID, p.ObjectType, p.ObjectID, p.CIDR, p.Direction, p.Description, p.Status, id)
+	tag, err := r.sExec(ctx, `UPDATE firewall_zone_mappings SET zone_id=$1, object_type=$2, object_id=$3, cidr=NULLIF($4, '')::cidr, direction=$5, description=$6, status=$7, updated_at=CURRENT_TIMESTAMP WHERE @org(organization_id) AND id=$8`, p.ZoneID, p.ObjectType, p.ObjectID, p.CIDR, p.Direction, p.Description, p.Status, id)
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (r *Repository) DeleteFirewallZoneMapping(ctx context.Context, id int64) er
 	return deleteByID(ctx, r, "firewall_zone_mappings", id)
 }
 
-const dhcpServerSelect = `SELECT s.id, s.name, s.address, s.vendor, s.version, s.location_id, s.description, s.status, l.name, s.vlan_id, CASE WHEN v.id IS NULL THEN NULL ELSE v.vlan_id::text || ' ' || v.name END, s.auto_sync, s.last_synced_at, s.last_sync_error, s.last_sync_count, s.created_at, s.updated_at FROM dhcp_servers s LEFT JOIN locations l ON l.id=s.location_id LEFT JOIN vlans v ON v.id=s.vlan_id`
+const dhcpServerSelect = `SELECT s.id, s.name, s.address, s.vendor, s.version, s.location_id, s.description, s.status, l.name, s.vlan_id, CASE WHEN v.id IS NULL THEN NULL ELSE v.vlan_id::text || ' ' || v.name END, s.auto_sync, s.last_synced_at, s.last_sync_error, s.last_sync_count, s.created_at, s.updated_at FROM dhcp_servers s LEFT JOIN locations l ON l.id=s.location_id LEFT JOIN vlans v ON v.id=s.vlan_id WHERE @org(s.organization_id) `
 
 func scanDHCPServer(row pgx.Row) (*models.DHCPServer, error) {
 	item := &models.DHCPServer{}
@@ -277,7 +277,7 @@ func scanDHCPServer(row pgx.Row) (*models.DHCPServer, error) {
 }
 
 func (r *Repository) ListDHCPServers(ctx context.Context) ([]*models.DHCPServer, error) {
-	rows, err := r.db.Query(ctx, dhcpServerSelect+` ORDER BY s.name`)
+	rows, err := r.sQuery(ctx, dhcpServerSelect+` ORDER BY s.name`)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (r *Repository) ListDHCPServers(ctx context.Context) ([]*models.DHCPServer,
 }
 
 func (r *Repository) GetDHCPServerByID(ctx context.Context, id int64) (*models.DHCPServer, error) {
-	return scanDHCPServer(r.db.QueryRow(ctx, dhcpServerSelect+` WHERE s.id=$1`, id))
+	return scanDHCPServer(r.sQueryRow(ctx, dhcpServerSelect+` AND s.id=$1`, id))
 }
 
 func (r *Repository) CreateDHCPServer(ctx context.Context, p *DHCPServerParams) (*models.DHCPServer, error) {
@@ -303,7 +303,7 @@ func (r *Repository) CreateDHCPServer(ctx context.Context, p *DHCPServerParams) 
 		autoSync = *p.AutoSync
 	}
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO dhcp_servers (name, address, vendor, version, location_id, description, status, vlan_id, auto_sync) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, p.VLANID, autoSync).Scan(&id)
+	err := r.sQueryRow(ctx, `INSERT INTO dhcp_servers (name, address, vendor, version, location_id, description, status, vlan_id, auto_sync, organization_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, @orgval) RETURNING id`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, p.VLANID, autoSync).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (r *Repository) CreateDHCPServer(ctx context.Context, p *DHCPServerParams) 
 }
 
 func (r *Repository) UpdateDHCPServer(ctx context.Context, id int64, p *DHCPServerParams) (*models.DHCPServer, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE dhcp_servers SET name=$1, address=$2, vendor=$3, version=$4, location_id=$5, description=$6, status=$7, vlan_id=$8, auto_sync=COALESCE($9, auto_sync), updated_at=CURRENT_TIMESTAMP WHERE id=$10`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, p.VLANID, p.AutoSync, id)
+	tag, err := r.sExec(ctx, `UPDATE dhcp_servers SET name=$1, address=$2, vendor=$3, version=$4, location_id=$5, description=$6, status=$7, vlan_id=$8, auto_sync=COALESCE($9, auto_sync), updated_at=CURRENT_TIMESTAMP WHERE @org(organization_id) AND id=$10`, p.Name, p.Address, p.Vendor, p.Version, p.LocationID, p.Description, p.Status, p.VLANID, p.AutoSync, id)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +324,7 @@ func (r *Repository) UpdateDHCPServer(ctx context.Context, id int64, p *DHCPServ
 // RecordDHCPServerSync stores the outcome of a lease sync on the server row so
 // the UI can show last-synced time and error state.
 func (r *Repository) RecordDHCPServerSync(ctx context.Context, id int64, count int, syncErr string) error {
-	_, err := r.db.Exec(ctx, `UPDATE dhcp_servers SET last_synced_at=CURRENT_TIMESTAMP, last_sync_error=$2, last_sync_count=$3 WHERE id=$1`, id, syncErr, count)
+	_, err := r.sExec(ctx, `UPDATE dhcp_servers SET last_synced_at=CURRENT_TIMESTAMP, last_sync_error=$2, last_sync_count=$3 WHERE @org(organization_id) AND id=$1`, id, syncErr, count)
 	return err
 }
 
@@ -332,7 +332,7 @@ func (r *Repository) DeleteDHCPServer(ctx context.Context, id int64) error {
 	return deleteByID(ctx, r, "dhcp_servers", id)
 }
 
-const dhcpLeaseSelect = `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.vlan_id, CASE WHEN v.id IS NULL THEN NULL ELSE v.vlan_id::text || ' ' || v.name END, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id LEFT JOIN vlans v ON v.id=l.vlan_id`
+const dhcpLeaseSelect = `SELECT l.id, l.server_id, host(l.ip_address), l.mac_address, l.hostname, l.subnet_id, l.ip_id, l.customer_id, l.vlan_id, CASE WHEN v.id IS NULL THEN NULL ELSE v.vlan_id::text || ' ' || v.name END, l.starts_at, l.ends_at, l.state, s.name, c.name, l.created_at, l.updated_at FROM dhcp_leases l JOIN dhcp_servers s ON s.id=l.server_id LEFT JOIN customers c ON c.id=l.customer_id LEFT JOIN vlans v ON v.id=l.vlan_id WHERE @org(l.organization_id) `
 
 func scanDHCPLease(row pgx.Row) (*models.DHCPLease, error) {
 	item := &models.DHCPLease{}
@@ -359,10 +359,10 @@ func (r *Repository) ListDHCPLeasesFiltered(ctx context.Context, f DHCPLeaseFilt
 	add("l.ip_id", f.IPID)
 	add("l.vlan_id", f.VLANID)
 	if len(conds) > 0 {
-		query += " WHERE " + strings.Join(conds, " AND ")
+		query += " AND " + strings.Join(conds, " AND ")
 	}
 	query += ` ORDER BY l.ip_address`
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -379,12 +379,12 @@ func (r *Repository) ListDHCPLeasesFiltered(ctx context.Context, f DHCPLeaseFilt
 }
 
 func (r *Repository) GetDHCPLeaseByID(ctx context.Context, id int64) (*models.DHCPLease, error) {
-	return scanDHCPLease(r.db.QueryRow(ctx, dhcpLeaseSelect+` WHERE l.id=$1`, id))
+	return scanDHCPLease(r.sQueryRow(ctx, dhcpLeaseSelect+` AND l.id=$1`, id))
 }
 
 func (r *Repository) CreateDHCPLease(ctx context.Context, p *DHCPLeaseParams) (*models.DHCPLease, error) {
 	id := int64(0)
-	err := r.db.QueryRow(ctx, `INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, customer_id, vlan_id, starts_at, ends_at, state) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.VLANID, p.StartsAt, p.EndsAt, p.State).Scan(&id)
+	err := r.sQueryRow(ctx, `INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, customer_id, vlan_id, starts_at, ends_at, state, organization_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, @orgval) RETURNING id`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.VLANID, p.StartsAt, p.EndsAt, p.State).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +392,7 @@ func (r *Repository) CreateDHCPLease(ctx context.Context, p *DHCPLeaseParams) (*
 }
 
 func (r *Repository) UpdateDHCPLease(ctx context.Context, id int64, p *DHCPLeaseParams) (*models.DHCPLease, error) {
-	tag, err := r.db.Exec(ctx, `UPDATE dhcp_leases SET server_id=$1, ip_address=$2, mac_address=$3, hostname=$4, subnet_id=$5, ip_id=$6, customer_id=$7, vlan_id=$8, starts_at=$9, ends_at=$10, state=$11, updated_at=CURRENT_TIMESTAMP WHERE id=$12`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.VLANID, p.StartsAt, p.EndsAt, p.State, id)
+	tag, err := r.sExec(ctx, `UPDATE dhcp_leases SET server_id=$1, ip_address=$2, mac_address=$3, hostname=$4, subnet_id=$5, ip_id=$6, customer_id=$7, vlan_id=$8, starts_at=$9, ends_at=$10, state=$11, updated_at=CURRENT_TIMESTAMP WHERE @org(organization_id) AND id=$12`, p.ServerID, p.IPAddress, p.MACAddress, p.Hostname, p.SubnetID, p.IPID, p.CustomerID, p.VLANID, p.StartsAt, p.EndsAt, p.State, id)
 	if err != nil {
 		return nil, err
 	}
@@ -410,9 +410,9 @@ func (r *Repository) DeleteDHCPLease(ctx context.Context, id int64) error {
 // Returns the row ID and whether it was newly inserted.
 func (r *Repository) UpsertDHCPLease(ctx context.Context, p *DHCPLeaseParams) (int64, error) {
 	var id int64
-	err := r.db.QueryRow(ctx, `
-		INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, vlan_id, starts_at, ends_at, state)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+	err := r.sQueryRow(ctx, `
+		INSERT INTO dhcp_leases (server_id, ip_address, mac_address, hostname, subnet_id, ip_id, vlan_id, starts_at, ends_at, state, organization_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, @orgval)
 		ON CONFLICT (server_id, ip_address) DO UPDATE SET
 			mac_address  = EXCLUDED.mac_address,
 			hostname     = EXCLUDED.hostname,
@@ -434,13 +434,13 @@ func (r *Repository) UpsertDHCPLease(ctx context.Context, p *DHCPLeaseParams) (i
 // creating it with vendor="technitium" if one does not already exist.
 func (r *Repository) GetOrCreateTechnitiumDHCPServer(ctx context.Context, address string) (*models.DHCPServer, error) {
 	var id int64
-	err := r.db.QueryRow(ctx, `SELECT id FROM dhcp_servers WHERE vendor='technitium' ORDER BY id LIMIT 1`).Scan(&id)
+	err := r.sQueryRow(ctx, `SELECT id FROM dhcp_servers WHERE @org(organization_id) AND vendor='technitium' ORDER BY id LIMIT 1`).Scan(&id)
 	if err == nil {
 		return r.GetDHCPServerByID(ctx, id)
 	}
 	// Not found — create it.
-	if err2 := r.db.QueryRow(ctx,
-		`INSERT INTO dhcp_servers (name, address, vendor, version, description, status) VALUES ('Technitium', $1, 'technitium', '', 'Managed by Technitium DHCP integration', 'active') RETURNING id`,
+	if err2 := r.sQueryRow(ctx,
+		`INSERT INTO dhcp_servers (name, address, vendor, version, description, status, organization_id) VALUES ('Technitium', $1, 'technitium', '', 'Managed by Technitium DHCP integration', 'active', @orgval) RETURNING id`,
 		address).Scan(&id); err2 != nil {
 		return nil, err2
 	}
@@ -450,24 +450,24 @@ func (r *Repository) GetOrCreateTechnitiumDHCPServer(ctx context.Context, addres
 // FindIPByAddress returns the IP address record matching the given bare IP string within any subnet.
 func (r *Repository) FindIPByAddress(ctx context.Context, address string) (*models.IPAddress, error) {
 	ip := &models.IPAddress{}
-	err := r.db.QueryRow(ctx, `
+	err := r.sQueryRow(ctx, `
 		SELECT id, subnet_id, host(address), hostname, status, created_at, updated_at, mac_address
-		FROM ip_addresses WHERE host(address) = $1 LIMIT 1`, address).
+		FROM ip_addresses WHERE @org(organization_id) AND host(address) = $1 LIMIT 1`, address).
 		Scan(&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status, &ip.CreatedAt, &ip.UpdatedAt, &ip.MACAddress)
 	return ip, err
 }
 
 // FindSubnetContaining returns the deepest subnet that contains the given IP address.
 func (r *Repository) FindSubnetContaining(ctx context.Context, ipAddress string) (*models.Subnet, error) {
-	row := r.db.QueryRow(ctx, `
+	row := r.sQueryRow(ctx, `
 		SELECT `+subnetSelectCols+` `+subnetFromJoin+`
-		WHERE $1::inet << set_masklen(s.network_address, s.prefix_length)
+		WHERE $1::inet << set_masklen(s.network_address, s.prefix_length) AND @org(s.organization_id)
 		ORDER BY s.prefix_length DESC LIMIT 1`, ipAddress)
 	return scanSubnet(row)
 }
 
 func deleteByID(ctx context.Context, r *Repository, table string, id int64) error {
-	tag, err := r.db.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE id=$1", table), id)
+	tag, err := r.sExec(ctx, fmt.Sprintf("DELETE FROM %s WHERE id=$1 AND @org(organization_id)", table), id)
 	if err != nil {
 		return err
 	}

@@ -10,34 +10,34 @@ import (
 )
 
 // scanJobCols is the column list for scan_jobs SELECT queries.
-const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, COALESCE(created_by, 0), created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips, discover_dns, dns_overwrite`
+const scanJobCols = `id, organization_id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, COALESCE(created_by, 0), created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips, discover_dns, dns_overwrite`
 
 func scanScanJob(row interface{ Scan(dest ...any) error }) (*models.ScanJob, error) {
 	j := &models.ScanJob{}
-	return j, row.Scan(&j.ID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt, &j.PingConcurrency, &j.NotifyOnChange, &j.ScanType, &j.AgentID, &j.AutoAddIPs, &j.DiscoverDNS, &j.DNSOverwrite)
+	return j, row.Scan(&j.ID, &j.OrganizationID, &j.Name, &j.SubnetIDs, &j.ScheduleCron, &j.IsActive, &j.LastRunAt, &j.NextRunAt, &j.CreatedBy, &j.CreatedAt, &j.UpdatedAt, &j.PingConcurrency, &j.NotifyOnChange, &j.ScanType, &j.AgentID, &j.AutoAddIPs, &j.DiscoverDNS, &j.DNSOverwrite)
 }
 
 // CreateScanJob creates a new discovery scan job
 func (r *Repository) CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64, autoAddIPs bool) (*models.ScanJob, error) {
-	query := `INSERT INTO scan_jobs (name, subnet_ids, schedule_cron, created_by, auto_add_ips)
-		VALUES ($1, $2, $3, $4, $5)
+	query := `INSERT INTO scan_jobs (name, subnet_ids, schedule_cron, created_by, auto_add_ips, organization_id)
+		VALUES ($1, $2, $3, $4, $5, @orgval)
 		RETURNING ` + scanJobCols
 	// createdBy 0 means "not created by a user" (for example by an automation policy).
 	var creator any
 	if createdBy > 0 {
 		creator = createdBy
 	}
-	return scanScanJob(r.db.QueryRow(ctx, query, name, subnetIDs, scheduleCron, creator, autoAddIPs))
+	return scanScanJob(r.sQueryRow(ctx, query, name, subnetIDs, scheduleCron, creator, autoAddIPs))
 }
 
 // GetScanJobByID retrieves a scan job by ID
 func (r *Repository) GetScanJobByID(ctx context.Context, id int64) (*models.ScanJob, error) {
-	return scanScanJob(r.db.QueryRow(ctx, `SELECT `+scanJobCols+` FROM scan_jobs WHERE id = $1`, id))
+	return scanScanJob(r.sQueryRow(ctx, `SELECT `+scanJobCols+` FROM scan_jobs WHERE @org(organization_id) AND id = $1`, id))
 }
 
 // ListScanJobs returns all scan jobs
 func (r *Repository) ListScanJobs(ctx context.Context) ([]*models.ScanJob, error) {
-	rows, err := r.db.Query(ctx, `SELECT `+scanJobCols+` FROM scan_jobs ORDER BY created_at DESC`)
+	rows, err := r.sQuery(ctx, `SELECT `+scanJobCols+` FROM scan_jobs WHERE @org(organization_id) ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (r *Repository) ListScanJobs(ctx context.Context) ([]*models.ScanJob, error
 
 // ListActiveScanJobs returns all active scan jobs with a schedule
 func (r *Repository) ListActiveScanJobs(ctx context.Context) ([]*models.ScanJob, error) {
-	rows, err := r.db.Query(ctx, `SELECT `+scanJobCols+` FROM scan_jobs WHERE is_active = TRUE AND schedule_cron IS NOT NULL`)
+	rows, err := r.sQuery(ctx, `SELECT `+scanJobCols+` FROM scan_jobs WHERE @org(organization_id) AND is_active = TRUE AND schedule_cron IS NOT NULL`)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +75,9 @@ func (r *Repository) ListActiveScanJobs(ctx context.Context) ([]*models.ScanJob,
 
 // UpdateScanJob updates a scan job's configuration
 func (r *Repository) UpdateScanJob(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool) (*models.ScanJob, error) {
-	query := `UPDATE scan_jobs SET name = $2, subnet_ids = $3, schedule_cron = $4, is_active = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $1
+	query := `UPDATE scan_jobs SET name = $2, subnet_ids = $3, schedule_cron = $4, is_active = $5, updated_at = CURRENT_TIMESTAMP WHERE @org(organization_id) AND id = $1
 		RETURNING ` + scanJobCols
-	return scanScanJob(r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive))
+	return scanScanJob(r.sQueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive))
 }
 
 // UpdateScanJobFull updates all mutable fields of a scan job.
@@ -86,29 +86,29 @@ func (r *Repository) UpdateScanJobFull(ctx context.Context, id int64, name strin
 		SET name=$2, subnet_ids=$3, schedule_cron=$4, is_active=$5, ping_concurrency=$6,
 		    notify_on_change=$7, scan_type=$8, agent_id=$9, auto_add_ips=$10,
 		    discover_dns=$11, dns_overwrite=$12, updated_at=CURRENT_TIMESTAMP
-		WHERE id=$1 RETURNING ` + scanJobCols
-	return scanScanJob(r.db.QueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs, discoverDNS, dnsOverwrite))
+		WHERE @org(organization_id) AND id=$1 RETURNING ` + scanJobCols
+	return scanScanJob(r.sQueryRow(ctx, query, id, name, subnetIDs, scheduleCron, isActive, pingConcurrency, notifyOnChange, scanType, agentID, autoAddIPs, discoverDNS, dnsOverwrite))
 }
 
 // UpdateScanJobRunTime updates last_run_at and next_run_at after a scan
 func (r *Repository) UpdateScanJobRunTime(ctx context.Context, id int64, nextRunAt *time.Time) error {
-	query := `UPDATE scan_jobs SET last_run_at = CURRENT_TIMESTAMP, next_run_at = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, id, nextRunAt)
+	query := `UPDATE scan_jobs SET last_run_at = CURRENT_TIMESTAMP, next_run_at = $2, updated_at = CURRENT_TIMESTAMP WHERE @org(organization_id) AND id = $1`
+	_, err := r.sExec(ctx, query, id, nextRunAt)
 	return err
 }
 
 // DeleteScanJob deletes a scan job
 func (r *Repository) DeleteScanJob(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM scan_jobs WHERE id = $1`, id)
+	_, err := r.sExec(ctx, `DELETE FROM scan_jobs WHERE @org(organization_id) AND id = $1`, id)
 	return err
 }
 
 // CreateScanResult records the result of scanning a single IP
 func (r *Repository) CreateScanResult(ctx context.Context, jobID, subnetID int64, ipAddressID *int64, ipAddress string, isAlive bool, responseTimeMs *int64, ptrRecord *string, fwdRevMismatch bool) (*models.ScanResult, error) {
-	query := `INSERT INTO scan_results (job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	query := `INSERT INTO scan_results (job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, @orgval)
 		RETURNING id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at`
-	row := r.db.QueryRow(ctx, query, jobID, subnetID, ipAddressID, ipAddress, isAlive, responseTimeMs, ptrRecord, fwdRevMismatch)
+	row := r.sQueryRow(ctx, query, jobID, subnetID, ipAddressID, ipAddress, isAlive, responseTimeMs, ptrRecord, fwdRevMismatch)
 
 	sr := &models.ScanResult{}
 	err := row.Scan(&sr.ID, &sr.JobID, &sr.SubnetID, &sr.IPAddressID, &sr.IPAddress, &sr.IsAlive, &sr.ResponseTimeMs, &sr.PTRRecord, &sr.FwdRevMismatch, &sr.ScannedAt)
@@ -120,8 +120,8 @@ func (r *Repository) CreateScanResult(ctx context.Context, jobID, subnetID int64
 
 // ListScanResultsByJob returns recent scan results for a job
 func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limit int) ([]*models.ScanResult, error) {
-	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at FROM scan_results WHERE job_id = $1 ORDER BY scanned_at DESC LIMIT $2`
-	rows, err := r.db.Query(ctx, query, jobID, limit)
+	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at FROM scan_results WHERE @org(organization_id) AND job_id = $1 ORDER BY scanned_at DESC LIMIT $2`
+	rows, err := r.sQuery(ctx, query, jobID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -143,18 +143,18 @@ func (r *Repository) ListScanResultsByJob(ctx context.Context, jobID int64, limi
 func (r *Repository) SetIPAddressPTRFromScan(ctx context.Context, ipID int64, ptrRecord string, overwrite bool) error {
 	var query string
 	if overwrite {
-		query = `UPDATE ip_addresses SET ptr_record = $2, dns_name = $2, updated_at = now() WHERE id = $1`
+		query = `UPDATE ip_addresses SET ptr_record = $2, dns_name = $2, updated_at = now() WHERE @org(organization_id) AND id = $1`
 	} else {
-		query = `UPDATE ip_addresses SET ptr_record = $2, dns_name = CASE WHEN (dns_name IS NULL OR dns_name = '') THEN $2 ELSE dns_name END, updated_at = now() WHERE id = $1`
+		query = `UPDATE ip_addresses SET ptr_record = $2, dns_name = CASE WHEN (dns_name IS NULL OR dns_name = '') THEN $2 ELSE dns_name END, updated_at = now() WHERE @org(organization_id) AND id = $1`
 	}
-	_, err := r.db.Exec(ctx, query, ipID, ptrRecord)
+	_, err := r.sExec(ctx, query, ipID, ptrRecord)
 	return err
 }
 
 // ListScanResultsBySubnet returns recent scan results for a subnet
 func (r *Repository) ListScanResultsBySubnet(ctx context.Context, subnetID int64, limit int) ([]*models.ScanResult, error) {
-	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at FROM scan_results WHERE subnet_id = $1 ORDER BY scanned_at DESC LIMIT $2`
-	rows, err := r.db.Query(ctx, query, subnetID, limit)
+	query := `SELECT id, job_id, subnet_id, ip_address_id, ip_address, is_alive, response_time_ms, ptr_record, fwd_rev_mismatch, scanned_at FROM scan_results WHERE @org(organization_id) AND subnet_id = $1 ORDER BY scanned_at DESC LIMIT $2`
+	rows, err := r.sQuery(ctx, query, subnetID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +173,8 @@ func (r *Repository) ListScanResultsBySubnet(ctx context.Context, subnetID int64
 
 // CreateScanRun inserts a new scan_run and returns it.
 func (r *Repository) CreateScanRun(ctx context.Context, scanJobID int64) (*models.ScanRun, error) {
-	row := r.db.QueryRow(ctx,
-		`INSERT INTO scan_runs (scan_job_id) VALUES ($1) RETURNING id, scan_job_id, started_at, finished_at, new_count, gone_count, changed_count`,
+	row := r.sQueryRow(ctx,
+		`INSERT INTO scan_runs (scan_job_id, organization_id) VALUES ($1, @orgval) RETURNING id, scan_job_id, started_at, finished_at, new_count, gone_count, changed_count`,
 		scanJobID,
 	)
 	sr := &models.ScanRun{}
@@ -183,8 +183,8 @@ func (r *Repository) CreateScanRun(ctx context.Context, scanJobID int64) (*model
 
 // FinishScanRun marks a scan_run as finished with final counts.
 func (r *Repository) FinishScanRun(ctx context.Context, runID int64, newCount, goneCount, changedCount int) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE scan_runs SET finished_at=now(), new_count=$2, gone_count=$3, changed_count=$4 WHERE id=$1`,
+	_, err := r.sExec(ctx,
+		`UPDATE scan_runs SET finished_at=now(), new_count=$2, gone_count=$3, changed_count=$4 WHERE @org(organization_id) AND id=$1`,
 		runID, newCount, goneCount, changedCount,
 	)
 	return err
@@ -192,8 +192,8 @@ func (r *Repository) FinishScanRun(ctx context.Context, runID int64, newCount, g
 
 // CreateScanRunChange records a single IP change detected during a scan run.
 func (r *Repository) CreateScanRunChange(ctx context.Context, runID int64, ipAddress, changeType string) (*models.ScanRunChange, error) {
-	row := r.db.QueryRow(ctx,
-		`INSERT INTO scan_run_changes (run_id, ip_address, change_type) VALUES ($1, $2, $3) RETURNING id, run_id, ip_address, change_type, scanned_at`,
+	row := r.sQueryRow(ctx,
+		`INSERT INTO scan_run_changes (run_id, ip_address, change_type, organization_id) VALUES ($1, $2, $3, @orgval) RETURNING id, run_id, ip_address, change_type, scanned_at`,
 		runID, ipAddress, changeType,
 	)
 	ch := &models.ScanRunChange{}
@@ -202,8 +202,8 @@ func (r *Repository) CreateScanRunChange(ctx context.Context, runID int64, ipAdd
 
 // ListScanRuns returns the last `limit` scan runs for a given job.
 func (r *Repository) ListScanRuns(ctx context.Context, jobID int64, limit int) ([]*models.ScanRun, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT id, scan_job_id, started_at, finished_at, new_count, gone_count, changed_count FROM scan_runs WHERE scan_job_id=$1 ORDER BY started_at DESC LIMIT $2`,
+	rows, err := r.sQuery(ctx,
+		`SELECT id, scan_job_id, started_at, finished_at, new_count, gone_count, changed_count FROM scan_runs WHERE @org(organization_id) AND scan_job_id=$1 ORDER BY started_at DESC LIMIT $2`,
 		jobID, limit,
 	)
 	if err != nil {
@@ -223,8 +223,8 @@ func (r *Repository) ListScanRuns(ctx context.Context, jobID int64, limit int) (
 
 // GetScanRun retrieves a single scan run by ID.
 func (r *Repository) GetScanRun(ctx context.Context, runID int64) (*models.ScanRun, error) {
-	row := r.db.QueryRow(ctx,
-		`SELECT id, scan_job_id, started_at, finished_at, new_count, gone_count, changed_count FROM scan_runs WHERE id=$1`,
+	row := r.sQueryRow(ctx,
+		`SELECT id, scan_job_id, started_at, finished_at, new_count, gone_count, changed_count FROM scan_runs WHERE @org(organization_id) AND id=$1`,
 		runID,
 	)
 	sr := &models.ScanRun{}
@@ -237,8 +237,8 @@ func (r *Repository) GetScanRun(ctx context.Context, runID int64) (*models.ScanR
 
 // ListScanRunChanges returns all changes recorded for a scan run.
 func (r *Repository) ListScanRunChanges(ctx context.Context, runID int64) ([]*models.ScanRunChange, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT id, run_id, ip_address, change_type, scanned_at FROM scan_run_changes WHERE run_id=$1 ORDER BY scanned_at`,
+	rows, err := r.sQuery(ctx,
+		`SELECT id, run_id, ip_address, change_type, scanned_at FROM scan_run_changes WHERE @org(organization_id) AND run_id=$1 ORDER BY scanned_at`,
 		runID,
 	)
 	if err != nil {
@@ -260,8 +260,8 @@ func (r *Repository) ListScanRunChanges(ctx context.Context, runID int64) ([]*mo
 // scan run for this job, used to compute changes.
 func (r *Repository) GetLastAliveIPsForJob(ctx context.Context, jobID int64) (map[string]bool, error) {
 	// Find the most recent finished run for this job
-	row := r.db.QueryRow(ctx,
-		`SELECT id FROM scan_runs WHERE scan_job_id=$1 AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1`,
+	row := r.sQueryRow(ctx,
+		`SELECT id FROM scan_runs WHERE @org(organization_id) AND scan_job_id=$1 AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1`,
 		jobID,
 	)
 	var prevRunID int64
@@ -270,8 +270,8 @@ func (r *Repository) GetLastAliveIPsForJob(ctx context.Context, jobID int64) (ma
 		return map[string]bool{}, nil
 	}
 
-	rows, err := r.db.Query(ctx,
-		`SELECT ip_address, is_alive FROM scan_results WHERE job_id=$1 AND scanned_at >= (SELECT started_at FROM scan_runs WHERE id=$2) ORDER BY ip_address`,
+	rows, err := r.sQuery(ctx,
+		`SELECT ip_address, is_alive FROM scan_results WHERE @org(organization_id) AND job_id=$1 AND scanned_at >= (SELECT started_at FROM scan_runs WHERE id=$2) ORDER BY ip_address`,
 		jobID, prevRunID,
 	)
 	if err != nil {
@@ -293,32 +293,32 @@ func (r *Repository) GetLastAliveIPsForJob(ctx context.Context, jobID int64) (ma
 // UpdateIPFromSNMP stores the MAC address and hostname discovered via SNMP.
 // Hostname is only updated when the existing value is empty.
 func (r *Repository) UpdateIPFromSNMP(ctx context.Context, ipID int64, macAddress, hostname string) error {
-	_, err := r.db.Exec(ctx, `
+	_, err := r.sExec(ctx, `
 		UPDATE ip_addresses
 		SET mac_address = CASE WHEN $2 != '' THEN $2 ELSE mac_address END,
 		    hostname    = CASE WHEN (hostname IS NULL OR hostname = '') AND $3 != '' THEN $3 ELSE hostname END,
 		    updated_at  = now()
-		WHERE id = $1`,
+		WHERE @org(organization_id) AND id = $1`,
 		ipID, macAddress, hostname,
 	)
 	return err
 }
 
 // scanAgentCols is the column list for scan_agents SELECT queries.
-const scanAgentCols = `id, name, token_hash, last_seen, is_active, created_at, version, capabilities, status, last_error, expires_at`
+const scanAgentCols = `id, organization_id, name, token_hash, last_seen, is_active, created_at, version, capabilities, status, last_error, expires_at`
 
 // CreateScanAgent inserts a new scan agent record with an optional TTL.
 // If ttlDays is 0 the token never expires; otherwise expires_at is set to now() + ttlDays days.
 func (r *Repository) CreateScanAgent(ctx context.Context, name, tokenHash string, ttlDays int) (*models.ScanAgent, error) {
 	var row interface{ Scan(dest ...any) error }
 	if ttlDays > 0 {
-		row = r.db.QueryRow(ctx,
-			`INSERT INTO scan_agents (name, token_hash, expires_at) VALUES ($1, $2, now() + ($3 * INTERVAL '1 day')) RETURNING `+scanAgentCols,
+		row = r.sQueryRow(ctx,
+			`INSERT INTO scan_agents (name, token_hash, expires_at, organization_id) VALUES ($1, $2, now() + ($3 * INTERVAL '1 day'), @orgval) RETURNING `+scanAgentCols,
 			name, tokenHash, ttlDays,
 		)
 	} else {
-		row = r.db.QueryRow(ctx,
-			`INSERT INTO scan_agents (name, token_hash) VALUES ($1, $2) RETURNING `+scanAgentCols,
+		row = r.sQueryRow(ctx,
+			`INSERT INTO scan_agents (name, token_hash, organization_id) VALUES ($1, $2, @orgval) RETURNING `+scanAgentCols,
 			name, tokenHash,
 		)
 	}
@@ -327,8 +327,8 @@ func (r *Repository) CreateScanAgent(ctx context.Context, name, tokenHash string
 
 // GetScanAgentByToken retrieves an active, non-expired scan agent by token hash.
 func (r *Repository) GetScanAgentByToken(ctx context.Context, tokenHash string) (*models.ScanAgent, error) {
-	row := r.db.QueryRow(ctx,
-		`SELECT `+scanAgentCols+` FROM scan_agents WHERE token_hash=$1 AND is_active=true AND (expires_at IS NULL OR expires_at > now())`,
+	row := r.sQueryRow(ctx,
+		`SELECT `+scanAgentCols+` FROM scan_agents WHERE @org(organization_id) AND (token_hash=$1 AND is_active=true AND (expires_at IS NULL OR expires_at > now()))`,
 		tokenHash,
 	)
 	return scanScanAgent(row)
@@ -336,8 +336,8 @@ func (r *Repository) GetScanAgentByToken(ctx context.Context, tokenHash string) 
 
 // GetScanAgentByID retrieves a scan agent by its primary key.
 func (r *Repository) GetScanAgentByID(ctx context.Context, id int64) (*models.ScanAgent, error) {
-	row := r.db.QueryRow(ctx,
-		`SELECT `+scanAgentCols+` FROM scan_agents WHERE id=$1`,
+	row := r.sQueryRow(ctx,
+		`SELECT `+scanAgentCols+` FROM scan_agents WHERE @org(organization_id) AND id=$1`,
 		id,
 	)
 	return scanScanAgent(row)
@@ -345,8 +345,8 @@ func (r *Repository) GetScanAgentByID(ctx context.Context, id int64) (*models.Sc
 
 // ListScanAgents returns all scan agents ordered by name.
 func (r *Repository) ListScanAgents(ctx context.Context) ([]*models.ScanAgent, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT `+scanAgentCols+` FROM scan_agents ORDER BY name`,
+	rows, err := r.sQuery(ctx,
+		`SELECT `+scanAgentCols+` FROM scan_agents WHERE @org(organization_id) ORDER BY name`,
 	)
 	if err != nil {
 		return nil, err
@@ -374,14 +374,14 @@ func (r *Repository) HeartbeatAgent(ctx context.Context, id int64, version *stri
 		s := string(b)
 		capJSON = &s
 	}
-	_, err := r.db.Exec(ctx, `
+	_, err := r.sExec(ctx, `
 		UPDATE scan_agents
 		SET last_seen = now(),
 		    version = COALESCE($2, version),
 		    capabilities = CASE WHEN $3::jsonb IS NOT NULL THEN $3::jsonb ELSE capabilities END,
 		    status = COALESCE($4, status),
 		    last_error = $5
-		WHERE id = $1`,
+		WHERE @org(organization_id) AND id = $1`,
 		id, version, capJSON, status, lastError,
 	)
 	return err
@@ -389,8 +389,8 @@ func (r *Repository) HeartbeatAgent(ctx context.Context, id int64, version *stri
 
 // UpdateScanAgentActive sets is_active on a scan agent.
 func (r *Repository) UpdateScanAgentActive(ctx context.Context, id int64, isActive bool) (*models.ScanAgent, error) {
-	row := r.db.QueryRow(ctx,
-		`UPDATE scan_agents SET is_active=$2 WHERE id=$1 RETURNING `+scanAgentCols,
+	row := r.sQueryRow(ctx,
+		`UPDATE scan_agents SET is_active=$2 WHERE @org(organization_id) AND id=$1 RETURNING `+scanAgentCols,
 		id, isActive,
 	)
 	return scanScanAgent(row)
@@ -402,20 +402,20 @@ func (r *Repository) UpdateScanAgentActive(ctx context.Context, id int64, isActi
 func (r *Repository) UpdateScanAgentToken(ctx context.Context, id int64, newTokenHash string, ttlDays int) (*models.ScanAgent, error) {
 	var row interface{ Scan(dest ...any) error }
 	if ttlDays > 0 {
-		row = r.db.QueryRow(ctx,
-			`UPDATE scan_agents SET token_hash=$2, expires_at=now() + ($3 * INTERVAL '1 day') WHERE id=$1 RETURNING `+scanAgentCols,
+		row = r.sQueryRow(ctx,
+			`UPDATE scan_agents SET token_hash=$2, expires_at=now() + ($3 * INTERVAL '1 day') WHERE @org(organization_id) AND id=$1 RETURNING `+scanAgentCols,
 			id, newTokenHash, ttlDays,
 		)
 	} else {
 		// ttlDays == 0: clear expiry; ttlDays < 0: leave unchanged
 		if ttlDays == 0 {
-			row = r.db.QueryRow(ctx,
-				`UPDATE scan_agents SET token_hash=$2, expires_at=NULL WHERE id=$1 RETURNING `+scanAgentCols,
+			row = r.sQueryRow(ctx,
+				`UPDATE scan_agents SET token_hash=$2, expires_at=NULL WHERE @org(organization_id) AND id=$1 RETURNING `+scanAgentCols,
 				id, newTokenHash,
 			)
 		} else {
-			row = r.db.QueryRow(ctx,
-				`UPDATE scan_agents SET token_hash=$2 WHERE id=$1 RETURNING `+scanAgentCols,
+			row = r.sQueryRow(ctx,
+				`UPDATE scan_agents SET token_hash=$2 WHERE @org(organization_id) AND id=$1 RETURNING `+scanAgentCols,
 				id, newTokenHash,
 			)
 		}
@@ -425,7 +425,7 @@ func (r *Repository) UpdateScanAgentToken(ctx context.Context, id int64, newToke
 
 // DeleteScanAgent removes a scan agent by ID.
 func (r *Repository) DeleteScanAgent(ctx context.Context, id int64) error {
-	ct, err := r.db.Exec(ctx, `DELETE FROM scan_agents WHERE id=$1`, id)
+	ct, err := r.sExec(ctx, `DELETE FROM scan_agents WHERE @org(organization_id) AND id=$1`, id)
 	if err != nil {
 		return err
 	}
@@ -437,8 +437,8 @@ func (r *Repository) DeleteScanAgent(ctx context.Context, id int64) error {
 
 // ListScanJobsForAgent returns active scan jobs assigned to a specific agent.
 func (r *Repository) ListScanJobsForAgent(ctx context.Context, agentID int64) ([]*models.ScanJob, error) {
-	rows, err := r.db.Query(ctx,
-		`SELECT `+scanJobCols+` FROM scan_jobs WHERE agent_id=$1 AND is_active=true ORDER BY id`,
+	rows, err := r.sQuery(ctx,
+		`SELECT `+scanJobCols+` FROM scan_jobs WHERE @org(organization_id) AND agent_id=$1 AND is_active=true ORDER BY id`,
 		agentID,
 	)
 	if err != nil {
@@ -459,7 +459,7 @@ func (r *Repository) ListScanJobsForAgent(ctx context.Context, agentID int64) ([
 func scanScanAgent(row interface{ Scan(dest ...any) error }) (*models.ScanAgent, error) {
 	a := &models.ScanAgent{}
 	var capJSON []byte
-	err := row.Scan(&a.ID, &a.Name, &a.TokenHash, &a.LastSeen, &a.IsActive, &a.CreatedAt, &a.Version, &capJSON, &a.Status, &a.LastError, &a.ExpiresAt)
+	err := row.Scan(&a.ID, &a.OrganizationID, &a.Name, &a.TokenHash, &a.LastSeen, &a.IsActive, &a.CreatedAt, &a.Version, &capJSON, &a.Status, &a.LastError, &a.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -482,15 +482,15 @@ func scanScanProfile(row interface{ Scan(dest ...any) error }) (*models.ScanProf
 
 // CreateScanProfile inserts a new scan profile.
 func (r *Repository) CreateScanProfile(ctx context.Context, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
-	query := `INSERT INTO scan_profiles (name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	query := `INSERT INTO scan_profiles (name, description, scan_type, ping_concurrency, tcp_ports, dns_lookup, snmp_community, snmp_version, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, @orgval)
 		RETURNING ` + scanProfileCols
-	return scanScanProfile(r.db.QueryRow(ctx, query, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
+	return scanScanProfile(r.sQueryRow(ctx, query, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
 }
 
 // ListScanProfiles returns all scan profiles ordered by name.
 func (r *Repository) ListScanProfiles(ctx context.Context) ([]*models.ScanProfile, error) {
-	rows, err := r.db.Query(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles ORDER BY name`)
+	rows, err := r.sQuery(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles WHERE @org(organization_id) ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
@@ -508,26 +508,26 @@ func (r *Repository) ListScanProfiles(ctx context.Context) ([]*models.ScanProfil
 
 // GetScanProfileByID retrieves a scan profile by primary key.
 func (r *Repository) GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error) {
-	return scanScanProfile(r.db.QueryRow(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles WHERE id=$1`, id))
+	return scanScanProfile(r.sQueryRow(ctx, `SELECT `+scanProfileCols+` FROM scan_profiles WHERE @org(organization_id) AND id=$1`, id))
 }
 
 // UpdateScanProfile updates a scan profile.
 func (r *Repository) UpdateScanProfile(ctx context.Context, id int64, name, scanType string, desc *string, pingConcurrency int, tcpPorts *string, dnsLookup bool, snmpCommunity *string, snmpVersion string) (*models.ScanProfile, error) {
 	query := `UPDATE scan_profiles
 		SET name=$2, description=$3, scan_type=$4, ping_concurrency=$5, tcp_ports=$6, dns_lookup=$7, snmp_community=$8, snmp_version=$9, updated_at=now()
-		WHERE id=$1 RETURNING ` + scanProfileCols
-	return scanScanProfile(r.db.QueryRow(ctx, query, id, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
+		WHERE @org(organization_id) AND id=$1 RETURNING ` + scanProfileCols
+	return scanScanProfile(r.sQueryRow(ctx, query, id, name, desc, scanType, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion))
 }
 
 // DeleteScanProfile removes a scan profile by ID.
 func (r *Repository) DeleteScanProfile(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM scan_profiles WHERE id=$1`, id)
+	_, err := r.sExec(ctx, `DELETE FROM scan_profiles WHERE @org(organization_id) AND id=$1`, id)
 	return err
 }
 
 // SetSubnetScanProfile sets or clears the scan_profile_id for a subnet.
 func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, profileID *int64) error {
-	_, err := r.db.Exec(ctx, `UPDATE subnets SET scan_profile_id=$2 WHERE id=$1`, subnetID, profileID)
+	_, err := r.sExec(ctx, `UPDATE subnets SET scan_profile_id=$2 WHERE @org(organization_id) AND id=$1`, subnetID, profileID)
 	return err
 }
 
@@ -537,14 +537,14 @@ func (r *Repository) SetSubnetScanProfile(ctx context.Context, subnetID int64, p
 
 // GetScanRetentionSettings returns the single retention settings row, inserting defaults if none exist.
 func (r *Repository) GetScanRetentionSettings(ctx context.Context) (*models.ScanRetentionSettings, error) {
-	row := r.db.QueryRow(ctx, `SELECT id, raw_history_days, rollup_enabled, rollup_after_days, updated_at FROM scan_retention_settings ORDER BY id LIMIT 1`)
+	row := r.sQueryRow(ctx, `SELECT id, raw_history_days, rollup_enabled, rollup_after_days, updated_at FROM scan_retention_settings ORDER BY id LIMIT 1`)
 	s := &models.ScanRetentionSettings{}
 	err := row.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt)
 	if err == nil {
 		return s, nil
 	}
 	// No row exists — seed defaults and return them.
-	row2 := r.db.QueryRow(ctx, `INSERT INTO scan_retention_settings (raw_history_days, rollup_enabled, rollup_after_days) VALUES (90, false, 30) RETURNING id, raw_history_days, rollup_enabled, rollup_after_days, updated_at`)
+	row2 := r.sQueryRow(ctx, `INSERT INTO scan_retention_settings (raw_history_days, rollup_enabled, rollup_after_days) VALUES (90, false, 30) RETURNING id, raw_history_days, rollup_enabled, rollup_after_days, updated_at`)
 	if err2 := row2.Scan(&s.ID, &s.RawHistoryDays, &s.RollupEnabled, &s.RollupAfterDays, &s.UpdatedAt); err2 != nil {
 		return nil, err2
 	}
@@ -553,7 +553,7 @@ func (r *Repository) GetScanRetentionSettings(ctx context.Context) (*models.Scan
 
 // UpdateScanRetentionSettings upserts the single retention settings row.
 func (r *Repository) UpdateScanRetentionSettings(ctx context.Context, rawHistoryDays, rollupAfterDays int, rollupEnabled bool) (*models.ScanRetentionSettings, error) {
-	row := r.db.QueryRow(ctx, `
+	row := r.sQueryRow(ctx, `
 		UPDATE scan_retention_settings
 		SET raw_history_days = $1, rollup_enabled = $2, rollup_after_days = $3, updated_at = now()
 		WHERE id = (SELECT id FROM scan_retention_settings ORDER BY id LIMIT 1)
@@ -570,12 +570,12 @@ func (r *Repository) UpdateScanRetentionSettings(ctx context.Context, rawHistory
 // Also deletes associated scan_run_changes via CASCADE.
 func (r *Repository) PruneScanHistory(ctx context.Context, olderThanDays int) (int64, error) {
 	cutoff := time.Now().UTC().AddDate(0, 0, -olderThanDays)
-	res, err := r.db.Exec(ctx, `DELETE FROM scan_results WHERE scanned_at < $1`, cutoff)
+	res, err := r.sExec(ctx, `DELETE FROM scan_results WHERE @org(organization_id) AND scanned_at < $1`, cutoff)
 	if err != nil {
 		return 0, err
 	}
 	pruned := res.RowsAffected()
-	res2, err := r.db.Exec(ctx, `DELETE FROM scan_runs WHERE started_at < $1`, cutoff)
+	res2, err := r.sExec(ctx, `DELETE FROM scan_runs WHERE @org(organization_id) AND started_at < $1`, cutoff)
 	if err != nil {
 		return pruned, err
 	}

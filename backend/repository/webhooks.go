@@ -12,14 +12,14 @@ import (
 func (r *Repository) ListWebhookEndpoints(ctx context.Context, orgID *int64) ([]*models.WebhookEndpoint, error) {
 	query := `SELECT id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                 is_active, created_by, created_at, updated_at
-	          FROM webhook_endpoints`
+	          FROM webhook_endpoints WHERE @org(organization_id) `
 	var args []interface{}
 	if orgID != nil {
-		query += ` WHERE organization_id = $1`
+		query += ` AND organization_id = $1`
 		args = append(args, *orgID)
 	}
 	query += ` ORDER BY name ASC`
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +42,9 @@ func (r *Repository) ListActiveWebhookEndpoints(ctx context.Context) ([]*models.
 	query := `SELECT id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                 is_active, created_by, created_at, updated_at
 	          FROM webhook_endpoints
-	          WHERE is_active = TRUE
+	          WHERE @org(organization_id) AND is_active = TRUE
 	          ORDER BY id ASC`
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (r *Repository) CreateWebhookEndpoint(ctx context.Context, endpoint *models
 	w := &models.WebhookEndpoint{}
 	conditions := encodeStringMap(endpoint.FilterConditions)
 	var storedConditions string
-	err := r.db.QueryRow(ctx, query, endpoint.OrganizationID, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive, endpoint.CreatedBy).Scan(
+	err := r.sQueryRow(ctx, query, endpoint.OrganizationID, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive, endpoint.CreatedBy).Scan(
 		&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &storedConditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
@@ -85,13 +85,13 @@ func (r *Repository) UpdateWebhookEndpoint(ctx context.Context, endpoint *models
 	query := `UPDATE webhook_endpoints
 	          SET name = $2, url = $3, secret = $4, events = $5, object_types = $6,
 	              tag_filters = $7, filter_conditions = $8::jsonb, is_active = $9, updated_at = NOW()
-	          WHERE id = $1
+	          WHERE @org(organization_id) AND id = $1
 	          RETURNING id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                    is_active, created_by, created_at, updated_at`
 	w := &models.WebhookEndpoint{}
 	conditions := encodeStringMap(endpoint.FilterConditions)
 	var storedConditions string
-	err := r.db.QueryRow(ctx, query, endpoint.ID, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive).Scan(
+	err := r.sQueryRow(ctx, query, endpoint.ID, endpoint.Name, endpoint.URL, endpoint.Secret, endpoint.Events, endpoint.ObjectTypes, endpoint.TagFilters, conditions, endpoint.IsActive).Scan(
 		&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &storedConditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
@@ -102,7 +102,7 @@ func (r *Repository) UpdateWebhookEndpoint(ctx context.Context, endpoint *models
 }
 
 func (r *Repository) DeleteWebhookEndpoint(ctx context.Context, id int64) error {
-	tag, err := r.db.Exec(ctx, `DELETE FROM webhook_endpoints WHERE id = $1`, id)
+	tag, err := r.sExec(ctx, `DELETE FROM webhook_endpoints WHERE @org(organization_id) AND id = $1`, id)
 	if err != nil {
 		return err
 	}
@@ -113,12 +113,12 @@ func (r *Repository) DeleteWebhookEndpoint(ctx context.Context, id int64) error 
 }
 
 func (r *Repository) CreateWebhookDelivery(ctx context.Context, endpointID int64, eventType, payloadJSON string) (*models.WebhookDelivery, error) {
-	query := `INSERT INTO webhook_deliveries (endpoint_id, event_type, payload)
-	          VALUES ($1, $2, $3::jsonb)
+	query := `INSERT INTO webhook_deliveries (endpoint_id, event_type, payload, organization_id)
+	          VALUES ($1, $2, $3::jsonb, (SELECT organization_id FROM webhook_endpoints WHERE id = $1))
 	          RETURNING id, endpoint_id, event_type, payload::text, status, retry_count, next_retry_at,
 	                    delivered_at, response_status, error_msg, created_at, updated_at`
 	d := &models.WebhookDelivery{}
-	err := r.db.QueryRow(ctx, query, endpointID, eventType, payloadJSON).Scan(
+	err := r.sQueryRow(ctx, query, endpointID, eventType, payloadJSON).Scan(
 		&d.ID, &d.EndpointID, &d.EventType, &d.Payload, &d.Status, &d.RetryCount, &d.NextRetryAt,
 		&d.DeliveredAt, &d.ResponseStatus, &d.ErrorMsg, &d.CreatedAt, &d.UpdatedAt,
 	)
@@ -132,11 +132,11 @@ func (r *Repository) GetPendingWebhookDeliveries(ctx context.Context, limit int)
 	query := `SELECT id, endpoint_id, event_type, payload::text, status, retry_count, next_retry_at,
 	                 delivered_at, response_status, error_msg, created_at, updated_at
 	          FROM webhook_deliveries
-	          WHERE status IN ('pending', 'retrying')
-	            AND (next_retry_at IS NULL OR next_retry_at <= NOW())
+	          WHERE @org(organization_id) AND (status IN ('pending', 'retrying')
+	            AND (next_retry_at IS NULL OR next_retry_at <= NOW()))
 	          ORDER BY created_at ASC
 	          LIMIT $1`
-	rows, err := r.db.Query(ctx, query, limit)
+	rows, err := r.sQuery(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -159,10 +159,10 @@ func (r *Repository) GetPendingWebhookDeliveries(ctx context.Context, limit int)
 func (r *Repository) ListWebhookDeliveries(ctx context.Context, limit int) ([]*models.WebhookDelivery, error) {
 	query := `SELECT id, endpoint_id, event_type, payload::text, status, retry_count, next_retry_at,
 	                 delivered_at, response_status, error_msg, created_at, updated_at
-	          FROM webhook_deliveries
+	          FROM webhook_deliveries WHERE @org(organization_id)
 	          ORDER BY created_at DESC
 	          LIMIT $1`
-	rows, err := r.db.Query(ctx, query, limit)
+	rows, err := r.sQuery(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -194,14 +194,14 @@ func (r *Repository) ListWebhookFailureGroups(ctx context.Context, limit int) ([
 	                         PARTITION BY endpoint_id, event_type, status, COALESCE(error_msg, '')
 	                     ) AS grouped_count
 	              FROM webhook_deliveries
-	              WHERE status IN ('failed', 'retrying')
+	              WHERE status IN ('failed', 'retrying') AND @org(organization_id)
 	          )
 	          SELECT endpoint_id, event_type, status, error_msg, grouped_count, updated_at, id, response_status, next_retry_at
 	          FROM ranked
 	          WHERE rn = 1
 	          ORDER BY updated_at DESC
 	          LIMIT $1`
-	rows, err := r.db.Query(ctx, query, limit)
+	rows, err := r.sQuery(ctx, query, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -220,10 +220,10 @@ func (r *Repository) ListWebhookFailureGroups(ctx context.Context, limit int) ([
 func (r *Repository) GetWebhookEndpoint(ctx context.Context, id int64) (*models.WebhookEndpoint, error) {
 	query := `SELECT id, organization_id, name, url, secret, events, object_types, tag_filters, filter_conditions::text,
 	                 is_active, created_by, created_at, updated_at
-	          FROM webhook_endpoints WHERE id = $1`
+	          FROM webhook_endpoints WHERE @org(organization_id) AND id = $1`
 	w := &models.WebhookEndpoint{}
 	var conditions string
-	err := r.db.QueryRow(ctx, query, id).Scan(&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt)
+	err := r.sQueryRow(ctx, query, id).Scan(&w.ID, &w.OrganizationID, &w.Name, &w.URL, &w.Secret, &w.Events, &w.ObjectTypes, &w.TagFilters, &conditions, &w.IsActive, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -235,9 +235,9 @@ func (r *Repository) GetWebhookDelivery(ctx context.Context, id int64) (*models.
 	query := `SELECT id, endpoint_id, event_type, payload::text, status, retry_count, next_retry_at,
 	                 delivered_at, response_status, error_msg, created_at, updated_at
 	          FROM webhook_deliveries
-	          WHERE id = $1`
+	          WHERE @org(organization_id) AND id = $1`
 	d := &models.WebhookDelivery{}
-	err := r.db.QueryRow(ctx, query, id).Scan(
+	err := r.sQueryRow(ctx, query, id).Scan(
 		&d.ID, &d.EndpointID, &d.EventType, &d.Payload, &d.Status, &d.RetryCount, &d.NextRetryAt,
 		&d.DeliveredAt, &d.ResponseStatus, &d.ErrorMsg, &d.CreatedAt, &d.UpdatedAt,
 	)
@@ -251,11 +251,11 @@ func (r *Repository) ReplayWebhookDelivery(ctx context.Context, id int64) (*mode
 	query := `UPDATE webhook_deliveries
 	          SET status = 'pending', retry_count = 0, next_retry_at = NULL, delivered_at = NULL,
 	              response_status = NULL, error_msg = NULL, updated_at = NOW()
-	          WHERE id = $1
+	          WHERE @org(organization_id) AND id = $1
 	          RETURNING id, endpoint_id, event_type, payload::text, status, retry_count, next_retry_at,
 	                    delivered_at, response_status, error_msg, created_at, updated_at`
 	d := &models.WebhookDelivery{}
-	err := r.db.QueryRow(ctx, query, id).Scan(
+	err := r.sQueryRow(ctx, query, id).Scan(
 		&d.ID, &d.EndpointID, &d.EventType, &d.Payload, &d.Status, &d.RetryCount, &d.NextRetryAt,
 		&d.DeliveredAt, &d.ResponseStatus, &d.ErrorMsg, &d.CreatedAt, &d.UpdatedAt,
 	)
@@ -268,8 +268,8 @@ func (r *Repository) ReplayWebhookDelivery(ctx context.Context, id int64) (*mode
 func (r *Repository) MarkWebhookDelivered(ctx context.Context, id int64, statusCode int) error {
 	query := `UPDATE webhook_deliveries
 	          SET status = 'delivered', delivered_at = NOW(), response_status = $2, updated_at = NOW()
-	          WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, id, statusCode)
+	          WHERE @org(organization_id) AND id = $1`
+	_, err := r.sExec(ctx, query, id, statusCode)
 	return err
 }
 
@@ -281,8 +281,8 @@ func (r *Repository) MarkWebhookFailed(ctx context.Context, id int64, errMsg str
 	query := `UPDATE webhook_deliveries
 	          SET status = $2, error_msg = $3, retry_count = $4, next_retry_at = $5,
 	              response_status = $6, updated_at = NOW()
-	          WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, id, status, errMsg, retryCount, nextRetryAt, statusCode)
+	          WHERE @org(organization_id) AND id = $1`
+	_, err := r.sExec(ctx, query, id, status, errMsg, retryCount, nextRetryAt, statusCode)
 	return err
 }
 

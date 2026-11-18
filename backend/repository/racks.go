@@ -30,20 +30,23 @@ func scanRack(row interface{ Scan(dest ...any) error }) (*models.Rack, error) {
 
 // CreateRack inserts a new rack record.
 func (r *Repository) CreateRack(ctx context.Context, p *RackParams) (*models.Rack, error) {
+	if err := r.checkOrgRefs(ctx, ref("locations", p.LocationID)); err != nil {
+		return nil, err
+	}
 	if p.SizeU <= 0 {
 		p.SizeU = 42
 	}
-	query := `INSERT INTO racks (location_id, name, size_u, description)
-	          VALUES ($1,$2,$3,$4)
+	query := `INSERT INTO racks (location_id, name, size_u, description, organization_id)
+	          VALUES ($1,$2,$3,$4, @orgval)
 	          RETURNING ` + rackSelectCols
-	row := r.db.QueryRow(ctx, query, p.LocationID, p.Name, p.SizeU, p.Description)
+	row := r.sQueryRow(ctx, query, p.LocationID, p.Name, p.SizeU, p.Description)
 	return scanRack(row)
 }
 
 // GetRackByID returns a single rack.
 func (r *Repository) GetRackByID(ctx context.Context, id int64) (*models.Rack, error) {
-	query := `SELECT ` + rackSelectCols + ` FROM racks WHERE id=$1`
-	row := r.db.QueryRow(ctx, query, id)
+	query := `SELECT ` + rackSelectCols + ` FROM racks WHERE @org(organization_id) AND id=$1`
+	row := r.sQueryRow(ctx, query, id)
 	rack, err := scanRack(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -56,14 +59,14 @@ func (r *Repository) GetRackByID(ctx context.Context, id int64) (*models.Rack, e
 
 // ListRacks returns all racks, optionally filtered by location_id.
 func (r *Repository) ListRacks(ctx context.Context, locationID *int64) ([]*models.Rack, error) {
-	query := `SELECT ` + rackSelectCols + ` FROM racks`
+	query := `SELECT ` + rackSelectCols + ` FROM racks WHERE @org(organization_id) `
 	var args []interface{}
 	if locationID != nil {
-		query += ` WHERE location_id=$1`
+		query += ` AND location_id=$1`
 		args = append(args, *locationID)
 	}
 	query += ` ORDER BY name`
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -82,13 +85,16 @@ func (r *Repository) ListRacks(ctx context.Context, locationID *int64) ([]*model
 
 // UpdateRack updates an existing rack.
 func (r *Repository) UpdateRack(ctx context.Context, id int64, p *RackParams) (*models.Rack, error) {
+	if err := r.checkOrgRefs(ctx, ref("locations", p.LocationID)); err != nil {
+		return nil, err
+	}
 	if p.SizeU <= 0 {
 		p.SizeU = 42
 	}
 	query := `UPDATE racks SET location_id=$1, name=$2, size_u=$3, description=$4, updated_at=now()
-	          WHERE id=$5
+	          WHERE @org(organization_id) AND id=$5
 	          RETURNING ` + rackSelectCols
-	row := r.db.QueryRow(ctx, query, p.LocationID, p.Name, p.SizeU, p.Description, id)
+	row := r.sQueryRow(ctx, query, p.LocationID, p.Name, p.SizeU, p.Description, id)
 	rack, err := scanRack(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -101,7 +107,7 @@ func (r *Repository) UpdateRack(ctx context.Context, id int64, p *RackParams) (*
 
 // DeleteRack deletes a rack by ID.
 func (r *Repository) DeleteRack(ctx context.Context, id int64) error {
-	ct, err := r.db.Exec(ctx, `DELETE FROM racks WHERE id=$1`, id)
+	ct, err := r.sExec(ctx, `DELETE FROM racks WHERE @org(organization_id) AND id=$1`, id)
 	if err != nil {
 		return err
 	}

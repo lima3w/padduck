@@ -11,8 +11,8 @@ func (r *Repository) GetDeviceSNMP(ctx context.Context, id int64) (*models.Devic
 	query := `
 		SELECT id, snmp_community, COALESCE(snmp_version, 'v2c'), snmp_v3_user,
 		       snmp_v3_auth_proto, snmp_v3_auth_pass, snmp_v3_priv_proto, snmp_v3_priv_pass
-		FROM devices WHERE id=$1`
-	row := r.db.QueryRow(ctx, query, id)
+		FROM devices WHERE @org(organization_id) AND id=$1`
+	row := r.sQueryRow(ctx, query, id)
 	creds := &models.DeviceSNMP{}
 	err := row.Scan(
 		&creds.DeviceID, &creds.SNMPCommunity, &creds.SNMPVersion,
@@ -34,8 +34,8 @@ func (r *Repository) GetDeviceSNMPByIPID(ctx context.Context, ipID int64) (*mode
 		       d.snmp_v3_auth_proto, d.snmp_v3_auth_pass, d.snmp_v3_priv_proto, d.snmp_v3_priv_pass
 		FROM ip_addresses ip
 		JOIN devices d ON d.id = ip.device_id
-		WHERE ip.id = $1`
-	row := r.db.QueryRow(ctx, query, ipID)
+		WHERE @org(d.organization_id) AND ip.id = $1`
+	row := r.sQueryRow(ctx, query, ipID)
 	creds := &models.DeviceSNMP{}
 	err := row.Scan(
 		&creds.DeviceID, &creds.SNMPCommunity, &creds.SNMPVersion,

@@ -16,19 +16,19 @@ import (
 func (r *Repository) GetDashboardSummary(ctx context.Context, orgID *int64) (*models.DashboardSummary, error) {
 	summary := &models.DashboardSummary{}
 
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM networks`).Scan(&summary.TotalNetworks); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM networks WHERE @org(organization_id) `).Scan(&summary.TotalNetworks); err != nil {
 		return nil, fmt.Errorf("count sections: %w", err)
 	}
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets`).Scan(&summary.TotalSubnets); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM subnets WHERE @org(organization_id) `).Scan(&summary.TotalSubnets); err != nil {
 		return nil, fmt.Errorf("count subnets: %w", err)
 	}
 	// TotalIPs = theoretical IPv4 capacity across all subnets
-	if err := r.db.QueryRow(ctx, `
+	if err := r.sQueryRow(ctx, `
 		SELECT COALESCE(SUM(GREATEST((POWER(2, 32 - prefix_length) - 2)::bigint, 1)), 0)
-		FROM subnets WHERE family(network_address) = 4`).Scan(&summary.TotalIPs); err != nil {
+		FROM subnets WHERE @org(organization_id) AND family(network_address) = 4`).Scan(&summary.TotalIPs); err != nil {
 		return nil, fmt.Errorf("count total ips: %w", err)
 	}
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses WHERE status = 'assigned'`).Scan(&summary.UsedIPs); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses WHERE @org(organization_id) AND status = 'assigned'`).Scan(&summary.UsedIPs); err != nil {
 		return nil, fmt.Errorf("count used ips: %w", err)
 	}
 	if summary.TotalIPs > 0 {
@@ -43,7 +43,7 @@ func (r *Repository) GetDashboardSummary(ctx context.Context, orgID *int64) (*mo
 			COUNT(CASE WHEN ip.status = 'assigned' THEN 1 END) AS used,
 			GREATEST((POWER(2, 32 - s.prefix_length) - 2)::bigint, 1) AS total
 		FROM subnets s
-		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id WHERE @org(s.organization_id)
 		GROUP BY s.id, s.network_address, s.prefix_length, s.description
 		HAVING COUNT(ip.id) > 0
 		ORDER BY
@@ -51,7 +51,7 @@ func (r *Repository) GetDashboardSummary(ctx context.Context, orgID *int64) (*mo
 			GREATEST((POWER(2, 32 - s.prefix_length) - 2)::bigint, 1) DESC
 		LIMIT 5`
 
-	topRows, err := r.db.Query(ctx, topQuery)
+	topRows, err := r.sQuery(ctx, topQuery)
 	if err != nil {
 		return nil, fmt.Errorf("top subnets: %w", err)
 	}
@@ -73,8 +73,8 @@ func (r *Repository) GetDashboardSummary(ctx context.Context, orgID *int64) (*mo
 	}
 
 	// Pending request counts (tables may not exist yet in older deployments — treat as 0)
-	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnet_requests WHERE status = 'pending'`).Scan(&summary.PendingSubnetRequests)
-	_ = r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_requests WHERE status = 'pending'`).Scan(&summary.PendingIPRequests)
+	_ = r.sQueryRow(ctx, `SELECT COUNT(*) FROM subnet_requests WHERE @org(organization_id) AND status = 'pending'`).Scan(&summary.PendingSubnetRequests)
+	_ = r.sQueryRow(ctx, `SELECT COUNT(*) FROM ip_requests WHERE @org(organization_id) AND status = 'pending'`).Scan(&summary.PendingIPRequests)
 
 	return summary, nil
 }
@@ -84,11 +84,11 @@ func (r *Repository) GetDashboardRecentActivity(ctx context.Context) ([]*models.
 	query := `
 		SELECT id, action, resource_type, resource_id, user_id, username, COALESCE(resource_name, ''), created_at
 		FROM audit_logs
-		WHERE action IN ('ip_assigned','ip_released','subnet_created','subnet_deleted','subnet_updated')
+		WHERE action IN ('ip_assigned','ip_released','subnet_created','subnet_deleted','subnet_updated') AND @org(organization_id)
 		ORDER BY created_at DESC
 		LIMIT 20`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -113,22 +113,22 @@ func (r *Repository) ListNetworksPaginated(ctx context.Context, limit, offset in
 }
 
 func (r *Repository) ListNetworksPaginatedWithOptions(ctx context.Context, opts ListOptions) ([]*models.Network, int64, error) {
-	where := ""
+	where := " WHERE @org(organization_id)"
 	args := []interface{}{}
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
-		where = fmt.Sprintf(" WHERE name ILIKE $%d OR description ILIKE $%d", len(args), len(args))
+		where += fmt.Sprintf(" AND (name ILIKE $%d OR description ILIKE $%d)", len(args), len(args))
 	}
 
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM networks`+where, args...).Scan(&total); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM networks`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	sortCol := sortExpr(opts.Sort, "created_at", map[string]string{"name": "name", "created_at": "created_at", "updated_at": "updated_at"})
 	args = append(args, opts.Limit, opts.Offset)
 	query := fmt.Sprintf(`SELECT id, name, description, created_by, created_at, updated_at FROM networks%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -152,21 +152,21 @@ func (r *Repository) ListSubnetsBySectionPaginated(ctx context.Context, networkI
 
 func (r *Repository) ListSubnetsBySectionPaginatedWithOptions(ctx context.Context, networkID int64, opts ListOptions) ([]*models.Subnet, int64, error) {
 	args := []interface{}{networkID}
-	where := ` WHERE network_id = $1`
+	where := ` WHERE network_id = $1 AND @org(organization_id)`
 	if opts.Query != "" {
 		args = append(args, "%"+opts.Query+"%")
 		where += fmt.Sprintf(" AND (host(network_address) ILIKE $%d OR description ILIKE $%d)", len(args), len(args))
 	}
 
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets`+where, args...).Scan(&total); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM subnets`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	sortCol := sortExpr(opts.Sort, "network_address", map[string]string{"network": "network_address", "prefix": "prefix_length", "created_at": "created_at", "updated_at": "updated_at"})
 	args = append(args, opts.Limit, opts.Offset)
 	query := fmt.Sprintf(`SELECT id, network_id, host(network_address), prefix_length, description, created_at, updated_at FROM subnets%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -190,7 +190,7 @@ func (r *Repository) ListIPAddressesBySubnetPaginated(ctx context.Context, subne
 
 func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Context, subnetID int64, opts ListOptions) ([]*models.IPAddress, int64, error) {
 	args := []interface{}{subnetID}
-	where := ` WHERE ip.subnet_id = $1`
+	where := ` WHERE ip.subnet_id = $1 AND @org(ip.organization_id)`
 	if opts.Status != "" {
 		args = append(args, opts.Status)
 		where += fmt.Sprintf(" AND ip.status = $%d", len(args))
@@ -204,7 +204,7 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 	}
 
 	var total int64
-	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses ip`+where, args...).Scan(&total); err != nil {
+	if err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses ip`+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
@@ -220,7 +220,7 @@ func (r *Repository) ListIPAddressesBySubnetPaginatedWithOptions(ctx context.Con
 	sortCol := sortExpr(opts.Sort, "ip.address", allowedSorts)
 	args = append(args, opts.Limit, opts.Offset)
 	query := fmt.Sprintf(`SELECT `+ipSelectCols+` `+ipFromJoin+`%s ORDER BY %s %s LIMIT $%d OFFSET $%d`, where, sortCol, orderDirection(opts.Order), len(args)-1, len(args))
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -276,12 +276,12 @@ func (r *Repository) ListIPAddressesFullRange(
 		FROM generate_series(0, $3::bigint - 1) s
 		LEFT JOIN ip_addresses ip
 			ON ip.address = ($1::inet + ($2::bigint + s))
-			AND ip.subnet_id = $4
+			AND ip.subnet_id = $4 AND @org(ip.organization_id)
 		LEFT JOIN ip_tags t ON ip.tag_id = t.id
 		LEFT JOIN devices dv ON ip.device_id = dv.id
 		ORDER BY s`
 
-	rows, err := r.db.Query(ctx, query, networkAddr, int64(offset), int64(limit), subnetID)
+	rows, err := r.sQuery(ctx, query, networkAddr, int64(offset), int64(limit), subnetID)
 	if err != nil {
 		return nil, 0, err
 	}

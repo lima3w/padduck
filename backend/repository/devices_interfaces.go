@@ -24,8 +24,8 @@ func scanInterface(row interface{ Scan(dest ...any) error }) (*models.DeviceInte
 
 // ListDeviceInterfaces returns all interfaces for a device.
 func (r *Repository) ListDeviceInterfaces(ctx context.Context, deviceID int64) ([]*models.DeviceInterface, error) {
-	query := `SELECT ` + ifaceSelectCols + ` FROM device_interfaces WHERE device_id=$1 ORDER BY name`
-	rows, err := r.db.Query(ctx, query, deviceID)
+	query := `SELECT ` + ifaceSelectCols + ` FROM device_interfaces WHERE @org(organization_id) AND device_id=$1 ORDER BY name`
+	rows, err := r.sQuery(ctx, query, deviceID)
 	if err != nil {
 		return nil, err
 	}
@@ -49,19 +49,22 @@ func (r *Repository) ListDeviceInterfaces(ctx context.Context, deviceID int64) (
 
 // GetDeviceInterface returns a single interface by ID.
 func (r *Repository) GetDeviceInterface(ctx context.Context, id int64) (*models.DeviceInterface, error) {
-	query := `SELECT ` + ifaceSelectCols + ` FROM device_interfaces WHERE id=$1`
-	row := r.db.QueryRow(ctx, query, id)
+	query := `SELECT ` + ifaceSelectCols + ` FROM device_interfaces WHERE @org(organization_id) AND id=$1`
+	row := r.sQueryRow(ctx, query, id)
 	return scanInterface(row)
 }
 
 // CreateDeviceInterface creates a new interface on a device.
 func (r *Repository) CreateDeviceInterface(ctx context.Context, deviceID int64, p *DeviceInterfaceParams) (*models.DeviceInterface, error) {
+	if err := r.checkOrgRefs(ctx, refID("devices", deviceID), ref("vlans", p.VLANID), ref("ip_addresses", p.IPAddressID), ref("devices", p.ConnectedToDeviceID)); err != nil {
+		return nil, err
+	}
 	query := `
 		INSERT INTO device_interfaces (device_id, name, description, speed_mbps, media_type,
-		                               vlan_id, ip_address_id, connected_to_device_id, connected_to_interface_id)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+		                               vlan_id, ip_address_id, connected_to_device_id, connected_to_interface_id, organization_id)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, @orgval)
 		RETURNING ` + ifaceSelectCols
-	row := r.db.QueryRow(ctx, query,
+	row := r.sQueryRow(ctx, query,
 		deviceID, p.Name, p.Description, p.SpeedMbps, p.MediaType,
 		p.VLANID, p.IPAddressID, p.ConnectedToDeviceID, p.ConnectedToInterfaceID,
 	)
@@ -70,14 +73,17 @@ func (r *Repository) CreateDeviceInterface(ctx context.Context, deviceID int64, 
 
 // UpdateDeviceInterface updates an existing device interface.
 func (r *Repository) UpdateDeviceInterface(ctx context.Context, deviceID, id int64, p *DeviceInterfaceParams) (*models.DeviceInterface, error) {
+	if err := r.checkOrgRefs(ctx, refID("devices", deviceID), ref("vlans", p.VLANID), ref("ip_addresses", p.IPAddressID), ref("devices", p.ConnectedToDeviceID)); err != nil {
+		return nil, err
+	}
 	query := `
 		UPDATE device_interfaces SET
 		  name=$1, description=$2, speed_mbps=$3, media_type=$4,
 		  vlan_id=$5, ip_address_id=$6, connected_to_device_id=$7, connected_to_interface_id=$8,
 		  updated_at=now()
-		WHERE id=$9 AND device_id=$10
+		WHERE @org(organization_id) AND id=$9 AND device_id=$10
 		RETURNING ` + ifaceSelectCols
-	row := r.db.QueryRow(ctx, query,
+	row := r.sQueryRow(ctx, query,
 		p.Name, p.Description, p.SpeedMbps, p.MediaType,
 		p.VLANID, p.IPAddressID, p.ConnectedToDeviceID, p.ConnectedToInterfaceID,
 		id, deviceID,
@@ -87,7 +93,7 @@ func (r *Repository) UpdateDeviceInterface(ctx context.Context, deviceID, id int
 
 // DeleteDeviceInterface deletes an interface by ID, ensuring it belongs to the given device.
 func (r *Repository) DeleteDeviceInterface(ctx context.Context, deviceID, id int64) error {
-	ct, err := r.db.Exec(ctx, `DELETE FROM device_interfaces WHERE id=$1 AND device_id=$2`, id, deviceID)
+	ct, err := r.sExec(ctx, `DELETE FROM device_interfaces WHERE @org(organization_id) AND id=$1 AND device_id=$2`, id, deviceID)
 	if err != nil {
 		return err
 	}
@@ -99,8 +105,8 @@ func (r *Repository) DeleteDeviceInterface(ctx context.Context, deviceID, id int
 
 // SetInterfaceConnection sets the reverse connection on a target interface.
 func (r *Repository) SetInterfaceConnection(ctx context.Context, ifaceID, connDeviceID, connIfaceID int64) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE device_interfaces SET connected_to_device_id=$1, connected_to_interface_id=$2, updated_at=now() WHERE id=$3`,
+	_, err := r.sExec(ctx,
+		`UPDATE device_interfaces SET connected_to_device_id=$1, connected_to_interface_id=$2, updated_at=now() WHERE @org(organization_id) AND id=$3`,
 		connDeviceID, connIfaceID, ifaceID,
 	)
 	return err
@@ -108,8 +114,8 @@ func (r *Repository) SetInterfaceConnection(ctx context.Context, ifaceID, connDe
 
 // ClearInterfaceConnection removes the connection from an interface.
 func (r *Repository) ClearInterfaceConnection(ctx context.Context, ifaceID int64) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE device_interfaces SET connected_to_device_id=NULL, connected_to_interface_id=NULL, updated_at=now() WHERE id=$1`,
+	_, err := r.sExec(ctx,
+		`UPDATE device_interfaces SET connected_to_device_id=NULL, connected_to_interface_id=NULL, updated_at=now() WHERE @org(organization_id) AND id=$1`,
 		ifaceID,
 	)
 	return err

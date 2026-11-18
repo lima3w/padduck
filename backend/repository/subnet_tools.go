@@ -21,9 +21,9 @@ func (r *Repository) SplitSubnet(ctx context.Context, parentID int64, childSubne
 	// Create each child subnet
 	for _, child := range childSubnets {
 		var childID int64
-		err := tx.QueryRow(ctx, `
-			INSERT INTO subnets (network_id, network_address, prefix_length, description, parent_subnet_id, is_container)
-			VALUES ($1, $2::inet, $3, $4, $5, false)
+		err := txQueryRow(ctx, tx, `
+			INSERT INTO subnets (network_id, network_address, prefix_length, description, parent_subnet_id, is_container, organization_id)
+			VALUES ($1, $2::inet, $3, $4, $5, false, @orgval)
 			RETURNING id`,
 			child.NetworkID, child.NetworkAddress, child.PrefixLength, child.Description, parentID,
 		).Scan(&childID)
@@ -34,10 +34,10 @@ func (r *Repository) SplitSubnet(ctx context.Context, parentID int64, childSubne
 
 		// Move IPs that fall within this child's CIDR
 		childCIDR := fmt.Sprintf("%s/%d", child.NetworkAddress, child.PrefixLength)
-		_, err = tx.Exec(ctx, `
+		_, err = txExec(ctx, tx, `
 			UPDATE ip_addresses
 			SET subnet_id = $1, updated_at = CURRENT_TIMESTAMP
-			WHERE subnet_id = $2
+			WHERE subnet_id = $2 AND @org(organization_id)
 			  AND address << $3::inet`,
 			childID, parentID, childCIDR,
 		)
@@ -47,7 +47,7 @@ func (r *Repository) SplitSubnet(ctx context.Context, parentID int64, childSubne
 	}
 
 	// Delete the parent subnet now that all its IPs have been moved to children
-	_, err = tx.Exec(ctx, `DELETE FROM subnets WHERE id = $1`, parentID)
+	_, err = txExec(ctx, tx, `DELETE FROM subnets WHERE id = $1 AND @org(organization_id)`, parentID)
 	if err != nil {
 		return err
 	}
@@ -66,9 +66,9 @@ func (r *Repository) MergeSubnets(ctx context.Context, subnetIDs []int64, parent
 
 	// Create the parent subnet
 	var parentID int64
-	err = tx.QueryRow(ctx, `
-		INSERT INTO subnets (network_id, network_address, prefix_length, description, is_container)
-		VALUES ($1, $2::inet, $3, $4, false)
+	err = txQueryRow(ctx, tx, `
+		INSERT INTO subnets (network_id, network_address, prefix_length, description, is_container, organization_id)
+		VALUES ($1, $2::inet, $3, $4, false, @orgval)
 		RETURNING id`,
 		parent.NetworkID, parent.NetworkAddress, parent.PrefixLength, parent.Description,
 	).Scan(&parentID)
@@ -78,10 +78,10 @@ func (r *Repository) MergeSubnets(ctx context.Context, subnetIDs []int64, parent
 
 	// Move all IPs from each child subnet to the parent
 	for _, sid := range subnetIDs {
-		_, err = tx.Exec(ctx, `
+		_, err = txExec(ctx, tx, `
 			UPDATE ip_addresses
 			SET subnet_id = $1, updated_at = CURRENT_TIMESTAMP
-			WHERE subnet_id = $2`,
+			WHERE subnet_id = $2 AND @org(organization_id)`,
 			parentID, sid,
 		)
 		if err != nil {
@@ -91,7 +91,7 @@ func (r *Repository) MergeSubnets(ctx context.Context, subnetIDs []int64, parent
 
 	// Delete merged children
 	for _, sid := range subnetIDs {
-		_, err = tx.Exec(ctx, `DELETE FROM subnets WHERE id = $1`, sid)
+		_, err = txExec(ctx, tx, `DELETE FROM subnets WHERE id = $1 AND @org(organization_id)`, sid)
 		if err != nil {
 			return nil, fmt.Errorf("deleting merged subnet %d: %w", sid, err)
 		}
@@ -106,9 +106,9 @@ func (r *Repository) MergeSubnets(ctx context.Context, subnetIDs []int64, parent
 
 // ResizeSubnet updates the network_address and prefix_length of a subnet.
 func (r *Repository) ResizeSubnet(ctx context.Context, id int64, newNetworkAddr string, newPrefixLen int) (*models.Subnet, error) {
-	_, err := r.db.Exec(ctx, `
+	_, err := r.sExec(ctx, `
 		UPDATE subnets SET network_address = $1::inet, prefix_length = $2, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $3`,
+		WHERE id = $3 AND @org(organization_id)`,
 		newNetworkAddr, newPrefixLen, id,
 	)
 	if err != nil {
@@ -120,9 +120,9 @@ func (r *Repository) ResizeSubnet(ctx context.Context, id int64, newNetworkAddr 
 // ListIPsOutsideCIDR returns IP addresses in a subnet whose address falls outside the given CIDR.
 func (r *Repository) ListIPsOutsideCIDR(ctx context.Context, subnetID int64, networkAddr string, prefixLen int) ([]*models.IPAddress, error) {
 	cidr := fmt.Sprintf("%s/%d", networkAddr, prefixLen)
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT `+ipSelectCols+` `+ipFromJoin+`
-		WHERE ip.subnet_id = $1
+		WHERE ip.subnet_id = $1 AND @org(ip.organization_id)
 		  AND NOT (ip.address << $2::inet)`,
 		subnetID, cidr,
 	)
@@ -147,9 +147,9 @@ func (r *Repository) ListIPsAtAddresses(ctx context.Context, subnetID int64, add
 	if len(addresses) == 0 {
 		return nil, nil
 	}
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT `+ipSelectCols+` `+ipFromJoin+`
-		WHERE ip.subnet_id = $1
+		WHERE ip.subnet_id = $1 AND @org(ip.organization_id)
 		  AND host(ip.address) = ANY($2)`,
 		subnetID, addresses,
 	)
@@ -171,10 +171,10 @@ func (r *Repository) ListIPsAtAddresses(ctx context.Context, subnetID int64, add
 
 // ListSiblingSubnets returns subnets with the same network_id as the given subnet, excluding self.
 func (r *Repository) ListSiblingSubnets(ctx context.Context, subnetID int64) ([]*models.Subnet, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT `+subnetSelectCols+` `+subnetFromJoin+`
-		WHERE s.network_id = (SELECT network_id FROM subnets WHERE id = $1)
-		  AND s.id != $1
+		WHERE s.network_id = (SELECT network_id FROM subnets WHERE id = $1 AND @org(organization_id))
+		  AND @org(s.organization_id) AND s.id != $1
 		ORDER BY s.network_address`,
 		subnetID,
 	)
@@ -196,14 +196,14 @@ func (r *Repository) ListSiblingSubnets(ctx context.Context, subnetID int64) ([]
 
 // GetNetworkTopology returns topology node and edge data for all subnets in a section.
 func (r *Repository) GetNetworkTopology(ctx context.Context, networkID int64) (*models.NetworkTopology, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT s.id, host(s.network_address)::text, s.prefix_length, s.description,
 		       s.is_container, s.parent_subnet_id, s.vlan_id,
 		       COUNT(ip.id) FILTER (WHERE ip.status != 'available') AS used_count,
 		       COUNT(ip.id) AS total_count
 		FROM subnets s
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
-		WHERE s.network_id = $1
+		WHERE s.network_id = $1 AND @org(s.organization_id)
 		GROUP BY s.id
 		ORDER BY s.network_address`,
 		networkID,
@@ -290,8 +290,12 @@ func scanIPv6Delegation(row interface{ Scan(dest ...any) error }) (*models.IPv6D
 
 // CreateIPv6Delegation inserts a new IPv6 delegation record.
 func (r *Repository) CreateIPv6Delegation(ctx context.Context, d *models.IPv6Delegation) (*models.IPv6Delegation, error) {
+	// The parent subnet must belong to the caller's organization.
+	if _, err := r.GetSubnetByID(ctx, d.ParentSubnetID); err != nil {
+		return nil, err
+	}
 	var id int64
-	err := r.db.QueryRow(ctx, `
+	err := r.sQueryRow(ctx, `
 		INSERT INTO ipv6_delegations
 		  (parent_subnet_id, delegated_prefix, delegated_to_device_id, delegated_to_description,
 		   valid_lifetime_sec, preferred_lifetime_sec, expires_at)
@@ -308,10 +312,10 @@ func (r *Repository) CreateIPv6Delegation(ctx context.Context, d *models.IPv6Del
 
 // GetIPv6DelegationByID returns a single delegation by ID.
 func (r *Repository) GetIPv6DelegationByID(ctx context.Context, id int64) (*models.IPv6Delegation, error) {
-	row := r.db.QueryRow(ctx, `
+	row := r.sQueryRow(ctx, `
 		SELECT id, parent_subnet_id, delegated_prefix, delegated_to_device_id, delegated_to_description,
 		       valid_lifetime_sec, preferred_lifetime_sec, expires_at, created_at
-		FROM ipv6_delegations WHERE id = $1`,
+		FROM ipv6_delegations WHERE id = $1 AND parent_subnet_id IN (SELECT id FROM subnets WHERE @org(organization_id))`,
 		id,
 	)
 	return scanIPv6Delegation(row)
@@ -319,10 +323,10 @@ func (r *Repository) GetIPv6DelegationByID(ctx context.Context, id int64) (*mode
 
 // ListIPv6DelegationsBySubnet returns all delegations for a given parent subnet.
 func (r *Repository) ListIPv6DelegationsBySubnet(ctx context.Context, subnetID int64) ([]*models.IPv6Delegation, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT id, parent_subnet_id, delegated_prefix, delegated_to_device_id, delegated_to_description,
 		       valid_lifetime_sec, preferred_lifetime_sec, expires_at, created_at
-		FROM ipv6_delegations WHERE parent_subnet_id = $1 ORDER BY id`,
+		FROM ipv6_delegations WHERE parent_subnet_id = $1 AND parent_subnet_id IN (SELECT id FROM subnets WHERE @org(organization_id)) ORDER BY id`,
 		subnetID,
 	)
 	if err != nil {
@@ -343,7 +347,7 @@ func (r *Repository) ListIPv6DelegationsBySubnet(ctx context.Context, subnetID i
 
 // UpdateIPv6Delegation updates mutable fields of a delegation record.
 func (r *Repository) UpdateIPv6Delegation(ctx context.Context, id int64, d *models.IPv6Delegation) (*models.IPv6Delegation, error) {
-	_, err := r.db.Exec(ctx, `
+	_, err := r.sExec(ctx, `
 		UPDATE ipv6_delegations
 		SET delegated_prefix = $1,
 		    delegated_to_device_id = $2,
@@ -351,7 +355,7 @@ func (r *Repository) UpdateIPv6Delegation(ctx context.Context, id int64, d *mode
 		    valid_lifetime_sec = $4,
 		    preferred_lifetime_sec = $5,
 		    expires_at = $6
-		WHERE id = $7`,
+		WHERE id = $7 AND parent_subnet_id IN (SELECT id FROM subnets WHERE @org(organization_id))`,
 		d.DelegatedPrefix, d.DelegatedToDeviceID, d.DelegatedToDescription,
 		d.ValidLifetimeSec, d.PreferredLifetimeSec, d.ExpiresAt, id,
 	)
@@ -363,7 +367,7 @@ func (r *Repository) UpdateIPv6Delegation(ctx context.Context, id int64, d *mode
 
 // DeleteIPv6Delegation removes a delegation record.
 func (r *Repository) DeleteIPv6Delegation(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM ipv6_delegations WHERE id = $1`, id)
+	_, err := r.sExec(ctx, `DELETE FROM ipv6_delegations WHERE id = $1 AND parent_subnet_id IN (SELECT id FROM subnets WHERE @org(organization_id))`, id)
 	return err
 }
 
