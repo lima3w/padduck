@@ -12,11 +12,11 @@ import (
 func (r *Repository) SearchDevices(ctx context.Context, f *DeviceSearchFilter) ([]*models.Device, error) {
 	args := []interface{}{}
 	n := 1
-	where := []string{}
+	where := []string{"@org(d.organization_id)"}
 	vlanJoin := ""
 
 	if f.VLANID != nil {
-		vlanJoin = fmt.Sprintf(` JOIN device_interfaces di ON di.device_id = d.id AND di.vlan_id = $%d`, n)
+		vlanJoin = fmt.Sprintf(` JOIN device_interfaces di ON di.device_id = d.id AND di.vlan_id = $%d WHERE @org(di.organization_id) `, n)
 		args = append(args, *f.VLANID)
 		n++
 	}
@@ -64,13 +64,13 @@ func (r *Repository) SearchDevices(ctx context.Context, f *DeviceSearchFilter) (
 		       COUNT(ip.id) AS ip_count
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
-		LEFT JOIN ip_addresses ip ON ip.device_id = d.id` +
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id ` +
 		vlanJoin +
 		whereClause + `
 		GROUP BY d.id, dt.id
 		ORDER BY d.hostname`
 
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -177,13 +177,13 @@ func (r *Repository) SearchDevicesWithCustomFields(ctx context.Context, f *Devic
 		       COUNT(ip.id) AS ip_count
 		FROM devices d
 		LEFT JOIN device_types dt ON dt.id = d.type_id
-		LEFT JOIN ip_addresses ip ON ip.device_id = d.id` +
+		LEFT JOIN ip_addresses ip ON ip.device_id = d.id ` +
 		vlanJoin +
 		whereClause + `
 		GROUP BY d.id, dt.id
 		ORDER BY d.hostname`
 
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

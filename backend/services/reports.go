@@ -112,14 +112,14 @@ func (rs *ReportsService) GetUtilizationHistory(ctx context.Context, subnetID in
 
 // GetUtilizationTrends returns trend data for all subnets.
 func (rs *ReportsService) GetUtilizationTrends(ctx context.Context) ([]*models.SubnetUtilizationTrend, error) {
-	if value, ok := rs.reportCache().get("utilization_trends"); ok {
+	if value, ok := rs.reportCache().get(orgCacheKey(ctx, "utilization_trends")); ok {
 		return cloneUtilizationTrends(value.([]*models.SubnetUtilizationTrend)), nil
 	}
 	trends, err := rs.repo.GetUtilizationTrends(ctx)
 	if err != nil {
 		return nil, err
 	}
-	rs.reportCache().set("utilization_trends", cloneUtilizationTrends(trends))
+	rs.reportCache().set(orgCacheKey(ctx, "utilization_trends"), cloneUtilizationTrends(trends))
 	return cloneUtilizationTrends(trends), nil
 }
 
@@ -272,7 +272,7 @@ func (rs *ReportsService) CheckThresholdAlerts(ctx context.Context) {
 
 // GetSubnetsNearCapacity returns subnets whose latest utilization exceeds the threshold.
 func (rs *ReportsService) GetSubnetsNearCapacity(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilizationTrend, error) {
-	key := fmt.Sprintf("subnets_near_capacity:%.2f", thresholdPct)
+	key := orgCacheKey(ctx, fmt.Sprintf("subnets_near_capacity:%.2f", thresholdPct))
 	if value, ok := rs.reportCache().get(key); ok {
 		return cloneUtilizationTrends(value.([]*models.SubnetUtilizationTrend)), nil
 	}
@@ -306,7 +306,7 @@ func (rs *ReportsService) GetScheduledReport(ctx context.Context, id int64) (*mo
 // Pass nil to return all reports across orgs (used by the background scheduler).
 func (rs *ReportsService) ListScheduledReports(ctx context.Context, orgID *int64) ([]*models.ScheduledReport, error) {
 	if orgID == nil {
-		if value, ok := rs.reportCache().get("scheduled_reports"); ok {
+		if value, ok := rs.reportCache().get(orgCacheKey(ctx, "scheduled_reports")); ok {
 			return cloneScheduledReports(value.([]*models.ScheduledReport)), nil
 		}
 	}
@@ -315,7 +315,7 @@ func (rs *ReportsService) ListScheduledReports(ctx context.Context, orgID *int64
 		return nil, err
 	}
 	if orgID == nil {
-		rs.reportCache().set("scheduled_reports", cloneScheduledReports(reports))
+		rs.reportCache().set(orgCacheKey(ctx, "scheduled_reports"), cloneScheduledReports(reports))
 	}
 	return cloneScheduledReports(reports), nil
 }
@@ -340,6 +340,10 @@ func (rs *ReportsService) DeleteScheduledReport(ctx context.Context, id int64) e
 
 // RunScheduledReport generates and emails a report.
 func (rs *ReportsService) RunScheduledReport(ctx context.Context, report *models.ScheduledReport) error {
+	// Generate the report from its own organization's data.
+	if report.OrganizationID != nil {
+		ctx = repository.WithOrg(ctx, *report.OrganizationID)
+	}
 	data, filename, contentType, err := rs.generateReportData(ctx, report)
 	if err != nil {
 		return fmt.Errorf("generating report: %w", err)

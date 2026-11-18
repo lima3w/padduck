@@ -1,8 +1,12 @@
 package services
 
 import (
+	"context"
+	"fmt"
 	"sync"
 	"time"
+
+	"padduck/repository"
 )
 
 type ttlCache[T any] struct {
@@ -62,4 +66,13 @@ func (c *ttlCache[T]) clear() {
 	c.mu.Lock()
 	c.values = make(map[string]ttlCacheEntry[T])
 	c.mu.Unlock()
+}
+
+// orgCacheKey scopes an in-memory cache key to the caller's organization so one
+// organization's cached results are never served to another.
+func orgCacheKey(ctx context.Context, key string) string {
+	if org, ok := repository.OrgFromContext(ctx); ok {
+		return fmt.Sprintf("%s|org=%d", key, org)
+	}
+	return key + "|system"
 }

@@ -50,10 +50,13 @@ func scanSubnet(row interface {
 }
 
 func (r *Repository) CreateSubnet(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
+	if err := r.checkOrgRefs(ctx, refID("networks", networkID)); err != nil {
+		return nil, err
+	}
+	query := `INSERT INTO subnets (organization_id, network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last)
+	          VALUES (@orgval, $1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	var id int64
-	if err := r.db.QueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast).Scan(&id); err != nil {
+	if err := r.sQueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -61,55 +64,61 @@ func (r *Repository) CreateSubnet(ctx context.Context, networkID int64, networkA
 
 // CreateSubnetWithLocation inserts a new subnet with an optional location.
 func (r *Repository) CreateSubnetWithLocation(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
+	if err := r.checkOrgRefs(ctx, refID("networks", networkID), ref("locations", locationID), ref("nameservers", firstPtr(nameserverID))); err != nil {
+		return nil, err
+	}
 	var nsID *int64
 	if len(nameserverID) > 0 {
 		nsID = nameserverID[0]
 	}
-	query := `INSERT INTO subnets (network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
+	query := `INSERT INTO subnets (organization_id, network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id)
+	          VALUES (@orgval, $1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`
 	var id int64
-	if err := r.db.QueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nsID).Scan(&id); err != nil {
+	if err := r.sQueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nsID).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
 }
 
 func (r *Repository) CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
-	query := `INSERT INTO subnets (network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id, vlan_id)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
+	if err := r.checkOrgRefs(ctx, refID("networks", networkID), ref("locations", locationID), ref("nameservers", nameserverID), ref("vlans", vlanID)); err != nil {
+		return nil, err
+	}
+	query := `INSERT INTO subnets (organization_id, network_id, network_address, prefix_length, description, gateway, auto_reserve_first, auto_reserve_last, location_id, nameserver_id, vlan_id)
+	          VALUES (@orgval, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`
 	var id int64
-	if err := r.db.QueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID).Scan(&id); err != nil {
+	if err := r.sQueryRow(ctx, query, networkID, networkAddress, prefixLength, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID).Scan(&id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
 }
 
 func (r *Repository) GetSubnetByID(ctx context.Context, id int64) (*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.id = $1`
-	row := r.db.QueryRow(ctx, query, id)
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.id = $1 AND @org(s.organization_id)`
+	row := r.sQueryRow(ctx, query, id)
 	return scanSubnet(row)
 }
 
 // FindSubnetForIP returns the most-specific subnet (longest prefix) that contains ip.
 func (r *Repository) FindSubnetForIP(ctx context.Context, ip string) (*models.Subnet, error) {
 	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-		WHERE $1::inet << set_masklen(s.network_address::inet, s.prefix_length)
+		WHERE $1::inet << set_masklen(s.network_address::inet, s.prefix_length) AND @org(s.organization_id)
 		ORDER BY s.prefix_length DESC LIMIT 1`
-	row := r.db.QueryRow(ctx, query, ip)
+	row := r.sQueryRow(ctx, query, ip)
 	return scanSubnet(row)
 }
 
 // GetSubnetByCIDR looks up a subnet by CIDR notation (e.g. "192.168.1.0/24").
 // network_address stores only the host IP; prefix_length is in a separate column.
 func (r *Repository) GetSubnetByCIDR(ctx context.Context, cidr string) (*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE host(s.network_address) = host($1::inet) AND s.prefix_length = masklen($1::inet)`
-	row := r.db.QueryRow(ctx, query, cidr)
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE host(s.network_address) = host($1::inet) AND s.prefix_length = masklen($1::inet) AND @org(s.organization_id)`
+	row := r.sQueryRow(ctx, query, cidr)
 	return scanSubnet(row)
 }
 
 func (r *Repository) ListSubnetsBySection(ctx context.Context, networkID int64) ([]*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.network_id = $1 ORDER BY s.network_address`
-	rows, err := r.db.Query(ctx, query, networkID)
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.network_id = $1 AND @org(s.organization_id) ORDER BY s.network_address`
+	rows, err := r.sQuery(ctx, query, networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -128,8 +137,8 @@ func (r *Repository) ListSubnetsBySection(ctx context.Context, networkID int64) 
 
 // ListSubnetsByLocation returns subnets assigned to a specific location.
 func (r *Repository) ListSubnetsByLocation(ctx context.Context, locationID int64) ([]*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.location_id=$1 ORDER BY s.network_address`
-	rows, err := r.db.Query(ctx, query, locationID)
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE s.location_id=$1 AND @org(s.organization_id) ORDER BY s.network_address`
+	rows, err := r.sQuery(ctx, query, locationID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +157,8 @@ func (r *Repository) ListSubnetsByLocation(ctx context.Context, locationID int64
 
 func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
 	query := `UPDATE subnets SET description = $1, gateway = $2, auto_reserve_first = $3, auto_reserve_last = $4,
-	          updated_at = CURRENT_TIMESTAMP WHERE id = $5`
-	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, id); err != nil {
+	          updated_at = CURRENT_TIMESTAMP WHERE id = $5 AND @org(organization_id)`
+	if _, err := r.sExec(ctx, query, description, gateway, autoFirst, autoLast, id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -157,13 +166,16 @@ func (r *Repository) UpdateSubnet(ctx context.Context, id int64, description str
 
 // UpdateSubnetWithLocation updates a subnet including its location and nameserver assignment.
 func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
+	if err := r.checkOrgRefs(ctx, ref("locations", locationID), ref("nameservers", firstPtr(nameserverID))); err != nil {
+		return nil, err
+	}
 	var nsID *int64
 	if len(nameserverID) > 0 {
 		nsID = nameserverID[0]
 	}
 	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
-	          location_id=$5, nameserver_id=$6, updated_at=CURRENT_TIMESTAMP WHERE id=$7`
-	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nsID, id); err != nil {
+	          location_id=$5, nameserver_id=$6, updated_at=CURRENT_TIMESTAMP WHERE id=$7 AND @org(organization_id)`
+	if _, err := r.sExec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nsID, id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -171,13 +183,16 @@ func (r *Repository) UpdateSubnetWithLocation(ctx context.Context, id int64, des
 
 // UpdateSubnetWithVLAN updates a subnet including vlan_id and technitium_scope_name.
 func (r *Repository) UpdateSubnetWithVLAN(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, technitiumScopeName ...string) (*models.Subnet, error) {
+	if err := r.checkOrgRefs(ctx, ref("locations", locationID), ref("nameservers", nameserverID), ref("vlans", vlanID)); err != nil {
+		return nil, err
+	}
 	scope := ""
 	if len(technitiumScopeName) > 0 {
 		scope = technitiumScopeName[0]
 	}
 	query := `UPDATE subnets SET description=$1, gateway=$2, auto_reserve_first=$3, auto_reserve_last=$4,
-	          location_id=$5, nameserver_id=$6, vlan_id=$7, technitium_scope_name=$8, updated_at=CURRENT_TIMESTAMP WHERE id=$9`
-	if _, err := r.db.Exec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID, scope, id); err != nil {
+	          location_id=$5, nameserver_id=$6, vlan_id=$7, technitium_scope_name=$8, updated_at=CURRENT_TIMESTAMP WHERE id=$9 AND @org(organization_id)`
+	if _, err := r.sExec(ctx, query, description, gateway, autoFirst, autoLast, locationID, nameserverID, vlanID, scope, id); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, id)
@@ -185,21 +200,24 @@ func (r *Repository) UpdateSubnetWithVLAN(ctx context.Context, id int64, descrip
 
 // SetSubnetTechnitiumScope updates only the Technitium DHCP scope name for a subnet.
 func (r *Repository) SetSubnetTechnitiumScope(ctx context.Context, subnetID int64, scopeName string) error {
-	_, err := r.db.Exec(ctx, `UPDATE subnets SET technitium_scope_name=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`, scopeName, subnetID)
+	_, err := r.sExec(ctx, `UPDATE subnets SET technitium_scope_name=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND @org(organization_id)`, scopeName, subnetID)
 	return err
 }
 
 // AssignSubnetToVLAN updates only the VLAN association for a subnet.
 func (r *Repository) AssignSubnetToVLAN(ctx context.Context, subnetID int64, vlanID *int64) (*models.Subnet, error) {
-	query := `UPDATE subnets SET vlan_id=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`
-	if _, err := r.db.Exec(ctx, query, vlanID, subnetID); err != nil {
+	if err := r.checkOrgRefs(ctx, ref("vlans", vlanID)); err != nil {
+		return nil, err
+	}
+	query := `UPDATE subnets SET vlan_id=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND @org(organization_id)`
+	if _, err := r.sExec(ctx, query, vlanID, subnetID); err != nil {
 		return nil, err
 	}
 	return r.GetSubnetByID(ctx, subnetID)
 }
 
 func (r *Repository) DeleteSubnet(ctx context.Context, id int64) error {
-	query := `DELETE FROM subnets WHERE id = $1`
-	_, err := r.db.Exec(ctx, query, id)
+	query := `DELETE FROM subnets WHERE id = $1 AND @org(organization_id)`
+	_, err := r.sExec(ctx, query, id)
 	return err
 }

@@ -10,9 +10,9 @@ import (
 
 func (r *Repository) ListAutomationPolicies(ctx context.Context) ([]*models.AutomationPolicy, error) {
 	query := `SELECT id, name, workflow, action, effect, enabled, conditions::text, actions::text, message, created_at, updated_at
-	          FROM automation_policies
+	          FROM automation_policies WHERE @org(organization_id)
 	          ORDER BY workflow ASC, action ASC, name ASC`
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -31,11 +31,11 @@ func (r *Repository) ListAutomationPolicies(ctx context.Context) ([]*models.Auto
 func (r *Repository) ListEnabledAutomationPolicies(ctx context.Context, workflow, action string) ([]*models.AutomationPolicy, error) {
 	query := `SELECT id, name, workflow, action, effect, enabled, conditions::text, actions::text, message, created_at, updated_at
 	          FROM automation_policies
-	          WHERE enabled = TRUE
+	          WHERE @org(organization_id) AND (enabled = TRUE
 	            AND (workflow = '*' OR workflow = $1)
-	            AND (action = '*' OR action = $2)
+	            AND (action = '*' OR action = $2))
 	          ORDER BY id ASC`
-	rows, err := r.db.Query(ctx, query, workflow, action)
+	rows, err := r.sQuery(ctx, query, workflow, action)
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +52,10 @@ func (r *Repository) ListEnabledAutomationPolicies(ctx context.Context, workflow
 }
 
 func (r *Repository) CreateAutomationPolicy(ctx context.Context, policy *models.AutomationPolicy) (*models.AutomationPolicy, error) {
-	query := `INSERT INTO automation_policies (name, workflow, action, effect, enabled, conditions, actions, message)
-	          VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8)
+	query := `INSERT INTO automation_policies (name, workflow, action, effect, enabled, conditions, actions, message, organization_id)
+	          VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8, @orgval)
 	          RETURNING id, name, workflow, action, effect, enabled, conditions::text, actions::text, message, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query,
+	row := r.sQueryRow(ctx, query,
 		policy.Name, policy.Workflow, policy.Action, policy.Effect, policy.Enabled,
 		encodePolicyConditions(policy.Conditions), encodePolicyActions(policy.Actions), policy.Message)
 	return scanPolicyRow(row)
@@ -65,16 +65,16 @@ func (r *Repository) UpdateAutomationPolicy(ctx context.Context, policy *models.
 	query := `UPDATE automation_policies
 	          SET name = $2, workflow = $3, action = $4, effect = $5, enabled = $6,
 	              conditions = $7::jsonb, actions = $8::jsonb, message = $9, updated_at = NOW()
-	          WHERE id = $1
+	          WHERE @org(organization_id) AND id = $1
 	          RETURNING id, name, workflow, action, effect, enabled, conditions::text, actions::text, message, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query,
+	row := r.sQueryRow(ctx, query,
 		policy.ID, policy.Name, policy.Workflow, policy.Action, policy.Effect, policy.Enabled,
 		encodePolicyConditions(policy.Conditions), encodePolicyActions(policy.Actions), policy.Message)
 	return scanPolicyRow(row)
 }
 
 func (r *Repository) DeleteAutomationPolicy(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM automation_policies WHERE id = $1`, id)
+	_, err := r.sExec(ctx, `DELETE FROM automation_policies WHERE @org(organization_id) AND id = $1`, id)
 	return err
 }
 

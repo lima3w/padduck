@@ -15,6 +15,7 @@ import (
 
 	"padduck/internal/scanner"
 	"padduck/models"
+	"padduck/repository"
 	"padduck/utils"
 )
 
@@ -402,6 +403,8 @@ func (d *DiscoveryService) ScanSubnet(ctx context.Context, jobID, subnetID int64
 // RunJob executes a scan job immediately.
 // #248: acquires semaphore slot and records in-flight state.
 func (d *DiscoveryService) RunJob(ctx context.Context, job *models.ScanJob) error {
+	// Scan results, runs and IP changes belong to the job's organization.
+	ctx = repository.WithOrg(ctx, job.OrganizationID)
 	// Check in-flight (skip if already running)
 	if _, loaded := d.inFlight.LoadOrStore(job.ID, struct{}{}); loaded {
 		slog.Info("scan job already running, skipping", "job_id", job.ID)

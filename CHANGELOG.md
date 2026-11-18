@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.34.45
+
+### Security
+- **Organization isolation** (#8): organizations are now a real data boundary. Until now only API tokens, webhooks, audit logs and scheduled reports carried an organization; networks, subnets, IP addresses, VLANs and every other inventory table were shared, so an admin of one organization could read, change and delete another's data. Every tenant table now has an `organization_id` (migration `20260720_001`), and every query on those tables is filtered by the caller's organization. Writes are stamped with it, and a row can no longer point at another organization's row (a subnet in someone else's network, a device in someone else's rack, and so on).
+  - **Scoped:** networks, subnets, IP addresses, VLANs, VLAN groups and domains, VRFs, locations, racks, customers, nameservers, devices and interfaces, custom fields, autonomous systems, NAT rules, DHCP servers and leases, firewall zones and mappings, circuits, customer associations, scan jobs/profiles/agents/results, IP and subnet requests and their comments, discovery conflicts, automation policies, users, tags, device types, the topology graph, and the existing webhook, scheduled report and audit tables (whose lookups by ID were unscoped).
+  - **Names are unique per organization**, not globally: two organizations can each have a VRF, VLAN number, customer or tag with the same name. Built-in tags and device types remain shared by all organizations.
+  - **Background work stays in its organization:** scheduled scans, scan agents, scheduled reports, automation actions and webhook delivery run as the organization that owns them. In-memory dashboard and report caches are keyed per organization.
+  - **Other behavior changes:** the anonymous query endpoint (when enabled) serves the default organization only. Creating and deleting organizations is limited to platform admins and admins of the default organization; other admins see only their own organization in the list. The default organization cannot be deleted, and deleting an organization that still has data returns 409 instead of 500. Users created after the organizations feature shipped had no organization; they are moved to the default one, and `users.organization_id` is now required.
+  - **Not scoped (instance-wide by design):** system configuration, authentication providers, roles, and the integration syncs for UniFi, Technitium and PowerDNS. Those run once for the instance and write into the default organization.
+- Tests: new repository and HTTP-level cross-organization isolation tests cover reads, lists, search, dashboard counts, cross-organization updates and deletes, and cross-organization references.
+
 ## v1.34.44
 
 ### Added

@@ -12,10 +12,10 @@ import (
 // CreateSubnetRequest inserts a new subnet request.
 func (r *Repository) CreateSubnetRequest(ctx context.Context, requesterID, networkID int64, parentSubnetID *int64, prefixLen int, purpose string) (*models.SubnetRequest, error) {
 	query := `
-		INSERT INTO subnet_requests (requester_id, network_id, parent_subnet_id, requested_prefix_len, purpose)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO subnet_requests (requester_id, network_id, parent_subnet_id, requested_prefix_len, purpose, organization_id)
+		VALUES ($1, $2, $3, $4, $5, @orgval)
 		RETURNING id, requester_id, network_id, parent_subnet_id, requested_prefix_len, purpose, status, reviewer_id, reviewer_note, subnet_id, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query, requesterID, networkID, parentSubnetID, prefixLen, purpose)
+	row := r.sQueryRow(ctx, query, requesterID, networkID, parentSubnetID, prefixLen, purpose)
 	return scanSubnetRequest(row)
 }
 
@@ -28,8 +28,8 @@ func (r *Repository) GetSubnetRequestByID(ctx context.Context, id int64) (*model
 		FROM subnet_requests sr
 		LEFT JOIN users ru ON ru.id = sr.requester_id
 		LEFT JOIN users rv ON rv.id = sr.reviewer_id
-		WHERE sr.id = $1`
-	row := r.db.QueryRow(ctx, query, id)
+		WHERE @org(sr.organization_id) AND sr.id = $1`
+	row := r.sQueryRow(ctx, query, id)
 	return scanSubnetRequestFull(row)
 }
 
@@ -42,7 +42,7 @@ func (r *Repository) ListSubnetRequestsByRequester(ctx context.Context, requeste
 		FROM subnet_requests sr
 		LEFT JOIN users ru ON ru.id = sr.requester_id
 		LEFT JOIN users rv ON rv.id = sr.reviewer_id
-		WHERE sr.requester_id = $1
+		WHERE @org(sr.organization_id) AND sr.requester_id = $1
 		ORDER BY sr.created_at DESC`
 	return r.querySubnetRequests(ctx, query, requesterID)
 }
@@ -55,7 +55,7 @@ func (r *Repository) ListAllSubnetRequests(ctx context.Context) ([]*models.Subne
 		       sr.reviewer_note, sr.subnet_id, sr.created_at, sr.updated_at
 		FROM subnet_requests sr
 		LEFT JOIN users ru ON ru.id = sr.requester_id
-		LEFT JOIN users rv ON rv.id = sr.reviewer_id
+		LEFT JOIN users rv ON rv.id = sr.reviewer_id WHERE @org(sr.organization_id)
 		ORDER BY sr.created_at DESC`
 	return r.querySubnetRequests(ctx, query)
 }
@@ -65,10 +65,10 @@ func (r *Repository) ApproveSubnetRequest(ctx context.Context, id, reviewerID, s
 	query := `
 		UPDATE subnet_requests
 		SET status = 'approved', reviewer_id = $2, reviewer_note = $3, subnet_id = $4, updated_at = NOW()
-		WHERE id = $1 AND status = 'pending'
+		WHERE @org(organization_id) AND id = $1 AND status = 'pending'
 		RETURNING id`
 	var updatedID int64
-	err := r.db.QueryRow(ctx, query, id, reviewerID, reviewerNote, subnetID).Scan(&updatedID)
+	err := r.sQueryRow(ctx, query, id, reviewerID, reviewerNote, subnetID).Scan(&updatedID)
 	if err != nil {
 		return nil, fmt.Errorf("subnet request not found or not pending")
 	}
@@ -80,10 +80,10 @@ func (r *Repository) RejectSubnetRequest(ctx context.Context, id, reviewerID int
 	query := `
 		UPDATE subnet_requests
 		SET status = 'rejected', reviewer_id = $2, reviewer_note = $3, updated_at = NOW()
-		WHERE id = $1 AND status = 'pending'
+		WHERE @org(organization_id) AND id = $1 AND status = 'pending'
 		RETURNING id`
 	var updatedID int64
-	err := r.db.QueryRow(ctx, query, id, reviewerID, reviewerNote).Scan(&updatedID)
+	err := r.sQueryRow(ctx, query, id, reviewerID, reviewerNote).Scan(&updatedID)
 	if err != nil {
 		return nil, fmt.Errorf("subnet request not found or not pending")
 	}
@@ -95,8 +95,8 @@ func (r *Repository) CancelSubnetRequest(ctx context.Context, id, requesterID in
 	query := `
 		UPDATE subnet_requests
 		SET status = 'cancelled', updated_at = NOW()
-		WHERE id = $1 AND requester_id = $2 AND status = 'pending'`
-	result, err := r.db.Exec(ctx, query, id, requesterID)
+		WHERE @org(organization_id) AND id = $1 AND requester_id = $2 AND status = 'pending'`
+	result, err := r.sExec(ctx, query, id, requesterID)
 	if err != nil {
 		return err
 	}
@@ -109,12 +109,12 @@ func (r *Repository) CancelSubnetRequest(ctx context.Context, id, requesterID in
 // CountPendingSubnetRequests returns the count of pending subnet requests.
 func (r *Repository) CountPendingSubnetRequests(ctx context.Context) (int64, error) {
 	var count int64
-	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnet_requests WHERE status = 'pending'`).Scan(&count)
+	err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM subnet_requests WHERE @org(organization_id) AND status = 'pending'`).Scan(&count)
 	return count, err
 }
 
 func (r *Repository) querySubnetRequests(ctx context.Context, query string, args ...interface{}) ([]*models.SubnetRequest, error) {
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -169,10 +169,10 @@ func scanSubnetRequestFull(s subnetRequestScanner) (*models.SubnetRequest, error
 // CreateIPRequest inserts a new IP request.
 func (r *Repository) CreateIPRequest(ctx context.Context, requesterID, subnetID int64, requestedIP *string, dnsName, purpose string) (*models.IPRequest, error) {
 	query := `
-		INSERT INTO ip_requests (requester_id, subnet_id, requested_ip, dns_name, purpose)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO ip_requests (requester_id, subnet_id, requested_ip, dns_name, purpose, organization_id)
+		VALUES ($1, $2, $3, $4, $5, @orgval)
 		RETURNING id, requester_id, subnet_id, requested_ip, dns_name, purpose, status, reviewer_id, reviewer_note, ip_address_id, created_at, updated_at`
-	row := r.db.QueryRow(ctx, query, requesterID, subnetID, requestedIP, dnsName, purpose)
+	row := r.sQueryRow(ctx, query, requesterID, subnetID, requestedIP, dnsName, purpose)
 	return scanIPRequest(row)
 }
 
@@ -185,8 +185,8 @@ func (r *Repository) GetIPRequestByID(ctx context.Context, id int64) (*models.IP
 		FROM ip_requests ir
 		LEFT JOIN users ru ON ru.id = ir.requester_id
 		LEFT JOIN users rv ON rv.id = ir.reviewer_id
-		WHERE ir.id = $1`
-	row := r.db.QueryRow(ctx, query, id)
+		WHERE @org(ir.organization_id) AND ir.id = $1`
+	row := r.sQueryRow(ctx, query, id)
 	return scanIPRequestFull(row)
 }
 
@@ -199,7 +199,7 @@ func (r *Repository) ListIPRequestsByRequester(ctx context.Context, requesterID 
 		FROM ip_requests ir
 		LEFT JOIN users ru ON ru.id = ir.requester_id
 		LEFT JOIN users rv ON rv.id = ir.reviewer_id
-		WHERE ir.requester_id = $1
+		WHERE @org(ir.organization_id) AND ir.requester_id = $1
 		ORDER BY ir.created_at DESC`
 	return r.queryIPRequests(ctx, query, requesterID)
 }
@@ -212,7 +212,7 @@ func (r *Repository) ListAllIPRequests(ctx context.Context) ([]*models.IPRequest
 		       ir.reviewer_note, ir.ip_address_id, ir.created_at, ir.updated_at
 		FROM ip_requests ir
 		LEFT JOIN users ru ON ru.id = ir.requester_id
-		LEFT JOIN users rv ON rv.id = ir.reviewer_id
+		LEFT JOIN users rv ON rv.id = ir.reviewer_id WHERE @org(ir.organization_id)
 		ORDER BY ir.created_at DESC`
 	return r.queryIPRequests(ctx, query)
 }
@@ -222,10 +222,10 @@ func (r *Repository) ApproveIPRequest(ctx context.Context, id, reviewerID, ipAdd
 	query := `
 		UPDATE ip_requests
 		SET status = 'approved', reviewer_id = $2, reviewer_note = $3, ip_address_id = $4, updated_at = NOW()
-		WHERE id = $1 AND status = 'pending'
+		WHERE @org(organization_id) AND id = $1 AND status = 'pending'
 		RETURNING id`
 	var updatedID int64
-	err := r.db.QueryRow(ctx, query, id, reviewerID, reviewerNote, ipAddressID).Scan(&updatedID)
+	err := r.sQueryRow(ctx, query, id, reviewerID, reviewerNote, ipAddressID).Scan(&updatedID)
 	if err != nil {
 		return nil, fmt.Errorf("ip request not found or not pending")
 	}
@@ -237,10 +237,10 @@ func (r *Repository) RejectIPRequest(ctx context.Context, id, reviewerID int64, 
 	query := `
 		UPDATE ip_requests
 		SET status = 'rejected', reviewer_id = $2, reviewer_note = $3, updated_at = NOW()
-		WHERE id = $1 AND status = 'pending'
+		WHERE @org(organization_id) AND id = $1 AND status = 'pending'
 		RETURNING id`
 	var updatedID int64
-	err := r.db.QueryRow(ctx, query, id, reviewerID, reviewerNote).Scan(&updatedID)
+	err := r.sQueryRow(ctx, query, id, reviewerID, reviewerNote).Scan(&updatedID)
 	if err != nil {
 		return nil, fmt.Errorf("ip request not found or not pending")
 	}
@@ -252,8 +252,8 @@ func (r *Repository) CancelIPRequest(ctx context.Context, id, requesterID int64)
 	query := `
 		UPDATE ip_requests
 		SET status = 'cancelled', updated_at = NOW()
-		WHERE id = $1 AND requester_id = $2 AND status = 'pending'`
-	result, err := r.db.Exec(ctx, query, id, requesterID)
+		WHERE @org(organization_id) AND id = $1 AND requester_id = $2 AND status = 'pending'`
+	result, err := r.sExec(ctx, query, id, requesterID)
 	if err != nil {
 		return err
 	}
@@ -266,19 +266,19 @@ func (r *Repository) CancelIPRequest(ctx context.Context, id, requesterID int64)
 // CountPendingIPRequests returns the count of pending IP requests.
 func (r *Repository) CountPendingIPRequests(ctx context.Context) (int64, error) {
 	var count int64
-	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_requests WHERE status = 'pending'`).Scan(&count)
+	err := r.sQueryRow(ctx, `SELECT COUNT(*) FROM ip_requests WHERE @org(organization_id) AND status = 'pending'`).Scan(&count)
 	return count, err
 }
 
 // GetIPAddressBySubnetAndAddress finds an IP address in a subnet by its address string.
 func (r *Repository) GetIPAddressBySubnetAndAddress(ctx context.Context, subnetID int64, address string) (*models.IPAddress, error) {
-	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND ip.address = $2::inet`
-	row := r.db.QueryRow(ctx, query, subnetID, address)
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND ip.address = $2::inet AND @org(ip.organization_id)`
+	row := r.sQueryRow(ctx, query, subnetID, address)
 	return scanIP(row)
 }
 
 func (r *Repository) queryIPRequests(ctx context.Context, query string, args ...interface{}) ([]*models.IPRequest, error) {
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -333,10 +333,10 @@ func scanIPRequestFull(s ipRequestScanner) (*models.IPRequest, error) {
 // CreateRequestComment inserts a new comment on a request.
 func (r *Repository) CreateRequestComment(ctx context.Context, requestType string, requestID, authorID int64, body string) (*models.RequestComment, error) {
 	query := `
-		INSERT INTO request_comments (request_type, request_id, author_id, body)
-		VALUES ($1::request_comment_type, $2, $3, $4)
+		INSERT INTO request_comments (request_type, request_id, author_id, body, organization_id)
+		VALUES ($1::request_comment_type, $2, $3, $4, @orgval)
 		RETURNING id, request_type, request_id, author_id, body, created_at`
-	row := r.db.QueryRow(ctx, query, requestType, requestID, authorID, body)
+	row := r.sQueryRow(ctx, query, requestType, requestID, authorID, body)
 
 	c := &models.RequestComment{}
 	err := row.Scan(&c.ID, &c.RequestType, &c.RequestID, &c.AuthorID, &c.Body, &c.CreatedAt)
@@ -357,9 +357,9 @@ func (r *Repository) ListRequestComments(ctx context.Context, requestType string
 		SELECT rc.id, rc.request_type, rc.request_id, rc.author_id, COALESCE(u.username,''), rc.body, rc.created_at
 		FROM request_comments rc
 		LEFT JOIN users u ON u.id = rc.author_id
-		WHERE rc.request_type = $1::request_comment_type AND rc.request_id = $2
+		WHERE @org(rc.organization_id) AND rc.request_type = $1::request_comment_type AND rc.request_id = $2
 		ORDER BY rc.created_at ASC`
-	rows, err := r.db.Query(ctx, query, requestType, requestID)
+	rows, err := r.sQuery(ctx, query, requestType, requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -378,14 +378,14 @@ func (r *Repository) ListRequestComments(ctx context.Context, requestType string
 
 // UpdateIPDNSName sets the dns_name field on an ip_address record.
 func (r *Repository) UpdateIPDNSName(ctx context.Context, ipID int64, dnsName string) error {
-	_, err := r.db.Exec(ctx, `UPDATE ip_addresses SET dns_name = $2, updated_at = NOW() WHERE id = $1`, ipID, dnsName)
+	_, err := r.sExec(ctx, `UPDATE ip_addresses SET dns_name = $2, updated_at = NOW() WHERE @org(organization_id) AND id = $1`, ipID, dnsName)
 	return err
 }
 
 // GetUsersByRole returns all users with the given legacy role.
 func (r *Repository) GetUsersByRole(ctx context.Context, role string) ([]*models.User, error) {
 	query := `SELECT id, username, email, password_hash, role, state, last_login_at, suspended_at, suspended_by, suspension_reason, privacy_accepted_at, privacy_accepted_version, deletion_requested_at, anonymized_at, created_at, updated_at FROM users WHERE role = $1 AND state = 'active'`
-	rows, err := r.db.Query(ctx, query, role)
+	rows, err := r.sQuery(ctx, query, role)
 	if err != nil {
 		return nil, err
 	}

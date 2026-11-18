@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"padduck/models"
+	"padduck/repository"
 	"strconv"
 	"strings"
 
@@ -28,7 +30,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 			c.Locals("sessionID", session.ID)
 			c.Locals("orgID", user.OrganizationID)
 			c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
-			return c.Next()
+			return h.nextScoped(c)
 		}
 	}
 
@@ -96,7 +98,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Next()
+	return h.nextScoped(c)
 }
 
 // PlatformAdminMiddleware rejects non-platform-admins with 403.
@@ -128,19 +130,19 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 			c.Locals("sessionID", session.ID)
 			c.Locals("orgID", user.OrganizationID)
 			c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
-			return c.Next()
+			return h.nextScoped(c)
 		}
 	}
 
 	// Try Bearer API token
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
-		return c.Next()
+		return h.nextAnonymous(c)
 	}
 
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return c.Next()
+		return h.nextAnonymous(c)
 	}
 
 	user, apiToken, err := h.ops.Identity.ValidateAPIToken(c.Context(), parts[1], c.IP())
@@ -155,5 +157,30 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 		}
 	}
 
+	if _, ok := c.Locals("user").(*models.User); !ok {
+		return h.nextAnonymous(c)
+	}
+	return h.nextScoped(c)
+}
+
+// nextScoped attaches the caller's organization to the request context so
+// repository queries on tenant tables are filtered to it, then continues.
+// fasthttp's RequestCtx.Value reads user values, so c.Context() carries it.
+func (h *Handler) nextScoped(c *fiber.Ctx) error {
+	if org := orgIDFromCtx(c); org != nil {
+		c.Context().SetUserValue(repository.OrgCtxKey, *org)
+	} else {
+		// An authenticated caller with no organization must see nothing, never
+		// everything: scope to an organization ID that does not exist.
+		c.Context().SetUserValue(repository.OrgCtxKey, int64(0))
+	}
+	return c.Next()
+}
+
+// nextAnonymous continues an unauthenticated request. With no user there is no
+// organization, so anonymous access is confined to the default organization
+// rather than every organization's data.
+func (h *Handler) nextAnonymous(c *fiber.Ctx) error {
+	c.Context().SetUserValue(repository.OrgCtxKey, int64(1))
 	return c.Next()
 }

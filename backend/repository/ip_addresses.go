@@ -74,10 +74,13 @@ func scanIP(row interface {
 }
 
 func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
+	if err := r.checkOrgRefs(ctx, sharedRef("ip_tags", tagID)); err != nil {
+		return nil, err
+	}
 	var id int64
-	err := r.db.QueryRow(ctx,
-		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, tag_id, mac_address, ptr_record, dns_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+	err := r.sQueryRow(ctx,
+		`INSERT INTO ip_addresses (subnet_id, address, hostname, status, tag_id, mac_address, ptr_record, dns_name, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (SELECT organization_id FROM subnets WHERE id = $1 AND @org(organization_id))) RETURNING id`,
 		subnetID, address, hostname, status, tagID, macAddress, ptrRecord, dnsName,
 	).Scan(&id)
 	if err != nil {
@@ -87,14 +90,14 @@ func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, addres
 }
 
 func (r *Repository) GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error) {
-	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = $1`
-	row := r.db.QueryRow(ctx, query, id)
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = $1 AND @org(ip.organization_id)`
+	row := r.sQueryRow(ctx, query, id)
 	return scanIP(row)
 }
 
 func (r *Repository) ListIPAddressesBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error) {
-	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.subnet_id = $1 ORDER BY ip.address`
-	rows, err := r.db.Query(ctx, query, subnetID)
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND @org(ip.organization_id) ORDER BY ip.address`
+	rows, err := r.sQuery(ctx, query, subnetID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,8 +115,8 @@ func (r *Repository) ListIPAddressesBySubnet(ctx context.Context, subnetID int64
 }
 
 func (r *Repository) ListAllIPAddresses(ctx context.Context) ([]*models.IPAddress, error) {
-	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` ORDER BY ip.subnet_id, ip.address`
-	rows, err := r.db.Query(ctx, query)
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE @org(ip.organization_id) ORDER BY ip.subnet_id, ip.address`
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -131,45 +134,54 @@ func (r *Repository) ListAllIPAddresses(ctx context.Context) ([]*models.IPAddres
 }
 
 func (r *Repository) UpdateIPAddressStatus(ctx context.Context, id int64, status string, deviceID *int64) (*models.IPAddress, error) {
+	if err := r.checkOrgRefs(ctx, ref("devices", deviceID)); err != nil {
+		return nil, err
+	}
 	query := `WITH upd AS (
 		UPDATE ip_addresses SET status = $2, device_id = $3, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1 RETURNING id
+		WHERE id = $1 AND @org(organization_id) RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, status, deviceID)
+	row := r.sQueryRow(ctx, query, id, status, deviceID)
 	return scanIP(row)
 }
 
 func (r *Repository) UpdateIPAddressFull(ctx context.Context, id int64, hostname string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
+	if err := r.checkOrgRefs(ctx, sharedRef("ip_tags", tagID)); err != nil {
+		return nil, err
+	}
 	query := `WITH upd AS (
 		UPDATE ip_addresses SET hostname = $2, tag_id = $3, mac_address = $4, ptr_record = $5, dns_name = $6, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1 RETURNING id
+		WHERE id = $1 AND @org(organization_id) RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, hostname, tagID, macAddress, ptrRecord, dnsName)
+	row := r.sQueryRow(ctx, query, id, hostname, tagID, macAddress, ptrRecord, dnsName)
 	return scanIP(row)
 }
 
 // UpdateIPAddressTag sets only the tag_id field on an IP address.
 func (r *Repository) UpdateIPAddressTag(ctx context.Context, id int64, tagID *int64) (*models.IPAddress, error) {
+	if err := r.checkOrgRefs(ctx, sharedRef("ip_tags", tagID)); err != nil {
+		return nil, err
+	}
 	query := `WITH upd AS (
 		UPDATE ip_addresses SET tag_id = $2, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1 RETURNING id
+		WHERE id = $1 AND @org(organization_id) RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, tagID)
+	row := r.sQueryRow(ctx, query, id, tagID)
 	return scanIP(row)
 }
 
 func (r *Repository) DeleteIPAddress(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM ip_addresses WHERE id = $1`, id)
+	_, err := r.sExec(ctx, `DELETE FROM ip_addresses WHERE id = $1 AND @org(organization_id)`, id)
 	return err
 }
 
 // BulkDeleteIPAddresses deletes all IP addresses whose IDs are in ids and
 // returns the IDs that were actually deleted (i.e. existed before the call).
 func (r *Repository) BulkDeleteIPAddresses(ctx context.Context, ids []int64) ([]int64, error) {
-	rows, err := r.db.Query(ctx, `DELETE FROM ip_addresses WHERE id = ANY($1) RETURNING id`, ids)
+	rows, err := r.sQuery(ctx, `DELETE FROM ip_addresses WHERE id = ANY($1) AND @org(organization_id) RETURNING id`, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -186,8 +198,8 @@ func (r *Repository) BulkDeleteIPAddresses(ctx context.Context, ids []int64) ([]
 }
 
 func (r *Repository) ListAvailableIPsBySubnet(ctx context.Context, subnetID int64) ([]*models.IPAddress, error) {
-	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND ip.status = 'available' ORDER BY ip.address`
-	rows, err := r.db.Query(ctx, query, subnetID)
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND ip.status = 'available' AND @org(ip.organization_id) ORDER BY ip.address`
+	rows, err := r.sQuery(ctx, query, subnetID)
 	if err != nil {
 		return nil, err
 	}
@@ -207,6 +219,9 @@ func (r *Repository) ListAvailableIPsBySubnet(ctx context.Context, subnetID int6
 // AllocateIPAddress atomically finds and assigns the next available IP
 // Uses a transaction with SERIALIZABLE isolation to prevent duplicate allocation
 func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64) (*models.IPAddress, error) {
+	if err := r.checkOrgRefs(ctx, ref("devices", deviceID)); err != nil {
+		return nil, err
+	}
 	tx, err := r.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.Serializable})
 	if err != nil {
 		return nil, err
@@ -214,16 +229,18 @@ func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, devi
 	defer tx.Rollback(ctx)
 
 	// Find the first available IP in the subnet (ordered by address)
-	findQuery := `SELECT ip.id ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND ip.status = 'available' ORDER BY ip.address LIMIT 1`
+	findQuery := `SELECT ip.id ` + ipFromJoin + ` WHERE ip.subnet_id = $1 AND ip.status = 'available' AND @org(ip.organization_id) ORDER BY ip.address LIMIT 1`
 	var ipID int64
-	err = tx.QueryRow(ctx, findQuery, subnetID).Scan(&ipID)
+	fq, fa := expandOrg(ctx, findQuery, []any{subnetID})
+	err = tx.QueryRow(ctx, fq, fa...).Scan(&ipID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Atomically update the IP status to 'assigned'
-	updateQuery := `UPDATE ip_addresses SET status = 'assigned', device_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
-	_, err = tx.Exec(ctx, updateQuery, deviceID, ipID)
+	updateQuery := `UPDATE ip_addresses SET status = 'assigned', device_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND @org(organization_id)`
+	uq, ua := expandOrg(ctx, updateQuery, []any{deviceID, ipID})
+	_, err = tx.Exec(ctx, uq, ua...)
 	if err != nil {
 		return nil, err
 	}
@@ -237,8 +254,8 @@ func (r *Repository) AllocateIPAddress(ctx context.Context, subnetID int64, devi
 
 // CountIPsByStatus counts IPs in a subnet by their status
 func (r *Repository) CountIPsByStatus(ctx context.Context, subnetID int64, status string) (int64, error) {
-	query := `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1 AND status = $2`
-	row := r.db.QueryRow(ctx, query, subnetID, status)
+	query := `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1 AND status = $2 AND @org(organization_id)`
+	row := r.sQueryRow(ctx, query, subnetID, status)
 
 	var count int64
 	err := row.Scan(&count)
@@ -250,8 +267,8 @@ func (r *Repository) CountIPsByStatus(ctx context.Context, subnetID int64, statu
 
 // CountTotalIPsBySubnet counts all IPs in a subnet
 func (r *Repository) CountTotalIPsBySubnet(ctx context.Context, subnetID int64) (int64, error) {
-	query := `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1`
-	row := r.db.QueryRow(ctx, query, subnetID)
+	query := `SELECT COUNT(*) FROM ip_addresses WHERE subnet_id = $1 AND @org(organization_id)`
+	row := r.sQueryRow(ctx, query, subnetID)
 
 	var count int64
 	err := row.Scan(&count)
@@ -263,38 +280,41 @@ func (r *Repository) CountTotalIPsBySubnet(ctx context.Context, subnetID int64) 
 
 // GetSubnetUtilizationCounts returns total, available, assigned, and reserved IP counts for a subnet in a single query.
 func (r *Repository) GetSubnetUtilizationCounts(ctx context.Context, subnetID int64) (total, available, assigned, reserved int64, err error) {
-	err = r.db.QueryRow(ctx, `
+	err = r.sQueryRow(ctx, `
 		SELECT
 			COUNT(*) AS total,
 			COUNT(*) FILTER (WHERE status = 'available') AS available,
 			COUNT(*) FILTER (WHERE status = 'assigned') AS assigned,
 			COUNT(*) FILTER (WHERE status = 'reserved') AS reserved
-		FROM ip_addresses WHERE subnet_id = $1
+		FROM ip_addresses WHERE subnet_id = $1 AND @org(organization_id)
 	`, subnetID).Scan(&total, &available, &assigned, &reserved)
 	return
 }
 
 // UpdateIPAddressWithLease updates IP with lease information
 func (r *Repository) UpdateIPAddressWithLease(ctx context.Context, id int64, status string, deviceID *int64, assignedAt *time.Time, expiresAt *time.Time) (*models.IPAddress, error) {
+	if err := r.checkOrgRefs(ctx, ref("devices", deviceID)); err != nil {
+		return nil, err
+	}
 	query := `WITH upd AS (
 		UPDATE ip_addresses SET status = $2, device_id = $3, assigned_at = $4, expires_at = $5, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1 RETURNING id
+		WHERE id = $1 AND @org(organization_id) RETURNING id
 	)
 	SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.id = (SELECT id FROM upd)`
-	row := r.db.QueryRow(ctx, query, id, status, deviceID, assignedAt, expiresAt)
+	row := r.sQueryRow(ctx, query, id, status, deviceID, assignedAt, expiresAt)
 	return scanIP(row)
 }
 
 // UpdateLastSeen updates the last_seen timestamp for a discovered IP
 func (r *Repository) UpdateLastSeen(ctx context.Context, id int64, lastSeen time.Time) error {
-	_, err := r.db.Exec(ctx, `UPDATE ip_addresses SET last_seen = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, id, lastSeen)
+	_, err := r.sExec(ctx, `UPDATE ip_addresses SET last_seen = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND @org(organization_id)`, id, lastSeen)
 	return err
 }
 
 // UpdateIPDNSFields stores the result of a DNS check on an IP address.
 func (r *Repository) UpdateIPDNSFields(ctx context.Context, ipID int64, ptrRecord string, dnsRecords json.RawMessage, lastChecked time.Time) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE ip_addresses SET ptr_record=$2, dns_records=$3, dns_last_checked=$4, updated_at=now() WHERE id=$1`,
+	_, err := r.sExec(ctx,
+		`UPDATE ip_addresses SET ptr_record=$2, dns_records=$3, dns_last_checked=$4, updated_at=now() WHERE id=$1 AND @org(organization_id)`,
 		ipID, ptrRecord, string(dnsRecords), lastChecked,
 	)
 	return err
@@ -302,8 +322,8 @@ func (r *Repository) UpdateIPDNSFields(ctx context.Context, ipID int64, ptrRecor
 
 // ListIPAddressesWithDNSName returns all IP addresses that have a dns_name set.
 func (r *Repository) ListIPAddressesWithDNSName(ctx context.Context) ([]*models.IPAddress, error) {
-	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.dns_name IS NOT NULL AND ip.dns_name != '' ORDER BY ip.id`
-	rows, err := r.db.Query(ctx, query)
+	query := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + ` WHERE ip.dns_name IS NOT NULL AND ip.dns_name != '' AND @org(ip.organization_id) ORDER BY ip.id`
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -325,8 +345,8 @@ func (r *Repository) UpdateIPPortScan(ctx context.Context, ipID int64, ports map
 	if err != nil {
 		return fmt.Errorf("marshal port_open: %w", err)
 	}
-	_, err = r.db.Exec(ctx,
-		`UPDATE ip_addresses SET port_open=$2, updated_at=now() WHERE id=$1`,
+	_, err = r.sExec(ctx,
+		`UPDATE ip_addresses SET port_open=$2, updated_at=now() WHERE id=$1 AND @org(organization_id)`,
 		ipID, string(data),
 	)
 	return err

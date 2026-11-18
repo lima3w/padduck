@@ -14,15 +14,15 @@ func (r *Repository) ListDiscoveryConflicts(ctx context.Context, status string) 
 	query := `
 		SELECT id, device_id, field_name, current_value, discovered_value,
 		       confidence_score, source, status, reviewed_by, reviewed_at, created_at
-		FROM discovery_conflicts`
+		FROM discovery_conflicts WHERE @org(organization_id) `
 	var args []interface{}
 	if status != "" {
-		query += ` WHERE status = $1`
+		query += ` AND status = $1`
 		args = append(args, status)
 	}
 	query += ` ORDER BY created_at DESC`
 
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +45,10 @@ func (r *Repository) ListDiscoveryConflicts(ctx context.Context, status string) 
 // GetDiscoveryConflict retrieves a single discovery conflict by ID.
 func (r *Repository) GetDiscoveryConflict(ctx context.Context, id int64) (*models.DiscoveryConflict, error) {
 	c := &models.DiscoveryConflict{}
-	err := r.db.QueryRow(ctx, `
+	err := r.sQueryRow(ctx, `
 		SELECT id, device_id, field_name, current_value, discovered_value,
 		       confidence_score, source, status, reviewed_by, reviewed_at, created_at
-		FROM discovery_conflicts WHERE id = $1`, id).Scan(
+		FROM discovery_conflicts WHERE @org(organization_id) AND id = $1`, id).Scan(
 		&c.ID, &c.DeviceID, &c.FieldName, &c.CurrentValue, &c.DiscoveredValue,
 		&c.ConfidenceScore, &c.Source, &c.Status, &c.ReviewedBy, &c.ReviewedAt, &c.CreatedAt,
 	)
@@ -61,10 +61,10 @@ func (r *Repository) GetDiscoveryConflict(ctx context.Context, id int64) (*model
 // CreateDiscoveryConflict inserts a new pending discovery conflict.
 func (r *Repository) CreateDiscoveryConflict(ctx context.Context, deviceID int64, fieldName, discoveredValue string, currentValue *string, confidenceScore float64, source string) (*models.DiscoveryConflict, error) {
 	c := &models.DiscoveryConflict{}
-	err := r.db.QueryRow(ctx, `
+	err := r.sQueryRow(ctx, `
 		INSERT INTO discovery_conflicts
-		    (device_id, field_name, current_value, discovered_value, confidence_score, source)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		    (device_id, field_name, current_value, discovered_value, confidence_score, source, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, @orgval)
 		RETURNING id, device_id, field_name, current_value, discovered_value,
 		          confidence_score, source, status, reviewed_by, reviewed_at, created_at`,
 		deviceID, fieldName, currentValue, discoveredValue, confidenceScore, source,
@@ -82,10 +82,10 @@ func (r *Repository) CreateDiscoveryConflict(ctx context.Context, deviceID int64
 func (r *Repository) ResolveDiscoveryConflict(ctx context.Context, id int64, action string, reviewedBy string) (*models.DiscoveryConflict, error) {
 	now := time.Now().UTC()
 	c := &models.DiscoveryConflict{}
-	err := r.db.QueryRow(ctx, `
+	err := r.sQueryRow(ctx, `
 		UPDATE discovery_conflicts
 		SET status = $1, reviewed_by = $2, reviewed_at = $3
-		WHERE id = $4
+		WHERE @org(organization_id) AND id = $4
 		RETURNING id, device_id, field_name, current_value, discovered_value,
 		          confidence_score, source, status, reviewed_by, reviewed_at, created_at`,
 		action, reviewedBy, now, id,

@@ -46,15 +46,15 @@ func scanCustomFieldDefinition(row interface {
 const cfdSelectCols = `id, entity_type, name, label, field_type, options, is_required, default_value, placeholder, display_order, is_searchable, created_at`
 
 func (r *Repository) ListCustomFieldDefinitions(ctx context.Context, entityType string) ([]*models.CustomFieldDefinition, error) {
-	q := `SELECT ` + cfdSelectCols + ` FROM custom_field_definitions`
+	q := `SELECT ` + cfdSelectCols + ` FROM custom_field_definitions WHERE @org(organization_id) `
 	args := []interface{}{}
 	if entityType != "" {
-		q += ` WHERE entity_type = $1`
+		q += ` AND entity_type = $1`
 		args = append(args, entityType)
 	}
 	q += ` ORDER BY display_order ASC`
 
-	rows, err := r.db.Query(ctx, q, args...)
+	rows, err := r.sQuery(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,16 +72,16 @@ func (r *Repository) ListCustomFieldDefinitions(ctx context.Context, entityType 
 }
 
 func (r *Repository) CreateCustomFieldDefinition(ctx context.Context, p *CustomFieldDefinitionParams) (*models.CustomFieldDefinition, error) {
-	q := `INSERT INTO custom_field_definitions (entity_type, name, label, field_type, options, is_required, default_value, placeholder, display_order, is_searchable)
-	      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	q := `INSERT INTO custom_field_definitions (entity_type, name, label, field_type, options, is_required, default_value, placeholder, display_order, is_searchable, organization_id)
+	      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, @orgval)
 	      RETURNING ` + cfdSelectCols
-	row := r.db.QueryRow(ctx, q, p.EntityType, p.Name, p.Label, p.FieldType, p.Options, p.IsRequired, p.DefaultValue, p.Placeholder, p.DisplayOrder, p.IsSearchable)
+	row := r.sQueryRow(ctx, q, p.EntityType, p.Name, p.Label, p.FieldType, p.Options, p.IsRequired, p.DefaultValue, p.Placeholder, p.DisplayOrder, p.IsSearchable)
 	return scanCustomFieldDefinition(row)
 }
 
 func (r *Repository) GetCustomFieldDefinition(ctx context.Context, id int64) (*models.CustomFieldDefinition, error) {
-	q := `SELECT ` + cfdSelectCols + ` FROM custom_field_definitions WHERE id = $1`
-	row := r.db.QueryRow(ctx, q, id)
+	q := `SELECT ` + cfdSelectCols + ` FROM custom_field_definitions WHERE @org(organization_id) AND id = $1`
+	row := r.sQueryRow(ctx, q, id)
 	d, err := scanCustomFieldDefinition(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -96,9 +96,9 @@ func (r *Repository) UpdateCustomFieldDefinition(ctx context.Context, id int64, 
 	q := `UPDATE custom_field_definitions
 	      SET entity_type=$1, name=$2, label=$3, field_type=$4, options=$5, is_required=$6,
 	          default_value=$7, placeholder=$8, display_order=$9, is_searchable=$10
-	      WHERE id=$11
+	      WHERE @org(organization_id) AND id=$11
 	      RETURNING ` + cfdSelectCols
-	row := r.db.QueryRow(ctx, q, p.EntityType, p.Name, p.Label, p.FieldType, p.Options, p.IsRequired, p.DefaultValue, p.Placeholder, p.DisplayOrder, p.IsSearchable, id)
+	row := r.sQueryRow(ctx, q, p.EntityType, p.Name, p.Label, p.FieldType, p.Options, p.IsRequired, p.DefaultValue, p.Placeholder, p.DisplayOrder, p.IsSearchable, id)
 	d, err := scanCustomFieldDefinition(row)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
@@ -110,7 +110,7 @@ func (r *Repository) UpdateCustomFieldDefinition(ctx context.Context, id int64, 
 }
 
 func (r *Repository) DeleteCustomFieldDefinition(ctx context.Context, id int64) error {
-	res, err := r.db.Exec(ctx, `DELETE FROM custom_field_definitions WHERE id = $1`, id)
+	res, err := r.sExec(ctx, `DELETE FROM custom_field_definitions WHERE @org(organization_id) AND id = $1`, id)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (r *Repository) DeleteCustomFieldDefinition(ctx context.Context, id int64) 
 
 func (r *Repository) ReorderCustomFieldDefinitions(ctx context.Context, ids []int64) error {
 	for i, id := range ids {
-		_, err := r.db.Exec(ctx, `UPDATE custom_field_definitions SET display_order = $1 WHERE id = $2`, i, id)
+		_, err := r.sExec(ctx, `UPDATE custom_field_definitions SET display_order = $1 WHERE @org(organization_id) AND id = $2`, i, id)
 		if err != nil {
 			return err
 		}
@@ -134,8 +134,8 @@ func (r *Repository) GetCustomFieldValues(ctx context.Context, entityType string
 	q := `SELECT cfd.name, cfv.value
 	      FROM custom_field_values cfv
 	      JOIN custom_field_definitions cfd ON cfd.id = cfv.definition_id
-	      WHERE cfv.entity_type = $1 AND cfv.entity_id = $2`
-	rows, err := r.db.Query(ctx, q, entityType, entityID)
+	      WHERE @org(cfv.organization_id) AND cfv.entity_type = $1 AND cfv.entity_id = $2`
+	rows, err := r.sQuery(ctx, q, entityType, entityID)
 	if err != nil {
 		return nil, err
 	}
@@ -159,9 +159,9 @@ func (r *Repository) SetCustomFieldValues(ctx context.Context, entityType string
 		if !ok {
 			continue
 		}
-		_, err := r.db.Exec(ctx,
-			`INSERT INTO custom_field_values (definition_id, entity_id, entity_type, value)
-			 VALUES ($1, $2, $3, $4)
+		_, err := r.sExec(ctx,
+			`INSERT INTO custom_field_values (definition_id, entity_id, entity_type, value, organization_id)
+			 VALUES ($1, $2, $3, $4, @orgval)
 			 ON CONFLICT (definition_id, entity_id, entity_type) DO UPDATE SET value = EXCLUDED.value`,
 			def.ID, entityID, entityType, val)
 		if err != nil {
@@ -192,7 +192,7 @@ func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, networkI
 	}
 
 	base := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-	         WHERE s.network_id = $1 AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)`
+	         WHERE s.network_id = $1 AND @org(s.organization_id) AND (host(s.network_address) ILIKE $2 OR s.description ILIKE $2)`
 	args := []interface{}{networkID, "%" + query + "%"}
 	n := 3
 
@@ -215,7 +215,7 @@ func (r *Repository) SearchSubnetsWithCustomFields(ctx context.Context, networkI
 	base += fmt.Sprintf(` ORDER BY s.network_address ASC LIMIT $%d OFFSET $%d`, n, n+1)
 	args = append(args, limit, offset)
 
-	rows, err := r.db.Query(ctx, base, args...)
+	rows, err := r.sQuery(ctx, base, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (r *Repository) SearchIPAddressesWithCustomFields(ctx context.Context, subn
 	}
 
 	sql := `SELECT ` + ipSelectCols + ` ` + ipFromJoin + `
-	        WHERE ip.subnet_id = $1 AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2)`
+	        WHERE ip.subnet_id = $1 AND @org(ip.organization_id) AND (ip.address::text ILIKE $2 OR ip.hostname ILIKE $2)`
 	args := []interface{}{subnetID, "%" + query + "%"}
 	n := 3
 
@@ -292,7 +292,7 @@ func (r *Repository) SearchIPAddressesWithCustomFields(ctx context.Context, subn
 	sql += fmt.Sprintf(" ORDER BY ip.address ASC LIMIT $%d OFFSET $%d", n, n+1)
 	args = append(args, limit, offset)
 
-	rows, err := r.db.Query(ctx, sql, args...)
+	rows, err := r.sQuery(ctx, sql, args...)
 	if err != nil {
 		return nil, err
 	}

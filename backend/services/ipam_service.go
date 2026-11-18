@@ -1092,24 +1092,21 @@ func (s *IPAMService) SearchIPAddressesGlobal(ctx context.Context, query string)
 // ---- Dashboard / Pagination -------------------------------------------------
 
 func (s *IPAMService) GetDashboardSummary(ctx context.Context, orgID *int64) (*models.DashboardSummary, error) {
-	if orgID == nil {
-		if summary, ok := s.summaryCache.get("summary"); ok {
-			return cloneDashboardSummary(summary), nil
-		}
+	key := orgCacheKey(ctx, "summary")
+	if summary, ok := s.summaryCache.get(key); ok {
+		return cloneDashboardSummary(summary), nil
 	}
 
 	summary, err := s.repo.GetDashboardSummary(ctx, orgID)
 	if err != nil {
 		return nil, err
 	}
-	if orgID == nil {
-		s.summaryCache.set("summary", cloneDashboardSummary(summary))
-	}
+	s.summaryCache.set(key, cloneDashboardSummary(summary))
 	return cloneDashboardSummary(summary), nil
 }
 
 func (s *IPAMService) GetDashboardRecentActivity(ctx context.Context) ([]*models.DashboardActivity, error) {
-	if activities, ok := s.activityCache.get("recent"); ok {
+	if activities, ok := s.activityCache.get(orgCacheKey(ctx, "recent")); ok {
 		return cloneDashboardActivities(activities), nil
 	}
 
@@ -1117,7 +1114,7 @@ func (s *IPAMService) GetDashboardRecentActivity(ctx context.Context) ([]*models
 	if err != nil {
 		return nil, err
 	}
-	s.activityCache.set("recent", cloneDashboardActivities(activities))
+	s.activityCache.set(orgCacheKey(ctx, "recent"), cloneDashboardActivities(activities))
 	return cloneDashboardActivities(activities), nil
 }
 

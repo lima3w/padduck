@@ -13,9 +13,9 @@ func (r *Repository) ListIPAddressesByDevice(ctx context.Context, deviceID int64
 		SELECT id, subnet_id, host(address), hostname, status, created_at, updated_at,
 		       device_id, interface_name, is_primary
 		FROM ip_addresses
-		WHERE device_id=$1
+		WHERE @org(organization_id) AND device_id=$1
 		ORDER BY address`
-	rows, err := r.db.Query(ctx, query, deviceID)
+	rows, err := r.sQuery(ctx, query, deviceID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func (r *Repository) ListIPAddressesByDevice(ctx context.Context, deviceID int64
 
 // AssociateIPToDevice links an IP address to a device.
 func (r *Repository) AssociateIPToDevice(ctx context.Context, deviceID, ipID int64, interfaceName *string, isPrimary bool) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE ip_addresses SET device_id=$1, interface_name=$2, is_primary=$3, updated_at=now() WHERE id=$4`,
+	_, err := r.sExec(ctx,
+		`UPDATE ip_addresses SET device_id=$1, interface_name=$2, is_primary=$3, updated_at=now() WHERE @org(organization_id) AND id=$4`,
 		deviceID, interfaceName, isPrimary, ipID,
 	)
 	return err
@@ -46,9 +46,9 @@ func (r *Repository) AssociateIPToDevice(ctx context.Context, deviceID, ipID int
 
 // UnlinkIPFromDevice removes the device association from an IP address.
 func (r *Repository) UnlinkIPFromDevice(ctx context.Context, deviceID, ipID int64) error {
-	ct, err := r.db.Exec(ctx,
+	ct, err := r.sExec(ctx,
 		`UPDATE ip_addresses SET device_id=NULL, interface_name=NULL, is_primary=false, updated_at=now()
-		 WHERE id=$1 AND device_id=$2`,
+		 WHERE @org(organization_id) AND id=$1 AND device_id=$2`,
 		ipID, deviceID,
 	)
 	if err != nil {
@@ -71,11 +71,11 @@ func (r *Repository) GetSubnetTreeBySection(ctx context.Context, networkID int64
 			COUNT(ip.id) AS total
 		FROM subnets s
 		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
-		WHERE s.network_id = $1
+		WHERE @org(s.organization_id) AND s.network_id = $1
 		GROUP BY s.id, s.network_address, s.prefix_length, s.description
 		ORDER BY s.network_address`
 
-	rows, err := r.db.Query(ctx, query, networkID)
+	rows, err := r.sQuery(ctx, query, networkID)
 	if err != nil {
 		return nil, err
 	}

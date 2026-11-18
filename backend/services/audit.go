@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"padduck/models"
+	"padduck/repository"
 )
 
 type auditRepo interface {
@@ -63,6 +64,10 @@ type AuditEntry struct {
 
 // Log writes an audit log entry. Errors are logged but never returned to callers.
 func (a *AuditService) Log(ctx context.Context, e AuditEntry) {
+	// Webhooks fan out per organization: scope the event to the entry's org.
+	if e.OrgID != nil {
+		ctx = repository.WithOrg(ctx, *e.OrgID)
+	}
 	if e.Status == "" {
 		e.Status = "success"
 	}

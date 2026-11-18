@@ -13,7 +13,7 @@ import (
 
 // RecordUtilizationSnapshot inserts a utilization data point for a subnet.
 func (r *Repository) RecordUtilizationSnapshot(ctx context.Context, subnetID int64, used, total int, pct float64) error {
-	_, err := r.db.Exec(ctx,
+	_, err := r.sExec(ctx,
 		`INSERT INTO subnet_utilisation_history (subnet_id, used_count, total_count, utilisation_pct)
 		 VALUES ($1, $2, $3, $4)`,
 		subnetID, used, total, pct,
@@ -23,7 +23,7 @@ func (r *Repository) RecordUtilizationSnapshot(ctx context.Context, subnetID int
 
 // GetUtilizationHistory returns ordered utilization data points for a subnet over the last N days.
 func (r *Repository) GetUtilizationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilizationPoint, error) {
-	rows, err := r.db.Query(ctx,
+	rows, err := r.sQuery(ctx,
 		`SELECT recorded_at, used_count, total_count, utilisation_pct
 		 FROM subnet_utilisation_history
 		 WHERE subnet_id = $1 AND recorded_at >= now() - ($2 * INTERVAL '1 day')
@@ -48,7 +48,7 @@ func (r *Repository) GetUtilizationHistory(ctx context.Context, subnetID int64, 
 
 // GetUtilizationTrends returns current utilization and the delta vs 7 days ago for all subnets.
 func (r *Repository) GetUtilizationTrends(ctx context.Context) ([]*models.SubnetUtilizationTrend, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (subnet_id)
 				subnet_id, utilisation_pct AS current_pct
@@ -70,7 +70,7 @@ func (r *Repository) GetUtilizationTrends(ctx context.Context) ([]*models.Subnet
 		       COALESCE(l.current_pct, 0) - COALESCE(w.week_ago_pct, 0) AS delta_pct
 		FROM subnets s
 		LEFT JOIN latest l ON l.subnet_id = s.id
-		LEFT JOIN week_ago w ON w.subnet_id = s.id
+		LEFT JOIN week_ago w ON w.subnet_id = s.id WHERE @org(s.organization_id)
 		ORDER BY delta_pct DESC
 	`)
 	if err != nil {
@@ -95,7 +95,7 @@ func (r *Repository) GetUtilizationTrends(ctx context.Context) ([]*models.Subnet
 
 // GetAlertCooldown returns the cooldown record for a subnet, or nil if none exists.
 func (r *Repository) GetAlertCooldown(ctx context.Context, subnetID int64) (*models.AlertCooldown, error) {
-	row := r.db.QueryRow(ctx,
+	row := r.sQueryRow(ctx,
 		`SELECT id, subnet_id, alerted_at, alerted_pct FROM alert_cooldowns WHERE subnet_id = $1`,
 		subnetID,
 	)
@@ -112,7 +112,7 @@ func (r *Repository) GetAlertCooldown(ctx context.Context, subnetID int64) (*mod
 
 // SetAlertCooldown upserts a cooldown record for a subnet.
 func (r *Repository) SetAlertCooldown(ctx context.Context, subnetID int64, pct float64) error {
-	_, err := r.db.Exec(ctx,
+	_, err := r.sExec(ctx,
 		`INSERT INTO alert_cooldowns (subnet_id, alerted_at, alerted_pct)
 		 VALUES ($1, now(), $2)
 		 ON CONFLICT (subnet_id) DO UPDATE SET alerted_at = now(), alerted_pct = EXCLUDED.alerted_pct`,
@@ -123,7 +123,7 @@ func (r *Repository) SetAlertCooldown(ctx context.Context, subnetID int64, pct f
 
 // ClearAlertCooldown removes the cooldown record for a subnet.
 func (r *Repository) ClearAlertCooldown(ctx context.Context, subnetID int64) error {
-	_, err := r.db.Exec(ctx,
+	_, err := r.sExec(ctx,
 		`DELETE FROM alert_cooldowns WHERE subnet_id = $1`,
 		subnetID,
 	)
@@ -133,9 +133,9 @@ func (r *Repository) ClearAlertCooldown(ctx context.Context, subnetID int64) err
 // ListSubnetsWithThresholds returns subnets that have alert_threshold_pct set.
 func (r *Repository) ListSubnetsWithThresholds(ctx context.Context) ([]*models.Subnet, error) {
 	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + `
-	          WHERE s.alert_threshold_pct IS NOT NULL
+	          WHERE s.alert_threshold_pct IS NOT NULL AND @org(s.organization_id)
 	          ORDER BY s.network_address`
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -154,8 +154,8 @@ func (r *Repository) ListSubnetsWithThresholds(ctx context.Context) ([]*models.S
 
 // ListAllSubnets returns every subnet across all sections.
 func (r *Repository) ListAllSubnets(ctx context.Context) ([]*models.Subnet, error) {
-	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` ORDER BY s.network_address`
-	rows, err := r.db.Query(ctx, query)
+	query := `SELECT ` + subnetSelectCols + ` ` + subnetFromJoin + ` WHERE @org(s.organization_id) ORDER BY s.network_address`
+	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +174,7 @@ func (r *Repository) ListAllSubnets(ctx context.Context) ([]*models.Subnet, erro
 
 // GetLatestUtilizationForSubnet returns the most recent utilization record for a subnet.
 func (r *Repository) GetLatestUtilizationForSubnet(ctx context.Context, subnetID int64) (*models.SubnetUtilizationPoint, error) {
-	row := r.db.QueryRow(ctx,
+	row := r.sQueryRow(ctx,
 		`SELECT recorded_at, used_count, total_count, utilisation_pct
 		 FROM subnet_utilisation_history
 		 WHERE subnet_id = $1
@@ -195,7 +195,7 @@ func (r *Repository) GetLatestUtilizationForSubnet(ctx context.Context, subnetID
 
 // GetSubnetsByUtilizationThreshold returns subnets whose latest utilization exceeds the given percentage.
 func (r *Repository) GetSubnetsByUtilizationThreshold(ctx context.Context, thresholdPct float64) ([]*models.SubnetUtilizationTrend, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (subnet_id)
 				subnet_id, utilisation_pct
@@ -210,7 +210,7 @@ func (r *Repository) GetSubnetsByUtilizationThreshold(ctx context.Context, thres
 		       0::numeric
 		FROM latest l
 		JOIN subnets s ON s.id = l.subnet_id
-		WHERE l.utilisation_pct > $1
+		WHERE @org(s.organization_id) AND l.utilisation_pct > $1
 		ORDER BY l.utilisation_pct DESC
 	`, thresholdPct)
 	if err != nil {
@@ -236,7 +236,7 @@ func (r *Repository) BulkGetLatestUtilization(ctx context.Context, subnetIDs []i
 	if len(subnetIDs) == 0 {
 		return nil, nil
 	}
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT DISTINCT ON (subnet_id)
 			subnet_id, recorded_at, used_count, total_count, utilisation_pct
 		FROM subnet_utilisation_history
@@ -266,7 +266,7 @@ func (r *Repository) BulkGetAlertCooldowns(ctx context.Context, subnetIDs []int6
 	if len(subnetIDs) == 0 {
 		return nil, nil
 	}
-	rows, err := r.db.Query(ctx,
+	rows, err := r.sQuery(ctx,
 		`SELECT id, subnet_id, alerted_at, alerted_pct FROM alert_cooldowns WHERE subnet_id = ANY($1)`,
 		subnetIDs,
 	)
@@ -297,7 +297,7 @@ func (r *Repository) BulkSetAlertCooldowns(ctx context.Context, entries map[int6
 		ids = append(ids, id)
 		pcts = append(pcts, pct)
 	}
-	_, err := r.db.Exec(ctx, `
+	_, err := r.sExec(ctx, `
 		INSERT INTO alert_cooldowns (subnet_id, alerted_at, alerted_pct)
 		SELECT unnest($1::bigint[]), now(), unnest($2::float8[])
 		ON CONFLICT (subnet_id) DO UPDATE SET alerted_at = now(), alerted_pct = EXCLUDED.alerted_pct
@@ -310,7 +310,7 @@ func (r *Repository) BulkClearAlertCooldowns(ctx context.Context, subnetIDs []in
 	if len(subnetIDs) == 0 {
 		return nil
 	}
-	_, err := r.db.Exec(ctx,
+	_, err := r.sExec(ctx,
 		`DELETE FROM alert_cooldowns WHERE subnet_id = ANY($1)`,
 		subnetIDs,
 	)
@@ -326,11 +326,11 @@ type SubnetUtil struct {
 
 // BulkSubnetUtilization returns used-IP counts and prefix lengths for every subnet in one query.
 func (r *Repository) BulkSubnetUtilization(ctx context.Context) ([]SubnetUtil, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.sQuery(ctx, `
 		SELECT s.id, s.prefix_length,
 		       COUNT(ip.id) FILTER (WHERE ip.status IN ('assigned', 'reserved')) AS used
 		FROM subnets s
-		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id
+		LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id WHERE @org(s.organization_id)
 		GROUP BY s.id, s.prefix_length`)
 	if err != nil {
 		return nil, err

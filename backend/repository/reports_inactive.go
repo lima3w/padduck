@@ -29,14 +29,14 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 		FROM ip_addresses ip
 		JOIN subnets s ON s.id = ip.subnet_id
 		JOIN networks sec ON sec.id = s.network_id
-		WHERE ip.status = 'assigned'
+		WHERE @org(ip.organization_id) AND (ip.status = 'assigned'
 		  AND ip.device_id IS NOT NULL
 		  AND (ip.last_seen IS NULL OR ip.last_seen < now() - ($1 * INTERVAL '1 day'))
 		  AND host(ip.address) != s.gateway
-		  AND ($2::bigint IS NULL OR sec.id = $2)
+		  AND ($2::bigint IS NULL OR sec.id = $2))
 		ORDER BY ip.last_seen ASC NULLS FIRST
 	`
-	rows, err := r.db.Query(ctx, query, days, networkID)
+	rows, err := r.sQuery(ctx, query, days, networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -60,10 +60,10 @@ func (r *Repository) GetInactiveIPs(ctx context.Context, days int, networkID *in
 // BulkReleaseIPs sets multiple IPs to 'available' and clears assignment fields.
 // Returns the count of rows actually updated.
 func (r *Repository) BulkReleaseIPs(ctx context.Context, ipIDs []int64) (int64, error) {
-	tag, err := r.db.Exec(ctx,
+	tag, err := r.sExec(ctx,
 		`UPDATE ip_addresses
 		 SET status = 'available', device_id = NULL, updated_at = now()
-		 WHERE id = ANY($1) AND status = 'assigned'`,
+		 WHERE @org(organization_id) AND id = ANY($1) AND status = 'assigned'`,
 		ipIDs,
 	)
 	if err != nil {

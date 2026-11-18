@@ -24,10 +24,10 @@ func (r *Repository) CreateScheduledReport(ctx context.Context, orgID *int64, na
 		return nil, fmt.Errorf("marshalling filters: %w", err)
 	}
 
-	row := r.db.QueryRow(ctx,
+	row := r.sQueryRow(ctx,
 		`INSERT INTO scheduled_reports (organization_id, name, report_type, schedule_cron, recipient_emails, filters, format, created_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		 RETURNING id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at`,
+		 RETURNING id, organization_id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at`,
 		orgID, name, reportType, scheduleCron, emailsJSON, filtersJSON, format, createdBy,
 	)
 	return scanScheduledReport(row)
@@ -35,9 +35,9 @@ func (r *Repository) CreateScheduledReport(ctx context.Context, orgID *int64, na
 
 // GetScheduledReportByID returns a scheduled report by primary key.
 func (r *Repository) GetScheduledReportByID(ctx context.Context, id int64) (*models.ScheduledReport, error) {
-	row := r.db.QueryRow(ctx,
-		`SELECT id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at
-		 FROM scheduled_reports WHERE id = $1`,
+	row := r.sQueryRow(ctx,
+		`SELECT id, organization_id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at
+		 FROM scheduled_reports WHERE @org(organization_id) AND id = $1`,
 		id,
 	)
 	return scanScheduledReport(row)
@@ -46,15 +46,15 @@ func (r *Repository) GetScheduledReportByID(ctx context.Context, id int64) (*mod
 // ListScheduledReports returns scheduled reports, optionally filtered to a single org.
 // Pass nil to return all reports (used by the background scheduler).
 func (r *Repository) ListScheduledReports(ctx context.Context, orgID *int64) ([]*models.ScheduledReport, error) {
-	query := `SELECT id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at
-		 FROM scheduled_reports`
+	query := `SELECT id, organization_id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at
+		 FROM scheduled_reports WHERE @org(organization_id) `
 	var args []interface{}
 	if orgID != nil {
-		query += ` WHERE organization_id = $1`
+		query += ` AND organization_id = $1`
 		args = append(args, *orgID)
 	}
 	query += ` ORDER BY name`
-	rows, err := r.db.Query(ctx, query, args...)
+	rows, err := r.sQuery(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +82,11 @@ func (r *Repository) UpdateScheduledReport(ctx context.Context, id int64, name, 
 		return nil, fmt.Errorf("marshalling filters: %w", err)
 	}
 
-	row := r.db.QueryRow(ctx,
+	row := r.sQueryRow(ctx,
 		`UPDATE scheduled_reports
 		 SET name = $2, report_type = $3, schedule_cron = $4, recipient_emails = $5, filters = $6, format = $7, updated_at = now()
-		 WHERE id = $1
-		 RETURNING id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at`,
+		 WHERE @org(organization_id) AND id = $1
+		 RETURNING id, organization_id, name, report_type, schedule_cron, recipient_emails, filters, format, last_run_at, created_by, created_at, updated_at`,
 		id, name, reportType, scheduleCron, emailsJSON, filtersJSON, format,
 	)
 	return scanScheduledReport(row)
@@ -94,8 +94,8 @@ func (r *Repository) UpdateScheduledReport(ctx context.Context, id int64, name, 
 
 // UpdateScheduledReportRunTime marks when a scheduled report was last run.
 func (r *Repository) UpdateScheduledReportRunTime(ctx context.Context, id int64, t time.Time) error {
-	_, err := r.db.Exec(ctx,
-		`UPDATE scheduled_reports SET last_run_at = $2, updated_at = now() WHERE id = $1`,
+	_, err := r.sExec(ctx,
+		`UPDATE scheduled_reports SET last_run_at = $2, updated_at = now() WHERE @org(organization_id) AND id = $1`,
 		id, t,
 	)
 	return err
@@ -103,7 +103,7 @@ func (r *Repository) UpdateScheduledReportRunTime(ctx context.Context, id int64,
 
 // DeleteScheduledReport removes a scheduled report.
 func (r *Repository) DeleteScheduledReport(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, `DELETE FROM scheduled_reports WHERE id = $1`, id)
+	_, err := r.sExec(ctx, `DELETE FROM scheduled_reports WHERE @org(organization_id) AND id = $1`, id)
 	return err
 }
 
@@ -114,7 +114,7 @@ func scanScheduledReport(row interface {
 	rpt := &models.ScheduledReport{}
 	var emailsJSON, filtersJSON []byte
 	err := row.Scan(
-		&rpt.ID, &rpt.Name, &rpt.ReportType, &rpt.ScheduleCron,
+		&rpt.ID, &rpt.OrganizationID, &rpt.Name, &rpt.ReportType, &rpt.ScheduleCron,
 		&emailsJSON, &filtersJSON,
 		&rpt.Format, &rpt.LastRunAt, &rpt.CreatedBy,
 		&rpt.CreatedAt, &rpt.UpdatedAt,
