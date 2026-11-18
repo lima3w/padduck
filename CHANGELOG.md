@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.34.44
+
+### Added
+- **feat: automation execution history and rollback** (#21): every time an automation policy matches, Padduck now records it: which policy, the resource, the decision (allow, deny or manual review), what triggered it, and the outcome of each action it ran. History is shown per policy (Admin → Automation Policies → **View history**, with a match count per policy) and per resource (an "Automation history" section on device, subnet and IP address pages, shown to admins when there is something to show).
+  - **Rollback:** an execution can be rolled back once, from the history list or `POST /api/v1/admin/automation/executions/{id}/rollback`. A `tag` action restores the previous tag, unless someone changed the tag afterward (then it is left alone and the history says so); a `scan` action removes the scan job it created if the job has not run. Webhook, notify and audit-annotation actions cannot be undone and are recorded as such. Each action's rollback result is stored, and the rollback is audit-logged.
+  - New endpoints `GET /api/v1/admin/automation/executions` (filter by `policy_id`, `resource_type`, `resource_id`), `GET .../executions/{id}`, and the rollback endpoint. These sit under `/admin` rather than the bearer-token `/automation` group so the web UI can use them. New table `policy_execution_logs` (migration `20260719_001`). History survives deleting a policy (the name is kept).
+
+### Fixed
+- **Actions on `allow` policies never ran.** Policy actions (notify, webhook, tag, scan, audit annotation) were only attached to the decision for `deny` and `manual_review` policies, so an `allow` policy with actions did nothing. Actions on matching `allow` policies now run after the resource is created, as #19 described. If you have allow policies with actions configured, expect them to start firing.
+- The `scan` action created its scan job with a hard-coded creator user ID of 1, which failed if that user no longer existed. The job now has no creator.
+
 ## v1.34.43
 
 ### Added

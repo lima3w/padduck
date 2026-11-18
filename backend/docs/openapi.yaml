@@ -3988,6 +3988,62 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  # ── Admin — automation execution history ────────────────────────────────────
+
+  /api/v1/admin/automation/executions:
+    get:
+      tags: [Admin, Automation]
+      summary: List automation policy executions
+      description: Every policy match is recorded with its decision (allow, deny, manual_review), the actions run and each action's outcome. Newest first. Filter with `policy_id`, `resource_type` and `resource_id`.
+      parameters:
+        - name: policy_id
+          in: query
+          schema:
+            type: integer
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+        - name: resource_id
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 500
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/automation/executions/{id}:
+    get:
+      tags: [Admin, Automation]
+      summary: Get one automation policy execution
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/automation/executions/{id}/rollback:
+    post:
+      tags: [Admin, Automation]
+      summary: Roll back an automation execution
+      description: Reverses the reversible actions of one execution. `tag` restores the previous tag (unless it was changed since) and `scan` removes the scan job if it has not run. Webhook, notify and audit-annotation actions cannot be undone and are recorded as such. Returns 409 if already rolled back or nothing is reversible. The rollback is audit-logged.
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
   # ── Admin — topology hints ──────────────────────────────────────────────────
 
   /api/v1/admin/topology/hints:

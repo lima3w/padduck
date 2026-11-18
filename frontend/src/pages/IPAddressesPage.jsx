@@ -20,6 +20,7 @@ import PortBadges from './ip/PortBadges'
 import SortTh from './ip/SortTh'
 import UtilisationHistorySection from './ip/UtilisationHistorySection'
 import DHCPLeasesSection from './ip/DHCPLeasesSection'
+import AutomationExecutions from '../components/AutomationExecutions'
 
 const DEFAULT_LIMIT = 25
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
@@ -955,6 +956,7 @@ export default function IPAddressesPage() {
         />
       )}
       <DHCPLeasesSection subnetId={subnetID} />
+      <AutomationExecutions resourceType="subnet" resourceId={Number(subnetID)} hideWhenEmpty />
       <UtilisationHistorySection subnetId={subnetID} />
       </>}
 
@@ -1257,6 +1259,7 @@ export default function IPAddressesPage() {
             )}
             <div className="border-t pt-3 empty:hidden">
               <DHCPLeasesSection ipId={modal.meta.id} compact />
+              <AutomationExecutions resourceType="ip_address" resourceId={modal.meta.id} hideWhenEmpty />
             </div>
             {isAdmin && (
               <div className="border-t pt-3">

@@ -30,6 +30,11 @@ func (h *Handler) ListAutomationPolicies(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to load automation policies")
 	}
+	if counts, err := h.ops.Automation.ExecutionCounts(c.Context()); err == nil {
+		for _, p := range policies {
+			p.ExecutionCount = counts[p.ID]
+		}
+	}
 	return c.JSON(policies)
 }
 

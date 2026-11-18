@@ -10,6 +10,7 @@ import (
 
 // stubAutomationRepo satisfies automationRepo for Simulate tests.
 type stubAutomationRepo struct {
+	automationRepo // unimplemented methods panic if Simulate ever touches them
 	policies []*models.AutomationPolicy
 }
 

@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/gofiber/fiber/v2"
-	"padduck/models"
 	"padduck/services"
 )
 
@@ -24,13 +24,15 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 	}
 
 	decision, err := h.ops.Automation.Evaluate(c.Context(), services.AutomationRequest{
-		Workflow: workflow,
-		Action:   action,
-		Values:   policyCtx,
+		Workflow:    workflow,
+		Action:      action,
+		Values:      policyCtx,
+		TriggeredBy: "api",
+		OrgID:       orgIDFromCtx(c),
 	})
 	if err != nil || decision.Allowed {
-		if decision != nil && decision.Policy != nil {
-			c.Locals("matchedPolicy", decision.Policy)
+		if decision != nil {
+			c.Locals("policyDecision", decision)
 		}
 		return true
 	}
@@ -108,13 +110,14 @@ func boolStr(b bool) string {
 	return "false"
 }
 
-// dispatchPolicyActions fires any built-in actions attached to the policy that
-// matched during the preceding evaluatePolicy call. Must be called after the
-// primary write succeeds. Actions run asynchronously and never block the response.
+// dispatchPolicyActions runs the actions of every policy that matched the
+// preceding evaluatePolicy call and records each match in the execution log.
+// Must be called after the primary write succeeds. It runs in the background and
+// never blocks or fails the response.
 func (h *Handler) dispatchPolicyActions(c *fiber.Ctx, resourceType string, resourceID int64, resourceName string) {
-	p, _ := c.Locals("matchedPolicy").(*models.AutomationPolicy)
-	if p == nil || len(p.Actions) == 0 {
+	d, _ := c.Locals("policyDecision").(*services.PolicyDecision)
+	if d == nil || len(d.Matched) == 0 {
 		return
 	}
-	h.ops.Automation.ExecuteActions(p, resourceType, resourceID, resourceName)
+	go h.ops.Automation.RecordApplied(context.Background(), d, resourceType, resourceID, resourceName)
 }

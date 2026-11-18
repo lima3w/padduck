@@ -10,7 +10,7 @@ import (
 )
 
 // scanJobCols is the column list for scan_jobs SELECT queries.
-const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, created_by, created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips, discover_dns, dns_overwrite`
+const scanJobCols = `id, name, subnet_ids, schedule_cron, is_active, last_run_at, next_run_at, COALESCE(created_by, 0), created_at, updated_at, ping_concurrency, notify_on_change, scan_type, agent_id, auto_add_ips, discover_dns, dns_overwrite`
 
 func scanScanJob(row interface{ Scan(dest ...any) error }) (*models.ScanJob, error) {
 	j := &models.ScanJob{}
@@ -22,7 +22,12 @@ func (r *Repository) CreateScanJob(ctx context.Context, name string, subnetIDs [
 	query := `INSERT INTO scan_jobs (name, subnet_ids, schedule_cron, created_by, auto_add_ips)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING ` + scanJobCols
-	return scanScanJob(r.db.QueryRow(ctx, query, name, subnetIDs, scheduleCron, createdBy, autoAddIPs))
+	// createdBy 0 means "not created by a user" (for example by an automation policy).
+	var creator any
+	if createdBy > 0 {
+		creator = createdBy
+	}
+	return scanScanJob(r.db.QueryRow(ctx, query, name, subnetIDs, scheduleCron, creator, autoAddIPs))
 }
 
 // GetScanJobByID retrieves a scan job by ID

@@ -4,6 +4,8 @@ import DeviceDetailPage from '../pages/DeviceDetailPage'
 
 vi.mock('../api/admin', () => ({
   getCustomFields: vi.fn(),
+  listAutomationExecutions: vi.fn(() => Promise.resolve({ data: { executions: [] } })),
+  rollbackAutomationExecution: vi.fn(),
 }))
 
 vi.mock('../api/devices', () => ({
