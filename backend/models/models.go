@@ -755,6 +755,43 @@ type PolicyAction struct {
 	Params map[string]string `json:"params"`
 }
 
+// PolicyActionResult records what happened when one policy action ran, and what is
+// needed to reverse it. Undo holds the data a rollback needs (never secrets).
+type PolicyActionResult struct {
+	Type     string              `json:"type"`
+	Params   map[string]string   `json:"params,omitempty"`
+	Status   string              `json:"status"` // success | failed
+	Error    string              `json:"error,omitempty"`
+	Undo     map[string]string   `json:"undo,omitempty"`
+	Rollback *PolicyRollbackInfo `json:"rollback,omitempty"`
+}
+
+// PolicyRollbackInfo is the outcome of rolling back one action.
+type PolicyRollbackInfo struct {
+	Status  string    `json:"status"` // rolled_back | skipped | not_reversible | failed
+	Message string    `json:"message,omitempty"`
+	At      time.Time `json:"at"`
+}
+
+// PolicyExecutionLog is one policy match: the decision taken and the actions run.
+type PolicyExecutionLog struct {
+	ID             int64                `json:"id"`
+	OrganizationID *int64               `json:"organization_id,omitempty"`
+	PolicyID       *int64               `json:"policy_id,omitempty"`
+	PolicyName     string               `json:"policy_name"`
+	ResourceType   string               `json:"resource_type"`
+	ResourceID     *int64               `json:"resource_id,omitempty"`
+	ResourceName   string               `json:"resource_name,omitempty"`
+	Workflow       string               `json:"workflow"`
+	Action         string               `json:"action"`
+	Decision       string               `json:"decision"`
+	ActionsTaken   []PolicyActionResult `json:"actions_taken"`
+	TriggeredBy    string               `json:"triggered_by"`
+	ExecutedAt     time.Time            `json:"executed_at"`
+	RolledBackAt   *time.Time           `json:"rolled_back_at,omitempty"`
+	RolledBackBy   *int64               `json:"rolled_back_by,omitempty"`
+}
+
 // AutomationPolicy is a lightweight rule evaluated before automation writes.
 type AutomationPolicy struct {
 	ID         int64             `json:"id"`
@@ -768,6 +805,8 @@ type AutomationPolicy struct {
 	Message    string            `json:"message,omitempty"`
 	CreatedAt  time.Time         `json:"created_at"`
 	UpdatedAt  time.Time         `json:"updated_at"`
+	// ExecutionCount is filled in when listing: how many times the policy matched.
+	ExecutionCount int `json:"execution_count"`
 }
 
 // IntegrationTemplate documents an automation platform recipe.

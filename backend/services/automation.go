@@ -23,6 +23,15 @@ type automationRepo interface {
 	GetUsersByRole(ctx context.Context, role string) ([]*models.User, error)
 	CreateScanJob(ctx context.Context, name string, subnetIDs []int64, scheduleCron *string, createdBy int64, autoAddIPs bool) (*models.ScanJob, error)
 	UpdateIPAddressTag(ctx context.Context, ipID int64, tagID *int64) (*models.IPAddress, error)
+	GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error)
+	GetScanJobByID(ctx context.Context, id int64) (*models.ScanJob, error)
+	DeleteScanJob(ctx context.Context, id int64) error
+
+	CreatePolicyExecutionLog(ctx context.Context, l *models.PolicyExecutionLog) (*models.PolicyExecutionLog, error)
+	GetPolicyExecutionLog(ctx context.Context, id int64) (*models.PolicyExecutionLog, error)
+	ListPolicyExecutionLogs(ctx context.Context, f repository.PolicyExecutionLogFilter) ([]*models.PolicyExecutionLog, int, error)
+	CountPolicyExecutions(ctx context.Context) (map[int64]int, error)
+	MarkPolicyExecutionRolledBack(ctx context.Context, id int64, actions []models.PolicyActionResult, by *int64, at time.Time) (bool, error)
 }
 
 type automationIPAM interface {
@@ -45,6 +54,10 @@ type AutomationRequest struct {
 	Action   string
 	Values   map[string]string
 	DryRun   bool
+	// TriggeredBy ("api" or "automation") and OrgID are recorded in the execution
+	// log. Leave TriggeredBy empty for a pure check that should leave no trace.
+	TriggeredBy string
+	OrgID       *int64
 }
 
 type PolicyDecision struct {
@@ -53,6 +66,11 @@ type PolicyDecision struct {
 	Policy       *models.AutomationPolicy `json:"policy,omitempty"`
 	Message      string                   `json:"message,omitempty"`
 	Values       map[string]string        `json:"values,omitempty"`
+	// Matched lists every policy whose conditions matched, in evaluation order.
+	Matched []*models.AutomationPolicy `json:"-"`
+	// Request echoes the evaluated request so the outcome can be logged once the
+	// resource exists.
+	Request AutomationRequest `json:"-"`
 }
 
 func NewAutomationService(repo automationRepo, ipam automationIPAM, webhooks *WebhookService, notifications *NotificationService) *AutomationService {
@@ -100,15 +118,19 @@ func (a *AutomationService) Evaluate(ctx context.Context, req AutomationRequest)
 	if err != nil {
 		return nil, err
 	}
+	var matched []*models.AutomationPolicy
 	for _, policy := range policies {
 		if !policyMatches(policy.Conditions, req.Values) {
 			continue
 		}
+		matched = append(matched, policy)
 		decision := &PolicyDecision{
 			Allowed: true,
 			Policy:  policy,
 			Message: policy.Message,
 			Values:  req.Values,
+			Matched: matched,
+			Request: req,
 		}
 		switch policy.Effect {
 		case "deny":
@@ -116,6 +138,7 @@ func (a *AutomationService) Evaluate(ctx context.Context, req AutomationRequest)
 			if decision.Message == "" {
 				decision.Message = "automation request denied by policy"
 			}
+			a.logBlocked(ctx, req, policy, "deny")
 			return decision, nil
 		case "manual_review":
 			decision.Allowed = false
@@ -123,10 +146,11 @@ func (a *AutomationService) Evaluate(ctx context.Context, req AutomationRequest)
 			if decision.Message == "" {
 				decision.Message = "automation request requires manual review"
 			}
+			a.logBlocked(ctx, req, policy, "manual_review")
 			return decision, nil
 		}
 	}
-	return &PolicyDecision{Allowed: true, Values: req.Values}, nil
+	return &PolicyDecision{Allowed: true, Values: req.Values, Matched: matched, Request: req}, nil
 }
 
 func (a *AutomationService) AllocateIPAddress(ctx context.Context, subnetID int64, deviceID *int64, dryRun bool) (*models.IPAddress, *PolicyDecision, error) {
@@ -137,50 +161,65 @@ func (a *AutomationService) AllocateIPAddress(ctx context.Context, subnetID int6
 			"subnet_id":    strconv.FormatInt(subnetID, 10),
 			"requested_by": "automation",
 		},
-		DryRun: dryRun,
+		DryRun:      dryRun,
+		TriggeredBy: "automation",
 	})
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
 	ip, err := a.ipam.AllocateIPAddress(ctx, subnetID, deviceID)
+	if err == nil && ip != nil {
+		a.RecordApplied(ctx, decision, "ip_address", ip.ID, ip.Address)
+	}
 	return ip, decision, err
 }
 
 func (a *AutomationService) ReserveIPAddress(ctx context.Context, subnetID int64, address, hostname string, dryRun bool) (*models.IPAddress, *PolicyDecision, error) {
 	values := map[string]string{"subnet_id": strconv.FormatInt(subnetID, 10), "address": address, "hostname": hostname}
-	decision, err := a.Evaluate(ctx, AutomationRequest{Workflow: "ip_address", Action: "reserve", Values: values, DryRun: dryRun})
+	decision, err := a.Evaluate(ctx, AutomationRequest{Workflow: "ip_address", Action: "reserve", Values: values, DryRun: dryRun, TriggeredBy: "automation"})
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
 	ip, err := a.ipam.CreateIPAddress(ctx, subnetID, address, hostname, "reserved", nil, nil, nil, nil)
+	if err == nil && ip != nil {
+		a.RecordApplied(ctx, decision, "ip_address", ip.ID, ip.Address)
+	}
 	return ip, decision, err
 }
 
 func (a *AutomationService) ReleaseIPAddress(ctx context.Context, ipID int64, dryRun bool) (*models.IPAddress, *PolicyDecision, error) {
 	decision, err := a.Evaluate(ctx, AutomationRequest{
-		Workflow: "ip_address",
-		Action:   "release",
-		Values:   map[string]string{"ip_id": strconv.FormatInt(ipID, 10)},
-		DryRun:   dryRun,
+		Workflow:    "ip_address",
+		Action:      "release",
+		Values:      map[string]string{"ip_id": strconv.FormatInt(ipID, 10)},
+		DryRun:      dryRun,
+		TriggeredBy: "automation",
 	})
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
 	ip, err := a.ipam.ReleaseIPAddress(ctx, ipID)
+	if err == nil && ip != nil {
+		a.RecordApplied(ctx, decision, "ip_address", ip.ID, ip.Address)
+	}
 	return ip, decision, err
 }
 
 func (a *AutomationService) RegisterDevice(ctx context.Context, params *repository.DeviceParams, dryRun bool) (*models.Device, *PolicyDecision, error) {
 	decision, err := a.Evaluate(ctx, AutomationRequest{
-		Workflow: "device",
-		Action:   "register",
-		Values:   map[string]string{"hostname": params.Hostname},
-		DryRun:   dryRun,
+		Workflow:    "device",
+		Action:      "register",
+		Values:      map[string]string{"hostname": params.Hostname},
+		DryRun:      dryRun,
+		TriggeredBy: "automation",
 	})
 	if err != nil || !decision.Allowed || dryRun {
 		return nil, decision, err
 	}
 	device, err := a.ipam.CreateDevice(ctx, params)
+	if err == nil && device != nil {
+		a.RecordApplied(ctx, decision, "device", device.ID, device.Hostname)
+	}
 	return device, decision, err
 }
 
@@ -239,10 +278,10 @@ func toFloat(s string) *float64 {
 
 // MatchedPolicyResult describes how one policy evaluated during a simulation.
 type MatchedPolicyResult struct {
-	PolicyID          int64    `json:"policy_id"`
-	PolicyName        string   `json:"policy_name"`
-	Decision          string   `json:"decision"` // allow | deny | manual_review
-	ActionsWouldRun   []string `json:"actions_would_execute"`
+	PolicyID        int64    `json:"policy_id"`
+	PolicyName      string   `json:"policy_name"`
+	Decision        string   `json:"decision"` // allow | deny | manual_review
+	ActionsWouldRun []string `json:"actions_would_execute"`
 }
 
 // SimulationResult is the response from Simulate — read-only, no side effects.
@@ -333,43 +372,76 @@ func describeActions(actions []models.PolicyAction) []string {
 	return out
 }
 
-// ExecuteActions runs each action in the matched policy asynchronously.
-// Each action runs in its own goroutine; failures are logged and do not
-// affect the primary operation that triggered the policy match.
-func (a *AutomationService) ExecuteActions(policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) {
-	if len(policy.Actions) == 0 {
+// logBlocked records a deny or manual_review decision. Logging problems never
+// change the decision itself.
+func (a *AutomationService) logBlocked(ctx context.Context, req AutomationRequest, policy *models.AutomationPolicy, decision string) {
+	if req.TriggeredBy == "" || req.DryRun {
 		return
 	}
-	for _, act := range policy.Actions {
-		go func(action models.PolicyAction) {
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			if err := a.runAction(ctx, action, policy, resourceType, resourceID, resourceName); err != nil {
-				slog.Warn("automation: action failed",
-					"policy", policy.Name, "action", action.Type, "error", err)
-			}
-		}(act)
+	pid := policy.ID
+	_, err := a.repo.CreatePolicyExecutionLog(ctx, &models.PolicyExecutionLog{
+		OrganizationID: req.OrgID, PolicyID: &pid, PolicyName: policy.Name,
+		ResourceType: req.Workflow, Workflow: req.Workflow, Action: req.Action,
+		Decision: decision, ActionsTaken: []models.PolicyActionResult{}, TriggeredBy: req.TriggeredBy,
+	})
+	if err != nil {
+		slog.Warn("automation: failed to record execution log", "policy", policy.Name, "error", err)
 	}
 }
 
-func (a *AutomationService) runAction(ctx context.Context, action models.PolicyAction, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) error {
+// RecordApplied runs the actions of every policy that matched an allowed
+// request and writes one execution log entry per policy, with the outcome of
+// each action. Call it after the primary write succeeded; it is safe to call in
+// a goroutine. Action failures are recorded, never returned, and never undo the
+// primary operation.
+func (a *AutomationService) RecordApplied(ctx context.Context, decision *PolicyDecision, resourceType string, resourceID int64, resourceName string) {
+	if decision == nil || decision.Request.TriggeredBy == "" || decision.Request.DryRun {
+		return
+	}
+	for _, policy := range decision.Matched {
+		results := []models.PolicyActionResult{}
+		for _, act := range policy.Actions {
+			actCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			undo, err := a.runAction(actCtx, act, policy, resourceType, resourceID, resourceName)
+			cancel()
+			res := models.PolicyActionResult{Type: act.Type, Params: act.Params, Status: "success", Undo: undo}
+			if err != nil {
+				res.Status, res.Error = "failed", err.Error()
+				slog.Warn("automation: action failed", "policy", policy.Name, "action", act.Type, "error", err)
+			}
+			results = append(results, res)
+		}
+		pid, rid := policy.ID, resourceID
+		if _, err := a.repo.CreatePolicyExecutionLog(ctx, &models.PolicyExecutionLog{
+			OrganizationID: decision.Request.OrgID, PolicyID: &pid, PolicyName: policy.Name,
+			ResourceType: resourceType, ResourceID: &rid, ResourceName: resourceName,
+			Workflow: decision.Request.Workflow, Action: decision.Request.Action,
+			Decision: "allow", ActionsTaken: results, TriggeredBy: decision.Request.TriggeredBy,
+		}); err != nil {
+			slog.Warn("automation: failed to record execution log", "policy", policy.Name, "error", err)
+		}
+	}
+}
+
+// runAction executes one action and returns the data needed to undo it.
+func (a *AutomationService) runAction(ctx context.Context, action models.PolicyAction, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) (map[string]string, error) {
 	switch action.Type {
 	case "notify":
-		return a.runNotifyAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
+		return nil, a.runNotifyAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
 	case "webhook":
-		return a.runWebhookAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
+		return nil, a.runWebhookAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
 	case "audit_annotation":
 		msg := action.Params["message"]
 		slog.Info("automation audit annotation",
 			"policy", policy.Name, "resource_type", resourceType, "resource_id", resourceID,
 			"resource_name", resourceName, "message", msg)
-		return nil
+		return nil, nil
 	case "scan":
 		return a.runScanAction(ctx, action.Params, resourceType, resourceID)
 	case "tag":
 		return a.runTagAction(ctx, action.Params, resourceType, resourceID)
 	default:
-		return fmt.Errorf("unknown action type %q", action.Type)
+		return nil, fmt.Errorf("unknown action type %q", action.Type)
 	}
 }
 
@@ -420,29 +492,46 @@ func (a *AutomationService) runWebhookAction(ctx context.Context, params map[str
 	return nil
 }
 
-func (a *AutomationService) runScanAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) error {
+func (a *AutomationService) runScanAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) (map[string]string, error) {
 	if resourceType != "subnet" {
-		return fmt.Errorf("scan action only supported for subnet resources")
+		return nil, fmt.Errorf("scan action only supported for subnet resources")
 	}
 	name := fmt.Sprintf("auto-scan subnet %d", resourceID)
-	_, err := a.repo.CreateScanJob(ctx, name, []int64{resourceID}, nil, 1, false)
-	return err
+	job, err := a.repo.CreateScanJob(ctx, name, []int64{resourceID}, nil, 0, false)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{"scan_job_id": strconv.FormatInt(job.ID, 10)}, nil
 }
 
-func (a *AutomationService) runTagAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) error {
+func (a *AutomationService) runTagAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) (map[string]string, error) {
 	if resourceType != "ip_address" {
-		return fmt.Errorf("tag action only supported for ip_address resources")
+		return nil, fmt.Errorf("tag action only supported for ip_address resources")
 	}
 	tagIDStr := params["tag_id"]
 	if tagIDStr == "" {
-		return fmt.Errorf("tag action requires tag_id param")
+		return nil, fmt.Errorf("tag action requires tag_id param")
 	}
 	tagID, err := strconv.ParseInt(tagIDStr, 10, 64)
 	if err != nil {
-		return fmt.Errorf("invalid tag_id %q", tagIDStr)
+		return nil, fmt.Errorf("invalid tag_id %q", tagIDStr)
 	}
-	_, err = a.repo.UpdateIPAddressTag(ctx, resourceID, &tagID)
-	return err
+	before, err := a.repo.GetIPAddressByID(ctx, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	previous := ""
+	if before.TagID != nil {
+		previous = strconv.FormatInt(*before.TagID, 10)
+	}
+	if _, err := a.repo.UpdateIPAddressTag(ctx, resourceID, &tagID); err != nil {
+		return nil, err
+	}
+	return map[string]string{
+		"ip_id":           strconv.FormatInt(resourceID, 10),
+		"applied_tag_id":  tagIDStr,
+		"previous_tag_id": previous,
+	}, nil
 }
 
 func IntegrationTemplates() []models.IntegrationTemplate {

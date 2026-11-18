@@ -219,3 +219,6 @@ export const getSessionRisk = () => api.get('/admin/session-risk')
 export const getTechnitiumDHCPScopes = () => api.get('/admin/dhcp/technitium/scopes')
 export const syncTechnitiumLeases = () => api.post('/admin/dhcp/technitium/sync')
 export const importTechnitiumScope = (data) => api.post('/admin/dhcp/technitium/import-scope', data)
+
+export const listAutomationExecutions = (params) => api.get('/admin/automation/executions', { params: params || {} })
+export const rollbackAutomationExecution = (id) => api.post(`/admin/automation/executions/${id}/rollback`)

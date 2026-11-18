@@ -2320,6 +2320,20 @@
     "loadingSubnets": "Loading subnets...",
     "noAvailableSubnets": "No available subnets"
   },
+  "automationExecutions": {
+    "title": "Automation history",
+    "viewHistory": "View history",
+    "hideHistory": "Hide history",
+    "empty": "No automation policy has matched yet.",
+    "loadError": "Failed to load automation history",
+    "rollbackError": "Rollback failed",
+    "rollback": "Roll back",
+    "confirmRollback": "Confirm roll back",
+    "rolledBack": "Rolled back",
+    "col": { "when": "When", "policy": "Policy", "resource": "Resource", "decision": "Decision", "actions": "Actions", "source": "Source" },
+    "status": { "success": "succeeded", "failed": "failed" },
+    "rollbackStatus": { "rolled_back": "rolled back", "skipped": "skipped", "not_reversible": "cannot be undone", "failed": "rollback failed" }
+  },
   "automationPolicies": {
     "loadFailed": "Failed to load policies",
     "saveFailed": "Failed to save policy",

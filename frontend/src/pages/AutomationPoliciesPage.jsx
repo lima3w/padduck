@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
+import AutomationExecutions from '../components/AutomationExecutions'
 import { getAutomationPolicies, createAutomationPolicy, updateAutomationPolicy, deleteAutomationPolicy, simulateAutomation } from '../api/admin'
 
 const OPERATOR_KEYS = [
@@ -153,6 +154,7 @@ export default function AutomationPoliciesPage() {
   const [simRunning, setSimRunning] = useState(false)
   const [simResult, setSimResult] = useState(null)
   const [simError, setSimError] = useState(null)
+  const [historyID, setHistoryID] = useState(null)
 
   function load() {
     setLoading(true)
@@ -323,16 +325,17 @@ export default function AutomationPoliciesPage() {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {[t('common.name'), t('automationPolicies.workflow'), t('auditLog.action'), t('automationPolicies.effect'), t('automationPolicies.conditions'), t('dnsTab.enabled'), ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
+                {[t('common.name'), t('automationPolicies.workflow'), t('auditLog.action'), t('automationPolicies.effect'), t('automationPolicies.conditions'), t('dnsTab.enabled'), t('automationExecutions.title'), ''].map((h, i) => (
+                  <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
               {policies.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">{t('automationPolicies.noPoliciesConfigured')}</td></tr>
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-400">{t('automationPolicies.noPoliciesConfigured')}</td></tr>
               ) : policies.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <Fragment key={p.id}>
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{p.name}</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-400">{p.workflow}</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-400">{p.action}</td>
@@ -353,11 +356,21 @@ export default function AutomationPoliciesPage() {
                       ? <span className="text-green-600 dark:text-green-400">{t('common.yes')}</span>
                       : <span className="text-gray-400">{t('common.no')}</span>}
                   </td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap">
+                    <span className="text-gray-600 dark:text-gray-400">{p.executionCount ?? 0}</span>{' '}
+                    <button onClick={() => setHistoryID(historyID === p.id ? null : p.id)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                      {historyID === p.id ? t('automationExecutions.hideHistory') : t('automationExecutions.viewHistory')}
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
                     <button onClick={() => openEdit(p)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-xs">{t('common.edit')}</button>
                     <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:text-red-800 dark:text-red-400 text-xs">{t('common.delete')}</button>
                   </td>
                 </tr>
+                {historyID === p.id && (
+                  <tr><td colSpan={8} className="px-4 pb-4 bg-gray-50 dark:bg-gray-800/50"><AutomationExecutions policyId={p.id} /></td></tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>

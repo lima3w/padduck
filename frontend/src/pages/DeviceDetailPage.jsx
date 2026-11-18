@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router'
+import AutomationExecutions from '../components/AutomationExecutions'
 import { useTranslation } from 'react-i18next'
 import ChangeHistory from '../components/ChangeHistory'
 import FingerprintPanel from '../components/FingerprintPanel'
@@ -508,6 +509,7 @@ export default function DeviceDetailPage() {
           onClose={() => setModal(null)}
         />
       )}
+      <AutomationExecutions resourceType="device" resourceId={Number(id)} hideWhenEmpty />
     </div>
   )
 }
