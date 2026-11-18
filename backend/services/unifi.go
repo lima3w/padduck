@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -144,6 +145,7 @@ func (s *Service) runUniFiSync(ctx context.Context, api *unifi.API, res *UniFiSy
 	s.syncUniFiNetworks(ctx, networks, res)
 	s.syncUniFiClients(ctx, clients, res)
 	s.syncUniFiDevices(ctx, devices, res)
+	s.syncUniFiUplinks(ctx, devices, res)
 	return nil
 }
 
@@ -301,6 +303,41 @@ func (s *Service) syncUniFiDevices(ctx context.Context, devices []unifi.Device, 
 		details := map[string]any{"mac": mac, "model": d.Model, "firmware": d.Version, "type": d.Type, "ip": d.IP, "online": d.Online()}
 		if err := s.repository.UpsertUniFiDeviceLink(ctx, id, mac, name, details); err != nil {
 			res.addError("linking device %s: %v", name, err)
+		}
+	}
+}
+
+// unifiUplinkEvidence prefixes the evidence of every suggestion made here, so a
+// changed uplink replaces the old suggestion without touching other edges.
+const unifiUplinkEvidence = "UniFi uplink"
+
+// syncUniFiUplinks suggests an uplink_to edge from each adopted device to the
+// device the controller reports as its uplink. Suggestions wait for an admin to
+// confirm or dismiss them; this never overrides either decision.
+func (s *Service) syncUniFiUplinks(ctx context.Context, devices []unifi.Device, res *UniFiSyncResult) {
+	if err := s.repository.SyncTopologyGraph(ctx); err != nil {
+		res.addError("updating topology graph: %v", err)
+	}
+	for _, d := range devices {
+		mac, up := normalizeMAC(d.MAC), normalizeMAC(d.Uplink.MAC)
+		if mac == "" || up == "" || mac == up {
+			continue
+		}
+		from, ok1, err1 := s.repository.FindDeviceIDByUniFiID(ctx, mac)
+		to, ok2, err2 := s.repository.FindDeviceIDByUniFiID(ctx, up)
+		if err1 != nil || err2 != nil {
+			res.addError("looking up uplink for %s: %v", d.DisplayName(), errors.Join(err1, err2))
+			continue
+		}
+		if !ok1 || !ok2 {
+			continue
+		}
+		evidence := unifiUplinkEvidence
+		if d.Uplink.RemotePort > 0 {
+			evidence = fmt.Sprintf("%s via port %d", unifiUplinkEvidence, d.Uplink.RemotePort)
+		}
+		if err := s.repository.SuggestTopologyEdge(ctx, "device", from, "device", to, "uplink_to", 0.9, evidence, unifiUplinkEvidence); err != nil {
+			res.addError("suggesting uplink for %s: %v", d.DisplayName(), err)
 		}
 	}
 }

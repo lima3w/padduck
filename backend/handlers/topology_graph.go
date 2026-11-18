@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5"
 	"padduck/services"
 )
 
 // GetTopologyGraph handles GET /api/v1/topology/graph
-// Query params: root_type, root_id (required); depth (optional, default 3)
+// Query params: root_type and root_id (both or neither); depth (optional, default 3).
+// With no root the whole graph is returned.
 func (h *Handler) GetTopologyGraph(c *fiber.Ctx) error {
 	if !h.requirePerm(c, services.PermV2SubnetRead) {
 		return nil
@@ -16,8 +19,16 @@ func (h *Handler) GetTopologyGraph(c *fiber.Ctx) error {
 
 	rootType := c.Query("root_type")
 	rootIDStr := c.Query("root_id")
+	if rootType == "" && rootIDStr == "" {
+		graph, err := h.ops.Topology.GetFullGraph(c.Context(), 2000)
+		if err != nil {
+			reqLogger(c).Error("topology graph error", "error", err)
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
+		}
+		return c.JSON(graph)
+	}
 	if rootType == "" || rootIDStr == "" {
-		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "root_type and root_id are required")
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "root_type and root_id must be given together")
 	}
 	rootID, err := strconv.ParseInt(rootIDStr, 10, 64)
 	if err != nil || rootID <= 0 {
@@ -69,4 +80,59 @@ func (h *Handler) GetTopologyPath(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, err.Error())
 	}
 	return c.JSON(graph)
+}
+
+// ListTopologyEdges handles GET /api/v1/topology/edges?status=suggested
+func (h *Handler) ListTopologyEdges(c *fiber.Ctx) error {
+	if !h.requirePerm(c, services.PermV2SubnetRead) {
+		return nil
+	}
+	status := c.Query("status")
+	switch status {
+	case "", "suggested", "confirmed", "dismissed":
+	default:
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "status must be suggested, confirmed or dismissed")
+	}
+	edges, err := h.ops.Topology.ListEdges(c.Context(), status)
+	if err != nil {
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to list topology edges")
+	}
+	return c.JSON(fiber.Map{"edges": edges, "total": len(edges)})
+}
+
+// UpdateTopologyEdgeStatus handles PUT /api/v1/topology/edges/:id/status
+// Body: {"status":"confirmed"|"dismissed"}
+func (h *Handler) UpdateTopologyEdgeStatus(c *fiber.Ctx) error {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
+		return nil
+	}
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid edge ID")
+	}
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	if err := h.ops.Topology.SetEdgeStatus(c.Context(), int64(id), req.Status); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "topology edge not found")
+		}
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
+	}
+	return c.JSON(fiber.Map{"message": "edge updated"})
+}
+
+// SyncTopologyGraph handles POST /api/v1/topology/sync: rebuild the graph from inventory.
+func (h *Handler) SyncTopologyGraph(c *fiber.Ctx) error {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
+		return nil
+	}
+	if err := h.ops.Topology.SyncGraph(c.Context()); err != nil {
+		reqLogger(c).Error("topology sync error", "error", err)
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to sync topology graph")
+	}
+	return c.JSON(fiber.Map{"message": "topology graph synced"})
 }

@@ -1280,6 +1280,21 @@ type GraphEdge struct {
 	CreatedAt      time.Time `json:"created_at"`
 }
 
+// GraphEdgeDetail is an edge together with the resource refs of both endpoints.
+type GraphEdgeDetail struct {
+	ID           int64   `json:"id"`
+	Relationship string  `json:"relationship"`
+	Confidence   float64 `json:"confidence"`
+	Status       string  `json:"status"`
+	Evidence     *string `json:"evidence,omitempty"`
+	SourceType   string  `json:"source_type"`
+	SourceID     int64   `json:"source_id"`
+	TargetType   string  `json:"target_type"`
+	TargetID     int64   `json:"target_id"`
+	SourceLabel  string  `json:"source_label,omitempty"`
+	TargetLabel  string  `json:"target_label,omitempty"`
+}
+
 // CytoscapeNode is a Cytoscape.js-compatible node element.
 type CytoscapeNode struct {
 	Data map[string]any `json:"data"`

@@ -42,6 +42,7 @@ const VlanUsageReportPage = lazy(() => import('./pages/VlanUsageReportPage'))
 const AdminAgentsPage = lazy(() => import('./pages/AdminAgentsPage'))
 const AdminWebhooksPage = lazy(() => import('./pages/AdminWebhooksPage'))
 const TopologyPage = lazy(() => import('./pages/TopologyPage'))
+const TopologyGraphPage = lazy(() => import('./pages/TopologyGraphPage'))
 const ScheduledReportsPage = lazy(() => import('./pages/ScheduledReportsPage'))
 const ImportDataPage = lazy(() => import('./pages/ImportDataPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
@@ -209,6 +210,7 @@ export default function App() {
             <Route path="admin/api-token-analytics" element={<APITokenAnalyticsPage />} />
             <Route path="admin/integration-templates" element={<IntegrationTemplatesPage />} />
             <Route path="admin/automation/policies" element={<AutomationPoliciesPage />} />
+            <Route path="topology" element={<TopologyGraphPage />} />
             <Route path="networks/:id/topology" element={<TopologyPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="reports/utilization-trends" element={<Navigate to="/reports?tab=utilization" replace />} />
