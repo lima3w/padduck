@@ -313,6 +313,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Org settings — org admins can view and update SMTP overrides (v1.33.16)
 	admin.Get("/organization/settings", h.GetOrgSettings)
 	admin.Put("/organization/settings", h.UpdateOrgSettings)
+	admin.Post("/organization/settings/test-email", h.TestOrgSMTP)
 
 	// Role management
 	admin.Get("/roles", h.ListRoles)

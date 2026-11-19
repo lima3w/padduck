@@ -222,3 +222,9 @@ export const importTechnitiumScope = (data) => api.post('/admin/dhcp/technitium/
 
 export const listAutomationExecutions = (params) => api.get('/admin/automation/executions', { params: params || {} })
 export const rollbackAutomationExecution = (id) => api.post(`/admin/automation/executions/${id}/rollback`)
+
+export const getOrgSettings = () => api.get('/admin/organization/settings')
+
+export const updateOrgSettings = (data) => api.put('/admin/organization/settings', data)
+
+export const testOrgSMTP = (to) => api.post('/admin/organization/settings/test-email', { to })

@@ -2,9 +2,57 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"padduck/models"
 )
+
+// QuotaExceededError is returned when an org's resource quota would be breached.
+type QuotaExceededError struct {
+	Resource string
+	Limit    int
+}
+
+func (e *QuotaExceededError) Error() string {
+	return fmt.Sprintf("quota exceeded: %s limit is %d", e.Resource, e.Limit)
+}
+
+// enforceQuota rejects an insert that would take the caller's org past its
+// configured subnet or IP address limit. It lives in the repository so every
+// creation path (API, discovery, DNS sync, import) is covered. System contexts
+// with no org, and orgs with no limit set, are unrestricted. Check-then-insert
+// is not atomic, so concurrent creates can overshoot by a few rows.
+func (r *Repository) enforceQuota(ctx context.Context, resource string) error {
+	org, ok := OrgFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	settings, err := r.GetOrganizationSettings(ctx, org)
+	if err != nil {
+		return nil // no settings row = no limits
+	}
+	var limit *int
+	var count func(context.Context, int64) (int64, error)
+	switch resource {
+	case "subnets":
+		limit, count = settings.MaxSubnets, r.CountSubnetsByOrg
+	case "ip_addresses":
+		limit, count = settings.MaxIPAddresses, r.CountIPAddressesByOrg
+	default:
+		return nil
+	}
+	if limit == nil {
+		return nil
+	}
+	n, err := count(ctx, org)
+	if err != nil {
+		return nil
+	}
+	if int(n) >= *limit {
+		return &QuotaExceededError{Resource: resource, Limit: *limit}
+	}
+	return nil
+}
 
 func (r *Repository) GetOrganizationSettings(ctx context.Context, orgID int64) (*models.OrganizationSettings, error) {
 	query := `SELECT organization_id, max_subnets, max_ip_addresses, max_users, max_webhooks, max_api_tokens,
@@ -84,5 +132,17 @@ func (r *Repository) CountAPITokensByOrg(ctx context.Context, orgID int64) (int6
 	err := r.db.QueryRow(ctx,
 		`SELECT COUNT(*) FROM api_tokens WHERE organization_id = $1 AND (rotation_grace_expires_at IS NULL OR rotation_grace_expires_at > NOW())`,
 		orgID).Scan(&n)
+	return n, err
+}
+
+func (r *Repository) CountSubnetsByOrg(ctx context.Context, orgID int64) (int64, error) {
+	var n int64
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM subnets WHERE organization_id = $1`, orgID).Scan(&n)
+	return n, err
+}
+
+func (r *Repository) CountIPAddressesByOrg(ctx context.Context, orgID int64) (int64, error) {
+	var n int64
+	err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM ip_addresses WHERE organization_id = $1`, orgID).Scan(&n)
 	return n, err
 }

@@ -73,6 +73,25 @@ func (h *Handler) UpdateOrgSettings(c *fiber.Ctx) error {
 	return c.JSON(s)
 }
 
+// TestOrgSMTP handles POST /api/v1/admin/organization/settings/test-email
+// Sends a test message using the org's SMTP overrides (falling back to global).
+func (h *Handler) TestOrgSMTP(c *fiber.Ctx) error {
+	if !h.requirePerm(c, services.PermV2AdminWrite) {
+		return nil
+	}
+	var req struct {
+		To string `json:"to"`
+	}
+	if err := c.BodyParser(&req); err != nil || req.To == "" {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "to address is required")
+	}
+	if err := h.auth.Email.SendCtx(c.Context(), req.To, "IPAM SMTP Test", "This is a test email from IPAM."); err != nil {
+		reqLogger(c).Error("org SMTP test failed", "error", err)
+		return RespondError(c, fiber.StatusBadGateway, ErrBadGateway, "SMTP test failed")
+	}
+	return c.JSON(fiber.Map{"message": "Test email sent successfully"})
+}
+
 // GetPlatformOrgSettings handles GET /api/v1/platform/organizations/:id/settings
 func (h *Handler) GetPlatformOrgSettings(c *fiber.Ctx) error {
 	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -97,6 +116,15 @@ func (h *Handler) UpdatePlatformOrgSettings(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
+	for name, v := range map[string]*int{
+		"max_subnets": req.MaxSubnets, "max_ip_addresses": req.MaxIPAddresses, "max_users": req.MaxUsers,
+		"max_webhooks": req.MaxWebhooks, "max_api_tokens": req.MaxAPITokens,
+		"audit_retention_days": req.AuditRetentionDays, "smtp_port": req.SMTPPort,
+	} {
+		if v != nil && *v < 0 {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, name+" must not be negative")
+		}
+	}
 	s, err := h.ops.OrgSettings.UpsertSettings(c.Context(), &models.OrganizationSettings{
 		OrganizationID:     id,
 		MaxSubnets:         req.MaxSubnets,
@@ -118,6 +146,8 @@ func (h *Handler) UpdatePlatformOrgSettings(c *fiber.Ctx) error {
 		ResourceType: "org_settings",
 		NewValues: map[string]interface{}{
 			"organization_id":     id,
+			"max_subnets":         req.MaxSubnets,
+			"max_ip_addresses":    req.MaxIPAddresses,
 			"max_users":           req.MaxUsers,
 			"max_webhooks":        req.MaxWebhooks,
 			"max_api_tokens":      req.MaxAPITokens,

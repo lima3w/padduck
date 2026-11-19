@@ -16,6 +16,7 @@ import NotificationsTab from './NotificationsTab'
 import ToolsTab from './ToolsTab'
 import TelemetryTab from './TelemetryTab'
 import UnifiTab from './UnifiTab'
+import OrganizationTab from './OrganizationTab'
 
 // Shell: owns the config object, save/messaging, and tab navigation. Each
 // tab is its own component under src/pages/admin/ and keeps tab-specific
@@ -131,6 +132,7 @@ export default function AdminSettingsPage() {
     { id: 'updates', label: t('adminSettingsPage.updatesTabLabel') },
     { id: 'notifications', label: t('adminSettingsPage.notificationsTabLabel') },
     { id: 'tools', label: t('adminSettingsPage.toolsTabLabel') },
+    { id: 'organization', label: t('orgTab.tabLabel') },
     { id: 'unifi', label: t('unifiTab.tabLabel') },
     { id: 'telemetry', label: t('telemetryTab.title') },
   ]
@@ -180,6 +182,7 @@ export default function AdminSettingsPage() {
       {activeTab === 'updates' && config && <UpdatesTab {...configProps} />}
       {activeTab === 'notifications' && <NotificationsTab />}
       {activeTab === 'tools' && <ToolsTab config={config} />}
+      {activeTab === 'organization' && <OrganizationTab showMessage={showMessage} />}
       {activeTab === 'unifi' && config && <UnifiTab {...configProps} />}
       {activeTab === 'telemetry' && config && <TelemetryTab {...configProps} showMessage={showMessage} />}
     </div>

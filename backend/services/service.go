@@ -20,6 +20,10 @@ type Service struct {
 func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	configSvc := NewConfigService(repo)
 	emailSvc := NewEmailService(configSvc)
+	orgSettingsSvc := NewOrgSettingsService(repo)
+	emailSvc.orgSMTP = func(ctx context.Context, orgID int64) (*string, *int, *string) {
+		return orgSettingsSvc.GetOrgSMTPOverride(ctx, &orgID)
+	}
 	registrationSvc := NewRegistrationService(repo, configSvc, emailSvc)
 
 	mfaSvc, err := NewMFAService(repo, mfaEncryptionKey)
@@ -77,7 +81,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Workflow:       workflowSvc,
 		EventBus:       bus,
 		Organizations:  NewOrganizationService(repo),
-		OrgSettings:    NewOrgSettingsService(repo),
+		OrgSettings:    orgSettingsSvc,
 		Intent:         NewIntentService(repo, configSvc, ipamSvc, infraSvc),
 	}
 	return svc
