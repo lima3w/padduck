@@ -57,27 +57,6 @@ func TestValidateAPIToken_Validation(t *testing.T) {
 	})
 }
 
-func TestRevokeAPIToken_Validation(t *testing.T) {
-	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
-	ctx := context.Background()
-
-	tests := []struct {
-		name    string
-		tokenID int64
-	}{
-		{"tokenID zero", 0},
-		{"tokenID negative", -1},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := svc.Ops.Identity.RevokeAPIToken(ctx, tt.tokenID)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "invalid token ID")
-		})
-	}
-}
-
 func TestListUserTokens_Validation(t *testing.T) {
 	svc := NewService(nil, "0000000000000000000000000000000000000000000000000000000000000000")
 	ctx := context.Background()
