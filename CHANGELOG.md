@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.34.46
+
+### Added
+- **Organization quotas, retention and SMTP overrides** (#12), building on the organization isolation in v1.34.45. The `organization_settings` table, the users, webhooks and API-token limits and the settings endpoints already existed; this release finishes the feature.
+  - **Subnet and IP address quotas:** `max_subnets` and `max_ip_addresses` are now enforced. The check sits in the repository create paths, so the API, quick-create, allocation, discovery, DNS sync and the Technitium DHCP import are all covered. Going over a limit returns `422 QUOTA_EXCEEDED`. A null limit means unlimited, and background work with no organization is never limited. Splitting a subnet is not counted. The check is not atomic, so simultaneous creates can overshoot a limit by a few rows.
+  - **Per-organization SMTP:** the organization's `smtp_host`, `smtp_port` and `smtp_from` now override the instance values when mail is sent for that organization (credentials and TLS still come from the instance settings). New `POST /api/v1/admin/organization/settings/test-email` sends a test message through them. Verification, approval and password-reset emails are sent outside any organization and still use the instance SMTP settings.
+  - **Admin UI:** new Organization tab under Admin Settings shows the organization's limits and retention (read-only; only a platform admin can change them), edits its SMTP overrides, and sends a test email.
+  - Platform admins set quotas through `PUT /api/v1/platform/organizations/:id/settings`; negative values are rejected with 400. These endpoints and the new ones are now in the OpenAPI spec.
+
+### Fixed
+- **Audit pruning with a per-organization retention:** the instance-wide prune deleted every organization's logs older than the global window, so an organization that had set a longer retention lost logs early. It now skips organizations that have their own retention, which is pruned separately.
+
 ## v1.34.45
 
 ### Security

@@ -1,16 +1,21 @@
 package services
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/smtp"
 	"strconv"
 	"strings"
+
+	"padduck/repository"
 )
 
 type EmailService struct {
 	configSvc *ConfigService
+	// orgSMTP, when set, supplies per-organization host/port/from overrides.
+	orgSMTP func(ctx context.Context, orgID int64) (host *string, port *int, from *string)
 }
 
 func NewEmailService(configSvc *ConfigService) *EmailService {
@@ -39,6 +44,40 @@ type smtpConfig struct {
 }
 
 func (e *EmailService) loadSMTPConfig() (*smtpConfig, error) {
+	return e.loadSMTPConfigCtx(context.Background())
+}
+
+// loadSMTPConfigCtx loads the global SMTP settings and applies the calling
+// org's host/port/from overrides. Credentials and TLS always come from the
+// global config.
+func (e *EmailService) loadSMTPConfigCtx(ctx context.Context) (*smtpConfig, error) {
+	cfg, err := e.loadGlobalSMTPConfig()
+	var oHost *string
+	var oPort *int
+	var oFrom *string
+	if org, ok := repository.OrgFromContext(ctx); ok && e.orgSMTP != nil {
+		oHost, oPort, oFrom = e.orgSMTP(ctx, org)
+	}
+	hasOverride := (oHost != nil && *oHost != "")
+	if err != nil {
+		if !hasOverride {
+			return nil, err
+		}
+		cfg = &smtpConfig{port: 587, useTLS: true}
+	}
+	if hasOverride {
+		cfg.host = *oHost
+	}
+	if oPort != nil && *oPort > 0 {
+		cfg.port = *oPort
+	}
+	if oFrom != nil && *oFrom != "" {
+		cfg.from = *oFrom
+	}
+	return cfg, nil
+}
+
+func (e *EmailService) loadGlobalSMTPConfig() (*smtpConfig, error) {
 	host, _ := e.configSvc.Get("smtp_host")
 	if host == "" {
 		return nil, fmt.Errorf("SMTP not configured")
@@ -71,7 +110,12 @@ func (e *EmailService) loadSMTPConfig() (*smtpConfig, error) {
 }
 
 func (e *EmailService) Send(to, subject, body string) error {
-	cfg, err := e.loadSMTPConfig()
+	return e.SendCtx(context.Background(), to, subject, body)
+}
+
+// SendCtx sends mail using the SMTP overrides of the org carried by ctx.
+func (e *EmailService) SendCtx(ctx context.Context, to, subject, body string) error {
+	cfg, err := e.loadSMTPConfigCtx(ctx)
 	if err != nil {
 		return err
 	}

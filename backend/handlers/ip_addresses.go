@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -71,6 +72,10 @@ func (h *Handler) CreateIPAddress(c *fiber.Ctx) error {
 
 	ip, err := h.ops.IPAM.CreateIPAddress(c.Context(), int64(subnetID), req.Address, req.Hostname, req.Status, req.TagID, req.MACAddress, req.PTRRecord, req.DNSName, req.CustomFields)
 	if err != nil {
+		var quotaErr *services.QuotaExceededError
+		if errors.As(err, &quotaErr) {
+			return RespondError(c, fiber.StatusUnprocessableEntity, ErrQuotaExceeded, err.Error())
+		}
 		reqLogger(c).Error("error creating IP address", "subnet_id", subnetID, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
@@ -315,6 +320,10 @@ func (h *Handler) QuickCreateIPAddress(c *fiber.Ctx) error {
 	}
 	ip, err := h.ops.IPAM.QuickCreateIPAddress(c.Context(), req.Address)
 	if err != nil {
+		var quotaErr *services.QuotaExceededError
+		if errors.As(err, &quotaErr) {
+			return RespondError(c, fiber.StatusUnprocessableEntity, ErrQuotaExceeded, err.Error())
+		}
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}
 	return c.Status(fiber.StatusCreated).JSON(ip)

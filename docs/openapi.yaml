@@ -3477,6 +3477,61 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api/v1/admin/organization/settings:
+    get:
+      tags: [Admin]
+      summary: Get the caller's organization settings and quotas
+      description: Quota fields (max_subnets, max_ip_addresses, max_users, max_webhooks, max_api_tokens) are read-only for org admins.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Admin]
+      summary: Update the caller's organization SMTP overrides
+      description: Org admins may set smtp_host, smtp_port and smtp_from only. Quotas and audit retention are platform-admin controlled and are preserved.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/organization/settings/test-email:
+    post:
+      tags: [Admin]
+      summary: Send a test email using the organization's SMTP overrides
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/platform/organizations/{id}/settings:
+    get:
+      tags: [Platform]
+      summary: Get an organization's settings and quotas (platform admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+    put:
+      tags: [Platform]
+      summary: Set an organization's quotas, retention and SMTP overrides (platform admin)
+      description: A null quota means unlimited. Creating a subnet, IP address, user, webhook or API token past its limit returns 422 QUOTA_EXCEEDED.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
   /api/v1/admin/audit/prune:
     post:
       tags: [Admin]

@@ -62,6 +62,10 @@ func (h *Handler) CreateSubnet(c *fiber.Ctx) error {
 		if errors.As(err, &overlapErr) {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": overlapErr.Error(), "conflicting_cidr": overlapErr.ConflictingCIDR})
 		}
+		var quotaErr *services.QuotaExceededError
+		if errors.As(err, &quotaErr) {
+			return RespondError(c, fiber.StatusUnprocessableEntity, ErrQuotaExceeded, err.Error())
+		}
 		reqLogger(c).Error("error creating subnet", "network_id", networkID, "error", err)
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, err.Error())
 	}

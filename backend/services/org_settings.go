@@ -2,21 +2,13 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"padduck/models"
 	"padduck/repository"
 )
 
 // QuotaExceededError is returned when an org's resource quota would be breached.
-type QuotaExceededError struct {
-	Resource string
-	Limit    int
-}
-
-func (e *QuotaExceededError) Error() string {
-	return fmt.Sprintf("quota exceeded: %s limit is %d", e.Resource, e.Limit)
-}
+type QuotaExceededError = repository.QuotaExceededError
 
 type OrgSettingsService struct {
 	repo *repository.Repository
@@ -41,8 +33,8 @@ func (s *OrgSettingsService) UpsertSettings(ctx context.Context, in *models.Orga
 
 // CheckQuota verifies whether creating one more resource of the given type
 // would exceed the org's configured limit. Nil orgID means no org scoping —
-// quota is skipped. resource must be one of: "users", "webhooks", "api_tokens".
-// Subnet and IP quota enforcement is deferred until those tables have org columns.
+// quota is skipped. resource must be one of: "users", "webhooks", "api_tokens",
+// "subnets", "ip_addresses".
 func (s *OrgSettingsService) CheckQuota(ctx context.Context, orgID *int64, resource string) error {
 	if orgID == nil {
 		return nil
@@ -74,6 +66,18 @@ func (s *OrgSettingsService) CheckQuota(ctx context.Context, orgID *int64, resou
 			return nil
 		}
 		current, err = s.repo.CountAPITokensByOrg(ctx, *orgID)
+	case "subnets":
+		limit = settings.MaxSubnets
+		if limit == nil {
+			return nil
+		}
+		current, err = s.repo.CountSubnetsByOrg(ctx, *orgID)
+	case "ip_addresses":
+		limit = settings.MaxIPAddresses
+		if limit == nil {
+			return nil
+		}
+		current, err = s.repo.CountIPAddressesByOrg(ctx, *orgID)
 	default:
 		return nil
 	}
@@ -85,6 +89,16 @@ func (s *OrgSettingsService) CheckQuota(ctx context.Context, orgID *int64, resou
 		return &QuotaExceededError{Resource: resource, Limit: *limit}
 	}
 	return nil
+}
+
+// CheckQuotaCtx is CheckQuota for callers that only have a context. The org is
+// taken from the request scope; system contexts (no org) are not limited.
+func (s *OrgSettingsService) CheckQuotaCtx(ctx context.Context, resource string) error {
+	org, ok := repository.OrgFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	return s.CheckQuota(ctx, &org, resource)
 }
 
 // GetOrgSMTPOverride returns per-org SMTP settings if configured, else nil values.

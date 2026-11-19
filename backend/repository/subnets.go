@@ -50,6 +50,9 @@ func scanSubnet(row interface {
 }
 
 func (r *Repository) CreateSubnet(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool) (*models.Subnet, error) {
+	if err := r.enforceQuota(ctx, "subnets"); err != nil {
+		return nil, err
+	}
 	if err := r.checkOrgRefs(ctx, refID("networks", networkID)); err != nil {
 		return nil, err
 	}
@@ -64,6 +67,9 @@ func (r *Repository) CreateSubnet(ctx context.Context, networkID int64, networkA
 
 // CreateSubnetWithLocation inserts a new subnet with an optional location.
 func (r *Repository) CreateSubnetWithLocation(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID ...*int64) (*models.Subnet, error) {
+	if err := r.enforceQuota(ctx, "subnets"); err != nil {
+		return nil, err
+	}
 	if err := r.checkOrgRefs(ctx, refID("networks", networkID), ref("locations", locationID), ref("nameservers", firstPtr(nameserverID))); err != nil {
 		return nil, err
 	}
@@ -81,6 +87,9 @@ func (r *Repository) CreateSubnetWithLocation(ctx context.Context, networkID int
 }
 
 func (r *Repository) CreateSubnetWithVLAN(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64) (*models.Subnet, error) {
+	if err := r.enforceQuota(ctx, "subnets"); err != nil {
+		return nil, err
+	}
 	if err := r.checkOrgRefs(ctx, refID("networks", networkID), ref("locations", locationID), ref("nameservers", nameserverID), ref("vlans", vlanID)); err != nil {
 		return nil, err
 	}

@@ -3113,5 +3113,29 @@
     "userFallback": "User {{id}}",
     "lastUsed": "Last Used",
     "riskFlags": "Risk Flags"
+  },
+  "orgTab": {
+    "tabLabel": "Organization",
+    "loadFailed": "Failed to load organization settings: ",
+    "saved": "Organization settings saved",
+    "saveFailed": "Failed to save: ",
+    "limitsTitle": "Limits",
+    "limitsHelp": "Quotas are set by a platform administrator.",
+    "subnets": "Subnets",
+    "ipAddresses": "IP addresses",
+    "users": "Users",
+    "webhooks": "Webhooks",
+    "apiTokens": "API tokens",
+    "unlimited": "Unlimited",
+    "auditRetention": "Audit log retention",
+    "days": "{{count}} days",
+    "globalDefault": "Global default",
+    "smtpTitle": "Email (SMTP) overrides",
+    "smtpHelp": "Leave a field empty to use the instance-wide value. Credentials always come from the instance SMTP settings.",
+    "useGlobal": "Global default",
+    "fromAddress": "From address",
+    "save": "Save",
+    "saving": "Saving...",
+    "sendTest": "Send test email"
   }
 }

@@ -74,6 +74,9 @@ func scanIP(row interface {
 }
 
 func (r *Repository) CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord, dnsName *string) (*models.IPAddress, error) {
+	if err := r.enforceQuota(ctx, "ip_addresses"); err != nil {
+		return nil, err
+	}
 	if err := r.checkOrgRefs(ctx, sharedRef("ip_tags", tagID)); err != nil {
 		return nil, err
 	}
