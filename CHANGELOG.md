@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.34.48
+
+### Fixed
+- **API token quota never counted new tokens** (#10, found while auditing): `api_tokens.organization_id` was nullable and no insert set it, so tokens created after the organizations feature were invisible to the per-organization token quota from v1.34.46 and to org-filtered token queries. New tokens now take their owner's organization, existing rows are backfilled from their owners, and the column is required (migration `20260721_001`).
+- **API token analytics returned an error whenever a token existed:** the query selected one column fewer than it scanned. It now returns the data, filtered to the caller's organization.
+- **Audit log queries failed open:** a query with no explicit organization (for example from a caller whose org was not on the filter) read every organization's logs. They now fall back to the caller's request scope; only an explicit platform-admin all-orgs query or an unscoped system context reads across organizations.
+
+### Changed
+- Removed the unused `RevokeAPIToken` service method, which deleted a token by ID with no owner or organization check.
+- Tests: new cross-organization tests for API tokens, webhooks and their deliveries, scheduled reports and audit logs. The audit of #10 otherwise found the feature already covered by v1.34.45: webhooks, deliveries, scheduled reports, dashboards and audit writes were scoped there, and tokens authenticate as their owner's organization.
+
 ## v1.34.47
 
 ### Added

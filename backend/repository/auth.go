@@ -10,7 +10,7 @@ import (
 // API Token operations
 
 func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash, name string) (*models.APIToken, error) {
-	query := `INSERT INTO api_tokens (user_id, token_hash, name) VALUES ($1, $2, $3)
+	query := `INSERT INTO api_tokens (user_id, token_hash, name, organization_id) VALUES ($1, $2, $3, (SELECT organization_id FROM users WHERE id = $1))
 	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, name)
 
@@ -25,8 +25,8 @@ func (r *Repository) CreateAPIToken(ctx context.Context, userID int64, tokenHash
 }
 
 func (r *Repository) CreateAPITokenFull(ctx context.Context, userID int64, tokenHash, name, scope string, expiresAt *time.Time) (*models.APIToken, error) {
-	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at)
-	          VALUES ($1, $2, $3, $4, $5)
+	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at, organization_id)
+	          VALUES ($1, $2, $3, $4, $5, (SELECT organization_id FROM users WHERE id = $1))
 	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, name, scope, expiresAt)
 	token := &models.APIToken{}
@@ -40,8 +40,8 @@ func (r *Repository) CreateAPITokenFull(ctx context.Context, userID int64, token
 }
 
 func (r *Repository) CreateImpersonationToken(ctx context.Context, userID int64, tokenHash, name string, orgID int64, expiresAt time.Time) (*models.APIToken, error) {
-	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at, impersonated_org_id)
-	          VALUES ($1, $2, $3, 'admin', $4, $5)
+	query := `INSERT INTO api_tokens (user_id, token_hash, name, scope, expires_at, impersonated_org_id, organization_id)
+	          VALUES ($1, $2, $3, 'admin', $4, $5, (SELECT organization_id FROM users WHERE id = $1))
 	          RETURNING id, user_id, token_hash, name, scope, usage_count, last_used_at, last_used_ip, expires_at, rotation_grace_expires_at, impersonated_org_id, created_at, updated_at`
 	row := r.db.QueryRow(ctx, query, userID, tokenHash, name, expiresAt, orgID)
 	token := &models.APIToken{}
@@ -99,12 +99,17 @@ func (r *Repository) SetAPITokenBypassPolicy(ctx context.Context, tokenID int64,
 func (r *Repository) ListAPITokenAnalytics(ctx context.Context, orgID *int64) ([]*models.APIToken, error) {
 	query := `SELECT t.id, t.user_id, COALESCE(u.username, ''), t.token_hash, t.name, t.scope,
 	                 t.usage_count, t.last_used_at, t.last_used_ip, t.expires_at,
-	                 t.rotation_grace_expires_at, t.created_at, t.updated_at
+	                 t.rotation_grace_expires_at, t.impersonated_org_id, t.created_at, t.updated_at
 	          FROM api_tokens t
 	          LEFT JOIN users u ON u.id = t.user_id`
 	var args []interface{}
+	if orgID == nil {
+		if ctxOrg, ok := OrgFromContext(ctx); ok {
+			orgID = &ctxOrg
+		}
+	}
 	if orgID != nil {
-		query += ` WHERE u.organization_id = $1`
+		query += ` WHERE t.organization_id = $1`
 		args = append(args, *orgID)
 	}
 	query += ` ORDER BY t.usage_count DESC, t.last_used_at DESC NULLS LAST, t.created_at DESC`

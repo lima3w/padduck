@@ -24,14 +24,28 @@ func (r *Repository) CreateAuditLog(ctx context.Context, entry *models.AuditLog)
 	return err
 }
 
+// auditOrgScope returns the organization an audit query must be limited to.
+// It fails closed: with no explicit org on the filter the caller's request
+// scope applies, and only an explicit AllOrgs (platform admin) or an unscoped
+// system context reads across organizations.
+func auditOrgScope(ctx context.Context, filter *models.AuditLogFilter) (int64, bool) {
+	if filter.AllOrgs {
+		return 0, false
+	}
+	if filter.OrgID != nil {
+		return *filter.OrgID, true
+	}
+	return OrgFromContext(ctx)
+}
+
 func (r *Repository) ListAuditLogs(ctx context.Context, filter *models.AuditLogFilter) ([]*models.AuditLog, error) {
 	args := []interface{}{}
 	where := []string{}
 	i := 1
 
-	if !filter.AllOrgs && filter.OrgID != nil {
+	if org, ok := auditOrgScope(ctx, filter); ok {
 		where = append(where, fmt.Sprintf("organization_id = $%d", i))
-		args = append(args, *filter.OrgID)
+		args = append(args, org)
 		i++
 	}
 
@@ -127,9 +141,9 @@ func (r *Repository) CountAuditLogs(ctx context.Context, filter *models.AuditLog
 	where := []string{}
 	i := 1
 
-	if !filter.AllOrgs && filter.OrgID != nil {
+	if org, ok := auditOrgScope(ctx, filter); ok {
 		where = append(where, fmt.Sprintf("organization_id = $%d", i))
-		args = append(args, *filter.OrgID)
+		args = append(args, org)
 		i++
 	}
 

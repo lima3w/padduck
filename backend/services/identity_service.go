@@ -1362,13 +1362,6 @@ func (s *IdentityService) CleanupExpiredTokens(ctx context.Context) error {
 	return s.repo.DeleteExpiredAPITokens(ctx)
 }
 
-func (s *IdentityService) RevokeAPIToken(ctx context.Context, tokenID int64) error {
-	if tokenID <= 0 {
-		return fmt.Errorf("invalid token ID")
-	}
-	return s.repo.DeleteAPIToken(ctx, tokenID)
-}
-
 func (s *IdentityService) ListUserTokens(ctx context.Context, userID int64) ([]*models.APIToken, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("invalid user ID")
