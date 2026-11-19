@@ -6,6 +6,9 @@ import { getAdminUsers, getAdminRoles, getUserRoles, assignUserRole, removeUserR
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
+
+// Resource types a grant can be limited to (must match the backend's grant scope types).
+const GRANT_SCOPE_TYPES = ['network', 'subnet', 'vlan', 'vrf', 'location', 'customer', 'autonomous_system']
 import PermissionDenied from '../components/PermissionDenied'
 
 // ── Break-Glass helpers ──────────────────────────────────────────────────────
@@ -1108,13 +1111,14 @@ export default function AdminUsersPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('adminUsersPage.scopeTypeLabel')} <span className="text-gray-400 font-normal">{t('adminUsersPage.optionalParenthetical')}</span>
               </label>
-              <input
-                type="text"
-                placeholder="e.g. network"
+              <select
                 className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 value={grantForm.scope_type}
                 onChange={e => setGrantForm(f => ({ ...f, scope_type: e.target.value }))}
-              />
+              >
+                <option value="">{t('adminUsersPage.scopeGlobal')}</option>
+                {GRANT_SCOPE_TYPES.map(st => <option key={st} value={st}>{st}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
