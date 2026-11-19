@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.34.47
+
+### Added
+- **Delegated administration and scoped grants** (#9). The `role_grants` table, grant endpoints and Grants UI already existed; this release makes them work for real delegation and closes several gaps.
+  - **Grants now apply to everyone.** Permission checks only looked at grants for users with no RBAC role assigned, so a user with any custom role never benefited from a grant. Grants are now checked alongside roles for every user.
+  - **A grant on a container covers what is inside it.** A grant scoped to a network covers its subnets and their IPs, including child subnets; a grant scoped to a location covers subnets placed in that location or its descendants; a VLAN grant covers the subnets on it. The legacy `section` scope name is treated as `network`. A scoped grant never matches a sibling resource.
+  - **Delegated admins.** Someone holding `org:write` over a scope (a global or scoped grant) can grant and revoke inside that scope, but only permissions they hold over it themselves, and never outside it or globally. The platform admin permission can no longer be granted. Grant and revoke are written to the audit log (`role_grant_created`, `role_grant_revoked`).
+  - **Validation:** `scope_type` and `scope_id` must be given together, the type must be one of `network`, `subnet`, `vlan`, `vrf`, `location`, `customer`, `autonomous_system`, and the resource must exist in the caller's organization. The Grants form now uses a dropdown of these types.
+  - **Listing:** a user always sees their own grants; an admin of the whole organization sees all; a delegated admin sees only grants inside the scopes they administer.
+
+### Security
+- **Grants were not organization-scoped** (a gap left after #8): an admin of one organization could list or revoke another organization's grants by ID. Grant lookups, listing and revocation are now limited to the caller's organization.
+- Granting no longer requires global `org:write` plus being allowed to grant globally; the check is made against the specific scope, so a scoped admin cannot escalate beyond it.
+
 ## v1.34.46
 
 ### Added

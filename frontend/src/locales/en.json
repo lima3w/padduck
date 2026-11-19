@@ -2630,6 +2630,7 @@
     "assignRoleButton": "Assign Role",
     "addGrantModalTitle": "Add Direct Permission Grant",
     "permissionFieldLabel": "Permission",
+    "scopeGlobal": "Global (whole organization)",
     "scopeTypeLabel": "Scope type",
     "scopeIdLabel": "Scope ID",
     "scopeGrantHint": "Leave scope blank for a global grant. Scoped grants only apply to the specified resource.",

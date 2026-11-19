@@ -720,10 +720,25 @@ func (s *IdentityService) UpdateUserLocale(ctx context.Context, userID int64, lo
 // RBAC methods
 // ============================================================
 
+// CheckPermission reports whether the user holds permission, either through a
+// role (RBAC roles or the legacy user role) or through a direct grant. A
+// grant may be global, or scoped to a resource that is, or contains, one of
+// the given scopes (see expandScopes).
 func (s *IdentityService) CheckPermission(ctx context.Context, userID int64, permission string, scopes ...ResourceScope) error {
 	if userID <= 0 {
 		return fmt.Errorf("permission denied")
 	}
+	err := s.checkRolePermission(ctx, userID, permission, scopes...)
+	if err == nil {
+		return nil
+	}
+	if s.hasGrant(ctx, userID, permission, scopes) {
+		return nil
+	}
+	return err
+}
+
+func (s *IdentityService) checkRolePermission(ctx context.Context, userID int64, permission string, scopes ...ResourceScope) error {
 	count, err := s.repo.CountUserRoles(ctx, userID)
 	if err == nil && count > 0 {
 		perms, err := s.repo.GetUserPermissions(ctx, userID)
@@ -754,15 +769,6 @@ func (s *IdentityService) CheckPermission(ctx context.Context, userID int64, per
 	}
 	if legacyRoleHasPermission(user.Role, permission) {
 		return nil
-	}
-	// Check direct role grants (global first, then any matching scope).
-	if ok, _ := s.repo.UserHasGrant(ctx, userID, permission, nil, nil); ok {
-		return nil
-	}
-	for i := range scopes {
-		if ok, _ := s.repo.UserHasGrant(ctx, userID, permission, &scopes[i].Type, &scopes[i].ID); ok {
-			return nil
-		}
 	}
 	return fmt.Errorf("permission denied: %s", permission)
 }
@@ -1565,48 +1571,4 @@ func (s *IdentityService) GrafanaIPCountsByStatus(ctx context.Context) ([]reposi
 
 func (s *IdentityService) GrafanaNetworkSummary(ctx context.Context) ([]repository.GrafanaSectionRow, error) {
 	return s.repo.GrafanaGetSectionSummary(ctx)
-}
-
-// CreateGrantRequest carries the parameters for granting a direct permission.
-type CreateGrantRequest struct {
-	UserID     int64   `json:"user_id"`
-	Permission string  `json:"permission"`
-	ScopeType  *string `json:"scope_type"`
-	ScopeID    *int64  `json:"scope_id"`
-}
-
-// CreateGrant grants a permission to a user. The grantor must themselves hold
-// the permission to prevent privilege escalation.
-func (s *IdentityService) CreateGrant(ctx context.Context, grantorID int64, req CreateGrantRequest) (*models.RoleGrant, error) {
-	if !IsValidPermission(req.Permission) {
-		return nil, fmt.Errorf("unknown permission: %s", req.Permission)
-	}
-	if err := s.CheckPermission(ctx, grantorID, req.Permission); err != nil {
-		return nil, fmt.Errorf("cannot grant a permission you do not hold: %s", req.Permission)
-	}
-	target, err := s.repo.GetUserByID(ctx, req.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("user not found")
-	}
-	if target.OrganizationID == nil {
-		return nil, fmt.Errorf("target user has no organization")
-	}
-	return s.repo.CreateRoleGrant(ctx, *target.OrganizationID, req.UserID, req.Permission, req.ScopeType, req.ScopeID, &grantorID)
-}
-
-// RevokeGrant removes a direct permission grant by ID.
-func (s *IdentityService) RevokeGrant(ctx context.Context, grantID int64) error {
-	return s.repo.DeleteRoleGrant(ctx, grantID)
-}
-
-// ListUserGrants returns all direct permission grants for a user.
-func (s *IdentityService) ListUserGrants(ctx context.Context, userID int64) ([]*models.RoleGrant, error) {
-	grants, err := s.repo.ListUserGrants(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	if grants == nil {
-		grants = []*models.RoleGrant{}
-	}
-	return grants, nil
 }
