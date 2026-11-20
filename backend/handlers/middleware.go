@@ -64,6 +64,7 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 	// Impersonation tokens carry an org override; use it as the effective org.
 	if apiToken != nil && apiToken.ImpersonatedOrgID != nil {
 		c.Locals("orgID", apiToken.ImpersonatedOrgID)
+		c.Locals("actingAsOrg", *apiToken.ImpersonatedOrgID)
 	} else {
 		c.Locals("orgID", user.OrganizationID)
 	}
@@ -105,6 +106,11 @@ func (h *Handler) AuthMiddleware(c *fiber.Ctx) error {
 func (h *Handler) PlatformAdminMiddleware(c *fiber.Ctx) error {
 	if ok, _ := c.Locals("isPlatformAdmin").(bool); !ok {
 		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "platform admin access required")
+	}
+	// An impersonation token is confined to the target organization; it must
+	// not reach cross-tenant endpoints or mint further impersonation tokens.
+	if _, acting := c.Locals("actingAsOrg").(int64); acting {
+		return RespondError(c, fiber.StatusForbidden, ErrForbidden, "platform endpoints are not available with an impersonation token")
 	}
 	return c.Next()
 }
@@ -152,6 +158,7 @@ func (h *Handler) OptionalAuthMiddleware(c *fiber.Ctx) error {
 		c.Locals("isPlatformAdmin", user.IsPlatformAdmin)
 		if apiToken != nil && apiToken.ImpersonatedOrgID != nil {
 			c.Locals("orgID", apiToken.ImpersonatedOrgID)
+			c.Locals("actingAsOrg", *apiToken.ImpersonatedOrgID)
 		} else {
 			c.Locals("orgID", user.OrganizationID)
 		}

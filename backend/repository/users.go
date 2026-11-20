@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"padduck/models"
 )
 
@@ -145,8 +147,14 @@ func (r *Repository) DeleteUser(ctx context.Context, userID int64) error {
 }
 
 func (r *Repository) SetPlatformAdmin(ctx context.Context, userID int64, val bool) error {
-	_, err := r.db.Exec(ctx, `UPDATE users SET is_platform_admin = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userID, val)
-	return err
+	tag, err := r.db.Exec(ctx, `UPDATE users SET is_platform_admin = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, userID, val)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }
 
 func (r *Repository) CountUsersInOrg(ctx context.Context, orgID int64) (int64, error) {

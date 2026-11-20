@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"context"
+	"errors"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5"
 	"padduck/services"
 )
 
@@ -26,16 +29,28 @@ func (h *Handler) GetPlatformOrganization(c *fiber.Ctx) error {
 	if err != nil {
 		return RespondError(c, fiber.StatusNotFound, ErrNotFound, "organization not found")
 	}
-	userCount, err := h.service.GetRepository().CountUsersInOrg(c.Context(), id)
-	if err != nil {
-		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to count users")
+	repo := h.service.GetRepository()
+	ctx := c.Context()
+	stats := fiber.Map{}
+	counters := []struct {
+		key string
+		fn  func(context.Context, int64) (int64, error)
+	}{
+		{"user_count", repo.CountUsersInOrg},
+		{"subnet_count", repo.CountSubnetsByOrg},
+		{"ip_address_count", repo.CountIPAddressesByOrg},
+		{"api_token_count", repo.CountAPITokensByOrg},
+		{"webhook_count", repo.CountWebhooksByOrg},
 	}
-	return c.JSON(fiber.Map{
-		"organization": org,
-		"stats": fiber.Map{
-			"user_count": userCount,
-		},
-	})
+	for _, ct := range counters {
+		n, err := ct.fn(ctx, id)
+		if err != nil {
+			reqLogger(c).Error("platform org stats", "stat", ct.key, "error", err)
+			return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to compute organization stats")
+		}
+		stats[ct.key] = n
+	}
+	return c.JSON(fiber.Map{"organization": org, "stats": stats})
 }
 
 // GetPlatformAuditLog handles GET /api/v1/platform/audit-log
@@ -45,10 +60,12 @@ func (h *Handler) GetPlatformAuditLog(c *fiber.Ctx) error {
 	filter.AllOrgs = true
 	filter.OrgID = nil
 	if orgStr := c.Query("org_id"); orgStr != "" {
-		if orgID, err := strconv.ParseInt(orgStr, 10, 64); err == nil {
-			filter.OrgID = &orgID
-			filter.AllOrgs = false
+		orgID, err := strconv.ParseInt(orgStr, 10, 64)
+		if err != nil || orgID <= 0 {
+			return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid org_id")
 		}
+		filter.OrgID = &orgID
+		filter.AllOrgs = false
 	}
 
 	logs, err := h.service.Audit.ListAuditLogs(c.Context(), filter)
@@ -123,7 +140,13 @@ func (h *Handler) SetPlatformAdmin(c *fiber.Ctx) error {
 	if err := c.BodyParser(&req); err != nil {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
+	if caller, _ := c.Locals("userID").(int64); caller == id && !req.IsPlatformAdmin {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "you cannot remove your own platform admin access")
+	}
 	if err := h.service.GetRepository().SetPlatformAdmin(c.Context(), id, req.IsPlatformAdmin); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return RespondError(c, fiber.StatusNotFound, ErrNotFound, "user not found")
+		}
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "failed to update user")
 	}
 	uid, username := auditUserFromCtx(c)
