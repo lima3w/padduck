@@ -228,3 +228,13 @@ export const getOrgSettings = () => api.get('/admin/organization/settings')
 export const updateOrgSettings = (data) => api.put('/admin/organization/settings', data)
 
 export const testOrgSMTP = (to) => api.post('/admin/organization/settings/test-email', { to })
+
+// Desired-state intents (#13)
+export const listIntents = (params = {}) => api.get('/intents', { params })
+
+export const getIntentDiff = (resourceType, resourceId) =>
+  api.get('/intents/diff', { params: { resource_type: resourceType, resource_id: resourceId } })
+
+export const approveIntent = (id, note) => api.post(`/intents/${id}/approve`, { note })
+
+export const rejectIntent = (id, note) => api.post(`/intents/${id}/reject`, { note })

@@ -10,6 +10,7 @@ import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
 import CustomFieldForm from '../components/CustomFieldForm'
 import ObservedStatePanel from '../components/ObservedStatePanel'
+import IntentPanel from '../components/IntentPanel'
 import { downloadFile } from '../utils/download'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -602,6 +603,10 @@ export default function IPAddressesPage() {
       </div>
 
       <ErrorBanner error={error} />
+
+      <div className="mb-4 empty:hidden">
+        <IntentPanel resourceType="subnet" resourceId={subnetID} isAdmin={isAdmin} onApplied={load} />
+      </div>
 
       {activeTab === 'delegations' && <DelegationsTab subnetId={subnetID} />}
 
@@ -1260,6 +1265,9 @@ export default function IPAddressesPage() {
             <div className="border-t pt-3 empty:hidden">
               <DHCPLeasesSection ipId={modal.meta.id} compact />
               <AutomationExecutions resourceType="ip_address" resourceId={modal.meta.id} hideWhenEmpty />
+            </div>
+            <div className="border-t pt-3 empty:hidden">
+              <IntentPanel resourceType="ip_address" resourceId={modal.meta.id} isAdmin={isAdmin} onApplied={load} />
             </div>
             {isAdmin && (
               <div className="border-t pt-3">

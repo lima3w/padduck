@@ -403,7 +403,15 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Post("/drift/:id/dismiss", h.DismissDrift)
 	admin.Post("/drift/:id/escalate", h.EscalateDrift)
 
-	// Intent model (#13)
+	// Intent model (#13). Permissions are checked per handler: resource history
+	// and diff need the resource's read permission, review needs admin.
+	protected.Get("/intents", h.ListIntents)
+	protected.Get("/intents/diff", h.GetIntentDiff)
+	protected.Get("/intents/:id", h.GetIntent)
+	protected.Post("/intents", h.SubmitIntent)
+	protected.Post("/intents/:id/approve", h.ApproveIntent)
+	protected.Post("/intents/:id/reject", h.RejectIntent)
+	// Legacy admin paths kept for existing API clients.
 	admin.Get("/intents", h.ListIntents)
 	admin.Get("/intents/:id", h.GetIntent)
 	admin.Post("/intents", h.SubmitIntent)

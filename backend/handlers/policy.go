@@ -41,7 +41,7 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 		stateMap := toStateMap(desiredState)
 		uid := callerID(c)
 		intent, intentErr := h.ops.Intent.SubmitIntent(
-			c.Context(), orgIDFromCtx(c), workflow, nil, "create", stateMap, uid, true,
+			c.Context(), workflow, nil, "create", stateMap, uid, true,
 		)
 		if intentErr != nil {
 			_ = RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, intentErr.Error())

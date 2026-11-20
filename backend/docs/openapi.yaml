@@ -3505,6 +3505,87 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api/v1/intents:
+    get:
+      tags: [Intents]
+      summary: List desired-state intents
+      description: Without resource_id, requires admin. With resource_type and resource_id, requires read permission on that resource.
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [pending, approved, applied, rejected, failed]}}
+        - {name: resource_type, in: query, schema: {type: string, enum: [subnet, ip_address, device, vlan]}}
+        - {name: resource_id, in: query, schema: {type: integer}}
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "403":
+          description: Permission denied.
+    post:
+      tags: [Intents]
+      summary: Submit a desired-state change
+      description: Needs the permission to make the same change directly. Applied synchronously when intent_auto_approve is true (the default); otherwise left pending for an admin.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/OK"
+        "400":
+          description: Unknown resource_type or operation, or missing resource_id.
+        "403":
+          description: Permission denied.
+        "422":
+          description: The change was approved but could not be applied; the intent is recorded as failed.
+
+  /api/v1/intents/diff:
+    get:
+      tags: [Intents]
+      summary: Current state versus the latest pending intent
+      parameters:
+        - {name: resource_type, in: query, required: true, schema: {type: string, enum: [subnet, ip_address, device, vlan]}}
+        - {name: resource_id, in: query, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/intents/{id}:
+    get:
+      tags: [Intents]
+      summary: Get an intent (admin, or its submitter)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          description: Not found in the caller's organization.
+
+  /api/v1/intents/{id}/approve:
+    post:
+      tags: [Intents]
+      summary: Approve a pending intent and apply it (admin)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "409":
+          description: The intent is not pending.
+
+  /api/v1/intents/{id}/reject:
+    post:
+      tags: [Intents]
+      summary: Reject a pending intent (admin)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "409":
+          description: The intent is not pending.
+
   /api/v1/platform/organizations:
     get:
       tags: [Platform]
