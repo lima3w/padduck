@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.34.49
+
+### Fixed
+- **Impersonated actions were not attributed** (#11): audit entries written while using a platform impersonation token now carry `acting_as` (the organization) and `actor` (the platform admin) in their new values, so support actions are distinguishable from the tenant's own.
+- **Impersonation tokens could reach cross-tenant endpoints:** an impersonation token could call `/platform/*`, including minting more impersonation tokens or granting platform admin. Those routes now return 403 for them.
+- **`PUT /platform/users/:id/platform-admin`:** an unknown user returned success and a platform admin could remove their own access, risking lockout. It now returns 404 and 400 respectively.
+- **`GET /platform/audit-log?org_id=`:** a malformed `org_id` was ignored and returned every organization's logs. It now returns 400.
+
+### Added
+- `GET /platform/organizations/:id` stats now include subnets, IP addresses, API tokens and webhooks alongside users.
+- The `/platform/*` endpoints are documented in the OpenAPI spec.
+
 ## v1.34.48
 
 ### Fixed

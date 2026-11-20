@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -101,4 +102,17 @@ func TestTenantAwareFeatures_Integration(t *testing.T) {
 	all, err := r.ListAuditLogs(b, &models.AuditLogFilter{Action: "tf_action_" + suffix, Limit: 50, AllOrgs: true})
 	require.NoError(t, err)
 	assert.Len(t, all, 2, "platform all-orgs view sees both")
+}
+
+func TestSetPlatformAdmin_Integration(t *testing.T) {
+	r := testRepo(t)
+	ctx := context.Background()
+
+	require.ErrorIs(t, r.SetPlatformAdmin(ctx, 999999, true), pgx.ErrNoRows)
+
+	uid := createTestUser(t, r)
+	require.NoError(t, r.SetPlatformAdmin(ctx, uid, true))
+	u, err := r.GetUserByID(ctx, uid)
+	require.NoError(t, err)
+	assert.True(t, u.IsPlatformAdmin)
 }

@@ -3505,6 +3505,70 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api/v1/platform/organizations:
+    get:
+      tags: [Platform]
+      summary: List all organizations (platform admin)
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "403":
+          description: Caller is not a platform admin, or is using an impersonation token.
+
+  /api/v1/platform/organizations/{id}:
+    get:
+      tags: [Platform]
+      summary: Organization detail with usage stats (platform admin)
+      description: Returns the organization and counts of users, subnets, IP addresses, API tokens and webhooks.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/platform/audit-log:
+    get:
+      tags: [Platform]
+      summary: Cross-organization audit log (platform admin)
+      description: Reads every organization's audit log, or one organization's when org_id is given. A malformed org_id returns 400.
+      parameters:
+        - name: org_id
+          in: query
+          schema: {type: integer}
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/platform/impersonate:
+    post:
+      tags: [Platform]
+      summary: Mint a one-hour token scoped to an organization (platform admin)
+      description: Actions taken with the token are audit-logged under the operator's identity with acting_as and actor fields. The token cannot call /platform endpoints.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/platform/users/{id}/platform-admin:
+    put:
+      tags: [Platform]
+      summary: Grant or revoke platform admin (platform admin)
+      description: Returns 404 for an unknown user and 400 when a caller removes their own access.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
   /api/v1/platform/organizations/{id}/settings:
     get:
       tags: [Platform]

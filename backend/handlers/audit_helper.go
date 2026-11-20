@@ -13,7 +13,31 @@ func (h *Handler) auditLog(c *fiber.Ctx, entry services.AuditEntry) {
 	if entry.OrgID == nil {
 		entry.OrgID = orgIDFromCtx(c)
 	}
+	// Actions taken with a platform impersonation token are attributed to the
+	// real operator (entry.UserID) and tagged with the organization acted on.
+	if acting, ok := c.Locals("actingAsOrg").(int64); ok {
+		entry.NewValues = tagImpersonation(entry.NewValues, acting, entry.UserID)
+	}
 	h.service.Audit.Log(c.Context(), entry)
+}
+
+// tagImpersonation adds acting_as and actor fields to an audit entry's new values.
+func tagImpersonation(nv interface{}, actingAs int64, actor *int64) map[string]interface{} {
+	out := map[string]interface{}{}
+	switch v := nv.(type) {
+	case nil:
+	case map[string]interface{}:
+		for k, val := range v {
+			out[k] = val
+		}
+	default:
+		out["data"] = v
+	}
+	out["acting_as"] = actingAs
+	if actor != nil {
+		out["actor"] = *actor
+	}
+	return out
 }
 
 // auditUserFromCtx extracts the authenticated user's ID and username from context.
