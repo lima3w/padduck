@@ -2965,6 +2965,29 @@
   "permissionDenied": {
     "defaultMessage": "You do not have permission to view this page."
   },
+  "intentPanel": {
+    "pendingTitle": "Pending change: {{operation}}",
+    "submittedAt": "Submitted {{date}}. It is not applied until approved.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "field": "Field",
+    "current": "Current",
+    "desired": "Desired",
+    "actionFailed": "The intent could not be processed.",
+    "historyTitle": "Intent history ({{count}})",
+    "operation": {
+      "create": "create",
+      "update": "update",
+      "delete": "delete"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "applied": "Applied",
+      "rejected": "Rejected",
+      "failed": "Failed"
+    }
+  },
   "changeHistory": {
     "justNow": "just now",
     "minutesAgo": "{{count}}m ago",

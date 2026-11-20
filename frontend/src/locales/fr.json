@@ -130,6 +130,29 @@
     "sending": "Envoi…",
     "genericError": "Échec de l'envoi de l'e-mail. Veuillez réessayer."
   },
+  "intentPanel": {
+    "pendingTitle": "Modification en attente : {{operation}}",
+    "submittedAt": "Soumise le {{date}}. Elle n'est appliquée qu'après approbation.",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "field": "Champ",
+    "current": "Actuel",
+    "desired": "Souhaité",
+    "actionFailed": "L'intention n'a pas pu être traitée.",
+    "historyTitle": "Historique des intentions ({{count}})",
+    "operation": {
+      "create": "création",
+      "update": "mise à jour",
+      "delete": "suppression"
+    },
+    "status": {
+      "pending": "En attente",
+      "approved": "Approuvée",
+      "applied": "Appliquée",
+      "rejected": "Rejetée",
+      "failed": "Échec"
+    }
+  },
   "orgTab": {
     "tabLabel": "Organization",
     "loadFailed": "Failed to load organization settings: ",

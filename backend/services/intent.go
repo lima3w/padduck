@@ -3,8 +3,12 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sort"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"padduck/models"
 )
@@ -12,7 +16,8 @@ import (
 type intentRepo interface {
 	CreateIntent(ctx context.Context, intent *models.ResourceIntent) (*models.ResourceIntent, error)
 	GetIntent(ctx context.Context, id int64) (*models.ResourceIntent, error)
-	ListIntents(ctx context.Context, orgID *int64, status, resourceType string) ([]*models.ResourceIntent, error)
+	ListIntents(ctx context.Context, status, resourceType string, resourceID *int64) ([]*models.ResourceIntent, error)
+	TransitionPendingIntent(ctx context.Context, id int64, status string, reviewedBy *int64, note *string, reviewedAt time.Time) (*models.ResourceIntent, error)
 	UpdateIntentStatus(ctx context.Context, id int64, status string, reviewedBy *int64, note *string, reviewedAt, appliedAt *time.Time) error
 }
 
@@ -20,6 +25,9 @@ type intentIPAM interface {
 	CreateSubnet(ctx context.Context, networkID int64, networkAddress string, prefixLength int, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields ...map[string]*string) (*models.Subnet, error)
 	UpdateSubnet(ctx context.Context, id int64, description string, gateway *string, autoFirst, autoLast bool, locationID *int64, nameserverID *int64, vlanID *int64, customFields map[string]*string, technitiumScopeName ...string) (*models.Subnet, error)
 	DeleteSubnet(ctx context.Context, id int64) error
+	GetSubnet(ctx context.Context, id int64) (*models.Subnet, error)
+	GetIPAddress(ctx context.Context, id int64) (*models.IPAddress, error)
+	GetVLAN(ctx context.Context, id int64) (*models.VLAN, error)
 	CreateIPAddress(ctx context.Context, subnetID int64, address, hostname string, status string, tagID *int64, macAddress, ptrRecord, dnsName *string, customFields ...map[string]*string) (*models.IPAddress, error)
 	UpdateIPAddressMeta(ctx context.Context, id int64, hostname string, tagID *int64, macAddress, ptrRecord, dnsName *string, customFields ...map[string]*string) (*models.IPAddress, error)
 	DeleteIPAddress(ctx context.Context, id int64) error
@@ -32,6 +40,7 @@ type intentInfra interface {
 	CreateDevice(ctx context.Context, req *DeviceCreateRequest) (*models.Device, error)
 	UpdateDevice(ctx context.Context, id int64, req *DeviceUpdateRequest) (*models.Device, error)
 	DeleteDevice(ctx context.Context, id int64) error
+	GetDevice(ctx context.Context, id int64) (*models.Device, error)
 }
 
 type IntentService struct {
@@ -53,13 +62,67 @@ func (s *IntentService) isAutoApprove(ctx context.Context) bool {
 	return false
 }
 
-// SubmitIntent records a desired-state change. When auto-approve is enabled the
-// intent is applied synchronously and transitions straight to "applied".
-// Pass forceManual=true to skip auto-approve and always leave the intent pending
-// (used when a policy decision requires manual review).
-func (s *IntentService) SubmitIntent(ctx context.Context, orgID *int64, resourceType string, resourceID *int64, operation string, desiredState map[string]any, submittedBy *int64, forceManual ...bool) (*models.ResourceIntent, error) {
-	if resourceType == "" {
-		return nil, fmt.Errorf("resource_type is required")
+// ErrIntentNotPending is returned when approving or rejecting an intent that is
+// missing, belongs to another organization, or has already been reviewed.
+var ErrIntentNotPending = errors.New("intent is not pending")
+
+// IntentResourceTypes lists the resource types the intent model can apply.
+var IntentResourceTypes = []string{"subnet", "ip_address", "device", "vlan"}
+
+// IntentPermission returns the permission a caller needs to propose the given
+// operation on a resource type. Applying an intent never grants more than the
+// submitter could do directly.
+func IntentPermission(resourceType, operation string) (string, bool) {
+	del := operation == "delete"
+	switch resourceType {
+	case "subnet":
+		if del {
+			return PermV2SubnetDelete, true
+		}
+		return PermV2SubnetWrite, true
+	case "ip_address":
+		if del {
+			return PermV2IPRelease, true
+		}
+		return PermV2IPAssign, true
+	case "vlan":
+		if del {
+			return PermV2VLANDelete, true
+		}
+		return PermV2VLANWrite, true
+	case "device":
+		if del {
+			return PermV2DeviceDelete, true
+		}
+		return PermV2DeviceWrite, true
+	}
+	return "", false
+}
+
+// IntentReadPermission returns the permission needed to read a resource type's
+// intent history.
+func IntentReadPermission(resourceType string) (string, bool) {
+	switch resourceType {
+	case "subnet":
+		return PermV2SubnetRead, true
+	case "ip_address":
+		return PermV2IPRead, true
+	case "vlan":
+		return PermV2VLANRead, true
+	case "device":
+		return PermV2DeviceRead, true
+	}
+	return "", false
+}
+
+// SubmitIntent records a desired-state change in the caller's organization.
+// When auto-approve is enabled the intent is applied synchronously and
+// transitions straight to "applied". Pass forceManual=true to skip auto-approve
+// and always leave the intent pending (used when a policy decision requires
+// manual review).
+func (s *IntentService) SubmitIntent(ctx context.Context, resourceType string, resourceID *int64, operation string, desiredState map[string]any, submittedBy *int64, forceManual ...bool) (*models.ResourceIntent, error) {
+	if _, ok := IntentPermission(resourceType, operation); !ok {
+		return nil, fmt.Errorf("resource_type must be one of subnet, ip_address, device, vlan")
 	}
 	switch operation {
 	case "create", "update", "delete":
@@ -69,15 +132,17 @@ func (s *IntentService) SubmitIntent(ctx context.Context, orgID *int64, resource
 	if operation != "create" && resourceID == nil {
 		return nil, fmt.Errorf("resource_id is required for %s", operation)
 	}
+	if desiredState == nil {
+		desiredState = map[string]any{}
+	}
 
 	intent := &models.ResourceIntent{
-		OrganizationID: orgID,
-		ResourceType:   resourceType,
-		ResourceID:     resourceID,
-		Operation:      operation,
-		DesiredState:   desiredState,
-		Status:         "pending",
-		SubmittedBy:    submittedBy,
+		ResourceType: resourceType,
+		ResourceID:   resourceID,
+		Operation:    operation,
+		DesiredState: desiredState,
+		Status:       "pending",
+		SubmittedBy:  submittedBy,
 	}
 
 	created, err := s.repo.CreateIntent(ctx, intent)
@@ -87,45 +152,27 @@ func (s *IntentService) SubmitIntent(ctx context.Context, orgID *int64, resource
 
 	manual := len(forceManual) > 0 && forceManual[0]
 	if !manual && s.isAutoApprove(ctx) {
-		return s.approve(ctx, created, submittedBy, nil)
+		return s.approve(ctx, created.ID, submittedBy, nil)
 	}
 	return created, nil
 }
 
-// ApproveIntent transitions an intent to approved and applies the change.
+// ApproveIntent moves a pending intent to approved and applies the change. Only
+// one caller can win the transition, so a change is never applied twice.
 func (s *IntentService) ApproveIntent(ctx context.Context, id int64, reviewerID *int64, note string) (*models.ResourceIntent, error) {
-	intent, err := s.repo.GetIntent(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if intent.Status != "pending" {
-		return nil, fmt.Errorf("intent is not pending (status: %s)", intent.Status)
-	}
-	var notePtr *string
-	if note != "" {
-		notePtr = &note
-	}
-	return s.approve(ctx, intent, reviewerID, notePtr)
+	return s.approve(ctx, id, reviewerID, optNote(note))
 }
 
-// RejectIntent transitions a pending intent to rejected.
+// RejectIntent transitions a pending intent to rejected without applying it.
 func (s *IntentService) RejectIntent(ctx context.Context, id int64, reviewerID *int64, note string) (*models.ResourceIntent, error) {
-	intent, err := s.repo.GetIntent(ctx, id)
+	intent, err := s.repo.TransitionPendingIntent(ctx, id, "rejected", reviewerID, optNote(note), time.Now())
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrIntentNotPending
+		}
 		return nil, err
 	}
-	if intent.Status != "pending" {
-		return nil, fmt.Errorf("intent is not pending (status: %s)", intent.Status)
-	}
-	now := time.Now()
-	var notePtr *string
-	if note != "" {
-		notePtr = &note
-	}
-	if err := s.repo.UpdateIntentStatus(ctx, id, "rejected", reviewerID, notePtr, &now, nil); err != nil {
-		return nil, err
-	}
-	return s.repo.GetIntent(ctx, id)
+	return intent, nil
 }
 
 // GetIntent returns a single intent by ID.
@@ -133,9 +180,10 @@ func (s *IntentService) GetIntent(ctx context.Context, id int64) (*models.Resour
 	return s.repo.GetIntent(ctx, id)
 }
 
-// ListIntents returns intents filtered by optional org, status, and resource_type.
-func (s *IntentService) ListIntents(ctx context.Context, orgID *int64, status, resourceType string) ([]*models.ResourceIntent, error) {
-	items, err := s.repo.ListIntents(ctx, orgID, status, resourceType)
+// ListIntents returns the caller's organization's intents, filtered by optional
+// status, resource type and resource ID.
+func (s *IntentService) ListIntents(ctx context.Context, status, resourceType string, resourceID *int64) ([]*models.ResourceIntent, error) {
+	items, err := s.repo.ListIntents(ctx, status, resourceType, resourceID)
 	if err != nil {
 		return nil, err
 	}
@@ -145,16 +193,104 @@ func (s *IntentService) ListIntents(ctx context.Context, orgID *int64, status, r
 	return items, nil
 }
 
-func (s *IntentService) approve(ctx context.Context, intent *models.ResourceIntent, reviewerID *int64, note *string) (*models.ResourceIntent, error) {
-	now := time.Now()
-	if err := s.applyIntent(ctx, intent); err != nil {
-		_ = s.repo.UpdateIntentStatus(ctx, intent.ID, "failed", reviewerID, ptrStr(err.Error()), &now, nil)
-		return nil, fmt.Errorf("apply failed: %w", err)
+// IntentFieldChange is one field whose desired value differs from the current one.
+type IntentFieldChange struct {
+	Field   string `json:"field"`
+	Current any    `json:"current"`
+	Desired any    `json:"desired"`
+}
+
+// CurrentVsDesired pairs a resource's authoritative state with its latest
+// pending intent for diff display.
+type CurrentVsDesired struct {
+	Current map[string]any         `json:"current"`
+	Pending *models.ResourceIntent `json:"pending,omitempty"`
+	Changes []IntentFieldChange    `json:"changes"`
+}
+
+// GetCurrentVsDesired returns the resource as it is now, its latest pending
+// intent, and the fields that intent would change.
+func (s *IntentService) GetCurrentVsDesired(ctx context.Context, resourceType string, resourceID int64) (*CurrentVsDesired, error) {
+	var (
+		cur any
+		err error
+	)
+	switch resourceType {
+	case "subnet":
+		cur, err = s.ipam.GetSubnet(ctx, resourceID)
+	case "ip_address":
+		cur, err = s.ipam.GetIPAddress(ctx, resourceID)
+	case "vlan":
+		cur, err = s.ipam.GetVLAN(ctx, resourceID)
+	case "device":
+		cur, err = s.infra.GetDevice(ctx, resourceID)
+	default:
+		return nil, fmt.Errorf("unsupported resource_type: %s", resourceType)
 	}
-	if err := s.repo.UpdateIntentStatus(ctx, intent.ID, "applied", reviewerID, note, &now, &now); err != nil {
+	if err != nil {
 		return nil, err
 	}
-	return s.repo.GetIntent(ctx, intent.ID)
+	out := &CurrentVsDesired{Changes: []IntentFieldChange{}}
+	if err := remarshal(cur, &out.Current); err != nil {
+		return nil, err
+	}
+
+	pending, err := s.repo.ListIntents(ctx, "pending", resourceType, &resourceID)
+	if err != nil {
+		return nil, err
+	}
+	if len(pending) == 0 {
+		return out, nil
+	}
+	out.Pending = pending[0]
+	if out.Pending.Operation == "update" {
+		keys := make([]string, 0, len(out.Pending.DesiredState))
+		for k := range out.Pending.DesiredState {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			want := out.Pending.DesiredState[k]
+			have := out.Current[k]
+			if !jsonEqual(have, want) {
+				out.Changes = append(out.Changes, IntentFieldChange{Field: k, Current: have, Desired: want})
+			}
+		}
+	}
+	return out, nil
+}
+
+func jsonEqual(a, b any) bool {
+	x, _ := json.Marshal(a)
+	y, _ := json.Marshal(b)
+	return string(x) == string(y)
+}
+
+func optNote(note string) *string {
+	if note == "" {
+		return nil
+	}
+	return &note
+}
+
+func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64, note *string) (*models.ResourceIntent, error) {
+	now := time.Now()
+	intent, err := s.repo.TransitionPendingIntent(ctx, id, "approved", reviewerID, note, now)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrIntentNotPending
+		}
+		return nil, err
+	}
+	if err := s.applyIntent(ctx, intent); err != nil {
+		_ = s.repo.UpdateIntentStatus(ctx, id, "failed", reviewerID, ptrStr(err.Error()), &now, nil)
+		return nil, fmt.Errorf("apply failed: %w", err)
+	}
+	applied := time.Now()
+	if err := s.repo.UpdateIntentStatus(ctx, id, "applied", reviewerID, note, &now, &applied); err != nil {
+		return nil, err
+	}
+	return s.repo.GetIntent(ctx, id)
 }
 
 func (s *IntentService) applyIntent(ctx context.Context, intent *models.ResourceIntent) error {

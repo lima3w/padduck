@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.34.50
+
+### Security
+- **Intent endpoints had no permission checks** (#13, found while auditing): any signed-in user, including a viewer, could submit an intent and, with the default auto-approve, have a subnet, IP address, VLAN or device created, changed or deleted, bypassing RBAC. Submitting now needs the permission to make the same change directly, reviewing needs admin, and reading a resource's history needs that resource's read permission.
+- **Intents were not organization-isolated:** `resource_intents.organization_id` was nullable and every query ignored the caller's organization, so one organization could list, approve or reject another's intents. Queries are now organization-scoped; the column is backfilled and required (migration `20260722_001`).
+
+### Fixed
+- Approving or rejecting is now atomic: two reviewers can no longer both act on one pending intent, so a change is never applied twice. A second attempt returns 409.
+- Intents now pass through the `approved` state while applying, and a failed apply is recorded as `failed` (422) instead of being retried.
+- Unknown `resource_type` values are rejected at submit time with 400.
+
+### Added
+- Intent history and a pending-change banner on subnet and IP address pages. The banner shows a current-versus-desired field diff, and admins can approve or reject in place.
+- `GET /intents/diff` (`GetCurrentVsDesired`) and per-resource history via `GET /intents?resource_type=&resource_id=`. The intent endpoints now live at `/api/v1/intents`; the `/api/v1/admin/intents` paths still work.
+- Intent submit, approve and reject are audit-logged.
+- The intent endpoints are documented in the OpenAPI spec, and tests cover the approve, reject, double-review, failure, diff and cross-organization flows.
+
 ## v1.34.49
 
 ### Fixed
