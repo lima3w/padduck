@@ -15,11 +15,11 @@ function DeltaBadge({ delta }) {
 }
 
 function PctBar({ pct }) {
-  const colour = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-500' : 'bg-green-500'
+  const color = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-yellow-500' : 'bg-green-500'
   return (
     <div className="flex items-center gap-2">
       <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-        <div className={`${colour} h-1.5 rounded-full`} style={{ width: `${Math.min(pct ?? 0, 100)}%` }} />
+        <div className={`${color} h-1.5 rounded-full`} style={{ width: `${Math.min(pct ?? 0, 100)}%` }} />
       </div>
       <span className="text-sm">{(pct ?? 0).toFixed(1)}%</span>
     </div>

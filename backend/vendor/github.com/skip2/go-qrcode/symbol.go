@@ -153,7 +153,7 @@ func (m *symbol) penaltyScore() int {
 }
 
 // penalty1 returns the penalty score for "adjacent modules in row/column with
-// same colour".
+// same color".
 //
 // The numbers of adjacent matching modules and scores are:
 // 0-5: score = 0
@@ -206,7 +206,7 @@ func (m *symbol) penalty1() int {
 	return penalty
 }
 
-// penalty2 returns the penalty score for "block of modules in the same colour".
+// penalty2 returns the penalty score for "block of modules in the same color".
 //
 // m*n: score = penaltyWeight2 * (m-1) * (n-1).
 func (m *symbol) penalty2() int {

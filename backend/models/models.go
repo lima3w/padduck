@@ -301,11 +301,11 @@ type NetworkTopology struct {
 	Edges []*TopologyEdge `json:"edges"`
 }
 
-// IPTag represents a named, colour-coded label for IP addresses
+// IPTag represents a named, color-coded label for IP addresses
 type IPTag struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
-	Colour      string    `json:"colour"`
+	Color      string    `json:"color"`
 	Description *string   `json:"description,omitempty"`
 	IsSystem    bool      `json:"is_system"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -399,7 +399,7 @@ type VLANGroup struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
 	Description *string   `json:"description,omitempty"`
-	Colour      *string   `json:"colour,omitempty"`
+	Color      *string   `json:"color,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

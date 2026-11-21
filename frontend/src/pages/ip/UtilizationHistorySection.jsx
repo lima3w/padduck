@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const HISTORY_DAYS_OPTIONS = [7, 30, 90, 365]
 
-export default function UtilisationHistorySection({ subnetId }) {
+export default function UtilizationHistorySection({ subnetId }) {
   const { t } = useTranslation()
   const [historyDays, setHistoryDays] = useState(30)
   const [historyData, setHistoryData] = useState([])

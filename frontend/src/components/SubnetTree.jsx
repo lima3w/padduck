@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import TableActions from './TableActions'
 
 function UtilBar({ pct }) {
-  const colour =
+  const color =
     pct > 90 ? 'bg-red-500' :
     pct > 70 ? 'bg-yellow-500' :
     'bg-green-500'
@@ -11,7 +11,7 @@ function UtilBar({ pct }) {
     <div className="flex items-center gap-1 w-28">
       <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
         <div
-          className={`${colour} h-1.5 rounded-full`}
+          className={`${color} h-1.5 rounded-full`}
           style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>

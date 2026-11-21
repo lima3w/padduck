@@ -16,11 +16,11 @@ const EMPTY_FORM = { vlanId: '', name: '', description: '', domainId: '', groupI
 // VLAN model has no JSON tags — Go field names come through as-is (PascalCase):
 //   ID, VlanID, DomainID, GroupID, VRFID, Name, Description, CreatedAt, UpdatedAt
 // VLANDomain has json tags → snake_case → camelCase interceptor: id, name, description, createdAt
-// VLANGroup has json tags → snake_case → camelCase interceptor: id, name, colour, description, createdAt
+// VLANGroup has json tags → snake_case → camelCase interceptor: id, name, color, description, createdAt
 
 function GroupBadge({ group }) {
   if (!group) return <span className="text-gray-400 text-xs">—</span>
-  const hex = (group.colour || '#6B7280').replace('#', '')
+  const hex = (group.color || '#6B7280').replace('#', '')
   const r = parseInt(hex.substring(0, 2), 16)
   const g = parseInt(hex.substring(2, 4), 16)
   const b = parseInt(hex.substring(4, 6), 16)
@@ -29,7 +29,7 @@ function GroupBadge({ group }) {
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${textClass}`}
-      style={{ backgroundColor: group.colour || '#6B7280' }}
+      style={{ backgroundColor: group.color || '#6B7280' }}
     >
       {group.name}
     </span>

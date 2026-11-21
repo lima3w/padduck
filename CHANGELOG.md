@@ -1,5 +1,20 @@
 # Changelog
 
+## v2.0.0
+
+### Breaking changes
+British spellings in the public API and database are normalized to American English (#146). There is no compatibility alias for the old names. See the [migration guide](docs/migration-v1-to-v2.md#field-renames-british--american-spelling).
+
+- **`colour` → `color`** in IP tag and VLAN group request and response bodies (`/api/v1/tags`, `/api/v1/vlan-groups` and any response that embeds a tag or VLAN group).
+- **Scheduled report type `utilisation_summary` → `utilization_summary`.** Existing scheduled reports are migrated.
+- **Admin config key `utilisation_snapshot_interval_hours` → `utilization_snapshot_interval_hours`.** An existing value is carried over.
+- **Database:** `ip_tags.colour` and `vlan_groups.colour` become `color`; the table `subnet_utilisation_history` becomes `subnet_utilization_history` and its column `utilisation_pct` becomes `utilization_pct` (migration `20260723_001`, reversible, no data loss). Direct SQL consumers must update.
+
+### Changed
+- Frontend labels, locale keys and the PDF/report titles use American spelling (Color, Utilization); the `fr` locale is unaffected.
+- Removed a dead `groupColour` reference from the VLAN usage report page; the report never returned that field.
+- The compatibility registry and migration guide list every rename.
+
 ## v1.34.51
 
 ### Security

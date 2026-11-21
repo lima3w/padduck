@@ -14,7 +14,7 @@ import (
 // RecordUtilizationSnapshot inserts a utilization data point for a subnet.
 func (r *Repository) RecordUtilizationSnapshot(ctx context.Context, subnetID int64, used, total int, pct float64) error {
 	_, err := r.sExec(ctx,
-		`INSERT INTO subnet_utilisation_history (subnet_id, used_count, total_count, utilisation_pct)
+		`INSERT INTO subnet_utilization_history (subnet_id, used_count, total_count, utilization_pct)
 		 VALUES ($1, $2, $3, $4)`,
 		subnetID, used, total, pct,
 	)
@@ -24,8 +24,8 @@ func (r *Repository) RecordUtilizationSnapshot(ctx context.Context, subnetID int
 // GetUtilizationHistory returns ordered utilization data points for a subnet over the last N days.
 func (r *Repository) GetUtilizationHistory(ctx context.Context, subnetID int64, days int) ([]*models.SubnetUtilizationPoint, error) {
 	rows, err := r.sQuery(ctx,
-		`SELECT recorded_at, used_count, total_count, utilisation_pct
-		 FROM subnet_utilisation_history
+		`SELECT recorded_at, used_count, total_count, utilization_pct
+		 FROM subnet_utilization_history
 		 WHERE subnet_id = $1 AND recorded_at >= now() - ($2 * INTERVAL '1 day')
 		 ORDER BY recorded_at ASC`,
 		subnetID, days,
@@ -51,14 +51,14 @@ func (r *Repository) GetUtilizationTrends(ctx context.Context) ([]*models.Subnet
 	rows, err := r.sQuery(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (subnet_id)
-				subnet_id, utilisation_pct AS current_pct
-			FROM subnet_utilisation_history
+				subnet_id, utilization_pct AS current_pct
+			FROM subnet_utilization_history
 			ORDER BY subnet_id, recorded_at DESC
 		),
 		week_ago AS (
 			SELECT DISTINCT ON (subnet_id)
-				subnet_id, utilisation_pct AS week_ago_pct
-			FROM subnet_utilisation_history
+				subnet_id, utilization_pct AS week_ago_pct
+			FROM subnet_utilization_history
 			WHERE recorded_at BETWEEN now() - interval '8 days' AND now() - interval '6 days'
 			ORDER BY subnet_id, recorded_at DESC
 		)
@@ -175,8 +175,8 @@ func (r *Repository) ListAllSubnets(ctx context.Context) ([]*models.Subnet, erro
 // GetLatestUtilizationForSubnet returns the most recent utilization record for a subnet.
 func (r *Repository) GetLatestUtilizationForSubnet(ctx context.Context, subnetID int64) (*models.SubnetUtilizationPoint, error) {
 	row := r.sQueryRow(ctx,
-		`SELECT recorded_at, used_count, total_count, utilisation_pct
-		 FROM subnet_utilisation_history
+		`SELECT recorded_at, used_count, total_count, utilization_pct
+		 FROM subnet_utilization_history
 		 WHERE subnet_id = $1
 		 ORDER BY recorded_at DESC
 		 LIMIT 1`,
@@ -198,20 +198,20 @@ func (r *Repository) GetSubnetsByUtilizationThreshold(ctx context.Context, thres
 	rows, err := r.sQuery(ctx, `
 		WITH latest AS (
 			SELECT DISTINCT ON (subnet_id)
-				subnet_id, utilisation_pct
-			FROM subnet_utilisation_history
+				subnet_id, utilization_pct
+			FROM subnet_utilization_history
 			ORDER BY subnet_id, recorded_at DESC
 		)
 		SELECT s.id,
 		       host(s.network_address) || '/' || s.prefix_length,
 		       s.description,
-		       l.utilisation_pct,
+		       l.utilization_pct,
 		       0::numeric,
 		       0::numeric
 		FROM latest l
 		JOIN subnets s ON s.id = l.subnet_id
-		WHERE @org(s.organization_id) AND l.utilisation_pct > $1
-		ORDER BY l.utilisation_pct DESC
+		WHERE @org(s.organization_id) AND l.utilization_pct > $1
+		ORDER BY l.utilization_pct DESC
 	`, thresholdPct)
 	if err != nil {
 		return nil, err
@@ -238,8 +238,8 @@ func (r *Repository) BulkGetLatestUtilization(ctx context.Context, subnetIDs []i
 	}
 	rows, err := r.sQuery(ctx, `
 		SELECT DISTINCT ON (subnet_id)
-			subnet_id, recorded_at, used_count, total_count, utilisation_pct
-		FROM subnet_utilisation_history
+			subnet_id, recorded_at, used_count, total_count, utilization_pct
+		FROM subnet_utilization_history
 		WHERE subnet_id = ANY($1)
 		ORDER BY subnet_id, recorded_at DESC
 	`, subnetIDs)

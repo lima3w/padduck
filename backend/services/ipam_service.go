@@ -806,11 +806,11 @@ func (s *IPAMService) DeleteVLANDomain(ctx context.Context, id int64) error {
 	return s.repo.DeleteVLANDomain(ctx, id)
 }
 
-func (s *IPAMService) CreateVLANGroup(ctx context.Context, name string, description *string, colour *string) (*models.VLANGroup, error) {
+func (s *IPAMService) CreateVLANGroup(ctx context.Context, name string, description *string, color *string) (*models.VLANGroup, error) {
 	if name == "" {
 		return nil, fmt.Errorf("VLAN group name is required")
 	}
-	return s.repo.CreateVLANGroup(ctx, name, description, colour)
+	return s.repo.CreateVLANGroup(ctx, name, description, color)
 }
 
 func (s *IPAMService) GetVLANGroup(ctx context.Context, id int64) (*models.VLANGroup, error) {
@@ -824,14 +824,14 @@ func (s *IPAMService) ListVLANGroups(ctx context.Context) ([]*models.VLANGroup, 
 	return s.repo.ListVLANGroups(ctx)
 }
 
-func (s *IPAMService) UpdateVLANGroup(ctx context.Context, id int64, name string, description *string, colour *string) (*models.VLANGroup, error) {
+func (s *IPAMService) UpdateVLANGroup(ctx context.Context, id int64, name string, description *string, color *string) (*models.VLANGroup, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid VLAN group ID")
 	}
 	if name == "" {
 		return nil, fmt.Errorf("VLAN group name is required")
 	}
-	return s.repo.UpdateVLANGroup(ctx, id, name, description, colour)
+	return s.repo.UpdateVLANGroup(ctx, id, name, description, color)
 }
 
 func (s *IPAMService) DeleteVLANGroup(ctx context.Context, id int64) error {
@@ -877,27 +877,27 @@ func (s *IPAMService) GetIPTag(ctx context.Context, id int64) (*models.IPTag, er
 	return tag, nil
 }
 
-func (s *IPAMService) CreateIPTag(ctx context.Context, name, colour string, description *string) (*models.IPTag, error) {
+func (s *IPAMService) CreateIPTag(ctx context.Context, name, color string, description *string) (*models.IPTag, error) {
 	if name == "" {
 		return nil, fmt.Errorf("tag name is required")
 	}
-	if colour == "" {
-		colour = "#6B7280"
+	if color == "" {
+		color = "#6B7280"
 	}
-	return s.repo.CreateIPTag(ctx, name, colour, description)
+	return s.repo.CreateIPTag(ctx, name, color, description)
 }
 
-func (s *IPAMService) UpdateIPTag(ctx context.Context, id int64, name, colour string, description *string) (*models.IPTag, error) {
+func (s *IPAMService) UpdateIPTag(ctx context.Context, id int64, name, color string, description *string) (*models.IPTag, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid tag ID")
 	}
 	if name == "" {
 		return nil, fmt.Errorf("tag name is required")
 	}
-	if colour == "" {
-		colour = "#6B7280"
+	if color == "" {
+		color = "#6B7280"
 	}
-	return s.repo.UpdateIPTag(ctx, id, name, colour, description)
+	return s.repo.UpdateIPTag(ctx, id, name, color, description)
 }
 
 func (s *IPAMService) DeleteIPTag(ctx context.Context, id int64) error {

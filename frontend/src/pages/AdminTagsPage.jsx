@@ -7,7 +7,7 @@ import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import EmptyRow from '../components/EmptyRow'
 
-const EMPTY_FORM = { name: '', colour: '#6B7280', description: '' }
+const EMPTY_FORM = { name: '', color: '#6B7280', description: '' }
 
 export default function AdminTagsPage() {
   const { t } = useTranslation()
@@ -45,7 +45,7 @@ export default function AdminTagsPage() {
   }
 
   function openEdit(tag) {
-    setForm({ name: tag.name, colour: tag.colour, description: tag.description || '' })
+    setForm({ name: tag.name, color: tag.color, description: tag.description || '' })
     setModal({ edit: tag })
   }
 
@@ -55,7 +55,7 @@ export default function AdminTagsPage() {
     try {
       const payload = {
         name: form.name,
-        colour: form.colour,
+        color: form.color,
         description: form.description || null,
       }
       if (modal === 'create') {
@@ -111,7 +111,7 @@ export default function AdminTagsPage() {
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('adminTags.tagColumn')}</th>
-              <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('adminTags.colourColumn')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('adminTags.colorColumn')}</th>
               <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('common.description')}</th>
               <th className="text-left px-4 py-3 text-gray-600 font-medium">{t('natRules.type')}</th>
               <th className="px-4 py-3"></th>
@@ -124,7 +124,7 @@ export default function AdminTagsPage() {
             {tags.map(tag => (
               <tr key={tag.id} className="border-b last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3"><TagBadge tag={tag} /></td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-500">{tag.colour}</td>
+                <td className="px-4 py-3 font-mono text-xs text-gray-500">{tag.color}</td>
                 <td className="px-4 py-3 text-gray-500">{tag.description || '—'}</td>
                 <td className="px-4 py-3">
                   {tag.isSystem ? (
@@ -167,18 +167,18 @@ export default function AdminTagsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminTags.colour')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('adminTags.color')}</label>
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
-                  value={form.colour}
-                  onChange={e => setForm(f => ({ ...f, colour: e.target.value }))}
+                  value={form.color}
+                  onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   className="w-10 h-10 rounded cursor-pointer border"
                 />
                 <input
                   className="flex-1 border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={form.colour}
-                  onChange={e => setForm(f => ({ ...f, colour: e.target.value }))}
+                  value={form.color}
+                  onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   pattern="^#[0-9A-Fa-f]{6}$"
                   placeholder="#6B7280"
                 />
@@ -194,7 +194,7 @@ export default function AdminTagsPage() {
             </div>
             <div className="pt-1">
               <p className="text-xs text-gray-500 mb-1">{t('adminTags.preview')}</p>
-              <TagBadge tag={{ name: form.name || t('adminTags.previewPlaceholder'), colour: form.colour }} />
+              <TagBadge tag={{ name: form.name || t('adminTags.previewPlaceholder'), color: form.color }} />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setModal(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">{t('common.cancel')}</button>

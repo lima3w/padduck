@@ -276,7 +276,7 @@ export default function SubnetsPage() {
                       <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('subnets.network')}</th>
                       <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
                       <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('subnets.usedTotal')}</th>
-                      <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.utilisation')}</th>
+                      <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.utilization')}</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>

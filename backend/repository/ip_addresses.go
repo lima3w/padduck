@@ -14,7 +14,7 @@ import (
 
 // ipSelectCols is the column list for ip_addresses JOINed with ip_tags and devices
 const ipSelectCols = `ip.id, ip.subnet_id, host(ip.address), ip.hostname, ip.status,
-	ip.tag_id, t.id, t.name, t.colour, t.description, t.is_system, t.created_at,
+	ip.tag_id, t.id, t.name, t.color, t.description, t.is_system, t.created_at,
 	ip.last_seen, ip.mac_address, ip.ptr_record,
 	ip.dns_name, ip.dns_records::text, ip.dns_last_checked,
 	ip.port_open,
@@ -30,7 +30,7 @@ func scanIP(row interface {
 	var tagID *int64
 	var tagIDInner *int64
 	var tagName *string
-	var tagColour *string
+	var tagColor *string
 	var tagDesc *string
 	var tagIsSystem *bool
 	var tagCreatedAt *time.Time
@@ -40,7 +40,7 @@ func scanIP(row interface {
 
 	err := row.Scan(
 		&ip.ID, &ip.SubnetID, &ip.Address, &ip.Hostname, &ip.Status,
-		&tagID, &tagIDInner, &tagName, &tagColour, &tagDesc, &tagIsSystem, &tagCreatedAt,
+		&tagID, &tagIDInner, &tagName, &tagColor, &tagDesc, &tagIsSystem, &tagCreatedAt,
 		&ip.LastSeen, &ip.MACAddress, &ip.PTRRecord,
 		&ip.DNSName, &ip.DNSRecords, &ip.DNSLastChecked,
 		&portOpenRaw,
@@ -55,7 +55,7 @@ func scanIP(row interface {
 		ip.Tag = &models.IPTag{
 			ID:          *tagIDInner,
 			Name:        *tagName,
-			Colour:      *tagColour,
+			Color:      *tagColor,
 			Description: tagDesc,
 			IsSystem:    *tagIsSystem,
 			CreatedAt:   *tagCreatedAt,
