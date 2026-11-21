@@ -20,7 +20,7 @@ import { getCachedUser, getStoredItem, LEGACY_STORAGE_KEYS, setStoredItem, STORA
 import DelegationsTab from './ip/DelegationsTab'
 import PortBadges from './ip/PortBadges'
 import SortTh from './ip/SortTh'
-import UtilisationHistorySection from './ip/UtilisationHistorySection'
+import UtilizationHistorySection from './ip/UtilizationHistorySection'
 import DHCPLeasesSection from './ip/DHCPLeasesSection'
 import AutomationExecutions from '../components/AutomationExecutions'
 
@@ -963,7 +963,7 @@ export default function IPAddressesPage() {
       )}
       <DHCPLeasesSection subnetId={subnetID} />
       <AutomationExecutions resourceType="subnet" resourceId={Number(subnetID)} hideWhenEmpty />
-      <UtilisationHistorySection subnetId={subnetID} />
+      <UtilizationHistorySection subnetId={subnetID} />
       </>}
 
       {modal === 'create' && (

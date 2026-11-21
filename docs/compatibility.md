@@ -68,7 +68,9 @@ All known or planned breaking changes between v1 and v2 are listed here. This ta
 
 | Change | Affects | Target version | Migration |
 |--------|---------|----------------|-----------|
-| `colour` → `color` in IP tag responses | `GET /api/v1/tags`, webhook payloads | v2.0.0 | Rename field in consumer |
+| `colour` → `color` in IP tag and VLAN group requests and responses | `/api/v1/tags`, `/api/v1/vlan-groups` and every response that embeds a tag or VLAN group | v2.0.0 | Rename field in consumer. No compatibility alias is provided. |
+| Report type `utilisation_summary` → `utilization_summary` | Scheduled reports API (`report_type`) | v2.0.0 | Send the new value. Existing scheduled reports are migrated. |
+| Config key `utilisation_snapshot_interval_hours` → `utilization_snapshot_interval_hours` | `/api/v1/admin/config` | v2.0.0 | Use the new key. An existing value is carried over. |
 | Bare array responses → `{ "data": [...], "meta": {...} }` envelope | All paginated list endpoints | v2.0.0 | Unwrap `.data`; read pagination from `.meta` |
 | v1 endpoints removed after sunset | All `/api/v1/*` routes | v3.0.0 (earliest) | Migrate to `/api/v2/*` equivalents |
 
@@ -95,7 +97,7 @@ Use this checklist to assess your exposure before upgrading padduck to a new maj
 
 ### API consumers (scripts, automation, CI)
 
-- [ ] **JSON field names**: scan your code for the field names listed in the Breaking Change Registry. If you parse `colour`, rename to `color` before upgrading to v2.
+- [ ] **JSON field names**: scan your code for the field names listed in the Breaking Change Registry. If you read or send `colour`, rename to `color`; if you create scheduled reports with `utilisation_summary` or set the `utilisation_snapshot_interval_hours` config key, use the American spelling. These renames take effect on `/api/v1` when you upgrade to v2.0.0.
 - [ ] **Response shape**: if you access response arrays directly (e.g., `response.data[0]`), check whether the endpoint now returns `{ "data": [...] }`. Wrap access with `.data[0]`.
 - [ ] **Pagination**: verify your pagination loop reads `meta.total` and `meta.page` from the v2 envelope rather than the v1 top-level keys.
 - [ ] **Error fields**: if your code reads `error.message`, note that message text is not stable. Use `error.error` (the machine-readable key) for branching logic.

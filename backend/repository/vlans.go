@@ -194,28 +194,28 @@ func (r *Repository) DeleteVLANDomain(ctx context.Context, id int64) error {
 
 // VLANGroup operations
 
-func (r *Repository) CreateVLANGroup(ctx context.Context, name string, description *string, colour *string) (*models.VLANGroup, error) {
-	query := `INSERT INTO vlan_groups (name, description, colour, organization_id)
+func (r *Repository) CreateVLANGroup(ctx context.Context, name string, description *string, color *string) (*models.VLANGroup, error) {
+	query := `INSERT INTO vlan_groups (name, description, color, organization_id)
 	          VALUES ($1, $2, $3, @orgval)
-	          RETURNING id, name, description, colour, created_at, updated_at`
+	          RETURNING id, name, description, color, created_at, updated_at`
 	g := &models.VLANGroup{}
-	err := r.sQueryRow(ctx, query, name, description, colour).Scan(
-		&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt,
+	err := r.sQueryRow(ctx, query, name, description, color).Scan(
+		&g.ID, &g.Name, &g.Description, &g.Color, &g.CreatedAt, &g.UpdatedAt,
 	)
 	return g, err
 }
 
 func (r *Repository) GetVLANGroupByID(ctx context.Context, id int64) (*models.VLANGroup, error) {
-	query := `SELECT id, name, description, colour, created_at, updated_at FROM vlan_groups WHERE @org(organization_id) AND id = $1`
+	query := `SELECT id, name, description, color, created_at, updated_at FROM vlan_groups WHERE @org(organization_id) AND id = $1`
 	g := &models.VLANGroup{}
 	err := r.sQueryRow(ctx, query, id).Scan(
-		&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt,
+		&g.ID, &g.Name, &g.Description, &g.Color, &g.CreatedAt, &g.UpdatedAt,
 	)
 	return g, err
 }
 
 func (r *Repository) ListVLANGroups(ctx context.Context) ([]*models.VLANGroup, error) {
-	query := `SELECT id, name, description, colour, created_at, updated_at FROM vlan_groups WHERE @org(organization_id) ORDER BY name ASC`
+	query := `SELECT id, name, description, color, created_at, updated_at FROM vlan_groups WHERE @org(organization_id) ORDER BY name ASC`
 	rows, err := r.sQuery(ctx, query)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (r *Repository) ListVLANGroups(ctx context.Context) ([]*models.VLANGroup, e
 	groups := make([]*models.VLANGroup, 0)
 	for rows.Next() {
 		g := &models.VLANGroup{}
-		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt); err != nil {
+		if err := rows.Scan(&g.ID, &g.Name, &g.Description, &g.Color, &g.CreatedAt, &g.UpdatedAt); err != nil {
 			return nil, err
 		}
 		groups = append(groups, g)
@@ -233,13 +233,13 @@ func (r *Repository) ListVLANGroups(ctx context.Context) ([]*models.VLANGroup, e
 	return groups, rows.Err()
 }
 
-func (r *Repository) UpdateVLANGroup(ctx context.Context, id int64, name string, description *string, colour *string) (*models.VLANGroup, error) {
-	query := `UPDATE vlan_groups SET name = $1, description = $2, colour = $3, updated_at = CURRENT_TIMESTAMP
+func (r *Repository) UpdateVLANGroup(ctx context.Context, id int64, name string, description *string, color *string) (*models.VLANGroup, error) {
+	query := `UPDATE vlan_groups SET name = $1, description = $2, color = $3, updated_at = CURRENT_TIMESTAMP
 	          WHERE @org(organization_id) AND id = $4
-	          RETURNING id, name, description, colour, created_at, updated_at`
+	          RETURNING id, name, description, color, created_at, updated_at`
 	g := &models.VLANGroup{}
-	err := r.sQueryRow(ctx, query, name, description, colour, id).Scan(
-		&g.ID, &g.Name, &g.Description, &g.Colour, &g.CreatedAt, &g.UpdatedAt,
+	err := r.sQueryRow(ctx, query, name, description, color, id).Scan(
+		&g.ID, &g.Name, &g.Description, &g.Color, &g.CreatedAt, &g.UpdatedAt,
 	)
 	return g, err
 }
@@ -271,7 +271,7 @@ SELECT
             COUNT(ip.id)::NUMERIC /
             SUM(POWER(2, 32 - s.prefix_length)::BIGINT)::NUMERIC * 100, 2
         )
-    END                                           AS utilisation_pct
+    END                                           AS utilization_pct
 FROM vlans v
 LEFT JOIN subnets s ON s.vlan_id = v.id
 LEFT JOIN ip_addresses ip ON ip.subnet_id = s.id WHERE @org(v.organization_id)

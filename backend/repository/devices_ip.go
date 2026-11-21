@@ -60,7 +60,7 @@ func (r *Repository) UnlinkIPFromDevice(ctx context.Context, deviceID, ipID int6
 	return nil
 }
 
-// GetSubnetTreeBySection returns all subnets for a section with utilisation counts, ordered by network address.
+// GetSubnetTreeBySection returns all subnets for a section with utilization counts, ordered by network address.
 func (r *Repository) GetSubnetTreeBySection(ctx context.Context, networkID int64) ([]models.SubnetTreeNode, error) {
 	query := `
 		SELECT

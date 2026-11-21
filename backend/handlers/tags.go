@@ -25,13 +25,13 @@ func requireAdmin(c *fiber.Ctx) error {
 
 type CreateTagRequest struct {
 	Name        string  `json:"name"`
-	Colour      string  `json:"colour"`
+	Color      string  `json:"color"`
 	Description *string `json:"description"`
 }
 
 type UpdateTagRequest struct {
 	Name        string  `json:"name"`
-	Colour      string  `json:"colour"`
+	Color      string  `json:"color"`
 	Description *string `json:"description"`
 }
 
@@ -70,7 +70,7 @@ func (h *Handler) CreateTag(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "name is required")
 	}
 
-	tag, err := h.ops.IPAM.CreateIPTag(c.Context(), req.Name, req.Colour, req.Description)
+	tag, err := h.ops.IPAM.CreateIPTag(c.Context(), req.Name, req.Color, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error creating tag", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -94,7 +94,7 @@ func (h *Handler) UpdateTag(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	tag, err := h.ops.IPAM.UpdateIPTag(c.Context(), int64(id), req.Name, req.Colour, req.Description)
+	tag, err := h.ops.IPAM.UpdateIPTag(c.Context(), int64(id), req.Name, req.Color, req.Description)
 	if err != nil {
 		reqLogger(c).Error("error updating tag", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

@@ -425,7 +425,7 @@ func TestScheduledReport_CreateAndGet(t *testing.T) {
 	ctx := context.Background()
 
 	rpt, err := svc.CreateScheduledReport(ctx, nil,
-		"Test Report", "utilisation_summary", "0 9 * * 1",
+		"Test Report", "utilization_summary", "0 9 * * 1",
 		[]string{"admin@example.com"}, map[string]any{}, "csv", 1,
 	)
 	require.NoError(t, err)
@@ -521,7 +521,7 @@ func TestPerformanceBudget_ScheduledReportListInvalidatesOnMutation(t *testing.T
 	svc := newTestReportsService(repo)
 	ctx := context.Background()
 
-	_, err := svc.CreateScheduledReport(ctx, nil, "Weekly", "utilisation_summary", "0 9 * * 1", []string{"admin@example.com"}, map[string]any{}, "csv", 1)
+	_, err := svc.CreateScheduledReport(ctx, nil, "Weekly", "utilization_summary", "0 9 * * 1", []string{"admin@example.com"}, map[string]any{}, "csv", 1)
 	require.NoError(t, err)
 
 	for i := 0; i < 3; i++ {

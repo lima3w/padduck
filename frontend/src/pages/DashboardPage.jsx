@@ -34,7 +34,7 @@ function actionLabel(action) {
 }
 
 function UtilizationBar({ pct }) {
-  const colour =
+  const color =
     pct > 90 ? 'bg-red-500' :
     pct > 70 ? 'bg-yellow-500' :
     'bg-green-500'
@@ -42,7 +42,7 @@ function UtilizationBar({ pct }) {
     <div className="flex items-center gap-2">
       <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
-          className={`${colour} h-2 rounded-full transition-all`}
+          className={`${color} h-2 rounded-full transition-all`}
           style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
@@ -174,7 +174,7 @@ export default function DashboardPage() {
           sub={t('dashboard.assignedTotal')}
         />
         <SummaryCard
-          label={t('dashboard.utilisation')}
+          label={t('dashboard.utilization')}
           value={`${utilPct.toFixed(1)}%`}
           sub={t('dashboard.assignedIps')}
         />

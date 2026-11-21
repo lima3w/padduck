@@ -90,10 +90,18 @@ v1 returns the object directly:
 
 ## Field Renames (British → American spelling)
 
-The following JSON field names change from British to American English spelling in v2. v1 continues to return the British spellings until sunset.
+These names change from British to American English at v2.0.0. The change applies to `/api/v1` itself when you upgrade; there is no compatibility alias, so update consumers first or at the same time.
 
-| Resource | v1 field | v2 field |
-|----------|----------|----------|
+| Where | Old | New |
+|-------|-----|-----|
+| IP tag request and response bodies (`/api/v1/tags`, embedded tags) | `colour` | `color` |
+| VLAN group request and response bodies (`/api/v1/vlan-groups`) | `colour` | `color` |
+| Scheduled report `report_type` | `utilisation_summary` | `utilization_summary` |
+| Admin config key | `utilisation_snapshot_interval_hours` | `utilization_snapshot_interval_hours` |
+
+Database objects renamed by migration `20260723_001` (no data loss, reversible): `ip_tags.colour`, `vlan_groups.colour`, the table `subnet_utilisation_history` (now `subnet_utilization_history`) and its column `utilisation_pct` (now `utilization_pct`). Anything that queries the database directly, such as reporting tools, must use the new names. JSON fields such as `utilization_pct` already used the American spelling.
+
+----------|----------|----------|
 | `tags` | `colour` | `color` |
 
 ---
@@ -132,31 +140,7 @@ Webhook payloads are generated from audit log entries. The event type format cha
 
 Field renames within payloads mirror the API field renames listed above.
 
-### Before (v1 webhook payload for a tag event):
-
-```json
-{
-  "event_type": "tag.created",
-  "resource_type": "tag",
-  "new_values": {
-    "colour": "#3B82F6"
-  }
-}
-```
-
-### After (v2 webhook payload):
-
-```json
-{
-  "event_type": "tag.created",
-  "resource_type": "tag",
-  "new_values": {
-    "color": "#3B82F6"
-  }
-}
-```
-
-Update your webhook consumers to accept either spelling during the transition period, then switch to the v2 field names before the sunset date.
+Webhook payloads are built from audit log entries. None of the renamed fields above appear in webhook payloads today, so webhook consumers need no change for the spelling renames.
 
 ---
 

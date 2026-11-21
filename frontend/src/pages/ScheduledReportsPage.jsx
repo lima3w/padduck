@@ -4,7 +4,7 @@ import { api } from '../api/client'
 import Modal from '../components/Modal'
 
 const REPORT_TYPE_VALUES = [
-  'utilisation_summary', 'inactive_ips', 'new_allocations', 'full_audit',
+  'utilization_summary', 'inactive_ips', 'new_allocations', 'full_audit',
   'subnet_gaps', 'vlan_assignment', 'ip_age', 'dns_audit',
   'stale_leases', 'inactive_devices', 'failed_scans',
 ]
@@ -12,7 +12,7 @@ const REPORT_TYPE_VALUES = [
 const FORMAT_VALUES = ['csv', 'pdf']
 
 const DEFAULT_FILTERS = {
-  utilisation_summary: '{}',
+  utilization_summary: '{}',
   inactive_ips: '{"days": 90}',
   new_allocations: '{"days": 30}',
   full_audit: '{}',
@@ -27,11 +27,11 @@ const DEFAULT_FILTERS = {
 
 const EMPTY_FORM = {
   name: '',
-  reportType: 'utilisation_summary',
+  reportType: 'utilization_summary',
   scheduleCron: '0 8 * * 1',
   recipientEmails: '',
   format: 'csv',
-  filters: DEFAULT_FILTERS.utilisation_summary,
+  filters: DEFAULT_FILTERS.utilization_summary,
 }
 
 export default function ScheduledReportsPage() {
@@ -71,7 +71,7 @@ export default function ScheduledReportsPage() {
   function openEdit(report) {
     setForm({
       name: report.name || '',
-      reportType: report.reportType || 'utilisation_summary',
+      reportType: report.reportType || 'utilization_summary',
       scheduleCron: report.scheduleCron || '0 8 * * 1',
       recipientEmails: Array.isArray(report.recipientEmails)
         ? report.recipientEmails.join(', ')

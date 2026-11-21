@@ -7,13 +7,13 @@ import ErrorBanner from '../components/ErrorBanner'
 import TableActions from '../components/TableActions'
 import { getCachedUser } from '../utils/storageKeys'
 
-const EMPTY_FORM = { name: '', colour: '#6B7280', description: '' }
+const EMPTY_FORM = { name: '', color: '#6B7280', description: '' }
 
-function GroupSwatch({ colour }) {
+function GroupSwatch({ color }) {
   return (
     <span
       className="inline-block w-5 h-5 rounded border border-gray-300 dark:border-gray-600 align-middle"
-      style={{ backgroundColor: colour || '#6B7280' }}
+      style={{ backgroundColor: color || '#6B7280' }}
     />
   )
 }
@@ -61,7 +61,7 @@ export default function VlanGroupsPage() {
   function openEdit(group) {
     setForm({
       name: group.name || '',
-      colour: group.colour || '#6B7280',
+      color: group.color || '#6B7280',
       description: group.description || '',
     })
     setModal({ edit: group })
@@ -73,7 +73,7 @@ export default function VlanGroupsPage() {
     try {
       const payload = {
         name: form.name,
-        colour: form.colour,
+        color: form.color,
         description: form.description || null,
       }
       if (modal === 'create') {
@@ -141,7 +141,7 @@ export default function VlanGroupsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlanGroups.colour')}</th>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlanGroups.color')}</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.name')}</th>
               <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('common.description')}</th>
               <th className="px-4 py-3"></th>
@@ -159,8 +159,8 @@ export default function VlanGroupsPage() {
               <tr key={group.id} className="border-b dark:border-gray-700 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <GroupSwatch colour={group.colour} />
-                    <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{group.colour}</span>
+                    <GroupSwatch color={group.color} />
+                    <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{group.color}</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{group.name}</td>
@@ -200,24 +200,24 @@ export default function VlanGroupsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('vlanGroups.colour')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('vlanGroups.color')}</label>
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
-                  value={form.colour}
-                  onChange={e => setForm(f => ({ ...f, colour: e.target.value }))}
+                  value={form.color}
+                  onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   className="w-10 h-10 rounded cursor-pointer border dark:border-gray-600"
                 />
                 <input
                   className="flex-1 border rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  value={form.colour}
-                  onChange={e => setForm(f => ({ ...f, colour: e.target.value }))}
+                  value={form.color}
+                  onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                   pattern="^#[0-9A-Fa-f]{6}$"
                   placeholder="#6B7280"
                 />
               </div>
               <div className="mt-2 flex items-center gap-2">
-                <GroupSwatch colour={form.colour} />
+                <GroupSwatch color={form.color} />
                 <span className="text-xs text-gray-500">{t('vlanGroups.preview')}</span>
               </div>
             </div>

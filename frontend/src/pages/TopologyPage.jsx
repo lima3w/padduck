@@ -202,7 +202,7 @@ export default function TopologyPage() {
                 </div>
               )}
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('topology.utilisation')}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('topology.utilization')}</p>
                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-2 rounded-full transition-all"

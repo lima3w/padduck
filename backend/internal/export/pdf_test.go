@@ -17,7 +17,7 @@ func TestGeneratePDF_NonEmpty(t *testing.T) {
 }
 
 func TestGeneratePDF_ContainsTitle(t *testing.T) {
-	title := "Subnet Utilisation Report"
+	title := "Subnet Utilization Report"
 	data, err := GeneratePDF(title, []string{"Subnet", "Used%"}, [][]string{
 		{"10.0.0.0/24", "75.5"},
 	})

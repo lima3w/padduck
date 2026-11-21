@@ -72,7 +72,7 @@ export default function VlanUsageReportPage() {
                 <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlans.group')}</th>
                 <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('dashboard.subnets')}</th>
                 <th className="text-right px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">{t('vlanUsageReport.ips')}</th>
-                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-48">{t('dashboard.utilisation')}</th>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium w-48">{t('dashboard.utilization')}</th>
               </tr>
             </thead>
             <tbody>
@@ -92,7 +92,7 @@ export default function VlanUsageReportPage() {
                       {row.groupName ? (
                         <span
                           className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white"
-                          style={{ backgroundColor: row.groupColour || '#6B7280' }}
+                          style={{ backgroundColor: row.groupColor || '#6B7280' }}
                         >
                           {row.groupName}
                         </span>

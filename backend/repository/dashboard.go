@@ -265,7 +265,7 @@ func (r *Repository) ListIPAddressesFullRange(
 			COALESCE(ip.hostname, ''),
 			COALESCE(ip.status, 'available'),
 			ip.tag_id,
-			t.id, t.name, t.colour, t.description, t.is_system, t.created_at,
+			t.id, t.name, t.color, t.description, t.is_system, t.created_at,
 			ip.last_seen,
 			ip.mac_address, ip.ptr_record,
 			ip.dns_name, ip.dns_records::text, ip.dns_last_checked,
@@ -303,7 +303,7 @@ func (r *Repository) ListIPAddressesFullRange(
 func scanIPFull(row interface{ Scan(dest ...any) error }) (*models.IPAddress, error) {
 	ip := &models.IPAddress{}
 	var tagID, tagIDInner *int64
-	var tagName, tagColour, tagDesc *string
+	var tagName, tagColor, tagDesc *string
 	var tagIsSystem *bool
 	var tagCreatedAt *time.Time
 	var portOpenRaw []byte
@@ -314,7 +314,7 @@ func scanIPFull(row interface{ Scan(dest ...any) error }) (*models.IPAddress, er
 
 	err := row.Scan(
 		&ip.ID, &ip.Address, &subnetID, &ip.Hostname, &ip.Status,
-		&tagID, &tagIDInner, &tagName, &tagColour, &tagDesc, &tagIsSystem, &tagCreatedAt,
+		&tagID, &tagIDInner, &tagName, &tagColor, &tagDesc, &tagIsSystem, &tagCreatedAt,
 		&ip.LastSeen, &ip.MACAddress, &ip.PTRRecord,
 		&ip.DNSName, &ip.DNSRecords, &ip.DNSLastChecked,
 		&portOpenRaw,
@@ -338,7 +338,7 @@ func scanIPFull(row interface{ Scan(dest ...any) error }) (*models.IPAddress, er
 		ip.Tag = &models.IPTag{
 			ID:          *tagIDInner,
 			Name:        *tagName,
-			Colour:      *tagColour,
+			Color:      *tagColor,
 			Description: tagDesc,
 			IsSystem:    *tagIsSystem,
 			CreatedAt:   *tagCreatedAt,

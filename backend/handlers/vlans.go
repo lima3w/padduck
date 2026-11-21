@@ -41,13 +41,13 @@ type UpdateVLANDomainRequest struct {
 type CreateVLANGroupRequest struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
-	Colour      *string `json:"colour"`
+	Color      *string `json:"color"`
 }
 
 type UpdateVLANGroupRequest struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
-	Colour      *string `json:"colour"`
+	Color      *string `json:"color"`
 }
 
 // ListVLANs handles GET /api/v1/vlans
@@ -450,7 +450,7 @@ func (h *Handler) CreateVLANGroup(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	group, err := h.ops.IPAM.CreateVLANGroup(c.Context(), req.Name, req.Description, req.Colour)
+	group, err := h.ops.IPAM.CreateVLANGroup(c.Context(), req.Name, req.Description, req.Color)
 	if err != nil {
 		reqLogger(c).Error("error creating VLAN group", "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")
@@ -479,7 +479,7 @@ func (h *Handler) UpdateVLANGroup(c *fiber.Ctx) error {
 		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
 	}
 
-	group, err := h.ops.IPAM.UpdateVLANGroup(c.Context(), int64(id), req.Name, req.Description, req.Colour)
+	group, err := h.ops.IPAM.UpdateVLANGroup(c.Context(), int64(id), req.Name, req.Description, req.Color)
 	if err != nil {
 		reqLogger(c).Error("error updating VLAN group", "id", id, "error", err)
 		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "internal server error")

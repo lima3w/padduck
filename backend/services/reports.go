@@ -128,7 +128,7 @@ func (rs *ReportsService) StartUtilizationSnapshotJob(ctx context.Context) {
 	go func() {
 		intervalHours := 1
 		if rs.config != nil && rs.config.repository != nil {
-			if val, err := rs.config.Get("utilisation_snapshot_interval_hours"); err == nil && val != "" {
+			if val, err := rs.config.Get("utilization_snapshot_interval_hours"); err == nil && val != "" {
 				if h, err := strconv.Atoi(val); err == nil && h > 0 {
 					intervalHours = h
 				}
@@ -370,7 +370,7 @@ func (rs *ReportsService) RunScheduledReport(ctx context.Context, report *models
 // generateReportData builds the report payload for a given report definition.
 func (rs *ReportsService) generateReportData(ctx context.Context, report *models.ScheduledReport) ([]byte, string, string, error) {
 	switch report.ReportType {
-	case "utilisation_summary":
+	case "utilization_summary":
 		trends, err := rs.GetUtilizationTrends(ctx)
 		if err != nil {
 			return nil, "", "", err
@@ -387,7 +387,7 @@ func (rs *ReportsService) generateReportData(ctx context.Context, report *models
 				"delta_pct":    fmt.Sprintf("%.2f", t.DeltaPct),
 			}
 		}
-		return buildReport(report.Format, "Utilisation Summary", headers, rows)
+		return buildReport(report.Format, "Utilization Summary", headers, rows)
 
 	case "inactive_ips":
 		days := 90
