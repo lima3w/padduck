@@ -13,13 +13,7 @@ import (
 // proceed=false so the caller knows to return nil without further action.
 // On allow (or bypass), it returns proceed=true.
 func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCtx map[string]string, desiredState any) bool {
-	if bypassPolicyFromCtx(c) {
-		uid, uname := auditUserFromCtx(c)
-		h.auditLog(c, services.AuditEntry{
-			UserID: uid, Username: uname, Action: "policy_bypassed",
-			ResourceType: workflow,
-			NewValues:    map[string]string{"action": action},
-		})
+	if h.policyBypassed(c, workflow, action) {
 		return true
 	}
 
@@ -30,10 +24,14 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 		TriggeredBy: "api",
 		OrgID:       orgIDFromCtx(c),
 	})
-	if err != nil || decision.Allowed {
-		if decision != nil {
-			c.Locals("policyDecision", decision)
-		}
+	if err != nil {
+		// Fail closed: a write must not slip past policy because evaluation broke.
+		reqLogger(c).Error("policy evaluation failed", "workflow", workflow, "action", action, "error", err)
+		_ = RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "policy evaluation failed")
+		return false
+	}
+	if decision.Allowed {
+		c.Locals("policyDecision", decision)
 		return true
 	}
 
@@ -61,6 +59,84 @@ func (h *Handler) evaluatePolicy(c *fiber.Ctx, workflow, action string, policyCt
 	}
 	_ = RespondError(c, fiber.StatusUnprocessableEntity, ErrPolicyDenied, msg)
 	return false
+}
+
+// policyBypassed reports whether the caller skips policy evaluation: an API
+// token flagged bypass_policy, or a platform admin acting as themselves (not
+// through an organization impersonation token). Each bypass is audit-logged.
+func (h *Handler) policyBypassed(c *fiber.Ctx, workflow, action string) bool {
+	reason := ""
+	if bypassPolicyFromCtx(c) {
+		reason = "token"
+	} else if isAdm, _ := c.Locals("isPlatformAdmin").(bool); isAdm {
+		if _, acting := c.Locals("actingAsOrg").(int64); !acting {
+			reason = "platform_admin"
+		}
+	}
+	if reason == "" {
+		return false
+	}
+	uid, uname := auditUserFromCtx(c)
+	h.auditLog(c, services.AuditEntry{
+		UserID: uid, Username: uname, Action: "policy_bypassed",
+		ResourceType: workflow,
+		NewValues:    map[string]string{"action": action, "reason": reason},
+	})
+	return true
+}
+
+// policyContext returns the request context for intent calls, marked to skip
+// policy evaluation when the caller may bypass it.
+func (h *Handler) policyContext(c *fiber.Ctx, workflow, action string) context.Context {
+	if h.policyBypassed(c, workflow, action) {
+		return services.WithPolicyBypass(c.Context())
+	}
+	return c.Context()
+}
+
+// CheckPolicy handles POST /policy/check. It is a side-effect-free pre-flight
+// for forms: body {workflow, action, values}; the caller needs the permission
+// to perform the write. Always 200 with {result: allow|manual_review|deny, message}.
+func (h *Handler) CheckPolicy(c *fiber.Ctx) error {
+	var req struct {
+		Workflow string            `json:"workflow"`
+		Action   string            `json:"action"`
+		Values   map[string]string `json:"values"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "invalid request body")
+	}
+	perm, ok := services.IntentPermission(req.Workflow, "create")
+	if !ok || req.Action == "" {
+		return RespondError(c, fiber.StatusBadRequest, ErrBadRequest, "workflow must be one of subnet, ip_address, device, vlan, and action is required")
+	}
+	if !h.requirePerm(c, perm) {
+		return nil
+	}
+	if bypassPolicyFromCtx(c) {
+		return c.JSON(fiber.Map{"result": "allow", "bypassed": true})
+	}
+	if isAdm, _ := c.Locals("isPlatformAdmin").(bool); isAdm {
+		if _, acting := c.Locals("actingAsOrg").(int64); !acting {
+			return c.JSON(fiber.Map{"result": "allow", "bypassed": true})
+		}
+	}
+	// Leaving TriggeredBy empty keeps the check out of the execution log.
+	decision, err := h.ops.Automation.Evaluate(c.Context(), services.AutomationRequest{
+		Workflow: req.Workflow, Action: req.Action, Values: req.Values,
+	})
+	if err != nil {
+		reqLogger(c).Error("policy check failed", "error", err)
+		return RespondError(c, fiber.StatusInternalServerError, ErrInternalServer, "policy evaluation failed")
+	}
+	result := "allow"
+	switch {
+	case decision.ReviewNeeded:
+		result = "manual_review"
+	case !decision.Allowed:
+		result = "deny"
+	}
+	return c.JSON(fiber.Map{"result": result, "message": decision.Message})
 }
 
 // toStateMap converts any struct to map[string]any via JSON round-trip.

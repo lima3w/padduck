@@ -48,3 +48,22 @@ func TestIntentEndpoints_Permissions(t *testing.T) {
 	assert.Equal(t, fiber.StatusBadRequest, post("/intents", `{"resource_type":"widget","operation":"create"}`), "unknown type is rejected before any permission lookup")
 	assert.Equal(t, fiber.StatusBadRequest, get("/intents/diff"), "diff needs a resource")
 }
+
+func TestCheckPolicy_PermissionsAndValidation(t *testing.T) {
+	h := minHandler()
+	app := fiber.New()
+	app.Post("/policy/check", func(c *fiber.Ctx) error {
+		c.Locals("user", unprivNS)
+		return h.CheckPolicy(c)
+	})
+	post := func(body string) int {
+		req := httptest.NewRequest("POST", "/policy/check", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		return resp.StatusCode
+	}
+	assert.Equal(t, fiber.StatusBadRequest, post(`{"workflow":"widget","action":"create"}`))
+	assert.Equal(t, fiber.StatusBadRequest, post(`{"workflow":"subnet"}`), "action is required")
+	assert.Equal(t, fiber.StatusForbidden, post(`{"workflow":"subnet","action":"create"}`), "caller needs the write permission")
+}

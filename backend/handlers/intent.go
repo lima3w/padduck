@@ -14,7 +14,10 @@ import (
 // intentError maps an intent service error to an HTTP response.
 func intentError(c *fiber.Ctx, err error) error {
 	var quota *services.QuotaExceededError
+	var denied *services.PolicyDeniedError
 	switch {
+	case errors.As(err, &denied):
+		return RespondError(c, fiber.StatusUnprocessableEntity, ErrPolicyDenied, err.Error())
 	case errors.Is(err, services.ErrIntentNotPending):
 		return RespondError(c, fiber.StatusConflict, ErrConflict, "intent is not pending")
 	case errors.Is(err, pgx.ErrNoRows):
@@ -126,7 +129,7 @@ func (h *Handler) SubmitIntent(c *fiber.Ctx) error {
 	if !h.requirePerm(c, perm) {
 		return nil
 	}
-	intent, err := h.ops.Intent.SubmitIntent(c.Context(), body.ResourceType, body.ResourceID,
+	intent, err := h.ops.Intent.SubmitIntent(h.policyContext(c, body.ResourceType, body.Operation), body.ResourceType, body.ResourceID,
 		body.Operation, body.DesiredState, callerID(c))
 	if err != nil {
 		return intentError(c, err)
@@ -162,7 +165,7 @@ func (h *Handler) reviewIntent(c *fiber.Ctx, approve bool) error {
 	action := "intent_rejected"
 	if approve {
 		action = "intent_approved"
-		intent, err = h.ops.Intent.ApproveIntent(c.Context(), id, callerID(c), body.Note)
+		intent, err = h.ops.Intent.ApproveIntent(h.policyContext(c, "intent", "approve"), id, callerID(c), body.Note)
 	} else {
 		intent, err = h.ops.Intent.RejectIntent(c.Context(), id, callerID(c), body.Note)
 	}

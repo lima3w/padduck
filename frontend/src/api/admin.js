@@ -238,3 +238,7 @@ export const getIntentDiff = (resourceType, resourceId) =>
 export const approveIntent = (id, note) => api.post(`/intents/${id}/approve`, { note })
 
 export const rejectIntent = (id, note) => api.post(`/intents/${id}/reject`, { note })
+
+// Policy pre-flight (#16): side-effect-free check of a write against automation policies.
+export const checkPolicy = (workflow, action, values) =>
+  api.post('/policy/check', { workflow, action, values })

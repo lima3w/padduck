@@ -63,6 +63,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	bus := NewEventBus()
 	auditSvc.SubscribeTo(bus)
 	workflowSvc := NewWorkflowService(repo, ipamSvc, dnsSvc, bus, notificationSvc)
+	automationSvc := NewAutomationService(repo, svc, webhookSvc, notificationSvc)
 	svc.Ops = &OpsManager{
 		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
@@ -71,7 +72,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Webhooks:       webhookSvc,
 		Topology:       NewTopologyService(repo),
 		DNS:            dnsSvc,
-		Automation:     NewAutomationService(repo, svc, webhookSvc, notificationSvc),
+		Automation:     automationSvc,
 		Telemetry:      newTelemetryService(configSvc, repo, ldapSvc, oauth2Svc, samlSvc),
 		NetworkModules: NewNetworkModulesService(repo),
 		IPAM:           ipamSvc,
@@ -82,7 +83,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		EventBus:       bus,
 		Organizations:  NewOrganizationService(repo),
 		OrgSettings:    orgSettingsSvc,
-		Intent:         NewIntentService(repo, configSvc, ipamSvc, infraSvc),
+		Intent:         NewIntentService(repo, configSvc, ipamSvc, infraSvc, automationSvc),
 	}
 	return svc
 }

@@ -332,6 +332,7 @@ export default function SubnetsPage() {
 
       {modals.modal && (
         <SubnetFormModal
+          networkId={networkID}
           modal={modals.modal}
           form={modals.form}
           setForm={modals.setForm}

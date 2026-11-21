@@ -405,6 +405,7 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 
 	// Intent model (#13). Permissions are checked per handler: resource history
 	// and diff need the resource's read permission, review needs admin.
+	protected.Post("/policy/check", h.CheckPolicy)
 	protected.Get("/intents", h.ListIntents)
 	protected.Get("/intents/diff", h.GetIntentDiff)
 	protected.Get("/intents/:id", h.GetIntent)

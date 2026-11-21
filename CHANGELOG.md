@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.34.51
+
+### Security
+- **Intents skipped automation policies** (#16): submitting or approving an intent applied the change with no policy evaluation, so `POST /intents` bypassed every `deny` and `manual_review` policy that the direct create endpoints enforce. Every intent now passes the policies before it is applied. `deny` blocks it (422 `POLICY_DENIED`) and records the intent as rejected with the policy message. `manual_review` leaves an auto-approved intent pending until a reviewer approves it, and that explicit approval satisfies the review. A reviewer cannot approve past a `deny`.
+- **Policy evaluation failures let writes through:** if evaluating policies errored, the direct create endpoints applied the write anyway. They now fail closed with 500.
+
+### Added
+- Platform admins now skip policy evaluation, as API tokens flagged `bypass_policy` already did, except when using an organization impersonation token. Each bypass is audit-logged as `policy_bypassed` with its reason.
+- `POST /policy/check`: a side-effect-free pre-flight. The Create Subnet and New IP Address forms use it to show "Policy check passed", "needs manual review" or "Blocked by policy: <message>" before submit (English and French).
+- Intent policy values use the same names as the direct-write paths (`prefix_len`, `subnet_id`, `address`, `hostname`), so one policy covers both.
+- Tests: `TestIntentPolicyPreflight_Integration` (allow, deny, manual_review, reviewer approval, deny not overridable, bypass) and `TestCheckPolicy_PermissionsAndValidation`.
+
 ## v1.34.50
 
 ### Security

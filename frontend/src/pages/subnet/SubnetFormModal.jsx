@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import Modal from '../../components/Modal'
 import CustomFieldForm from '../../components/CustomFieldForm'
+import PolicyCheck from '../../components/PolicyCheck'
 
-export default function SubnetFormModal({ modal, form, setForm, overlapError, saving, locations, nameservers, vlans, cfDefs, onSubmit, onClose }) {
+export default function SubnetFormModal({ modal, form, setForm, overlapError, saving, locations, nameservers, vlans, cfDefs, networkId, onSubmit, onClose }) {
   const { t } = useTranslation()
   const isCreate = modal === 'create'
   return (
@@ -10,6 +11,13 @@ export default function SubnetFormModal({ modal, form, setForm, overlapError, sa
       <form onSubmit={onSubmit} className="space-y-4">
         {overlapError && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{overlapError}</div>
+        )}
+        {isCreate && (
+          <PolicyCheck
+            workflow="subnet"
+            action="create"
+            values={{ network_id: networkId, prefix_len: form.prefix_length }}
+          />
         )}
         {isCreate && (
           <>

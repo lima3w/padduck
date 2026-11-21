@@ -3505,6 +3505,21 @@ paths:
         "200":
           $ref: "#/components/responses/OK"
 
+  /api/v1/policy/check:
+    post:
+      tags: [Intents]
+      summary: Pre-flight a write against automation policies
+      description: Side-effect-free (not written to the execution log). Needs the permission to make the write. Returns result allow, manual_review or deny with the policy message; bypassed is true for callers that skip policy.
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "400":
+          description: workflow must be subnet, ip_address, device or vlan, and action is required.
+        "403":
+          description: Permission denied.
+
   /api/v1/intents:
     get:
       tags: [Intents]
@@ -3533,7 +3548,7 @@ paths:
         "403":
           description: Permission denied.
         "422":
-          description: The change was approved but could not be applied; the intent is recorded as failed.
+          description: Blocked by an automation policy (POLICY_DENIED), or approved but could not be applied; the intent is then recorded as rejected or failed. A manual_review decision returns 201 with status pending.
 
   /api/v1/intents/diff:
     get:
