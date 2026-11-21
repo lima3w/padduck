@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -43,15 +44,68 @@ type intentInfra interface {
 	GetDevice(ctx context.Context, id int64) (*models.Device, error)
 }
 
+// intentPolicy evaluates automation policies before an intent is applied.
+type intentPolicy interface {
+	Evaluate(ctx context.Context, req AutomationRequest) (*PolicyDecision, error)
+}
+
 type IntentService struct {
 	repo   intentRepo
 	config *ConfigService
 	ipam   intentIPAM
 	infra  intentInfra
+	policy intentPolicy
 }
 
-func NewIntentService(repo intentRepo, config *ConfigService, ipam intentIPAM, infra intentInfra) *IntentService {
-	return &IntentService{repo: repo, config: config, ipam: ipam, infra: infra}
+func NewIntentService(repo intentRepo, config *ConfigService, ipam intentIPAM, infra intentInfra, policy intentPolicy) *IntentService {
+	return &IntentService{repo: repo, config: config, ipam: ipam, infra: infra, policy: policy}
+}
+
+type policyBypassKey struct{}
+
+// WithPolicyBypass marks a context so intent policy evaluation is skipped. Use
+// it only for callers allowed to bypass policy (platform admins and
+// bypass-flagged API tokens), and audit the bypass.
+func WithPolicyBypass(ctx context.Context) context.Context {
+	return context.WithValue(ctx, policyBypassKey{}, true)
+}
+
+func policyBypassed(ctx context.Context) bool {
+	v, _ := ctx.Value(policyBypassKey{}).(bool)
+	return v
+}
+
+// PolicyDeniedError is returned when an automation policy blocks an intent.
+type PolicyDeniedError struct{ Message string }
+
+func (e *PolicyDeniedError) Error() string { return e.Message }
+
+// intentPolicyRequest builds the policy workflow, action and values for an
+// intent. The names match the direct-write paths so one policy covers both.
+func intentPolicyRequest(i *models.ResourceIntent) AutomationRequest {
+	action := i.Operation
+	if i.ResourceType == "device" && i.Operation == "create" {
+		action = "register"
+	}
+	values := map[string]string{}
+	for k, v := range i.DesiredState {
+		switch t := v.(type) {
+		case nil:
+		case string:
+			values[k] = t
+		case float64:
+			values[k] = strconv.FormatFloat(t, 'f', -1, 64)
+		case bool:
+			values[k] = strconv.FormatBool(t)
+		}
+	}
+	if v, ok := values["prefix_length"]; ok {
+		values["prefix_len"] = v
+	}
+	if i.ResourceID != nil {
+		values["resource_id"] = strconv.FormatInt(*i.ResourceID, 10)
+	}
+	return AutomationRequest{Workflow: i.ResourceType, Action: action, Values: values, TriggeredBy: "api", OrgID: i.OrganizationID}
 }
 
 func (s *IntentService) isAutoApprove(ctx context.Context) bool {
@@ -152,7 +206,7 @@ func (s *IntentService) SubmitIntent(ctx context.Context, resourceType string, r
 
 	manual := len(forceManual) > 0 && forceManual[0]
 	if !manual && s.isAutoApprove(ctx) {
-		return s.approve(ctx, created.ID, submittedBy, nil)
+		return s.approve(ctx, created.ID, submittedBy, nil, false)
 	}
 	return created, nil
 }
@@ -160,7 +214,7 @@ func (s *IntentService) SubmitIntent(ctx context.Context, resourceType string, r
 // ApproveIntent moves a pending intent to approved and applies the change. Only
 // one caller can win the transition, so a change is never applied twice.
 func (s *IntentService) ApproveIntent(ctx context.Context, id int64, reviewerID *int64, note string) (*models.ResourceIntent, error) {
-	return s.approve(ctx, id, reviewerID, optNote(note))
+	return s.approve(ctx, id, reviewerID, optNote(note), true)
 }
 
 // RejectIntent transitions a pending intent to rejected without applying it.
@@ -273,8 +327,44 @@ func optNote(note string) *string {
 	return &note
 }
 
-func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64, note *string) (*models.ResourceIntent, error) {
+// approve runs the policy pre-flight, then claims the intent and applies it.
+// human is true when a reviewer approves explicitly, which satisfies a
+// manual_review decision; an automatic approval instead leaves the intent
+// pending for that review. A deny decision always blocks the change.
+func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64, note *string, human bool) (*models.ResourceIntent, error) {
 	now := time.Now()
+	if s.policy != nil && !policyBypassed(ctx) {
+		pending, err := s.repo.GetIntent(ctx, id)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil, ErrIntentNotPending
+			}
+			return nil, err
+		}
+		if pending.Status != "pending" {
+			return nil, ErrIntentNotPending
+		}
+		decision, err := s.policy.Evaluate(ctx, intentPolicyRequest(pending))
+		if err != nil {
+			return nil, fmt.Errorf("policy evaluation failed: %w", err)
+		}
+		switch {
+		case decision.ReviewNeeded:
+			if !human {
+				return pending, nil
+			}
+		case !decision.Allowed:
+			msg := decision.Message
+			if msg == "" {
+				msg = "request denied by automation policy"
+			}
+			if _, err := s.repo.TransitionPendingIntent(ctx, id, "rejected", reviewerID, ptrStr("blocked by policy: "+msg), now); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return nil, err
+			}
+			return nil, &PolicyDeniedError{Message: msg}
+		}
+	}
+
 	intent, err := s.repo.TransitionPendingIntent(ctx, id, "approved", reviewerID, note, now)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

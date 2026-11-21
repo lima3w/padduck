@@ -11,6 +11,7 @@ import TagBadge from '../components/TagBadge'
 import CustomFieldForm from '../components/CustomFieldForm'
 import ObservedStatePanel from '../components/ObservedStatePanel'
 import IntentPanel from '../components/IntentPanel'
+import PolicyCheck from '../components/PolicyCheck'
 import { downloadFile } from '../utils/download'
 import PageSpinner from '../components/PageSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -968,6 +969,11 @@ export default function IPAddressesPage() {
       {modal === 'create' && (
         <Modal title={t('ipAddressesPage.newIpAddressModalTitle')} onClose={() => setModal(null)}>
           <form onSubmit={handleCreate} className="space-y-4">
+            <PolicyCheck
+              workflow="ip_address"
+              action="create"
+              values={{ subnet_id: subnetID, address: form.address, hostname: form.hostname }}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('ipAddressesPage.ipAddressLabel')}</label>
               <input

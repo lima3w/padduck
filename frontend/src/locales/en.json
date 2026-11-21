@@ -2965,6 +2965,12 @@
   "permissionDenied": {
     "defaultMessage": "You do not have permission to view this page."
   },
+  "policyCheck": {
+    "passed": "Policy check passed",
+    "bypassed": "Policy check skipped for your account",
+    "review": "This will need manual review before it is applied. {{message}}",
+    "blocked": "Blocked by policy: {{message}}"
+  },
   "intentPanel": {
     "pendingTitle": "Pending change: {{operation}}",
     "submittedAt": "Submitted {{date}}. It is not applied until approved.",

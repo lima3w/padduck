@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"padduck/models"
 	"padduck/repository"
 )
 
@@ -130,4 +131,93 @@ func TestIntentFlow_Integration(t *testing.T) {
 	still, err := in.GetIntent(ctx, upd.ID)
 	require.NoError(t, err)
 	assert.Equal(t, "pending", still.Status)
+}
+
+// TestIntentPolicyPreflight_Integration covers #16: every intent passes the
+// automation policies before it is applied. deny blocks and records the intent
+// as rejected, manual_review leaves an auto-approved intent pending until a
+// reviewer approves it, and a bypass context skips evaluation.
+func TestIntentPolicyPreflight_Integration(t *testing.T) {
+	svc, repo, _ := testAuthService(t)
+	in := svc.Ops.Intent
+	base := context.Background()
+	ctx := repository.WithOrg(base, 1)
+	suffix := fmt.Sprint(time.Now().UnixNano())
+
+	admin, err := repo.CreateUserWithPassword(base, "pf-admin"+suffix, "pf-admin"+suffix+"@example.com", "x", "admin")
+	require.NoError(t, err)
+	net, err := repo.CreateNetwork(ctx, "pf-net-"+suffix, "", admin.ID)
+	require.NoError(t, err)
+	require.NoError(t, svc.Config.SetCtx(ctx, "intent_auto_approve", "true"))
+
+	save := func(name, effect, field, op, value, msg string) {
+		_, err := svc.Ops.Automation.SavePolicy(ctx, &models.AutomationPolicy{
+			Name: name + suffix, Workflow: "subnet", Action: "create", Effect: effect, Enabled: true, Message: msg,
+			Conditions: []models.PolicyCondition{{Field: field, Operator: op, Value: value}},
+		})
+		require.NoError(t, err)
+	}
+	save("no-tiny", "deny", "prefix_len", "gt", "28", "prefix too small")
+	save("review-big", "manual_review", "prefix_len", "lt", "16", "")
+
+	state := func(addr string, prefix int) map[string]any {
+		return map[string]any{"network_id": net.ID, "network_address": addr, "prefix_length": prefix, "description": "pf"}
+	}
+	exists := func(addr string) bool {
+		list, err := repo.ListSubnetsBySection(ctx, net.ID)
+		require.NoError(t, err)
+		for _, s := range list {
+			if s.NetworkAddress == addr {
+				return true
+			}
+		}
+		return false
+	}
+
+	// allow: no policy matches, so the intent applies.
+	ok, err := in.SubmitIntent(ctx, "subnet", nil, "create", state("10.88.1.0", 24), &admin.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "applied", ok.Status)
+	assert.True(t, exists("10.88.1.0"))
+
+	// deny: blocked, nothing created, intent recorded as rejected with the message.
+	_, err = in.SubmitIntent(ctx, "subnet", nil, "create", state("10.88.2.0", 30), &admin.ID)
+	var denied *PolicyDeniedError
+	require.ErrorAs(t, err, &denied)
+	assert.Equal(t, "prefix too small", denied.Message)
+	assert.False(t, exists("10.88.2.0"))
+	rejected, err := in.ListIntents(ctx, "rejected", "subnet", nil)
+	require.NoError(t, err)
+	require.NotEmpty(t, rejected)
+	require.NotNil(t, rejected[0].ReviewerNote)
+	assert.Contains(t, *rejected[0].ReviewerNote, "prefix too small")
+
+	// manual_review: auto-approve leaves it pending; nothing is written.
+	rev, err := in.SubmitIntent(ctx, "subnet", nil, "create", state("172.16.0.0", 12), &admin.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "pending", rev.Status)
+	assert.False(t, exists("172.16.0.0"))
+
+	// A reviewer's explicit approval satisfies the manual review.
+	done, err := in.ApproveIntent(ctx, rev.ID, &admin.ID, "reviewed")
+	require.NoError(t, err)
+	assert.Equal(t, "applied", done.Status)
+	assert.True(t, exists("172.16.0.0"))
+
+	// A reviewer cannot approve past a deny.
+	require.NoError(t, svc.Config.SetCtx(ctx, "intent_auto_approve", "false"))
+	d2, err := in.SubmitIntent(ctx, "subnet", nil, "create", state("10.88.3.0", 30), &admin.ID)
+	require.NoError(t, err)
+	_, err = in.ApproveIntent(ctx, d2.ID, &admin.ID, "")
+	require.ErrorAs(t, err, &denied)
+	assert.False(t, exists("10.88.3.0"))
+
+	// Bypass skips evaluation entirely.
+	d3, err := in.SubmitIntent(WithPolicyBypass(ctx), "subnet", nil, "create", state("10.88.4.0", 30), &admin.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "pending", d3.Status)
+	got, err := in.ApproveIntent(WithPolicyBypass(ctx), d3.ID, &admin.ID, "")
+	require.NoError(t, err)
+	assert.Equal(t, "applied", got.Status)
+	assert.True(t, exists("10.88.4.0"))
 }

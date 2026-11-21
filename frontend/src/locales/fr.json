@@ -130,6 +130,12 @@
     "sending": "Envoi…",
     "genericError": "Échec de l'envoi de l'e-mail. Veuillez réessayer."
   },
+  "policyCheck": {
+    "passed": "Vérification de la politique réussie",
+    "bypassed": "Vérification de la politique ignorée pour votre compte",
+    "review": "Une révision manuelle sera nécessaire avant l'application. {{message}}",
+    "blocked": "Bloqué par la politique : {{message}}"
+  },
   "intentPanel": {
     "pendingTitle": "Modification en attente : {{operation}}",
     "submittedAt": "Soumise le {{date}}. Elle n'est appliquée qu'après approbation.",
