@@ -1,5 +1,15 @@
 # Changelog
 
+## v2.0.2
+
+### Fixed
+Built-in automation policy actions (#19) now do what the policy says:
+- **`webhook`** delivers to the endpoint named by `webhook_id` only (it used to fan out to every subscribed endpoint). A missing or inactive endpoint is recorded as a failed action.
+- **`scan`** applies the chosen `profile_id` (scan type, concurrency, DNS lookup) to the job and actually starts it; before, the job was created but never ran.
+- **`audit_annotation`** writes a `policy_annotation` entry to the audit log against the affected resource (it used to write only a server log line).
+- **Intent-applied changes run policy actions.** Subnets, IPs, devices and VLANs applied through the intent workflow now execute the actions of every policy they matched and appear in the execution log, as direct writes already did.
+- **Actions are validated on save.** An unknown type or a missing or malformed required param returns 400 instead of failing silently at run time.
+
 ## v2.0.1
 
 ### Fixed

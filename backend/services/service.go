@@ -64,8 +64,10 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	auditSvc.SubscribeTo(bus)
 	workflowSvc := NewWorkflowService(repo, ipamSvc, dnsSvc, bus, notificationSvc)
 	automationSvc := NewAutomationService(repo, svc, webhookSvc, notificationSvc)
+	discoverySvc := NewDiscoveryService(repo, configSvc, mfaEncryptionKey)
+	automationSvc.SetScanner(discoverySvc)
 	svc.Ops = &OpsManager{
-		Discovery:      NewDiscoveryService(repo, configSvc, mfaEncryptionKey),
+		Discovery:      discoverySvc,
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),
 		Import:         NewImportService(repo),
 		Jobs:           NewJobService(repo),

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -25,6 +26,9 @@ type automationRepo interface {
 	UpdateIPAddressTag(ctx context.Context, ipID int64, tagID *int64) (*models.IPAddress, error)
 	GetIPAddressByID(ctx context.Context, id int64) (*models.IPAddress, error)
 	GetScanJobByID(ctx context.Context, id int64) (*models.ScanJob, error)
+	GetScanProfileByID(ctx context.Context, id int64) (*models.ScanProfile, error)
+	UpdateScanJobFull(ctx context.Context, id int64, name string, subnetIDs []int64, scheduleCron *string, isActive bool, pingConcurrency int, notifyOnChange bool, scanType string, agentID *int64, autoAddIPs bool, discoverDNS bool, dnsOverwrite bool) (*models.ScanJob, error)
+	CreateAuditLog(ctx context.Context, entry *models.AuditLog) error
 	DeleteScanJob(ctx context.Context, id int64) error
 
 	CreatePolicyExecutionLog(ctx context.Context, l *models.PolicyExecutionLog) (*models.PolicyExecutionLog, error)
@@ -47,7 +51,16 @@ type AutomationService struct {
 	ipam          automationIPAM
 	webhooks      *WebhookService
 	notifications *NotificationService
+	scanner       automationScanner
 }
+
+// automationScanner starts a scan job; the discovery service implements it.
+type automationScanner interface {
+	RunJob(ctx context.Context, job *models.ScanJob) error
+}
+
+// SetScanner wires the discovery service so the scan action can run its job.
+func (a *AutomationService) SetScanner(s automationScanner) { a.scanner = s }
 
 type AutomationRequest struct {
 	Workflow string
@@ -104,6 +117,9 @@ func (a *AutomationService) SavePolicy(ctx context.Context, policy *models.Autom
 		return nil, fmt.Errorf("effect must be allow, deny, or manual_review")
 	}
 	if err := validateConditions(policy.Conditions); err != nil {
+		return nil, err
+	}
+	if err := validateActions(policy.Actions); err != nil {
 		return nil, err
 	}
 	if policy.ID > 0 {
@@ -327,6 +343,51 @@ func validateConditions(conds []models.PolicyCondition) error {
 	return nil
 }
 
+func paramInt(params map[string]string, key string) (int64, bool) {
+	v, err := strconv.ParseInt(strings.TrimSpace(params[key]), 10, 64)
+	return v, err == nil && v > 0
+}
+
+// validateActions rejects actions that could never run: an unknown type or a
+// missing or malformed required param.
+func validateActions(actions []models.PolicyAction) error {
+	for i, act := range actions {
+		n := i + 1
+		switch act.Type {
+		case "notify":
+			if _, ok := paramInt(act.Params, "user_id"); !ok && strings.TrimSpace(act.Params["role"]) == "" {
+				return fmt.Errorf("action %d: notify needs a user_id or a role", n)
+			}
+			if _, has := act.Params["user_id"]; has && act.Params["user_id"] != "" {
+				if _, ok := paramInt(act.Params, "user_id"); !ok {
+					return fmt.Errorf("action %d: user_id must be a number", n)
+				}
+			}
+		case "webhook":
+			if _, ok := paramInt(act.Params, "webhook_id"); !ok {
+				return fmt.Errorf("action %d: webhook needs a numeric webhook_id", n)
+			}
+		case "audit_annotation":
+			if strings.TrimSpace(act.Params["message"]) == "" {
+				return fmt.Errorf("action %d: audit_annotation needs a message", n)
+			}
+		case "scan":
+			if v := strings.TrimSpace(act.Params["profile_id"]); v != "" {
+				if _, ok := paramInt(act.Params, "profile_id"); !ok {
+					return fmt.Errorf("action %d: profile_id must be a number", n)
+				}
+			}
+		case "tag":
+			if _, ok := paramInt(act.Params, "tag_id"); !ok {
+				return fmt.Errorf("action %d: tag needs a numeric tag_id", n)
+			}
+		default:
+			return fmt.Errorf("action %d: unknown type %q (use notify, webhook, audit_annotation, scan or tag)", n, act.Type)
+		}
+	}
+	return nil
+}
+
 func toFloat(s string) *float64 {
 	v, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -495,11 +556,7 @@ func (a *AutomationService) runAction(ctx context.Context, action models.PolicyA
 	case "webhook":
 		return nil, a.runWebhookAction(ctx, action.Params, policy, resourceType, resourceID, resourceName)
 	case "audit_annotation":
-		msg := action.Params["message"]
-		slog.Info("automation audit annotation",
-			"policy", policy.Name, "resource_type", resourceType, "resource_id", resourceID,
-			"resource_name", resourceName, "message", msg)
-		return nil, nil
+		return nil, a.runAuditAnnotation(ctx, action.Params, policy, resourceType, resourceID, resourceName)
 	case "scan":
 		return a.runScanAction(ctx, action.Params, resourceType, resourceID)
 	case "tag":
@@ -507,6 +564,26 @@ func (a *AutomationService) runAction(ctx context.Context, action models.PolicyA
 	default:
 		return nil, fmt.Errorf("unknown action type %q", action.Type)
 	}
+}
+
+// runAuditAnnotation appends the policy's note to the audit log against the
+// affected resource.
+func (a *AutomationService) runAuditAnnotation(ctx context.Context, params map[string]string, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) error {
+	nv, _ := json.Marshal(map[string]string{"message": params["message"], "policy": policy.Name})
+	nvs := string(nv)
+	entry := &models.AuditLog{
+		Username:     "automation: " + policy.Name,
+		Action:       "policy_annotation",
+		ResourceType: resourceType,
+		ResourceID:   &resourceID,
+		ResourceName: resourceName,
+		NewValues:    &nvs,
+		Status:       "success",
+	}
+	if org, ok := repository.OrgFromContext(ctx); ok {
+		entry.OrganizationID = &org
+	}
+	return a.repo.CreateAuditLog(ctx, entry)
 }
 
 func (a *AutomationService) runNotifyAction(ctx context.Context, params map[string]string, policy *models.AutomationPolicy, resourceType string, resourceID int64, resourceName string) error {
@@ -543,7 +620,11 @@ func (a *AutomationService) runWebhookAction(ctx context.Context, params map[str
 	if a.webhooks == nil {
 		return fmt.Errorf("webhook service not available")
 	}
-	a.webhooks.Queue(ctx, WebhookEvent{
+	id, ok := paramInt(params, "webhook_id")
+	if !ok {
+		return fmt.Errorf("webhook action requires a numeric webhook_id param")
+	}
+	return a.webhooks.QueueToEndpoint(ctx, id, WebhookEvent{
 		EventType:    "automation.action",
 		Action:       policy.Effect,
 		ResourceType: resourceType,
@@ -553,19 +634,51 @@ func (a *AutomationService) runWebhookAction(ctx context.Context, params map[str
 		NewValues:    map[string]string{"policy": policy.Name},
 		OccurredAt:   time.Now().UTC(),
 	})
-	return nil
 }
 
 func (a *AutomationService) runScanAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) (map[string]string, error) {
 	if resourceType != "subnet" {
 		return nil, fmt.Errorf("scan action only supported for subnet resources")
 	}
+	var profile *models.ScanProfile
+	if _, ok := paramInt(params, "profile_id"); ok {
+		pid, _ := paramInt(params, "profile_id")
+		p, err := a.repo.GetScanProfileByID(ctx, pid)
+		if err != nil {
+			return nil, fmt.Errorf("scan profile %d not found", pid)
+		}
+		profile = p
+	}
 	name := fmt.Sprintf("auto-scan subnet %d", resourceID)
 	job, err := a.repo.CreateScanJob(ctx, name, []int64{resourceID}, nil, 0, false)
 	if err != nil {
 		return nil, err
 	}
-	return map[string]string{"scan_job_id": strconv.FormatInt(job.ID, 10)}, nil
+	if profile != nil {
+		conc := profile.PingConcurrency
+		if conc <= 0 {
+			conc = job.PingConcurrency
+		}
+		updated, err := a.repo.UpdateScanJobFull(ctx, job.ID, job.Name, job.SubnetIDs, job.ScheduleCron, job.IsActive,
+			conc, job.NotifyOnChange, profile.ScanType, job.AgentID, job.AutoAddIPs, profile.DNSLookup, job.DNSOverwrite)
+		if err != nil {
+			_ = a.repo.DeleteScanJob(ctx, job.ID)
+			return nil, err
+		}
+		job = updated
+	}
+	undo := map[string]string{"scan_job_id": strconv.FormatInt(job.ID, 10)}
+	if a.scanner == nil {
+		return undo, fmt.Errorf("scan job %d created but discovery is not available to run it", job.ID)
+	}
+	// The scan can take minutes; run it detached so the action (and its
+	// 30-second budget) is only about creating and starting the job.
+	go func(job *models.ScanJob) {
+		if err := a.scanner.RunJob(context.WithoutCancel(ctx), job); err != nil {
+			slog.Warn("automation: scan job failed", "job_id", job.ID, "error", err)
+		}
+	}(job)
+	return undo, nil
 }
 
 func (a *AutomationService) runTagAction(ctx context.Context, params map[string]string, resourceType string, resourceID int64) (map[string]string, error) {
