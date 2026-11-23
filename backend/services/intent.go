@@ -47,6 +47,8 @@ type intentInfra interface {
 // intentPolicy evaluates automation policies before an intent is applied.
 type intentPolicy interface {
 	Evaluate(ctx context.Context, req AutomationRequest) (*PolicyDecision, error)
+	// RecordApplied runs the matched policies' actions after the change is applied.
+	RecordApplied(ctx context.Context, decision *PolicyDecision, resourceType string, resourceID int64, resourceName string)
 }
 
 type IntentService struct {
@@ -333,6 +335,7 @@ func optNote(note string) *string {
 // pending for that review. A deny decision always blocks the change.
 func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64, note *string, human bool) (*models.ResourceIntent, error) {
 	now := time.Now()
+	var decision *PolicyDecision
 	if s.policy != nil && !policyBypassed(ctx) {
 		pending, err := s.repo.GetIntent(ctx, id)
 		if err != nil {
@@ -344,7 +347,7 @@ func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64
 		if pending.Status != "pending" {
 			return nil, ErrIntentNotPending
 		}
-		decision, err := s.policy.Evaluate(ctx, intentPolicyRequest(pending))
+		decision, err = s.policy.Evaluate(ctx, intentPolicyRequest(pending))
 		if err != nil {
 			return nil, fmt.Errorf("policy evaluation failed: %w", err)
 		}
@@ -372,7 +375,8 @@ func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64
 		}
 		return nil, err
 	}
-	if err := s.applyIntent(ctx, intent); err != nil {
+	res, err := s.applyIntent(ctx, intent)
+	if err != nil {
 		_ = s.repo.UpdateIntentStatus(ctx, id, "failed", reviewerID, ptrStr(err.Error()), &now, nil)
 		return nil, fmt.Errorf("apply failed: %w", err)
 	}
@@ -380,10 +384,21 @@ func (s *IntentService) approve(ctx context.Context, id int64, reviewerID *int64
 	if err := s.repo.UpdateIntentStatus(ctx, id, "applied", reviewerID, note, &now, &applied); err != nil {
 		return nil, err
 	}
+	// The change is in: run the actions of the policies it matched, in the
+	// background so they never delay or fail the approval.
+	if decision != nil && len(decision.Matched) > 0 {
+		go s.policy.RecordApplied(context.WithoutCancel(ctx), decision, intent.ResourceType, res.ID, res.Name)
+	}
 	return s.repo.GetIntent(ctx, id)
 }
 
-func (s *IntentService) applyIntent(ctx context.Context, intent *models.ResourceIntent) error {
+// appliedResource identifies the resource an applied intent created or changed.
+type appliedResource struct {
+	ID   int64
+	Name string
+}
+
+func (s *IntentService) applyIntent(ctx context.Context, intent *models.ResourceIntent) (appliedResource, error) {
 	switch intent.ResourceType {
 	case "subnet":
 		return s.applySubnet(ctx, intent)
@@ -394,7 +409,7 @@ func (s *IntentService) applyIntent(ctx context.Context, intent *models.Resource
 	case "vlan":
 		return s.applyVLAN(ctx, intent)
 	default:
-		return fmt.Errorf("unsupported resource_type: %s", intent.ResourceType)
+		return appliedResource{}, fmt.Errorf("unsupported resource_type: %s", intent.ResourceType)
 	}
 }
 
@@ -414,36 +429,42 @@ type subnetDesiredState struct {
 	CustomFields   map[string]*string `json:"custom_fields"`
 }
 
-func (s *IntentService) applySubnet(ctx context.Context, intent *models.ResourceIntent) error {
+func (s *IntentService) applySubnet(ctx context.Context, intent *models.ResourceIntent) (appliedResource, error) {
 	switch intent.Operation {
 	case "create":
 		var ds subnetDesiredState
 		if err := remarshal(intent.DesiredState, &ds); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.ipam.CreateSubnet(ctx, ds.NetworkID, ds.NetworkAddress, ds.PrefixLength,
+		sub, err := s.ipam.CreateSubnet(ctx, ds.NetworkID, ds.NetworkAddress, ds.PrefixLength,
 			ds.Description, ds.Gateway, ds.AutoFirst, ds.AutoLast,
 			ds.LocationID, ds.NameserverID, ds.VLANID, ds.CustomFields)
-		return err
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{sub.ID, fmt.Sprintf("%s/%d", sub.NetworkAddress, sub.PrefixLength)}, nil
 	case "update":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for subnet update")
+			return appliedResource{}, fmt.Errorf("resource_id required for subnet update")
 		}
 		var ds subnetDesiredState
 		if err := remarshal(intent.DesiredState, &ds); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.ipam.UpdateSubnet(ctx, *intent.ResourceID, ds.Description,
+		sub, err := s.ipam.UpdateSubnet(ctx, *intent.ResourceID, ds.Description,
 			ds.Gateway, ds.AutoFirst, ds.AutoLast,
 			ds.LocationID, ds.NameserverID, ds.VLANID, ds.CustomFields)
-		return err
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{sub.ID, fmt.Sprintf("%s/%d", sub.NetworkAddress, sub.PrefixLength)}, nil
 	case "delete":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for subnet delete")
+			return appliedResource{}, fmt.Errorf("resource_id required for subnet delete")
 		}
-		return s.ipam.DeleteSubnet(ctx, *intent.ResourceID)
+		return appliedResource{ID: *intent.ResourceID}, s.ipam.DeleteSubnet(ctx, *intent.ResourceID)
 	}
-	return fmt.Errorf("unknown operation: %s", intent.Operation)
+	return appliedResource{}, fmt.Errorf("unknown operation: %s", intent.Operation)
 }
 
 // -- ip_address --
@@ -460,67 +481,79 @@ type ipDesiredState struct {
 	CustomFields map[string]*string `json:"custom_fields"`
 }
 
-func (s *IntentService) applyIPAddress(ctx context.Context, intent *models.ResourceIntent) error {
+func (s *IntentService) applyIPAddress(ctx context.Context, intent *models.ResourceIntent) (appliedResource, error) {
 	switch intent.Operation {
 	case "create":
 		var ds ipDesiredState
 		if err := remarshal(intent.DesiredState, &ds); err != nil {
-			return err
+			return appliedResource{}, err
 		}
 		if ds.Status == "" {
 			ds.Status = "active"
 		}
-		_, err := s.ipam.CreateIPAddress(ctx, ds.SubnetID, ds.Address, ds.Hostname,
+		ip, err := s.ipam.CreateIPAddress(ctx, ds.SubnetID, ds.Address, ds.Hostname,
 			ds.Status, ds.TagID, ds.MacAddress, ds.PtrRecord, ds.DNSName, ds.CustomFields)
-		return err
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{ip.ID, ip.Address}, nil
 	case "update":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for ip_address update")
+			return appliedResource{}, fmt.Errorf("resource_id required for ip_address update")
 		}
 		var ds ipDesiredState
 		if err := remarshal(intent.DesiredState, &ds); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.ipam.UpdateIPAddressMeta(ctx, *intent.ResourceID, ds.Hostname,
+		ip, err := s.ipam.UpdateIPAddressMeta(ctx, *intent.ResourceID, ds.Hostname,
 			ds.TagID, ds.MacAddress, ds.PtrRecord, ds.DNSName, ds.CustomFields)
-		return err
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{ip.ID, ip.Address}, nil
 	case "delete":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for ip_address delete")
+			return appliedResource{}, fmt.Errorf("resource_id required for ip_address delete")
 		}
-		return s.ipam.DeleteIPAddress(ctx, *intent.ResourceID)
+		return appliedResource{ID: *intent.ResourceID}, s.ipam.DeleteIPAddress(ctx, *intent.ResourceID)
 	}
-	return fmt.Errorf("unknown operation: %s", intent.Operation)
+	return appliedResource{}, fmt.Errorf("unknown operation: %s", intent.Operation)
 }
 
 // -- device --
 
-func (s *IntentService) applyDevice(ctx context.Context, intent *models.ResourceIntent) error {
+func (s *IntentService) applyDevice(ctx context.Context, intent *models.ResourceIntent) (appliedResource, error) {
 	switch intent.Operation {
 	case "create":
 		var req DeviceCreateRequest
 		if err := remarshal(intent.DesiredState, &req); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.infra.CreateDevice(ctx, &req)
-		return err
+		d, err := s.infra.CreateDevice(ctx, &req)
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{d.ID, d.Hostname}, nil
 	case "update":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for device update")
+			return appliedResource{}, fmt.Errorf("resource_id required for device update")
 		}
 		var req DeviceUpdateRequest
 		if err := remarshal(intent.DesiredState, &req); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.infra.UpdateDevice(ctx, *intent.ResourceID, &req)
-		return err
+		d, err := s.infra.UpdateDevice(ctx, *intent.ResourceID, &req)
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{d.ID, d.Hostname}, nil
 	case "delete":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for device delete")
+			return appliedResource{}, fmt.Errorf("resource_id required for device delete")
 		}
-		return s.infra.DeleteDevice(ctx, *intent.ResourceID)
+		return appliedResource{ID: *intent.ResourceID}, s.infra.DeleteDevice(ctx, *intent.ResourceID)
 	}
-	return fmt.Errorf("unknown operation: %s", intent.Operation)
+	return appliedResource{}, fmt.Errorf("unknown operation: %s", intent.Operation)
 }
 
 // -- vlan --
@@ -534,32 +567,38 @@ type vlanDesiredState struct {
 	Description string `json:"description"`
 }
 
-func (s *IntentService) applyVLAN(ctx context.Context, intent *models.ResourceIntent) error {
+func (s *IntentService) applyVLAN(ctx context.Context, intent *models.ResourceIntent) (appliedResource, error) {
 	switch intent.Operation {
 	case "create":
 		var ds vlanDesiredState
 		if err := remarshal(intent.DesiredState, &ds); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.ipam.CreateVLAN(ctx, ds.VRFID, ds.DomainID, ds.GroupID, ds.VlanID, ds.Name, ds.Description)
-		return err
+		v, err := s.ipam.CreateVLAN(ctx, ds.VRFID, ds.DomainID, ds.GroupID, ds.VlanID, ds.Name, ds.Description)
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{v.ID, v.Name}, nil
 	case "update":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for vlan update")
+			return appliedResource{}, fmt.Errorf("resource_id required for vlan update")
 		}
 		var ds vlanDesiredState
 		if err := remarshal(intent.DesiredState, &ds); err != nil {
-			return err
+			return appliedResource{}, err
 		}
-		_, err := s.ipam.UpdateVLAN(ctx, *intent.ResourceID, ds.DomainID, ds.GroupID, ds.Name, ds.Description)
-		return err
+		v, err := s.ipam.UpdateVLAN(ctx, *intent.ResourceID, ds.DomainID, ds.GroupID, ds.Name, ds.Description)
+		if err != nil {
+			return appliedResource{}, err
+		}
+		return appliedResource{v.ID, v.Name}, nil
 	case "delete":
 		if intent.ResourceID == nil {
-			return fmt.Errorf("resource_id required for vlan delete")
+			return appliedResource{}, fmt.Errorf("resource_id required for vlan delete")
 		}
-		return s.ipam.DeleteVLAN(ctx, *intent.ResourceID)
+		return appliedResource{ID: *intent.ResourceID}, s.ipam.DeleteVLAN(ctx, *intent.ResourceID)
 	}
-	return fmt.Errorf("unknown operation: %s", intent.Operation)
+	return appliedResource{}, fmt.Errorf("unknown operation: %s", intent.Operation)
 }
 
 // remarshal round-trips a map[string]any into a typed struct via JSON.

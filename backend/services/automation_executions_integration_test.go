@@ -18,6 +18,7 @@ func TestAutomationExecutionLog_Integration(t *testing.T) {
 	repo := repository.NewRepository(pool)
 	svc := NewService(repo, testMFAKey)
 	auto := svc.Ops.Automation
+	auto.SetScanner(noopScanner{}) // do not really scan the test network
 	ctx := context.Background()
 
 	u, err := repo.CreateUser(ctx, "auto-user", "auto@example.com")
@@ -39,9 +40,14 @@ func TestAutomationExecutionLog_Integration(t *testing.T) {
 		Actions: []models.PolicyAction{
 			{Type: "tag", Params: map[string]string{"tag_id": itoa(newTag.ID)}},
 			{Type: "audit_annotation", Params: map[string]string{"message": "tagged"}},
-			{Type: "tag", Params: map[string]string{"tag_id": "not-a-number"}},
+			{Type: "tag", Params: map[string]string{"tag_id": "1"}},
 		},
 	})
+	require.NoError(t, err)
+	// SavePolicy rejects a malformed action, so store one directly to prove a
+	// failing action is recorded rather than fatal.
+	tagPolicy.Actions[2] = models.PolicyAction{Type: "tag", Params: map[string]string{"tag_id": "not-a-number"}}
+	_, err = repo.UpdateAutomationPolicy(ctx, tagPolicy)
 	require.NoError(t, err)
 	_, err = auto.SavePolicy(ctx, &models.AutomationPolicy{
 		Name: "no guests", Workflow: "ip_address", Action: "create", Effect: "deny", Enabled: true, Message: "guests not allowed",
@@ -165,3 +171,8 @@ func TestAutomationExecutionLog_Integration(t *testing.T) {
 	assert.Nil(t, kept.PolicyID)
 	assert.Equal(t, "tag lab hosts", kept.PolicyName)
 }
+
+// noopScanner stands in for the discovery service so tests do not run scans.
+type noopScanner struct{}
+
+func (noopScanner) RunJob(context.Context, *models.ScanJob) error { return nil }

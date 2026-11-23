@@ -141,6 +141,34 @@ func (w *WebhookService) Queue(ctx context.Context, event WebhookEvent) {
 	}
 }
 
+// QueueToEndpoint queues an event for one specific endpoint, regardless of that
+// endpoint's event and object filters (the caller chose it explicitly). It
+// fails if the endpoint does not exist in the caller's organization or is
+// inactive.
+func (w *WebhookService) QueueToEndpoint(ctx context.Context, endpointID int64, event WebhookEvent) error {
+	endpoint, err := w.repo.GetWebhookEndpoint(ctx, endpointID)
+	if err != nil {
+		return fmt.Errorf("webhook endpoint %d not found", endpointID)
+	}
+	if !endpoint.IsActive {
+		return fmt.Errorf("webhook endpoint %d is inactive", endpointID)
+	}
+	if event.SchemaVersion == "" {
+		event.SchemaVersion = WebhookEventSchemaVersion
+	}
+	if event.OccurredAt.IsZero() {
+		event.OccurredAt = time.Now().UTC()
+	}
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	if _, err := w.repo.CreateWebhookDelivery(ctx, endpoint.ID, event.EventType, string(payload)); err != nil {
+		return fmt.Errorf("queue delivery: %w", err)
+	}
+	return nil
+}
+
 func (w *WebhookService) ProcessQueue(ctx context.Context) {
 	deliveries, err := w.repo.GetPendingWebhookDeliveries(ctx, 50)
 	if err != nil {
