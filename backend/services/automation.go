@@ -103,6 +103,9 @@ func (a *AutomationService) SavePolicy(ctx context.Context, policy *models.Autom
 	default:
 		return nil, fmt.Errorf("effect must be allow, deny, or manual_review")
 	}
+	if err := validateConditions(policy.Conditions); err != nil {
+		return nil, err
+	}
 	if policy.ID > 0 {
 		return a.repo.UpdateAutomationPolicy(ctx, policy)
 	}
@@ -256,16 +259,72 @@ func evalCondition(op, actual, expected string) bool {
 		a, ea := toFloat(actual), toFloat(expected)
 		return a != nil && ea != nil && *a < *ea
 	case "glob":
-		if expected == "" || expected == "*" {
-			return true
-		}
-		if strings.HasSuffix(expected, "*") {
-			return strings.HasPrefix(actual, strings.TrimSuffix(expected, "*"))
-		}
-		return actual == expected
+		return globMatch(expected, actual)
 	default:
 		return actual == expected
 	}
+}
+
+// globMatch reports whether s matches pattern, where * matches any run of
+// characters (including none) and ? matches exactly one. An empty pattern or
+// "*" matches everything, as it did before wildcards were generalized.
+func globMatch(pattern, s string) bool {
+	if pattern == "" {
+		return true
+	}
+	p, str := []rune(pattern), []rune(s)
+	pi, si, star, mark := 0, 0, -1, 0
+	for si < len(str) {
+		switch {
+		case pi < len(p) && p[pi] == '*':
+			star, mark = pi, si
+			pi++
+		case pi < len(p) && (p[pi] == '?' || p[pi] == str[si]):
+			pi++
+			si++
+		case star >= 0:
+			pi = star + 1
+			mark++
+			si = mark
+		default:
+			return false
+		}
+	}
+	for pi < len(p) && p[pi] == '*' {
+		pi++
+	}
+	return pi == len(p)
+}
+
+// validOperators are the condition operators evalCondition understands.
+var validOperators = map[string]bool{
+	"eq": true, "neq": true, "contains": true, "starts_with": true,
+	"ends_with": true, "gt": true, "lt": true, "glob": true,
+}
+
+// validateConditions rejects conditions that would silently misbehave: an
+// unknown operator (which evaluates as eq), a missing field, or a numeric
+// comparison against a value that is not a number. An empty operator is
+// normalized to eq.
+func validateConditions(conds []models.PolicyCondition) error {
+	for i := range conds {
+		c := &conds[i]
+		c.Field = strings.TrimSpace(c.Field)
+		c.Operator = strings.TrimSpace(c.Operator)
+		if c.Operator == "" {
+			c.Operator = "eq"
+		}
+		if c.Field == "" {
+			return fmt.Errorf("condition %d: field is required", i+1)
+		}
+		if !validOperators[c.Operator] {
+			return fmt.Errorf("condition %d: unknown operator %q (use eq, neq, contains, starts_with, ends_with, gt, lt or glob)", i+1, c.Operator)
+		}
+		if (c.Operator == "gt" || c.Operator == "lt") && toFloat(c.Value) == nil {
+			return fmt.Errorf("condition %d: %s needs a numeric value", i+1, c.Operator)
+		}
+	}
+	return nil
 }
 
 func toFloat(s string) *float64 {

@@ -215,6 +215,13 @@ func TestPolicyMatches(t *testing.T) {
 		{name: "glob trailing star matches prefix", conditions: []models.PolicyCondition{cond("hostname", "glob", "prod-*")}, values: map[string]string{"hostname": "prod-router-01"}, want: true},
 		{name: "glob trailing star no match", conditions: []models.PolicyCondition{cond("hostname", "glob", "prod-*")}, values: map[string]string{"hostname": "dev-router-01"}, want: false},
 		{name: "glob exact", conditions: []models.PolicyCondition{cond("hostname", "glob", "web01")}, values: map[string]string{"hostname": "web01"}, want: true},
+		{name: "glob leading star", conditions: []models.PolicyCondition{cond("hostname", "glob", "*-web")}, values: map[string]string{"hostname": "a-web"}, want: true},
+		{name: "glob leading star miss", conditions: []models.PolicyCondition{cond("hostname", "glob", "*-web")}, values: map[string]string{"hostname": "a-web2"}, want: false},
+		{name: "glob middle star", conditions: []models.PolicyCondition{cond("hostname", "glob", "a*b")}, values: map[string]string{"hostname": "axxb"}, want: true},
+		{name: "glob middle star miss", conditions: []models.PolicyCondition{cond("hostname", "glob", "a*b")}, values: map[string]string{"hostname": "axxc"}, want: false},
+		{name: "glob question mark", conditions: []models.PolicyCondition{cond("hostname", "glob", "web0?")}, values: map[string]string{"hostname": "web01"}, want: true},
+		{name: "glob question mark needs a char", conditions: []models.PolicyCondition{cond("hostname", "glob", "web0?")}, values: map[string]string{"hostname": "web0"}, want: false},
+		{name: "glob multiple stars", conditions: []models.PolicyCondition{cond("hostname", "glob", "*a*b*")}, values: map[string]string{"hostname": "xxaxxbxx"}, want: true},
 		// multiple conditions (AND semantics)
 		{
 			name: "all conditions match",
@@ -242,5 +249,25 @@ func TestPolicyMatches(t *testing.T) {
 				t.Fatalf("policyMatches() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestValidateConditions(t *testing.T) {
+	good := []models.PolicyCondition{cond("hostname", "", "x"), cond("prefix_len", "gt", "24"), cond("hostname", "glob", "a*")}
+	if err := validateConditions(good); err != nil {
+		t.Fatalf("valid conditions rejected: %v", err)
+	}
+	if good[0].Operator != "eq" {
+		t.Fatalf("empty operator not normalized, got %q", good[0].Operator)
+	}
+	for name, c := range map[string]models.PolicyCondition{
+		"unknown operator": cond("hostname", "regex", "x"),
+		"missing field":    cond(" ", "eq", "x"),
+		"gt non-numeric":   cond("prefix_len", "gt", "big"),
+		"lt non-numeric":   cond("prefix_len", "lt", ""),
+	} {
+		if err := validateConditions([]models.PolicyCondition{c}); err == nil {
+			t.Errorf("%s: expected error", name)
+		}
 	}
 }

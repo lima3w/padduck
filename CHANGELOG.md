@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.0.1
+
+### Fixed
+Hardening of the automation rule builder (#18):
+- **Stored policies are migrated.** Legacy object-form conditions (`{"field": "value"}`) are rewritten to the `[{field, operator, value}]` array in the database (migration `20260724_001`, reversible; the down migration keeps only `eq` and `glob` conditions). Reading still accepts the old shape.
+- **Operators are validated on save.** An unknown operator, missing field, or non-numeric `gt`/`lt` value returns 400 instead of silently behaving as `eq`. An empty operator is stored as `eq`.
+- **`glob` supports `*` anywhere and `?`.** Previously only a trailing `*` worked; `*-web`, `a*b` and `web0?` were treated as exact matches.
+
 ## v2.0.0
 
 ### Breaking changes
