@@ -95,6 +95,10 @@ All settings are read from environment variables. Docker Compose interpolates th
 
 ---
 
+### Optional modules
+
+A new install turns off the modules a small homelab rarely needs: BGP, Circuits, Customers, Firewall, NAT, VRFs and Racks. Devices, Locations, VLANs and DHCP stay on. The first-run setup wizard lets you change this, and you can switch any module on or off later under **Admin → Settings**. Upgrading an existing install never changes your choices.
+
 ## Verify the install
 
 Once the stack is up, confirm the backend and frontend are healthy:

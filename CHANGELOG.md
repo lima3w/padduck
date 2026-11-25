@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.3
+
+### Changed
+New installs start lean: the modules a small homelab rarely needs are off by default: BGP, Circuits, Customers, Firewall, NAT, VRFs and Racks. Devices, Locations, VLANs and DHCP stay on. The first-run setup wizard shows the choice, and each module can be turned on at any time under Admin settings. **Existing installs are not changed.** The migration only acts when the database has no users yet, which is true only while the schema is first created.
+
 ## v2.0.2
 
 ### Fixed
