@@ -33,7 +33,7 @@ const isChosen = (values, key) => values[key] === 'true' || values[key] === 'fal
 export const WIZARD_STEPS = [
   { id: 'telemetry', labelKey: 'setupWizard.steps.telemetry', keys: ['telemetry_enabled'], Component: TelemetryStep },
   { id: 'updates', labelKey: 'setupWizard.steps.updates', keys: ['update_check_enabled'], Component: UpdateCheckStep },
-  // Every module defaults to enabled, so this step is always ready to continue.
+  // Every module already has a value (new installs start with the homelab-unneeded ones off), so this step is always ready to continue.
   { id: 'features', labelKey: 'setupWizard.steps.features', keys: FEATURE_KEYS, Component: FeaturesStep, isComplete: () => true },
 ]
 
