@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.4
+
+### Changed
+CI and release workflows updated to newer pinned GitHub Actions: `docker/login-action` 4.6.0, `docker/setup-buildx-action` 4.4.1, `docker/build-push-action` 7.4.0, `softprops/action-gh-release` 3.0.3 and `actions/setup-go` 7.0.0. No application changes.
+
 ## v2.0.3
 
 ### Changed
