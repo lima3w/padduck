@@ -10,8 +10,8 @@ GOVULNCHECK := $(GO_BIN)/govulncheck
 STATICCHECK_VERSION ?= v0.8.2
 GOSEC_VERSION ?= v2.30.0
 GOVULNCHECK_VERSION ?= v1.9.0
-# Space-separated OSV IDs to ignore. GO-2026-6909: crewjam/saml has no upstream fix; mitigated in services/saml.go (parseSAMLResponseSafely). Remove when fixed.
-GOVULNCHECK_IGNORE ?= GO-2026-6909
+# Space-separated OSV IDs to ignore (only for findings with no upstream fix that are mitigated in code).
+GOVULNCHECK_IGNORE ?=
 GOVULNCHECK_MIN_GO ?= go1.26.5
 STATICCHECK_CHECKS := all,-U1000,-ST1000,-ST1003,-ST1020,-SA1019
 

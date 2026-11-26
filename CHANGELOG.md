@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.5
+
+### Security
+Removed the `govulncheck` ignore for GO-2026-6909 (`crewjam/saml`). The advisory is fixed in v0.5.2 and Padduck already runs v0.6.3, so the vulnerability scan now covers it again and reports no findings. No application changes.
+
 ## v2.0.4
 
 ### Changed
