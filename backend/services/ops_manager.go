@@ -23,4 +23,5 @@ type OpsManager struct {
 	Organizations  *OrganizationService
 	OrgSettings    *OrgSettingsService
 	Intent         *IntentService
+	Secrets        *SecretsService
 }

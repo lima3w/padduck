@@ -41,6 +41,11 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 
 	notificationSvc := NewNotificationService(repo, emailSvc)
 
+	secretsSvc, err := NewSecretsService(repo, auditSvc, mfaEncryptionKey)
+	if err != nil {
+		log.Fatalf("Failed to initialize secrets service: %v", err)
+	}
+
 	svc := &Service{
 		repository:    repo,
 		encryptionKey: mfaEncryptionKey,
@@ -86,6 +91,7 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 		Organizations:  NewOrganizationService(repo),
 		OrgSettings:    orgSettingsSvc,
 		Intent:         NewIntentService(repo, configSvc, ipamSvc, infraSvc, automationSvc),
+		Secrets:        secretsSvc,
 	}
 	return svc
 }

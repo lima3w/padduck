@@ -3199,6 +3199,69 @@ paths:
         "200":
           $ref: "#/components/responses/OKArray"
 
+  /api/v1/admin/secrets:
+    get:
+      tags: [Admin]
+      summary: List secrets (metadata only; values are never returned)
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+    post:
+      tags: [Admin]
+      summary: Create a secret (name, description, value)
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+
+  /api/v1/admin/secrets/{id}/rotate:
+    put:
+      tags: [Admin]
+      summary: Rotate a secret by storing a new version (value)
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        $ref: "#/components/requestBodies/JSON"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+
+  /api/v1/admin/secrets/{id}/versions:
+    get:
+      tags: [Admin]
+      summary: List the stored versions of a secret (metadata only)
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          $ref: "#/components/responses/OKArray"
+
+  /api/v1/admin/secrets/{id}/versions/{version}:
+    delete:
+      tags: [Admin]
+      summary: Delete an old version of a secret (the current version cannot be deleted)
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
+  /api/v1/admin/secrets/{id}:
+    delete:
+      tags: [Admin]
+      summary: Delete a secret and all of its versions
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+
   /api/v1/admin/scan-profiles:
     get:
       tags: [Admin]

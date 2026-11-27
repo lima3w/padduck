@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.1.0
+
+### Added
+Secrets store (#22, part 1 of 3). Admins can keep integration credentials (SNMP community strings, API keys, bind passwords) as named, versioned, encrypted secrets under `/api/v1/admin/secrets`:
+- **Create / list / rotate / delete.** Rotation stores a new version and the name resolves to it; older versions are kept until deleted with `DELETE /secrets/{id}/versions/{version}` (the current version cannot be deleted).
+- **Values are never returned.** Every endpoint returns metadata only (`exists`, `version`, timestamps). The plaintext is reachable only server-side.
+- **Envelope encryption.** Each version is encrypted with its own random data key, which is encrypted with the existing `MFA_ENCRYPTION_KEY`.
+- **Audit logged.** Create, rotate, delete and every server-side read are recorded in the audit log.
+
+Referencing secrets with `secret://name` from SNMP and automation settings, migrating existing SNMP credentials, and the management page follow in the next two releases.
+
 ## v2.0.5
 
 ### Security
