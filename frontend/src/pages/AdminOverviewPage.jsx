@@ -29,6 +29,7 @@ export const ADMIN_SURFACE_SECTION_KEYS = [
     links: [
       { to: '/admin/integrations', titleKey: 'integrationsTitle', descriptionKey: 'integrationsDescription' },
       { to: '/admin/webhooks', titleKey: 'webhooksTitle', descriptionKey: 'webhooksDescription' },
+      { to: '/admin/secrets', titleKey: 'secretsTitle', descriptionKey: 'secretsDescription' },
       { to: '/admin/integration-templates', titleKey: 'integrationTemplatesTitle', descriptionKey: 'integrationTemplatesDescription' },
       { to: '/admin/automation/policies', titleKey: 'automationPoliciesTitle', descriptionKey: 'automationPoliciesDescription' },
       { to: '/admin/api-token-analytics', titleKey: 'tokenAnalyticsTitle', descriptionKey: 'tokenAnalyticsDescription' },

@@ -27,6 +27,7 @@ export default function ToolsTab({ config }) {
       title: t('toolsTab.sections.discoveryAutomation.title'),
       links: [
         { to: '/admin/webhooks', title: t('toolsTab.sections.discoveryAutomation.links.webhooks.title'), description: t('toolsTab.sections.discoveryAutomation.links.webhooks.description') },
+        { to: '/admin/secrets', title: t('toolsTab.sections.discoveryAutomation.links.secrets.title'), description: t('toolsTab.sections.discoveryAutomation.links.secrets.description') },
         { to: '/admin/integrations', title: t('toolsTab.sections.discoveryAutomation.links.integrations.title'), description: t('toolsTab.sections.discoveryAutomation.links.integrations.description') },
         { to: '/admin/grafana', title: t('toolsTab.sections.discoveryAutomation.links.grafana.title'), description: t('toolsTab.sections.discoveryAutomation.links.grafana.description') },
       ],

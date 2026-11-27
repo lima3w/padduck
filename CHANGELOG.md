@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.1.2
+
+### Added
+Secrets management page (#22, part 3 of 3) at **Admin > Secrets** (`/admin/secrets`). Create a secret, rotate it to a new version, review its versions and delete old ones, or delete the secret. Each row shows its `secret://name` reference; click it to copy. Values are entered in a masked field and are never shown again. This completes the secrets store.
+
 ## v2.1.1
 
 ### Added

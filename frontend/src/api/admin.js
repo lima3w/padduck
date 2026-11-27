@@ -242,3 +242,11 @@ export const rejectIntent = (id, note) => api.post(`/intents/${id}/reject`, { no
 // Policy pre-flight (#16): side-effect-free check of a write against automation policies.
 export const checkPolicy = (workflow, action, values) =>
   api.post('/policy/check', { workflow, action, values })
+
+// Secrets store (#22): metadata only; values are never returned.
+export const getSecrets = () => api.get('/admin/secrets')
+export const createSecret = (data) => api.post('/admin/secrets', data)
+export const rotateSecret = (id, value) => api.put(`/admin/secrets/${id}/rotate`, { value })
+export const deleteSecret = (id) => api.delete(`/admin/secrets/${id}`)
+export const getSecretVersions = (id) => api.get(`/admin/secrets/${id}/versions`)
+export const deleteSecretVersion = (id, version) => api.delete(`/admin/secrets/${id}/versions/${version}`)

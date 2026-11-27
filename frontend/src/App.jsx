@@ -22,6 +22,7 @@ const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
 const AuditPage = lazy(() => import('./pages/AuditPage'))
 const UserSettingsPage = lazy(() => import('./pages/UserSettingsPage'))
 const AdminTagsPage = lazy(() => import('./pages/AdminTagsPage'))
+const AdminSecretsPage = lazy(() => import('./pages/AdminSecretsPage'))
 const OverlapReportPage = lazy(() => import('./pages/OverlapReportPage'))
 const DevicesPage = lazy(() => import('./pages/DevicesPage'))
 const DeviceDetailPage = lazy(() => import('./pages/DeviceDetailPage'))
@@ -176,6 +177,7 @@ export default function App() {
             <Route path="admin/audit-log" element={<Navigate to="/admin/audit?tab=log" replace />} />
             <Route path="admin/audit/retention" element={<Navigate to="/admin/audit?tab=retention" replace />} />
             <Route path="admin/tags" element={<AdminTagsPage />} />
+            <Route path="admin/secrets" element={<AdminSecretsPage />} />
             <Route path="admin/overlap-report" element={<OverlapReportPage />} />
             <Route path="settings" element={<UserSettingsPage />} />
             <Route path="devices" element={gated('devices', <DevicesPage />)} />
