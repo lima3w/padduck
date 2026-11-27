@@ -374,6 +374,12 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	admin.Delete("/scan-agents/:id", h.DeleteScanAgent)
 
 	// Scan profiles (#432)
+	admin.Get("/secrets", h.ListSecrets)
+	admin.Post("/secrets", h.CreateSecret)
+	admin.Put("/secrets/:id/rotate", h.RotateSecret)
+	admin.Get("/secrets/:id/versions", h.ListSecretVersions)
+	admin.Delete("/secrets/:id/versions/:version", h.DeleteSecretVersion)
+	admin.Delete("/secrets/:id", h.DeleteSecret)
 	admin.Get("/scan-profiles", h.ListScanProfiles)
 	admin.Post("/scan-profiles", h.CreateScanProfile)
 	admin.Get("/scan-profiles/:id", h.GetScanProfile)
