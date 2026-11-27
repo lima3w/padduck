@@ -216,6 +216,13 @@ func main() {
 		log.Fatalf("Failed to ensure default organization: %v", err)
 	}
 
+	// Move inline device SNMP community strings into the secrets store (idempotent).
+	if n, err := svc.Ops.Secrets.MigrateDeviceSNMPCommunities(ctx); err != nil {
+		slog.Warn("secrets: SNMP community migration failed", "error", err)
+	} else if n > 0 {
+		slog.Info("secrets: migrated device SNMP communities", "count", n)
+	}
+
 	// Seed platform admin from PLATFORM_ADMIN_EMAIL env var (idempotent)
 	if email := strings.TrimSpace(os.Getenv("PLATFORM_ADMIN_EMAIL")); email != "" {
 		safeEmail := strings.NewReplacer("\n", "", "\r", "").Replace(email)

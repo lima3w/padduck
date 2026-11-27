@@ -33,6 +33,7 @@ type DiscoveryService struct {
 	repository    discoveryRepo
 	config        *ConfigService
 	encryptionKey string
+	secrets       *SecretsService
 	// in-flight tracks running job IDs (value is struct{})
 	inFlight sync.Map
 	// semaphore channel limits concurrent RunJob executions
@@ -119,6 +120,9 @@ func maxConcurrentJobsFromEnv() int {
 	}
 	return 4
 }
+
+// SetSecrets enables secret:// references in SNMP credential settings.
+func (d *DiscoveryService) SetSecrets(sec *SecretsService) { d.secrets = sec }
 
 func NewDiscoveryService(repo discoveryRepo, configSvc *ConfigService, encryptionKey string) *DiscoveryService {
 	maxJobs := maxConcurrentJobsFromEnv()
@@ -873,8 +877,29 @@ type AgentScanResult struct {
 // those are preferred; otherwise the globalCommunity/globalVersion fallbacks are
 // returned with a nil v3 param.
 func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globalCommunity, globalVersion string) (community, version string, v3 *scanner.SNMPv3Params) {
+	decrypt := func(ct string) (string, error) { return DecryptString(d.encryptionKey, ct) }
+	reveal := func(stored string) (string, bool) {
+		v, err := revealCredential(ctx, d.secrets, stored, "snmp_scan", decrypt)
+		if err != nil {
+			slog.Warn("discovery: cannot read SNMP credential", "ip_id", ipID, "error", err)
+			return "", false
+		}
+		return v, true
+	}
+
 	community = globalCommunity
 	version = globalVersion
+	// The global, profile or job community may itself be a secret:// reference.
+	// Without a usable value fall back to the SNMP default, as an unset one would.
+	defer func() {
+		if strings.HasPrefix(community, SecretRefPrefix) {
+			if v, ok := reveal(community); ok {
+				community = v
+			} else {
+				community = "public"
+			}
+		}
+	}()
 
 	creds, err := d.repository.GetDeviceSNMPByIPID(ctx, ipID)
 	if err != nil {
@@ -886,7 +911,7 @@ func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globa
 	}
 
 	if creds.SNMPCommunity != nil && *creds.SNMPCommunity != "" {
-		if dec, err := DecryptString(d.encryptionKey, *creds.SNMPCommunity); err == nil {
+		if dec, ok := reveal(*creds.SNMPCommunity); ok {
 			community = dec
 		}
 	}
@@ -903,7 +928,7 @@ func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globa
 			p.AuthProto = *creds.SNMPV3AuthProto
 		}
 		if creds.SNMPV3AuthPass != nil {
-			if dec, err := DecryptString(d.encryptionKey, *creds.SNMPV3AuthPass); err == nil {
+			if dec, ok := reveal(*creds.SNMPV3AuthPass); ok {
 				p.AuthPass = dec
 			}
 		}
@@ -911,7 +936,7 @@ func (d *DiscoveryService) snmpCredsForIP(ctx context.Context, ipID int64, globa
 			p.PrivProto = *creds.SNMPV3PrivProto
 		}
 		if creds.SNMPV3PrivPass != nil {
-			if dec, err := DecryptString(d.encryptionKey, *creds.SNMPV3PrivPass); err == nil {
+			if dec, ok := reveal(*creds.SNMPV3PrivPass); ok {
 				p.PrivPass = dec
 			}
 		}
@@ -941,6 +966,9 @@ func (d *DiscoveryService) CreateScanProfile(ctx context.Context, name, scanType
 	}
 	if snmpVersion == "" {
 		snmpVersion = "v2c"
+	}
+	if err := d.validateSNMPRef(ctx, snmpCommunity); err != nil {
+		return nil, err
 	}
 	return d.repository.CreateScanProfile(ctx, name, scanType, desc, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion)
 }
@@ -972,6 +1000,9 @@ func (d *DiscoveryService) UpdateScanProfile(ctx context.Context, id int64, name
 	}
 	if snmpVersion == "" {
 		snmpVersion = "v2c"
+	}
+	if err := d.validateSNMPRef(ctx, snmpCommunity); err != nil {
+		return nil, err
 	}
 	return d.repository.UpdateScanProfile(ctx, id, name, scanType, desc, pingConcurrency, tcpPorts, dnsLookup, snmpCommunity, snmpVersion)
 }
@@ -1148,4 +1179,15 @@ func (d *DiscoveryService) GetDriftItem(ctx context.Context, id int64) (*models.
 // ResolveDriftItem sets the resolved status on a drift item.
 func (d *DiscoveryService) ResolveDriftItem(ctx context.Context, id int64, status string, resolvedBy *int64) error {
 	return d.repository.ResolveDriftItem(ctx, id, status, resolvedBy)
+}
+
+// validateSNMPRef rejects a scan profile community that names a missing secret.
+func (d *DiscoveryService) validateSNMPRef(ctx context.Context, community *string) error {
+	if community == nil || !strings.HasPrefix(*community, SecretRefPrefix) {
+		return nil
+	}
+	if d.secrets == nil {
+		return fmt.Errorf("invalid snmp_community: secret references are not available")
+	}
+	return d.secrets.ValidateRef(ctx, *community)
 }

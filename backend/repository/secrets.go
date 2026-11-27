@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -163,4 +164,73 @@ func (r *Repository) DeleteSecret(ctx context.Context, id int64) error {
 		return pgx.ErrNoRows
 	}
 	return nil
+}
+
+// LegacyDeviceCommunity is a device whose SNMP community is still stored inline.
+type LegacyDeviceCommunity struct {
+	DeviceID int64
+	OrgID    int64
+	Stored   string // the encrypted inline value
+}
+
+// ListDevicesWithInlineCommunity returns devices (across all organizations) whose
+// snmp_community is set and is not already a secret:// reference.
+func (r *Repository) ListDevicesWithInlineCommunity(ctx context.Context) ([]LegacyDeviceCommunity, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT id, organization_id, snmp_community FROM devices
+		WHERE snmp_community IS NOT NULL AND snmp_community <> '' AND snmp_community NOT LIKE 'secret://%'
+		ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []LegacyDeviceCommunity
+	for rows.Next() {
+		var d LegacyDeviceCommunity
+		if err := rows.Scan(&d.DeviceID, &d.OrgID, &d.Stored); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// MigrateDeviceCommunityToSecret creates the named secret (version 1) in the
+// device's organization and points the device at it, in one transaction. It
+// returns false, without changing anything, when the name is already taken or
+// the device's value changed since it was listed.
+func (r *Repository) MigrateDeviceCommunityToSecret(ctx context.Context, d LegacyDeviceCommunity, name string, encDEK, encValue []byte) (bool, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var secretID int64
+	err = tx.QueryRow(ctx, `
+		INSERT INTO secrets (organization_id, name, description)
+		VALUES ($1, $2, 'Migrated from the device SNMP community')
+		ON CONFLICT (organization_id, name) DO NOTHING
+		RETURNING id`, d.OrgID, name).Scan(&secretID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO secret_versions (secret_id, version, encrypted_dek, encrypted_value)
+		VALUES ($1, 1, $2, $3)`, secretID, encDEK, encValue); err != nil {
+		return false, err
+	}
+	tag, err := tx.Exec(ctx,
+		`UPDATE devices SET snmp_community = $1 WHERE id = $2 AND snmp_community = $3`,
+		"secret://"+name, d.DeviceID, d.Stored)
+	if err != nil {
+		return false, err
+	}
+	if tag.RowsAffected() == 0 {
+		return false, nil // changed concurrently; the deferred rollback drops the secret
+	}
+	return true, tx.Commit(ctx)
 }

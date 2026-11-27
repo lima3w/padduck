@@ -71,6 +71,8 @@ func NewService(repo *repository.Repository, mfaEncryptionKey string) *Service {
 	automationSvc := NewAutomationService(repo, svc, webhookSvc, notificationSvc)
 	discoverySvc := NewDiscoveryService(repo, configSvc, mfaEncryptionKey)
 	automationSvc.SetScanner(discoverySvc)
+	discoverySvc.SetSecrets(secretsSvc)
+	infraSvc.SetSecrets(secretsSvc)
 	svc.Ops = &OpsManager{
 		Discovery:      discoverySvc,
 		Reports:        NewReportsService(repo, configSvc, emailSvc, auditSvc),

@@ -1,5 +1,14 @@
 # Changelog
 
+## v2.1.1
+
+### Added
+Secret references for SNMP credentials (#22, part 2 of 3):
+- **`secret://name` references.** A device's `snmp_community`, `snmp_v3_auth_pass` and `snmp_v3_priv_pass`, a scan profile's `snmp_community`, and the global `scanner_snmp_community` setting can name a stored secret instead of holding the credential. It is resolved when a scan runs, so rotating the secret takes effect without editing anything else. Device and scan-profile writes reject a reference to a secret that does not exist. Automation's `scan` action picks this up through its scan profile.
+- **Existing device communities are migrated on upgrade.** On start, each device's inline SNMP community is moved into a secret named `snmp-community-<device id>` and the device is pointed at `secret://snmp-community-<device id>`. The step is idempotent; a value that cannot be decrypted is left untouched and logged.
+- **No values in the API.** `GET /devices/{id}/snmp-credentials` returns the `secret://` reference for such a field, never the secret's value.
+- Every scan-time read of a secret is recorded in the audit log.
+
 ## v2.1.0
 
 ### Added
