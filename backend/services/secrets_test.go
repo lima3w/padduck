@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -135,4 +136,86 @@ func TestSecretsLifecycle(t *testing.T) {
 	_, err = s.Resolve(ctx, "core-snmp", "test")
 	assert.ErrorIs(t, err, pgx.ErrNoRows)
 	assert.ErrorIs(t, s.Delete(ctx, sec.ID), pgx.ErrNoRows)
+}
+
+func TestRevealCredential(t *testing.T) {
+	ctx := context.Background()
+	dec := func(s string) (string, error) { return "dec:" + s, nil }
+
+	got, err := revealCredential(ctx, nil, "ciphertext", "test", dec)
+	require.NoError(t, err)
+	assert.Equal(t, "dec:ciphertext", got)
+
+	_, err = revealCredential(ctx, nil, "secret://x", "test", dec)
+	assert.Error(t, err, "a reference cannot be resolved without a secrets store")
+}
+
+func TestSecretsSNMPIntegration(t *testing.T) {
+	s, pool := testSecretsService(t)
+	testdb.Truncate(t, pool, "ip_addresses", "devices")
+	ctx := context.Background()
+	repo := repository.NewRepository(pool)
+	infra := NewInfrastructureService(repo, testMFAKey)
+	infra.SetSecrets(s)
+
+	// A device created with an inline community stores it encrypted.
+	inline := "legacy-community"
+	dev, err := infra.CreateDevice(ctx, &DeviceCreateRequest{Hostname: "sw1", SNMPCommunity: &inline})
+	require.NoError(t, err)
+	var stored string
+	require.NoError(t, pool.QueryRow(ctx, `SELECT snmp_community FROM devices WHERE id=$1`, dev.ID).Scan(&stored))
+	assert.NotEqual(t, inline, stored)
+
+	// A device with no community, and one whose value cannot be decrypted, are left alone.
+	_, err = infra.CreateDevice(ctx, &DeviceCreateRequest{Hostname: "sw2"})
+	require.NoError(t, err)
+	bad, err := infra.CreateDevice(ctx, &DeviceCreateRequest{Hostname: "sw3"})
+	require.NoError(t, err)
+	_, err = pool.Exec(ctx, `UPDATE devices SET snmp_community='not-decryptable' WHERE id=$1`, bad.ID)
+	require.NoError(t, err)
+
+	n, err := s.MigrateDeviceSNMPCommunities(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, 1, n)
+
+	name := "snmp-community-" + strconv.FormatInt(dev.ID, 10)
+	require.NoError(t, pool.QueryRow(ctx, `SELECT snmp_community FROM devices WHERE id=$1`, dev.ID).Scan(&stored))
+	assert.Equal(t, "secret://"+name, stored)
+	got, err := s.Resolve(ctx, name, "test")
+	require.NoError(t, err)
+	assert.Equal(t, inline, got)
+
+	// Idempotent: nothing left to migrate, and the undecryptable device is untouched.
+	n, err = s.MigrateDeviceSNMPCommunities(ctx)
+	require.NoError(t, err)
+	assert.Zero(t, n)
+	require.NoError(t, pool.QueryRow(ctx, `SELECT snmp_community FROM devices WHERE id=$1`, bad.ID).Scan(&stored))
+	assert.Equal(t, "not-decryptable", stored)
+
+	// The credentials API shows the reference, never the value.
+	creds, err := infra.GetDeviceSNMPCredentials(ctx, dev.ID)
+	require.NoError(t, err)
+	require.NotNil(t, creds.SNMPCommunity)
+	assert.Equal(t, "secret://"+name, *creds.SNMPCommunity)
+
+	// Writing a reference validates it and stores it as-is.
+	missing := "secret://does-not-exist"
+	_, err = infra.CreateDevice(ctx, &DeviceCreateRequest{Hostname: "sw4", SNMPCommunity: &missing})
+	assert.Error(t, err)
+	ref := "secret://" + name
+	d5, err := infra.CreateDevice(ctx, &DeviceCreateRequest{Hostname: "sw5", SNMPCommunity: &ref})
+	require.NoError(t, err)
+	require.NoError(t, pool.QueryRow(ctx, `SELECT snmp_community FROM devices WHERE id=$1`, d5.ID).Scan(&stored))
+	assert.Equal(t, ref, stored)
+
+	// A scan resolves a referenced global/profile community; a dangling one
+	// falls back to the SNMP default instead of leaking the reference.
+	disc := NewDiscoveryService(repo, nil, testMFAKey)
+	disc.SetSecrets(s)
+	community, _, _ := disc.snmpCredsForIP(ctx, 0, ref, "2c")
+	assert.Equal(t, inline, community)
+	community, _, _ = disc.snmpCredsForIP(ctx, 0, missing, "2c")
+	assert.Equal(t, "public", community)
+	community, _, _ = disc.snmpCredsForIP(ctx, 0, "plain", "2c")
+	assert.Equal(t, "plain", community)
 }

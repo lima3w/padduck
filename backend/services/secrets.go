@@ -4,12 +4,17 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
+
 	"padduck/models"
 	"padduck/repository"
+	"padduck/utils"
 )
 
 // SecretRefPrefix marks a configuration value that refers to a stored secret
@@ -28,6 +33,8 @@ type SecretsService struct {
 	repo  *repository.Repository
 	audit *AuditService
 	kek   []byte
+	// keyHex is the same key, hex-encoded, for decrypting legacy inline credentials.
+	keyHex string
 }
 
 // NewSecretsService builds the service from the hex-encoded 32-byte application key.
@@ -36,7 +43,7 @@ func NewSecretsService(repo *repository.Repository, audit *AuditService, keyHex 
 	if err != nil || len(kek) != 32 {
 		return nil, fmt.Errorf("secrets: encryption key must be a 64-character hex string (32 bytes)")
 	}
-	return &SecretsService{repo: repo, audit: audit, kek: kek}, nil
+	return &SecretsService{repo: repo, audit: audit, kek: kek, keyHex: keyHex}, nil
 }
 
 // ParseSecretRef returns the secret name when v is a secret:// reference.
@@ -177,4 +184,80 @@ func (s *SecretsService) ResolveRef(ctx context.Context, v, purpose string) (str
 		return v, nil
 	}
 	return s.Resolve(ctx, name, purpose)
+}
+
+// ValidateRef checks a value that is about to be stored in a credential field.
+// Plain values pass; a secret:// value must name a secret that exists.
+func (s *SecretsService) ValidateRef(ctx context.Context, v string) error {
+	if !strings.HasPrefix(v, SecretRefPrefix) {
+		return nil
+	}
+	name, ok := ParseSecretRef(v)
+	if !ok {
+		return fmt.Errorf("invalid secret reference %q: use secret://<name> with letters, digits, '.', '_' or '-'", v)
+	}
+	if _, err := s.repo.GetSecretByName(ctx, name); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("invalid secret reference: secret %q does not exist", name)
+		}
+		return err
+	}
+	return nil
+}
+
+// revealCredential returns the plaintext of a stored credential field: a
+// secret:// reference is resolved through the secrets store, anything else is
+// decrypted with decrypt (the legacy inline encryption).
+func revealCredential(ctx context.Context, sec *SecretsService, stored, purpose string, decrypt func(string) (string, error)) (string, error) {
+	if strings.HasPrefix(stored, SecretRefPrefix) {
+		if sec == nil {
+			return "", fmt.Errorf("secrets store unavailable")
+		}
+		return sec.ResolveRef(ctx, stored, purpose)
+	}
+	return decrypt(stored)
+}
+
+// MigrateDeviceSNMPCommunities moves every device's inline (encrypted) SNMP
+// community string into a named secret "snmp-community-<device id>" and points
+// the device at it with secret://snmp-community-<device id>. It is idempotent
+// and safe to run on every start: devices already pointing at a secret are
+// skipped, and a failure on one device leaves it unchanged and is retried on the
+// next start. It returns how many devices were migrated.
+func (s *SecretsService) MigrateDeviceSNMPCommunities(ctx context.Context) (int, error) {
+	legacy, err := s.repo.ListDevicesWithInlineCommunity(ctx)
+	if err != nil {
+		return 0, err
+	}
+	migrated := 0
+	for _, d := range legacy {
+		plain, err := utils.DecryptString(d.Stored, s.keyHex)
+		if err != nil || plain == "" {
+			slog.Warn("secrets: leaving device SNMP community unmigrated (cannot decrypt)", "device_id", d.DeviceID)
+			continue
+		}
+		encDEK, encValue, err := s.seal(plain)
+		if err != nil {
+			slog.Warn("secrets: SNMP community migration failed", "device_id", d.DeviceID, "error", err)
+			continue
+		}
+		name := fmt.Sprintf("snmp-community-%d", d.DeviceID)
+		ok, err := s.repo.MigrateDeviceCommunityToSecret(ctx, d, name, encDEK, encValue)
+		if err != nil {
+			slog.Warn("secrets: SNMP community migration failed", "device_id", d.DeviceID, "error", err)
+			continue
+		}
+		if ok {
+			migrated++
+			if s.audit != nil {
+				orgID := d.OrgID
+				s.audit.Log(ctx, AuditEntry{
+					OrgID: &orgID, Username: "system", Action: "secret_created",
+					ResourceType: "secret", ResourceName: name,
+					NewValues: map[string]any{"name": name, "source": "device_snmp_migration", "device_id": d.DeviceID},
+				})
+			}
+		}
+	}
+	return migrated, nil
 }

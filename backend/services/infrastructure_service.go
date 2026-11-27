@@ -17,7 +17,11 @@ var ErrNotAssociated = errors.New("not associated")
 type InfrastructureService struct {
 	repo          *repository.Repository
 	encryptionKey string
+	secrets       *SecretsService
 }
+
+// SetSecrets enables secret:// references in device SNMP credential fields.
+func (s *InfrastructureService) SetSecrets(sec *SecretsService) { s.secrets = sec }
 
 func NewInfrastructureService(repo *repository.Repository, encryptionKey string) *InfrastructureService {
 	return &InfrastructureService{
@@ -88,7 +92,7 @@ func (s *InfrastructureService) CreateDevice(ctx context.Context, req *DeviceCre
 		return nil, fmt.Errorf("hostname is required")
 	}
 
-	if err := s.encryptDeviceCredentials(req); err != nil {
+	if err := s.encryptDeviceCredentials(ctx, req); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +134,7 @@ func (s *InfrastructureService) UpdateDevice(ctx context.Context, id int64, req 
 		return nil, fmt.Errorf("hostname is required")
 	}
 
-	if err := s.encryptDeviceUpdateCredentials(req); err != nil {
+	if err := s.encryptDeviceCredentials(ctx, req); err != nil {
 		return nil, err
 	}
 
@@ -164,6 +168,8 @@ func (s *InfrastructureService) DeleteDevice(ctx context.Context, id int64) erro
 }
 
 // GetDeviceSNMPCredentials retrieves and decrypts SNMP credentials for a device.
+// A field that refers to a secret is returned as its secret:// reference; the
+// secret's value is never returned.
 func (s *InfrastructureService) GetDeviceSNMPCredentials(ctx context.Context, id int64) (*models.DeviceSNMP, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid device ID")
@@ -176,19 +182,19 @@ func (s *InfrastructureService) GetDeviceSNMPCredentials(ctx context.Context, id
 		return nil, err
 	}
 
-	if creds.SNMPCommunity != nil {
+	if creds.SNMPCommunity != nil && !strings.HasPrefix(*creds.SNMPCommunity, SecretRefPrefix) {
 		dec, err := utils.DecryptString(*creds.SNMPCommunity, s.encryptionKey)
 		if err == nil {
 			creds.SNMPCommunity = &dec
 		}
 	}
-	if creds.SNMPV3AuthPass != nil {
+	if creds.SNMPV3AuthPass != nil && !strings.HasPrefix(*creds.SNMPV3AuthPass, SecretRefPrefix) {
 		dec, err := utils.DecryptString(*creds.SNMPV3AuthPass, s.encryptionKey)
 		if err == nil {
 			creds.SNMPV3AuthPass = &dec
 		}
 	}
-	if creds.SNMPV3PrivPass != nil {
+	if creds.SNMPV3PrivPass != nil && !strings.HasPrefix(*creds.SNMPV3PrivPass, SecretRefPrefix) {
 		dec, err := utils.DecryptString(*creds.SNMPV3PrivPass, s.encryptionKey)
 		if err == nil {
 			creds.SNMPV3PrivPass = &dec
@@ -349,56 +355,40 @@ func (s *InfrastructureService) SearchDevices(ctx context.Context, filter *repos
 	return s.repo.SearchDevicesWithCustomFields(ctx, filter, cf)
 }
 
-// encryptDeviceCredentials encrypts SNMP fields in-place on a DeviceCreateRequest.
-func (s *InfrastructureService) encryptDeviceCredentials(req *DeviceCreateRequest) error {
-	if req.SNMPCommunity != nil && *req.SNMPCommunity != "" {
-		enc, err := utils.EncryptString(*req.SNMPCommunity, s.encryptionKey)
-		if err != nil {
-			return fmt.Errorf("encrypting snmp_community: %w", err)
-		}
-		req.SNMPCommunity = &enc
+// protectCredential prepares one SNMP credential field for storage: a
+// secret:// reference is validated and stored as-is, any other value is
+// encrypted in place.
+func (s *InfrastructureService) protectCredential(ctx context.Context, field string, v **string) error {
+	if *v == nil || **v == "" {
+		return nil
 	}
-	if req.SNMPV3AuthPass != nil && *req.SNMPV3AuthPass != "" {
-		enc, err := utils.EncryptString(*req.SNMPV3AuthPass, s.encryptionKey)
-		if err != nil {
-			return fmt.Errorf("encrypting snmp_v3_auth_pass: %w", err)
+	if strings.HasPrefix(**v, SecretRefPrefix) {
+		if s.secrets == nil {
+			return fmt.Errorf("invalid %s: secret references are not available", field)
 		}
-		req.SNMPV3AuthPass = &enc
-	}
-	if req.SNMPV3PrivPass != nil && *req.SNMPV3PrivPass != "" {
-		enc, err := utils.EncryptString(*req.SNMPV3PrivPass, s.encryptionKey)
-		if err != nil {
-			return fmt.Errorf("encrypting snmp_v3_priv_pass: %w", err)
+		if err := s.secrets.ValidateRef(ctx, **v); err != nil {
+			return fmt.Errorf("%s: %w", field, err)
 		}
-		req.SNMPV3PrivPass = &enc
+		return nil
 	}
+	enc, err := utils.EncryptString(**v, s.encryptionKey)
+	if err != nil {
+		return fmt.Errorf("encrypting %s: %w", field, err)
+	}
+	*v = &enc
 	return nil
 }
 
-// encryptDeviceUpdateCredentials encrypts SNMP fields in-place on a DeviceUpdateRequest.
-func (s *InfrastructureService) encryptDeviceUpdateCredentials(req *DeviceUpdateRequest) error {
-	if req.SNMPCommunity != nil && *req.SNMPCommunity != "" {
-		enc, err := utils.EncryptString(*req.SNMPCommunity, s.encryptionKey)
-		if err != nil {
-			return fmt.Errorf("encrypting snmp_community: %w", err)
-		}
-		req.SNMPCommunity = &enc
+// encryptDeviceCredentials prepares the SNMP credential fields of a device
+// create or update request for storage (see protectCredential).
+func (s *InfrastructureService) encryptDeviceCredentials(ctx context.Context, req *DeviceCreateRequest) error {
+	if err := s.protectCredential(ctx, "snmp_community", &req.SNMPCommunity); err != nil {
+		return err
 	}
-	if req.SNMPV3AuthPass != nil && *req.SNMPV3AuthPass != "" {
-		enc, err := utils.EncryptString(*req.SNMPV3AuthPass, s.encryptionKey)
-		if err != nil {
-			return fmt.Errorf("encrypting snmp_v3_auth_pass: %w", err)
-		}
-		req.SNMPV3AuthPass = &enc
+	if err := s.protectCredential(ctx, "snmp_v3_auth_pass", &req.SNMPV3AuthPass); err != nil {
+		return err
 	}
-	if req.SNMPV3PrivPass != nil && *req.SNMPV3PrivPass != "" {
-		enc, err := utils.EncryptString(*req.SNMPV3PrivPass, s.encryptionKey)
-		if err != nil {
-			return fmt.Errorf("encrypting snmp_v3_priv_pass: %w", err)
-		}
-		req.SNMPV3PrivPass = &enc
-	}
-	return nil
+	return s.protectCredential(ctx, "snmp_v3_priv_pass", &req.SNMPV3PrivPass)
 }
 
 // setCustomFieldValues validates required fields and writes custom field values for an entity.
